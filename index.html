@@ -1818,6 +1818,7 @@ function startGame() {
 
 function beginGame() {
     if (!units.some(u => u.type === 'lord')) spawnLord();
+    GAME.gameStarted = true;
     resize(); // примусово перераховуємо розміри canvas перед першим кадром
     loop();
     scheduleNextEnemy();
@@ -2649,9 +2650,9 @@ function togglePause() {
     }
 }
 
-// Авто-пауза при згортанні / перемиканні вкладки
+// Авто-пауза при згортанні / перемиканні вкладки (тільки якщо гра вже запущена)
 document.addEventListener('visibilitychange', () => {
-    if (document.hidden && !GAME_PAUSED && !GAME.gameOver) {
+    if (document.hidden && !GAME_PAUSED && !GAME.gameOver && GAME.gameStarted) {
         togglePause();
     }
 });
