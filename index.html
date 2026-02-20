@@ -58,11 +58,7 @@
 
         canvas {
             display: block;
-            width: 100% !important;
-            height: 100% !important;
-            /* touch-action: none прибрано — в Telegram iOS WKWebView воно блокує
-               touch events для ВСЬОГО екрану включно з кнопками нижче.
-               Scroll блокується через e.preventDefault() в touchmove JS обробнику. */
+            /* розміри встановлюються виключно через JS в resize() */
             touch-action: pan-x pan-y;
             -webkit-touch-callout: none;
         }
@@ -1822,8 +1818,7 @@ function startGame() {
 function beginGame() {
     if (!units.some(u => u.type === 'lord')) spawnLord();
     resize(); // примусово перераховуємо розміри canvas перед першим кадром
-    // gameStarted встановлюємо з затримкою щоб visibilitychange не спрацював раніше
-    setTimeout(() => { GAME.gameStarted = true; }, 1000);
+    GAME.gameStarted = true;
     loop();
     scheduleNextEnemy();
     setInterval(spawnMinions, 1000);
@@ -2658,9 +2653,10 @@ function togglePause() {
     }
 }
 
-// Авто-пауза при згортанні / перемиканні вкладки (тільки якщо гра вже запущена)
+// Авто-пауза при згортанні вкладки (тільки якщо гра вже запущена)
 document.addEventListener('visibilitychange', () => {
-    if (document.hidden && !GAME_PAUSED && !GAME.gameOver && GAME.gameStarted) {
+    if (!GAME.gameStarted || GAME.gameOver) return;
+    if (document.hidden && !GAME_PAUSED) {
         togglePause();
     }
 });
