@@ -36,29 +36,25 @@
         }
 
         /* ═══════════════════════════════════════════════════
-           LAYOUT: flex-column, canvas + панель управління
+           LAYOUT: canvas fixed top, controls fixed bottom
         ═══════════════════════════════════════════════════ */
         #app {
-            display: flex;
-            flex-direction: column;
             width: 100%;
             height: 100%;
-            /* safe-area padding */
-            padding-top: env(safe-area-inset-top, 0px);
-            padding-bottom: env(safe-area-inset-bottom, 0px);
         }
 
         #canvas-wrap {
-            position: relative;
-            flex: 1 1 0;        /* займає весь простір що залишився */
-            min-height: 0;
-            overflow: hidden;
+            position: fixed;
+            top: 0; left: 0; right: 0;
+            bottom: var(--controls-h, 120px);
             background: #0d0820;
+            overflow: hidden;
         }
 
         canvas {
             display: block;
-            /* розміри встановлюються виключно через JS в resize() */
+            position: absolute;
+            top: 0; left: 0;
             touch-action: pan-x pan-y;
             -webkit-touch-callout: none;
         }
@@ -124,13 +120,15 @@
            Повністю незалежна від canvas — НЕ має pointer-events:none
         ═══════════════════════════════════════════════════ */
         #controls {
-            flex: 0 0 auto;
+            position: fixed;
+            bottom: 0; left: 0; right: 0;
             background: #09040f;
             border-top: 2px solid #1e0d35;
             display: flex;
             flex-direction: column;
             align-items: center;
-            /* розміри через медіазапити */
+            padding-bottom: env(safe-area-inset-bottom, 0px);
+            z-index: 20;
         }
 
         .ctrl-circles {
@@ -2507,20 +2505,19 @@ function gameOver() { GAME.gameOver = true; document.getElementById('game-over')
 function resize() {
     let dpr = Math.min(window.devicePixelRatio || 1, 2);
     let controls = document.getElementById('controls');
-    // На iOS Safari flex-контейнер може повернути clientHeight=0 до першого paint,
-    // тому рахуємо висоту canvas як window.innerHeight мінус панель управління
-    let controlsH = controls ? controls.offsetHeight : 0;
-    // Якщо controls ще не відрендерився — використовуємо 160px як мінімальну висоту панелі
-    if (controlsH < 10) controlsH = 160;
+    let controlsH = controls ? controls.getBoundingClientRect().height : 0;
+    if (controlsH < 10) controlsH = 120;
+    // Оновлюємо CSS змінну щоб #canvas-wrap знав висоту controls
+    document.documentElement.style.setProperty('--controls-h', controlsH + 'px');
     gW = window.innerWidth;
-    gH = Math.max(window.innerHeight - controlsH, 200);
+    gH = window.innerHeight - controlsH;
+    if (gH < 100) gH = window.innerHeight * 0.6;
     canvas.width  = Math.round(gW * dpr);
     canvas.height = Math.round(gH * dpr);
     canvas.style.width  = gW + 'px';
     canvas.style.height = gH + 'px';
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     centerX = gW / 2;
-    // Під вертикальний формат — вужчі поверхи
     CFG.floorW = Math.min(gW - 60, 380);
     CAVE_X = centerX + CFG.floorW * 0.35;
 }
