@@ -2702,35 +2702,7 @@ _bindRepeat('threat-plus',  () => _threatStep(1));
 // Всі кнопки мають onclick атрибути в HTML — це основний механізм для iOS.
 // Нижче нічого додаткового не потрібно.
 
-// ── FPS throttle — 30fps на слабких пристроях ────────────────────────────────
-// Визначаємо по першому кадру: якщо devicePixelRatio > 2 або CPU слабий — 30fps
-let _targetFps = 60;
-let _fpsLastTime = 0;
-const _origLoop = loop;
-// Патчимо loop щоб вона перевіряла інтервал
-window._loopFpsThrottle = function(ts) {
-    if (GAME_PAUSED || GAME.gameOver) return;
-    if (!_fpsLastTime) _fpsLastTime = ts;
-    let elapsed = ts - _fpsLastTime;
-    let interval = 1000 / _targetFps;
-    if (elapsed >= interval - 1) {
-        _fpsLastTime = ts - (elapsed % interval);
-        _origLoop();
-    } else {
-        requestAnimationFrame(window._loopFpsThrottle);
-    }
-};
-// Після першого кадру міряємо реальний FPS і якщо слабкий — знижуємо до 30
-let _fpsSample = [];
-let _fpsProbe = function(ts) {
-    _fpsSample.push(ts);
-    if (_fpsSample.length < 10) { requestAnimationFrame(_fpsProbe); return; }
-    let avg = 0;
-    for (let i = 1; i < _fpsSample.length; i++) avg += _fpsSample[i] - _fpsSample[i-1];
-    avg /= (_fpsSample.length - 1);
-    _targetFps = avg > 20 ? 60 : 30; // якщо кадр > 20мс в середньому — вже гальмує
-};
-requestAnimationFrame(_fpsProbe);
+// FPS throttle видалено — loop використовує прямий requestAnimationFrame
 
 // ── Canvas tap-зони: збільшуємо хіт-бокс кнопок апгрейду та купівлі ────────
 // Зберігаємо оригінальний _btnH/W для збільшення зони на ±10px з кожного боку
