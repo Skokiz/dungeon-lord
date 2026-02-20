@@ -1821,8 +1821,9 @@ function startGame() {
 
 function beginGame() {
     if (!units.some(u => u.type === 'lord')) spawnLord();
-    GAME.gameStarted = true;
     resize(); // примусово перераховуємо розміри canvas перед першим кадром
+    // gameStarted встановлюємо з затримкою щоб visibilitychange не спрацював раніше
+    setTimeout(() => { GAME.gameStarted = true; }, 1000);
     loop();
     scheduleNextEnemy();
     setInterval(spawnMinions, 1000);
@@ -1993,6 +1994,10 @@ function loop() {
 
     // Телепорт: глобальний тік (кожні 10 сек — один герой з кожного поверху з телепортом)
     tickTeleports();
+
+    // Скидаємо трансформацію і перевстановлюємо dpr scale кожен кадр
+    let _dpr = Math.min(window.devicePixelRatio || 1, 2);
+    ctx.setTransform(_dpr, 0, 0, _dpr, 0, 0);
 
     ctx.fillStyle = '#0d0820';
     ctx.fillRect(0, 0, gW, gH);
