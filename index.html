@@ -1,0 +1,2720 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Dungeon Lord: Siege Defense</title>
+    <style>
+        /* ═══════════════════════════════════════════════════
+           RESET + BASE
+        ═══════════════════════════════════════════════════ */
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        html {
+            height: 100%;
+            /* iOS Safari: використовуємо -webkit-fill-available */
+            height: -webkit-fill-available;
+        }
+        body {
+            width: 100%;
+            height: 100%;
+            min-height: -webkit-fill-available;
+            overflow: hidden;
+            background: #0d0820;
+            font-family: -apple-system, 'Segoe UI', sans-serif;
+            color: white;
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+        /* Кнопки: скидаємо user-select щоб iOS WKWebView не блокував click */
+        button {
+            user-select: none;
+            -webkit-user-select: none;
+            cursor: pointer;
+            -webkit-touch-callout: none;
+        }
+
+        /* ═══════════════════════════════════════════════════
+           LAYOUT: flex-column, canvas + панель управління
+        ═══════════════════════════════════════════════════ */
+        #app {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            height: 100%;
+            /* safe-area padding */
+            padding-top: env(safe-area-inset-top, 0px);
+            padding-bottom: env(safe-area-inset-bottom, 0px);
+        }
+
+        #canvas-wrap {
+            position: relative;
+            flex: 1 1 0;        /* займає весь простір що залишився */
+            min-height: 0;
+            overflow: hidden;
+            background: #0d0820;
+        }
+
+        canvas {
+            display: block;
+            width: 100% !important;
+            height: 100% !important;
+            /* touch-action: none прибрано — в Telegram iOS WKWebView воно блокує
+               touch events для ВСЬОГО екрану включно з кнопками нижче.
+               Scroll блокується через e.preventDefault() в touchmove JS обробнику. */
+            touch-action: pan-x pan-y;
+            -webkit-touch-callout: none;
+        }
+
+        /* ═══════════════════════════════════════════════════
+           HUD (поверх canvas, тільки статус)
+        ═══════════════════════════════════════════════════ */
+        #hud {
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            pointer-events: none;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            padding: 8px;
+            gap: 6px;
+            z-index: 5;
+        }
+        .resource-box {
+            font-weight: bold; color: #00ffcc;
+            background: rgba(0,0,0,0.75);
+            border-radius: 10px; border: 1px solid rgba(0,255,204,0.3);
+            text-shadow: 0 0 8px #00ffcc88;
+            white-space: nowrap;
+        }
+        .hud-right {
+            background: rgba(0,0,0,0.75);
+            border-radius: 10px;
+            text-align: right;
+        }
+        .hp-label       { color: #ff6666; display: block; }
+        .hp-label-lord  { color: #cc66ff; display: block; margin-top: 3px; }
+        .hp-bar         { background: #333; border-radius: 3px; overflow: hidden; margin-top: 2px; }
+        .hp-fill        { height: 100%; transition: width 0.2s; }
+        .threat-line    { color: #ff8844; display: block; }
+
+        /* Кнопка паузи — абсолютно над canvas */
+        #pause-toggle-btn {
+            position: absolute;
+            top: 6px; left: 50%; transform: translateX(-50%);
+            background: rgba(50,20,80,0.9); border: 1px solid #aa66ff;
+            color: #cc99ff; border-radius: 8px;
+            cursor: pointer;
+            pointer-events: auto;
+            -webkit-appearance: none;
+            touch-action: manipulation;
+            z-index: 10;
+            white-space: nowrap;
+        }
+
+        /* Кнопка reset save */
+        #btn-hard-reset {
+            position: absolute; bottom: 4px; left: 4px;
+            background: rgba(40,40,40,0.8); color: #555;
+            border: none; border-radius: 4px;
+            pointer-events: auto; cursor: pointer;
+            -webkit-appearance: none;
+            touch-action: manipulation; z-index: 10;
+        }
+
+        /* ═══════════════════════════════════════════════════
+           ПАНЕЛЬ УПРАВЛІННЯ
+           Повністю незалежна від canvas — НЕ має pointer-events:none
+        ═══════════════════════════════════════════════════ */
+        #controls {
+            flex: 0 0 auto;
+            background: #09040f;
+            border-top: 2px solid #1e0d35;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            /* розміри через медіазапити */
+        }
+
+        .ctrl-circles {
+            display: flex;
+            justify-content: center;
+            align-items: flex-end;
+        }
+        .ctrl-rects {
+            display: flex;
+            justify-content: center;
+        }
+
+        /* ── Кругла кнопка-меню ── */
+        .circle-menu { position: relative; display: flex; flex-direction: column; align-items: center; }
+
+        .circle-main-btn {
+            border-radius: 50%;
+            border: 2px solid;
+            color: white; font-weight: bold;
+            cursor: pointer;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            text-align: center; line-height: 1.2;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.6);
+            -webkit-appearance: none;
+            touch-action: manipulation;
+            transition: transform 0.1s;
+        }
+        .circle-main-btn:active { transform: scale(0.9); }
+
+        /* Підменю */
+        .circle-sub-menu {
+            position: absolute;
+            left: 50%; transform: translateX(-50%);
+            display: none; flex-direction: column;
+            align-items: center;
+            background: rgba(6,3,16,0.98); border: 1px solid #444;
+            border-radius: 14px;
+            z-index: 100;
+        }
+        .circle-sub-menu.open { display: flex; animation: popUp 0.15s ease-out; }
+        @keyframes popUp {
+            from { opacity: 0; transform: translateX(-50%) translateY(5px); }
+            to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+        }
+
+        .sub-btn {
+            border-radius: 50%; border: 2px solid;
+            color: white; font-weight: bold; cursor: pointer;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            text-align: center; line-height: 1.2;
+            -webkit-appearance: none;
+            touch-action: manipulation;
+            transition: transform 0.1s;
+        }
+        .sub-btn:active { transform: scale(0.9); }
+
+        /* Кольори кнопок */
+        .cmain-lord    { background: linear-gradient(145deg,#9900ee,#6600aa); border-color: #cc66ff; }
+        .cmain-monster { background: linear-gradient(145deg,#005c1e,#003a12); border-color: #00cc44; }
+        .cmain-trap    { background: linear-gradient(145deg,#886600,#554400); border-color: #ffcc00; }
+        .s-atk   { background: linear-gradient(145deg,#cc2222,#881111); border-color: #ff5555; }
+        .s-vit   { background: linear-gradient(145deg,#1a8822,#115511); border-color: #44ff66; }
+        .s-spike { background: linear-gradient(145deg,#888,#555);       border-color: #bbb; }
+        .s-tele  { background: linear-gradient(145deg,#2244cc,#112288); border-color: #6699ff; }
+        .s-daze  { background: linear-gradient(145deg,#cc8800,#886600); border-color: #ffcc44; }
+
+        /* Прямокутні кнопки */
+        .rect-btn {
+            border-radius: 10px; border: none; color: white;
+            font-weight: bold; cursor: pointer;
+            box-shadow: 0 3px 0 #000;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            -webkit-appearance: none;
+            touch-action: manipulation;
+            transition: transform 0.1s;
+        }
+        .rect-btn:active { transform: translateY(2px); box-shadow: none; }
+        .rect-btn small  { font-weight: normal; opacity: 0.9; }
+        .btn-floor { background: #1a66dd; }
+        .btn-wave  { background: #cc1130; animation: pulse 2s infinite; }
+        @keyframes pulse {
+            0%   { box-shadow: 0 0 0 0 rgba(220,30,60,.7), 0 3px 0 #000; }
+            70%  { box-shadow: 0 0 0 8px rgba(220,30,60,0), 0 3px 0 #000; }
+            100% { box-shadow: 0 0 0 0 rgba(220,30,60,0), 0 3px 0 #000; }
+        }
+
+        /* ═══════════════════════════════════════════════════
+           ОВЕРЛЕЇ (position:fixed — поверх усього)
+        ═══════════════════════════════════════════════════ */
+        .overlay-base {
+            position: fixed; top: 0; left: 0;
+            width: 100%; height: 100%;
+            display: none; flex-direction: column;
+            justify-content: center; align-items: center;
+            pointer-events: none;
+        }
+        /* Коли оверлей показаний — відновлюємо pointer-events */
+        .overlay-base[style*="flex"] {
+            pointer-events: auto;
+        }
+
+        #game-over {
+            background: rgba(0,0,0,0.93);
+            gap: 16px; z-index: 200;
+        }
+        #game-over h1 { color: #ff3333; text-transform: uppercase; text-align: center; }
+        #game-over p  { color: #999; text-align: center; }
+        #btn-try-again {
+            background: #ffcc00; color: #332200;
+            border: none; border-radius: 10px; font-weight: bold;
+            cursor: pointer; -webkit-appearance: none; touch-action: manipulation;
+        }
+
+        #pause-overlay {
+            background: rgba(0,0,0,0.85);
+            gap: 14px; z-index: 190;
+        }
+        #pause-overlay h2 { color: #cc88ff; }
+        .pause-btn {
+            background: rgba(80,40,120,0.95); border: 2px solid #cc88ff;
+            color: #fff; border-radius: 10px;
+            cursor: pointer; -webkit-appearance: none; touch-action: manipulation;
+        }
+        .pause-btn:active { transform: scale(0.95); }
+        .threat-cap-row { display: flex; align-items: center; gap: 10px; color: #ffcc88; flex-wrap: wrap; justify-content: center; }
+        .threat-cap-row input {
+            width: 65px; border-radius: 6px;
+            border: 1px solid #cc88ff; background: #1a0d30; color: #fff;
+            text-align: center; -webkit-appearance: none; touch-action: manipulation;
+        }
+
+        #trap-hint {
+            position: fixed; top: 38%; left: 50%; transform: translate(-50%,-50%);
+            background: rgba(10,5,25,0.97); border: 2px solid #ffcc00;
+            border-radius: 14px; text-align: center;
+            z-index: 180; pointer-events: none; display: none;
+        }
+
+        /* ═══════════════════════════════════════════════════
+           СТАРТОВИЙ ЕКРАН
+        ═══════════════════════════════════════════════════ */
+        #start-screen {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: radial-gradient(ellipse at center, #1a0a35 0%, #0d0820 60%, #050310 100%);
+            display: flex; flex-direction: column;
+            justify-content: center; align-items: center;
+            z-index: 300;
+        }
+        #start-screen h1 {
+            color: #cc88ff; text-shadow: 0 0 30px #aa00ff;
+            text-transform: uppercase; letter-spacing: 3px; text-align: center;
+        }
+        #start-screen .subtitle { color: #886699; letter-spacing: 2px; }
+        .start-card {
+            background: rgba(40,10,70,0.93); border: 1px solid #6633aa;
+            border-radius: 16px;
+            display: flex; flex-direction: column; align-items: center;
+            width: 90%; max-width: 320px;
+        }
+        .start-card label { color: #cc99ff; text-align: center; line-height: 1.5; }
+        .threat-slider-wrap { display: flex; flex-direction: column; align-items: center; width: 100%; }
+        .threat-labels { display: flex; justify-content: space-between; width: 100%; color: #664477; }
+        .threat-slider-val { font-weight: bold; color: #ffcc00; text-shadow: 0 0 10px #ff8800; }
+        .threat-picker { display: flex; align-items: center; justify-content: center; }
+        .threat-step-btn {
+            border-radius: 50%;
+            background: linear-gradient(145deg,#5500aa,#7700cc);
+            border: 2px solid #cc66ff; color: #fff; font-weight: bold;
+            cursor: pointer; display: flex; align-items: center; justify-content: center;
+            -webkit-appearance: none; touch-action: manipulation; line-height: 1;
+        }
+        .threat-step-btn:active { transform: scale(0.9); }
+        .start-btn {
+            background: linear-gradient(145deg,#7700cc,#aa00ff);
+            border: 2px solid #cc66ff; color: #fff;
+            border-radius: 12px; font-weight: bold;
+            cursor: pointer; -webkit-appearance: none; touch-action: manipulation;
+            box-shadow: 0 0 20px rgba(170,0,255,0.5);
+            width: 90%; max-width: 240px; text-align: center;
+        }
+        .start-btn:active { transform: scale(0.96); }
+
+        /* ═══════════════════════════════════════════════════
+           МЕДІАЗАПИТИ — розміри під кожен екран
+        ═══════════════════════════════════════════════════ */
+
+        /* ── Маленький телефон: ≤360px ширина (старі Android, SE) ── */
+        @media (max-width: 360px) {
+            #hud { padding: 5px 6px; }
+            .resource-box { font-size: 13px; padding: 4px 8px; border-radius: 8px; }
+            .hud-right { font-size: 9px; padding: 4px 7px; border-radius: 8px; }
+            .hp-bar { width: 85px; height: 6px; }
+            .threat-line { font-size: 8px; }
+            #pause-toggle-btn { font-size: 11px; padding: 4px 10px; }
+            #btn-hard-reset { font-size: 8px; padding: 2px 5px; }
+
+            #controls { padding: 5px 4px; gap: 5px; }
+            .ctrl-circles { gap: 7px; }
+            .circle-main-btn { width: 58px; height: 58px; font-size: 9px; }
+            .circle-main-btn .icon { font-size: 20px; }
+            .circle-sub-menu { bottom: 65px; gap: 6px; padding: 7px 5px; min-width: 64px; }
+            .sub-btn { width: 56px; height: 56px; font-size: 9px; }
+            .sub-btn .sicon { font-size: 17px; }
+            .sub-btn .scost { font-size: 9px; }
+            .sub-btn .slabel { font-size: 8px; }
+            .ctrl-rects { gap: 6px; }
+            .rect-btn { padding: 7px 14px; font-size: 12px; border-radius: 8px; }
+            .rect-btn small { font-size: 9px; }
+
+            #start-screen h1 { font-size: 26px; letter-spacing: 2px; }
+            #start-screen .subtitle { font-size: 10px; margin-top: -8px; }
+            .start-card { padding: 14px 16px; gap: 10px; }
+            .start-card label { font-size: 11px; }
+            .threat-slider-val { font-size: 26px; }
+            .threat-step-btn { width: 46px; height: 46px; font-size: 24px; }
+            .threat-picker { gap: 16px; }
+            .threat-labels { font-size: 9px; }
+            .start-btn { font-size: 16px; padding: 11px 0; }
+
+            #pause-overlay h2 { font-size: 24px; }
+            .pause-btn { font-size: 14px; padding: 10px 22px; }
+            .threat-cap-row { font-size: 12px; gap: 7px; }
+            .threat-cap-row input { width: 55px; font-size: 13px; padding: 4px; }
+            #trap-hint { padding: 10px 14px; }
+            #game-over h1 { font-size: 32px; }
+            #btn-try-again { font-size: 14px; padding: 11px 22px; }
+        }
+
+        /* ── Стандартний телефон: 361–414px (iPhone 8/X/11/12, більшість Android) ── */
+        @media (min-width: 361px) and (max-width: 414px) {
+            #hud { padding: 7px 8px; }
+            .resource-box { font-size: 15px; padding: 5px 10px; border-radius: 9px; }
+            .hud-right { font-size: 10px; padding: 5px 9px; border-radius: 9px; }
+            .hp-bar { width: 100px; height: 7px; }
+            .threat-line { font-size: 9px; }
+            #pause-toggle-btn { font-size: 12px; padding: 5px 13px; }
+            #btn-hard-reset { font-size: 9px; padding: 3px 6px; }
+
+            #controls { padding: 7px 5px; gap: 6px; }
+            .ctrl-circles { gap: 9px; }
+            .circle-main-btn { width: 64px; height: 64px; font-size: 10px; }
+            .circle-main-btn .icon { font-size: 22px; }
+            .circle-sub-menu { bottom: 72px; gap: 7px; padding: 8px 6px; min-width: 70px; }
+            .sub-btn { width: 62px; height: 62px; font-size: 10px; }
+            .sub-btn .sicon { font-size: 19px; }
+            .sub-btn .scost { font-size: 10px; }
+            .sub-btn .slabel { font-size: 9px; }
+            .ctrl-rects { gap: 7px; }
+            .rect-btn { padding: 9px 18px; font-size: 13px; }
+            .rect-btn small { font-size: 10px; }
+
+            #start-screen h1 { font-size: 30px; letter-spacing: 2px; margin-bottom: 4px; }
+            #start-screen .subtitle { font-size: 11px; margin-top: -10px; }
+            .start-card { padding: 16px 20px; gap: 12px; }
+            .start-card label { font-size: 13px; }
+            .threat-slider-val { font-size: 30px; }
+            .threat-step-btn { width: 50px; height: 50px; font-size: 26px; }
+            .threat-picker { gap: 18px; }
+            .threat-labels { font-size: 10px; }
+            .start-btn { font-size: 18px; padding: 13px 0; }
+            #start-screen { gap: 16px; }
+
+            #pause-overlay h2 { font-size: 26px; }
+            .pause-btn { font-size: 15px; padding: 11px 26px; }
+            .threat-cap-row { font-size: 13px; gap: 8px; }
+            .threat-cap-row input { width: 58px; font-size: 14px; padding: 4px; }
+            #trap-hint { padding: 12px 16px; }
+            #game-over h1 { font-size: 36px; }
+            #btn-try-again { font-size: 15px; padding: 12px 24px; }
+        }
+
+        /* ── Великий телефон: 415–480px (iPhone Plus/Pro Max, великий Android) ── */
+        @media (min-width: 415px) and (max-width: 480px) {
+            #hud { padding: 8px 10px; }
+            .resource-box { font-size: 17px; padding: 6px 12px; border-radius: 10px; }
+            .hud-right { font-size: 11px; padding: 6px 10px; border-radius: 10px; }
+            .hp-bar { width: 115px; height: 8px; }
+            .threat-line { font-size: 10px; }
+            #pause-toggle-btn { font-size: 13px; padding: 5px 15px; }
+            #btn-hard-reset { font-size: 9px; padding: 3px 7px; }
+
+            #controls { padding: 8px 6px; gap: 7px; }
+            .ctrl-circles { gap: 11px; }
+            .circle-main-btn { width: 70px; height: 70px; font-size: 11px; }
+            .circle-main-btn .icon { font-size: 25px; }
+            .circle-sub-menu { bottom: 78px; gap: 8px; padding: 9px 7px; min-width: 76px; }
+            .sub-btn { width: 68px; height: 68px; font-size: 11px; }
+            .sub-btn .sicon { font-size: 21px; }
+            .sub-btn .scost { font-size: 11px; }
+            .sub-btn .slabel { font-size: 10px; }
+            .ctrl-rects { gap: 8px; }
+            .rect-btn { padding: 10px 22px; font-size: 15px; }
+            .rect-btn small { font-size: 11px; }
+
+            #start-screen h1 { font-size: 34px; letter-spacing: 3px; }
+            #start-screen .subtitle { font-size: 12px; margin-top: -12px; }
+            .start-card { padding: 18px 24px; gap: 13px; }
+            .start-card label { font-size: 14px; }
+            .threat-slider-val { font-size: 34px; }
+            .threat-step-btn { width: 54px; height: 54px; font-size: 28px; }
+            .threat-picker { gap: 20px; }
+            .threat-labels { font-size: 10px; }
+            .start-btn { font-size: 19px; padding: 14px 0; }
+            #start-screen { gap: 18px; }
+
+            #pause-overlay h2 { font-size: 28px; }
+            .pause-btn { font-size: 16px; padding: 12px 28px; }
+            .threat-cap-row { font-size: 14px; gap: 9px; }
+            .threat-cap-row input { width: 62px; font-size: 15px; padding: 5px; }
+            #trap-hint { padding: 13px 18px; }
+            #game-over h1 { font-size: 40px; }
+            #btn-try-again { font-size: 16px; padding: 13px 26px; }
+        }
+
+        /* ── Планшет / великий екран: 481px+ ── */
+        @media (min-width: 481px) {
+            #hud { padding: 10px 14px; }
+            .resource-box { font-size: 20px; padding: 7px 16px; border-radius: 12px; }
+            .hud-right { font-size: 12px; padding: 8px 12px; border-radius: 12px; }
+            .hp-bar { width: 140px; height: 9px; }
+            .threat-line { font-size: 11px; }
+            #pause-toggle-btn { font-size: 15px; padding: 7px 20px; }
+            #btn-hard-reset { font-size: 10px; padding: 4px 8px; }
+
+            #controls { padding: 10px 8px; gap: 8px; }
+            .ctrl-circles { gap: 16px; }
+            .circle-main-btn { width: 82px; height: 82px; font-size: 13px; }
+            .circle-main-btn .icon { font-size: 30px; }
+            .circle-sub-menu { bottom: 90px; gap: 10px; padding: 12px 9px; min-width: 88px; }
+            .sub-btn { width: 78px; height: 78px; font-size: 13px; }
+            .sub-btn .sicon { font-size: 24px; }
+            .sub-btn .scost { font-size: 13px; }
+            .sub-btn .slabel { font-size: 12px; }
+            .ctrl-rects { gap: 12px; }
+            .rect-btn { padding: 13px 30px; font-size: 17px; }
+            .rect-btn small { font-size: 13px; }
+
+            #start-screen h1 { font-size: 44px; letter-spacing: 4px; }
+            #start-screen .subtitle { font-size: 15px; margin-top: -14px; }
+            .start-card { padding: 26px 36px; gap: 18px; max-width: 380px; }
+            .start-card label { font-size: 15px; }
+            .threat-slider-val { font-size: 40px; }
+            .threat-step-btn { width: 60px; height: 60px; font-size: 32px; }
+            .threat-picker { gap: 24px; }
+            .threat-labels { font-size: 11px; }
+            .start-btn { font-size: 22px; padding: 16px 0; max-width: 280px; }
+            #start-screen { gap: 24px; }
+
+            #pause-overlay h2 { font-size: 34px; }
+            .pause-btn { font-size: 18px; padding: 14px 34px; }
+            .threat-cap-row { font-size: 16px; gap: 12px; }
+            .threat-cap-row input { width: 70px; font-size: 16px; padding: 6px; }
+            #trap-hint { padding: 16px 24px; }
+            #game-over h1 { font-size: 50px; }
+            #btn-try-again { font-size: 18px; padding: 14px 30px; }
+        }
+
+        /* ── Висота екрану: компенсуємо дуже низькі екрани ── */
+        @media (max-height: 650px) {
+            #controls { padding-top: 4px; padding-bottom: 4px; gap: 4px; }
+            .circle-main-btn { width: 56px !important; height: 56px !important; }
+            .circle-main-btn .icon { font-size: 19px !important; }
+            .sub-btn { width: 54px !important; height: 54px !important; }
+            .circle-sub-menu { bottom: 63px !important; }
+            .rect-btn { padding-top: 6px !important; padding-bottom: 6px !important; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- ── СТАРТОВИЙ ЕКРАН ── -->
+<div id="start-screen">
+    <h1>👑 Dungeon Lord</h1>
+    <div class="subtitle">Siege Defense</div>
+
+    <div class="start-card">
+        <label>Максимальний рівень загрози</label>
+        <div class="threat-slider-wrap">
+            <div class="threat-picker">
+                <button class="threat-step-btn" id="threat-minus" onclick="_threatStep(-1)">−</button>
+                <div class="threat-slider-val" id="start-threat-val">10</div>
+                <button class="threat-step-btn" id="threat-plus" onclick="_threatStep(1)">+</button>
+            </div>
+            <div class="threat-labels"><span>Легко (1)</span><span>Пекло (100)</span></div>
+        </div>
+    </div>
+    <button class="start-btn" id="start-game-btn" onclick="startGame()">⚔️ ПОЧАТИ</button>
+</div>
+
+<!-- ── ПАУЗА ── -->
+<div id="pause-overlay" class="overlay-base">
+    <h2>⏸ ПАУЗА</h2>
+    <div class="threat-cap-row">
+        <span>Макс загроза:</span>
+        <input type="number" id="threat-cap-input" min="1" max="100" value="100">
+        <button class="pause-btn" id="pause-set-threat-btn" onclick="setThreatCap()">✔</button>
+    </div>
+    <button class="pause-btn" id="pause-resume-btn" onclick="togglePause()">▶ Продовжити</button>
+</div>
+
+<!-- ── GAME OVER ── -->
+<div id="game-over" class="overlay-base">
+    <h1 id="go-title">ПОРАЗКА</h1>
+    <p id="go-desc" style="color:#aaa;font-size:16px;margin-top:8px;">Володаря вбито...</p>
+    <button id="btn-try-again" onclick="hardReset()">🔄 Спробувати знову</button>
+</div>
+
+<!-- ── ПІДКАЗКА ПАСТКИ ── -->
+<div id="trap-hint">
+    <div style="font-size:20px;margin-bottom:4px" id="trap-hint-icon">🌀</div>
+    <div style="font-size:13px;font-weight:bold;color:#ffcc00;">Натисни на поверх</div>
+    <div style="font-size:10px;color:#aaa;margin-top:3px;">для встановлення пастки</div>
+</div>
+
+<!-- ── ГОЛОВНИЙ LAYOUT ── -->
+<div id="app">
+
+    <!-- Canvas area -->
+    <div id="canvas-wrap">
+        <canvas id="gameCanvas"></canvas>
+
+        <!-- HUD поверх canvas (тільки читання, pointer-events:none) -->
+        <div id="hud">
+            <div class="resource-box">💀 <span id="souls-display">150</span></div>
+            <div class="hud-right">
+                <div class="hp-label">❤️ Місто</div>
+                <div class="hp-bar"><div id="city-hp" class="hp-fill" style="width:100%;background:#ff4444"></div></div>
+                <div class="hp-label-lord">💜 Володар</div>
+                <div class="hp-bar"><div id="lord-hp" class="hp-fill" style="width:100%;background:#aa00ff"></div></div>
+                <div class="threat-line">⚔️ <span id="difficulty-level">0</span> | +<span id="hero-scale">0</span>%</div>
+            </div>
+        </div>
+
+        <!-- Кнопка паузи -->
+        <button id="pause-toggle-btn" onclick="togglePause()">⏸ Пауза</button>
+
+        <!-- Кнопка reset -->
+        <button id="btn-hard-reset" onclick="hardReset()">Скинути Save</button>
+    </div>
+
+    <!-- ── ПАНЕЛЬ УПРАВЛІННЯ ── -->
+    <div id="controls">
+
+        <!-- Ряд 1: круглі кнопки -->
+        <div class="ctrl-circles">
+
+            <div class="circle-menu" id="menu-lord">
+                <div class="circle-sub-menu" id="sub-lord">
+                    <button class="sub-btn s-atk" id="btn-lord-atk" onclick="upgradeLordAttack()">
+                        <span class="sicon">⚔️</span>
+                        <span class="slabel">Атака</span>
+                        <span class="scost" id="lord-atk-cost">80💀</span>
+                    </button>
+                    <button class="sub-btn s-vit" id="btn-lord-vit" onclick="upgradeLordVit()">
+                        <span class="sicon">💚</span>
+                        <span class="slabel">HP+Реген</span>
+                        <span class="scost" id="lord-vit-cost">70💀</span>
+                    </button>
+                </div>
+                <button class="circle-main-btn cmain-lord" id="btn-menu-lord" onclick="toggleMenu('lord')">
+                    <span class="icon">👑</span>
+                    <span>Володар</span>
+                </button>
+            </div>
+
+            <div class="circle-menu" id="menu-monster">
+                <div class="circle-sub-menu" id="sub-monster">
+                    <button class="sub-btn s-atk" id="btn-mob-atk" onclick="upgradeMonsterAtk()">
+                        <span class="sicon">🗡️</span>
+                        <span class="slabel">Атк+ША</span>
+                        <span class="scost" id="mob-atk-cost">75💀</span>
+                    </button>
+                    <button class="sub-btn s-vit" id="btn-mob-vit" onclick="upgradeMonsterVit()">
+                        <span class="sicon">🛡️</span>
+                        <span class="slabel">HP+Реген</span>
+                        <span class="scost" id="mob-vit-cost">60💀</span>
+                    </button>
+                </div>
+                <button class="circle-main-btn cmain-monster" id="btn-menu-monster" onclick="toggleMenu('monster')">
+                    <span class="icon">🧟</span>
+                    <span>Монстри</span>
+                </button>
+            </div>
+
+            <div class="circle-menu" id="menu-trap">
+                <div class="circle-sub-menu" id="sub-trap">
+                    <button class="sub-btn s-spike" id="btn-trap-spike" onclick="buyTrap('spike')">
+                        <span class="sicon">🗡️</span>
+                        <span class="slabel">Шипи</span>
+                        <span class="scost">50💀</span>
+                    </button>
+                    <button class="sub-btn s-tele" id="btn-trap-tele" onclick="buyTrap('teleport')">
+                        <span class="sicon">🌀</span>
+                        <span class="slabel">Телепорт</span>
+                        <span class="scost">120💀</span>
+                    </button>
+                    <button class="sub-btn s-daze" id="btn-trap-daze" onclick="buyTrap('daze')">
+                        <span class="sicon">💫</span>
+                        <span class="slabel">Запамор.</span>
+                        <span class="scost">200💀</span>
+                    </button>
+                </div>
+                <button class="circle-main-btn cmain-trap" id="btn-menu-trap" onclick="toggleMenu('trap')">
+                    <span class="icon">🪤</span>
+                    <span>Пастки</span>
+                </button>
+            </div>
+
+        </div>
+
+        <!-- Ряд 2: Поверх + Хвиля -->
+        <div class="ctrl-rects">
+            <button class="rect-btn btn-floor" id="btn-floor" onclick="buyFloor()">
+                🏗️ Поверх<br><small id="floor-cost-lbl">100💀</small>
+            </button>
+            <button class="rect-btn btn-wave" id="btn-wave" onclick="triggerWave()">⚔️ ХВИЛЯ</button>
+        </div>
+
+    </div>
+</div>
+
+<script>
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+
+// Логічні розміри екрану (CSS px) — оновлюються при resize
+let gW = window.innerWidth;
+let gH = window.innerHeight;
+
+const isMobile = window.innerWidth < 768;
+// CFG — мутабельний, оновлюється в resize() під розмір екрану
+let CFG = {
+    floorH: 80,
+    floorW: Math.min(window.innerWidth - 60, 380),
+    surfaceY: 110,
+};
+
+// =================== GAME STATE ===================
+let GAME = {
+    souls: 150,
+    floorCost: 100,
+    cityHP: 2000, maxCityHP: 2000,
+    maxLordHP: 500, lordDmg: 20,
+    lordBaseAtkSpeed: 0.8,   // базова ША (Dota2-стиль)
+    lordAtkSpeedBonus: 0,    // бонус ША від апгрейдів
+    lordRegen: 1,            // 1 HP/сек базово
+    // Ціни — Володар
+    lordAtkCost: 80,
+    lordVitCost: 70,
+    // Ціни — Монстри
+    mobAtkCost: 75,
+    mobVitCost: 60,
+    monsterHpBonus: 0,
+    monsterDmgBonus: 0,
+    monsterRegenBonus: 0,
+    monsterAtkSpeedBonus: 0, // бонус ША у стилі Dota2 (базова ША = 0.83 атк/сек)
+    isWave: false,
+    gameOver: false,
+    cameraY: 0,
+    // Час і масштабування
+    gameTime: 0,
+    heroScalePercent: 0,
+    waveCount: 0,
+    eliteChance: 0,    // +1% кожні 60с, макс 100%
+    captainChance: 0,  // +1% кожні 60с, макс 100%
+    extraHeroChance: 0,// +4% за рівень загрози, макс 100%
+    difficultyLevel: 0,
+    bossSent75: false, // чи вже посилали боса при 75%
+    bossSent50: false,
+    bossSent20: false,
+    maxThreatLevel: 999,
+};
+
+let floors = [];
+let units = [];
+let particles = [];
+let axeProjectiles = []; // снаряди гоблінів
+let centerX = gW / 2;
+let CAVE_X = centerX + CFG.floorW * 0.35; // точка виходу монстрів з підземелля
+
+// Drag/touch
+let isDragging = false;
+let lastDragY = 0;
+let manualCameraY = null;
+let cameraReturnTimer = 0;
+
+// =================== КЛАС ПОВЕРХ ===================
+class Floor {
+    constructor(depth) {
+        this.depth = depth;
+        this.y = 250 + depth * CFG.floorH;
+        this.spawnTimer = 0;
+        this.hasTrap = false;
+        this.trapType = null; // 'spike','teleport','daze'
+        this.teleportCooldown = 0;
+        this.maxMonsters = 2;
+        this.floorUpgradeCost = 60;
+        this.ladderX = (depth % 2 === 0)
+            ? centerX - CFG.floorW/2 + 25   // 25px від лівої стіни
+            : centerX + CFG.floorW/2 - 25;  // 25px від правої стіни
+    }
+
+    draw(camY) {
+        let fx  = centerX - CFG.floorW/2;
+        let fy  = this.y - camY;           // низ (підлога)
+        let fty = fy - CFG.floorH;         // верх кімнати
+        let fw  = CFG.floorW;
+        let fh  = CFG.floorH;
+        let lordFloorIdx = floors.length - 1;
+        let isLordFloor  = this.depth === lordFloorIdx;
+
+        // ── 1. Заповнення кімнати (кам'яна порода) ──────────────────────
+        let roomGrad = ctx.createLinearGradient(fx, fty, fx, fy);
+        roomGrad.addColorStop(0,   '#1a1218');
+        roomGrad.addColorStop(0.5, '#231828');
+        roomGrad.addColorStop(1,   '#1a1218');
+        ctx.fillStyle = roomGrad;
+        ctx.fillRect(fx, fty, fw, fh);
+
+        // ── 2. Кам'яні стіни (ліва і права) ────────────────────────────
+        let wallW = 22;
+        // ліва стіна
+        let wgL = ctx.createLinearGradient(fx - wallW, 0, fx, 0);
+        wgL.addColorStop(0, '#0d0a10'); wgL.addColorStop(1, '#2e2040');
+        ctx.fillStyle = wgL;
+        ctx.fillRect(fx - wallW, fty, wallW, fh + 15);
+        // права стіна
+        let wgR = ctx.createLinearGradient(fx + fw, 0, fx + fw + wallW, 0);
+        wgR.addColorStop(0, '#2e2040'); wgR.addColorStop(1, '#0d0a10');
+        ctx.fillStyle = wgR;
+        ctx.fillRect(fx + fw, fty, wallW, fh + 15);
+
+        // кам'яна текстура — горизонтальні тріщини
+        ctx.strokeStyle = 'rgba(0,0,0,0.35)';
+        ctx.lineWidth = 1;
+        for (let row = 0; row < 3; row++) {
+            let ry = fty + (fh / 3) * row + fh / 6;
+            // ліва стіна цегла
+            ctx.beginPath(); ctx.moveTo(fx - wallW, ry); ctx.lineTo(fx, ry); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(fx - wallW + 4, ry - 7); ctx.lineTo(fx - wallW + 4, ry); ctx.stroke();
+            // права стіна цегла
+            ctx.beginPath(); ctx.moveTo(fx + fw, ry); ctx.lineTo(fx + fw + wallW, ry); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(fx + fw + wallW - 4, ry - 7); ctx.lineTo(fx + fw + wallW - 4, ry); ctx.stroke();
+        }
+
+        // ── 3. Підлога — кам'яні плити ──────────────────────────────────
+        let floorGrad = ctx.createLinearGradient(0, fy, 0, fy + 14);
+        floorGrad.addColorStop(0, '#4a3060'); floorGrad.addColorStop(1, '#2a1840');
+        ctx.fillStyle = floorGrad;
+        ctx.fillRect(fx, fy, fw, 14);
+        // плиткові лінії на підлозі
+        ctx.strokeStyle = 'rgba(0,0,0,0.5)'; ctx.lineWidth = 1;
+        let tileW = 40;
+        for (let tx = fx; tx < fx + fw; tx += tileW) {
+            ctx.beginPath(); ctx.moveTo(tx, fy); ctx.lineTo(tx, fy + 14); ctx.stroke();
+        }
+        // Відблиск зверху підлоги
+        ctx.fillStyle = 'rgba(180,140,255,0.08)';
+        ctx.fillRect(fx, fy, fw, 3);
+
+        // ── 4. Стеля — сталактити ────────────────────────────────────────
+        ctx.fillStyle = '#120e1a';
+        ctx.fillRect(fx, fty, fw, 8);
+        // детерміновані сталактити через seed глибини
+        let seed = this.depth * 137 + 42;
+        let pseudo = (n) => { seed = (seed * 1664525 + 1013904223) & 0xffffffff; return Math.abs(seed % n); };
+        let stCount = 6 + pseudo(6);
+        for (let s = 0; s < stCount; s++) {
+            let sx = fx + 20 + pseudo(fw - 40);
+            let sh = 10 + pseudo(22);
+            let sw = 4 + pseudo(7);
+            ctx.fillStyle = '#1e1428';
+            ctx.beginPath();
+            ctx.moveTo(sx - sw/2, fty + 8);
+            ctx.lineTo(sx + sw/2, fty + 8);
+            ctx.lineTo(sx, fty + 8 + sh);
+            ctx.closePath(); ctx.fill();
+            // Крапля
+            if (pseudo(3) === 0) {
+                let dropAlpha = 0.4 + 0.4 * Math.sin(Date.now()/800 + s);
+                ctx.fillStyle = `rgba(100,180,255,${dropAlpha})`;
+                ctx.beginPath(); ctx.arc(sx, fty + 8 + sh + 3, 2, 0, Math.PI*2); ctx.fill();
+            }
+        }
+
+        // ── 5. Факели на стінах ──────────────────────────────────────────
+        let torchPositions = [fx - wallW + 11, fx + fw + 11];
+        let torchY = fty + fh * 0.45;
+        torchPositions.forEach((tx, ti) => {
+            // держак
+            ctx.fillStyle = '#6b4c1e';
+            ctx.fillRect(tx - 3, torchY, 6, 14);
+            // вогонь (анімований)
+            let t = Date.now() / 200 + ti * 3.7;
+            let flicker = Math.sin(t) * 3;
+            let fg = ctx.createRadialGradient(tx, torchY - 4 + flicker*0.3, 1, tx, torchY, 12);
+            fg.addColorStop(0,   'rgba(255,240,100,0.95)');
+            fg.addColorStop(0.4, 'rgba(255,120,20,0.75)');
+            fg.addColorStop(1,   'rgba(180,30,0,0)');
+            ctx.fillStyle = fg;
+            ctx.beginPath();
+            ctx.ellipse(tx, torchY - 3 + flicker*0.2, 7 + Math.abs(flicker)*0.3, 12, 0, 0, Math.PI*2);
+            ctx.fill();
+            // світло на стіні
+            let lg = ctx.createRadialGradient(tx, torchY, 0, tx, torchY, 35);
+            lg.addColorStop(0,   `rgba(255,160,30,0.12)`);
+            lg.addColorStop(1,   `rgba(255,160,30,0)`);
+            ctx.fillStyle = lg;
+            ctx.beginPath(); ctx.arc(tx, torchY, 35, 0, Math.PI*2); ctx.fill();
+        });
+
+        // ── 6. Тунель/сходи між поверхами ───────────────────────────────
+        if (this.depth >= 0) {
+            let ladderTopY = (this.depth === 0) ? CFG.surfaceY : this.y - CFG.floorH;
+            let ladderBotY = this.y;
+            let ladX = (this.depth === 0) ? CAVE_X : (this.depth > 0 ? floors[this.depth-1].ladderX : CAVE_X);
+            let tw = 28; // ширина тунелю
+
+            // Тіло тунелю (темний прохід)
+            let tg = ctx.createLinearGradient(ladX - tw/2, 0, ladX + tw/2, 0);
+            tg.addColorStop(0,   '#0a0810');
+            tg.addColorStop(0.5, '#15101e');
+            tg.addColorStop(1,   '#0a0810');
+            ctx.fillStyle = tg;
+            ctx.fillRect(ladX - tw/2, ladderTopY - camY, tw, ladderBotY - ladderTopY);
+
+            // Бічні краї тунелю (камінь)
+            ctx.fillStyle = '#2a1e3a';
+            ctx.fillRect(ladX - tw/2 - 4, ladderTopY - camY, 4, ladderBotY - ladderTopY);
+            ctx.fillRect(ladX + tw/2,     ladderTopY - camY, 4, ladderBotY - ladderTopY);
+
+            // Сходи
+            ctx.fillStyle = '#4a3860';
+            let stepH = 12;
+            for (let ly = ladderTopY; ly < ladderBotY - stepH; ly += stepH * 1.5) {
+                ctx.fillRect(ladX - tw/2 + 2, ly - camY + stepH, tw - 4, 3);
+            }
+        }
+
+        // ── 7. Пастки ────────────────────────────────────────────────────
+        if (this.hasTrap) {
+            let ladX = this.depth > 0 ? floors[this.depth-1].ladderX : CAVE_X;
+            if (this.trapType === 'spike') {
+                for (let i = -3; i <= 3; i++) {
+                    let sx = ladX + i * 10;
+                    let sh2 = 14 + (i % 2 === 0 ? 4 : 0);
+                    let spg = ctx.createLinearGradient(sx, fy, sx, fy - sh2);
+                    spg.addColorStop(0, '#888'); spg.addColorStop(1, '#eee');
+                    ctx.fillStyle = spg;
+                    ctx.beginPath();
+                    ctx.moveTo(sx - 4, fy);
+                    ctx.lineTo(sx + 4, fy);
+                    ctx.lineTo(sx, fy - sh2);
+                    ctx.closePath(); ctx.fill();
+                }
+            } else if (this.trapType === 'teleport') {
+                let alpha = 0.5 + 0.5 * Math.sin(Date.now() / 400);
+                let rg = ctx.createRadialGradient(ladX, fy - 6, 2, ladX, fy - 6, 22);
+                rg.addColorStop(0,   `rgba(120,180,255,${alpha})`);
+                rg.addColorStop(0.6, `rgba(60,80,220,${alpha * 0.5})`);
+                rg.addColorStop(1,   `rgba(20,0,100,0)`);
+                ctx.fillStyle = rg;
+                ctx.beginPath(); ctx.arc(ladX, fy - 6, 22, 0, Math.PI*2); ctx.fill();
+                ctx.strokeStyle = `rgba(160,200,255,${alpha})`;
+                ctx.lineWidth = 2;
+                ctx.beginPath(); ctx.arc(ladX, fy - 6, 18, 0, Math.PI*2); ctx.stroke();
+            } else if (this.trapType === 'daze') {
+                ctx.font = '16px Arial'; ctx.textAlign = 'center';
+                for (let i = -1; i <= 1; i++)
+                    ctx.fillText('💫', ladX + i * 24, fy - 4);
+            }
+        }
+
+        // ── 8. Підсвічування вибору пастки ──────────────────────────────
+        if (pendingTrapType !== null && !isLordFloor && !this.hasTrap) {
+            let pulse = 0.12 + 0.08 * Math.sin(Date.now() / 250);
+            ctx.fillStyle = `rgba(255,204,0,${pulse})`;
+            ctx.fillRect(fx, fty, fw, fh);
+            ctx.strokeStyle = '#ffcc00'; ctx.lineWidth = 2;
+            ctx.setLineDash([6, 4]);
+            ctx.strokeRect(fx, fty, fw, fh);
+            ctx.setLineDash([]);
+        }
+
+        // ── 9. Номер поверху ─────────────────────────────────────────────
+        ctx.fillStyle = 'rgba(255,255,255,0.07)';
+        ctx.font = 'bold 38px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText(this.depth + 1, centerX, fy - 28);
+
+        // ── 9б. Таймер спавну монстрів (по центру поверху) ───────────────
+        if (!isLordFloor) {
+            let monCount     = units.filter(u => u.type === 'monster' && u.floorIdx === this.depth).length;
+            let spawnInterval = 4 + this.depth * 3;
+            let cr       = isMobile ? 12 : 15;
+            let timerY   = fty + cr + 6;  // близько до стелі, з невеликим відступом
+
+            if (monCount < this.maxMonsters) {
+                // Активний зворотній відлік
+                let remaining = spawnInterval - this.spawnTimer;
+                let progress  = this.spawnTimer / spawnInterval; // 0..1
+
+                ctx.save();
+                // Зовнішнє кільце (фон)
+                ctx.lineWidth = isMobile ? 2 : 3;
+                ctx.strokeStyle = 'rgba(255,255,255,0.10)';
+                ctx.beginPath(); ctx.arc(centerX, timerY, cr, 0, Math.PI * 2); ctx.stroke();
+                // Кольорова дуга прогресу (від 12 год за годинниковою)
+                let startA = -Math.PI / 2;
+                let endA   = startA + Math.PI * 2 * progress;
+                let hue    = Math.round(120 * (1 - progress)); // зелений→червоний
+                ctx.strokeStyle = `hsla(${hue},90%,55%,0.85)`;
+                ctx.beginPath(); ctx.arc(centerX, timerY, cr, startA, endA); ctx.stroke();
+                // Цифра
+                ctx.fillStyle = `hsla(${hue},80%,70%,0.90)`;
+                ctx.font = 'bold ' + (isMobile ? '10px' : '12px') + ' Arial';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(remaining, centerX, timerY);
+                ctx.textBaseline = 'alphabetic';
+                ctx.restore();
+            } else {
+                // Поверх заповнений — іконка «повний»
+                ctx.save();
+                ctx.font = (isMobile ? '11px' : '13px') + ' Arial';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillStyle = 'rgba(255,255,255,0.30)';
+                ctx.fillText('🧟', centerX, timerY);
+                ctx.textBaseline = 'alphabetic';
+                ctx.restore();
+            }
+        }
+
+        // ── 10. Ліміт монстрів ───────────────────────────────────────────
+        if (!isLordFloor) {
+            ctx.fillStyle = 'rgba(255,255,255,0.28)';
+            ctx.font = '12px Arial';
+            ctx.textAlign = 'left';
+            ctx.fillText('🧟 ' + this.maxMonsters + '/5', fx + 5, fy - 5);
+        }
+
+        // ── 11 + 12. Дві кнопки горизонтально, чергують сторону по глибині ─
+        // depth парний (0,2,4…) → ліворуч; непарний (1,3,5…) → праворуч
+        if (!isLordFloor) {
+            let bh  = isMobile ? 26 : 30;
+            let bw  = isMobile ? 62 : 78;
+            let gap = 4;
+            let pad = 6;
+            let byBtn = fty + pad; // верхній край — під стелею кімнати
+            let onRight = (this.depth % 2 === 1); // непарні → правий кут
+
+            // Визначаємо x першої кнопки (ліворуч у парі)
+            let bxFirst, bxSecond;
+            if (onRight) {
+                // обидві кнопки притиснуті до правої стіни
+                bxSecond = fx + fw - pad - bw;           // права кнопка (крайня права)
+                bxFirst  = bxSecond - gap - bw;          // ліва кнопка (зліва від правої)
+            } else {
+                // обидві кнопки притиснуті до лівої стіни
+                bxFirst  = fx + pad;                     // ліва кнопка (крайня ліва)
+                bxSecond = bxFirst + bw + gap;           // права кнопка (праворуч від лівої)
+            }
+
+            // ── "Апгрейд поверху" (перша кнопка) ────────────────────────
+            if (this.maxMonsters < 5) {
+                this._btnX = bxFirst; this._btnY = byBtn + camY; this._btnW = bw; this._btnH = bh;
+                let can = GAME.souls >= this.floorUpgradeCost;
+                ctx.fillStyle = can ? 'rgba(0,140,55,0.90)' : 'rgba(40,40,40,0.85)';
+                ctx.beginPath(); ctx.roundRect(bxFirst, byBtn, bw, bh, 5); ctx.fill();
+                ctx.strokeStyle = can ? '#00ff66' : '#444'; ctx.lineWidth = 1; ctx.stroke();
+                ctx.fillStyle = can ? '#fff' : '#666';
+                ctx.textAlign = 'center';
+                let _fs1 = isMobile ? '8px' : '9px';
+                ctx.font = 'bold ' + _fs1 + ' Arial';
+                ctx.fillText('Рівень', bxFirst + bw/2, byBtn + bh/2 - (isMobile ? 2 : 2));
+                ctx.font = _fs1 + ' Arial';
+                ctx.fillText(this.floorUpgradeCost + ' душ', bxFirst + bw/2, byBtn + bh/2 + (isMobile ? 8 : 9));
+            } else {
+                this._btnX = null;
+            }
+
+            // ── "Купити монстра" (друга кнопка) ──────────────────────────
+            let count   = units.filter(u => u.type==='monster' && u.floorIdx===this.depth).length;
+            let buyCost = 15 + this.depth * 5;
+            let canBuy  = GAME.souls >= buyCost && count < this.maxMonsters;
+            this._buyBtnX = bxSecond; this._buyBtnY = byBtn + camY; this._buyBtnW = bw; this._buyBtnH = bh;
+            ctx.fillStyle = canBuy ? 'rgba(180,60,0,0.90)' : 'rgba(40,40,40,0.85)';
+            ctx.beginPath(); ctx.roundRect(bxSecond, byBtn, bw, bh, 5); ctx.fill();
+            ctx.strokeStyle = canBuy ? '#ff8844' : '#444'; ctx.lineWidth = 1; ctx.stroke();
+            ctx.fillStyle = canBuy ? '#fff' : '#666';
+            ctx.textAlign = 'center';
+            let _fs2 = isMobile ? '8px' : '9px';
+            ctx.font = 'bold ' + _fs2 + ' Arial';
+            ctx.fillText('Монстр', bxSecond + bw/2, byBtn + bh/2 - (isMobile ? 2 : 2));
+            ctx.font = _fs2 + ' Arial';
+            ctx.fillText(buyCost + ' душ', bxSecond + bw/2, byBtn + bh/2 + (isMobile ? 8 : 9));
+        } else {
+            this._btnX    = null;
+            this._buyBtnX = null;
+        }
+    }
+}
+
+// =================== КЛАС ЮНІТ ===================
+class Unit {
+    constructor(type, x, y, floorIdx, level) {
+        this.type = type;
+        this.x = x; this.y = y;
+        this.floorIdx = floorIdx;
+        this.level = level || 1;
+        this.heroRank = 'normal';
+
+        if (type === 'monster') {
+            let n = this.level - 1;
+
+            // ── Визначаємо вид монстра за рівнем ──────────────────────────
+            const MONSTER_KINDS = {
+                1: { name:'slime',    emoji:'🟢', color:'#44dd44', blockChance:0.05, baseAtk:5, baseSpd:0.83, hpMult:1.0 },
+                2: { name:'skeleton', emoji:'💀', color:'#d4c89a', blockChance:0,    baseAtk:4, baseSpd:1.0,  hpMult:0.9 },
+                3: { name:'zombie',   emoji:'🧟', color:'#5a8c3a', blockChance:0,    baseAtk:6, baseSpd:0.6,  hpMult:1.4 },
+                4: { name:'goblin',   emoji:'👺', color:'#3a9944', blockChance:0,    baseAtk:5, baseSpd:0.9,  hpMult:0.85 },
+                5: { name:'demon',    emoji:'😈', color:'#cc2200', blockChance:0,    baseAtk:8, baseSpd:0.75, hpMult:1.2 },
+            };
+            let kind = MONSTER_KINDS[this.level] || {
+                name:'demon', emoji:'😈', color:'#aa1100', blockChance:0, baseAtk:8, baseSpd:0.75, hpMult:1.2
+            };
+            this.monsterKind  = kind.name;
+            this.monsterEmoji = kind.emoji;
+            this.blockChance  = kind.blockChance;
+
+            // ── HP ────────────────────────────────────────────────────────
+            this.hp = (80 + n * 20 + GAME.monsterHpBonus) * kind.hpMult;
+
+            // ── DMG (базовий урон береться з виду, потім scaling) ─────────
+            let scaledAtk = kind.baseAtk + (n < 5 ? n * 1 : 4 + (n - 4) * 2);
+            // Діапазон урону ±25% (середній залишається таким же)
+            let dmgVariance = 0.75 + Math.random() * 0.5; // 0.75 .. 1.25
+            this.baseDmg = scaledAtk + GAME.monsterDmgBonus;
+            this.dmg = Math.round(this.baseDmg * dmgVariance);
+
+            this.regen = GAME.monsterRegenBonus;
+            // ── ША (базова з виду) ────────────────────────────────────────
+            this.baseAtkSpeed = kind.baseSpd;
+            this.atkSpeedBonus = GAME.monsterAtkSpeedBonus;
+            // Рулетка швидкості ±10% (фіксована при спавні)
+            let mSpeedMult = 0.9 + Math.random() * 0.2; // 0.9 .. 1.1
+            this.speed = 1 * mSpeedMult;
+            this.color = kind.color;
+            this.size  = 25;
+        } else if (type === 'hero') {
+            let n = this.level - 1;
+            let scale = 1 + GAME.heroScalePercent / 100;
+
+            // ── Типи героїв за рівнем (скін + пасивний скіл) ──────────────
+            const HERO_TYPES = {
+                1:  { name:'recruit',    label:'Рекрут',      cloak:'#661122', body:'#cc2233', helmet:'#555566', weapon:'sword',   passive:'none'       },
+                2:  { name:'soldier',    label:'Солдат',      cloak:'#772200', body:'#cc4400', helmet:'#667788', weapon:'sword',   passive:'toughness'  }, // -10% dmg taken
+                3:  { name:'scout',      label:'Розвідник',   cloak:'#224400', body:'#448822', helmet:'#445544', weapon:'spear',   passive:'swift'      }, // +20% move speed
+                4:  { name:'knight',     label:'Лицар',       cloak:'#334455', body:'#446688', helmet:'#99aabb', weapon:'spear',   passive:'armor'      }, // 10% block
+                5:  { name:'mage',       label:'Маг',         cloak:'#330066', body:'#6600cc', helmet:'#aa66ff', weapon:'staff',   passive:'spellburn'  }, // +15% dmg
+                6:  { name:'paladin',    label:'Паладін',     cloak:'#553300', body:'#bb6600', helmet:'#ddbb44', weapon:'spear',   passive:'holyaura'   }, // реген 1hp/сек
+                7:  { name:'berserker',  label:'Берсерк',     cloak:'#440000', body:'#aa0000', helmet:'#882222', weapon:'axe',     passive:'rage'       }, // крит 15%
+                8:  { name:'assassin',   label:'Асасин',      cloak:'#111111', body:'#333344', helmet:'#224433', weapon:'dagger',  passive:'firstblood' }, // перший удар x2
+                9:  { name:'warlord',    label:'Воєначальник',cloak:'#552200', body:'#884400', helmet:'#ccaa66', weapon:'sword',   passive:'warcry'     }, // сусіди +10% dmg
+                10: { name:'champion',   label:'Чемпіон',     cloak:'#550055', body:'#aa00aa', helmet:'#ff88ff', weapon:'staff',   passive:'unstoppable'}, // імун до блоку
+            };
+            let htype = HERO_TYPES[Math.min(this.level, 10)] || HERO_TYPES[10];
+            this.heroType    = htype.name;
+            this.heroLabel   = htype.label;
+            this.heroPassive = htype.passive;
+            this.heroCloakCol  = htype.cloak;
+            this.heroBodyCol   = htype.body;
+            this.heroHelmetCol = htype.helmet;
+            this.heroWeapon    = htype.weapon;
+
+            // ── Стати ─────────────────────────────────────────────────────
+            let monHp  = 80 + n * 20;
+            let monDmg = (n < 5) ? 5 + n * 1 : 5 + 4 * 1 + (n - 4) * 2;
+            this.hp   = monHp  * scale;
+            this.dmg  = monDmg * scale;
+
+            // Пасивні модифікатори
+            if (htype.passive === 'toughness')  this.dmgReduction = 0.10;   // -10% вхідного dmg
+            if (htype.passive === 'swift')       this.speed = 1.5;
+            if (htype.passive === 'armor')       this.blockChance = 0.10;    // 10% блок
+            if (htype.passive === 'spellburn')   this.dmg *= 1.15;
+            if (htype.passive === 'holyaura')    this.regen = 1;
+            if (htype.passive === 'rage')        this.critChance = 0.15;
+            if (htype.passive === 'firstblood')  this.firstBlood = true;
+            if (htype.passive === 'unstoppable') this.blockImmune = true;
+
+            // базова ША героя = 0.83 атк/сек
+            this.baseAtkSpeed = 0.83;
+            this.atkSpeedBonus = 0;
+            // Рулетка швидкості ±10% (фіксована при спавні)
+            let hSpeedMult = 0.9 + Math.random() * 0.2; // 0.9 .. 1.1
+            if (!this.speed) this.speed = 1.2 * hSpeedMult;
+            else this.speed *= hSpeedMult; // swift вже виставив speed=1.5
+            this.color = '#ff3333';
+            this.size  = 20;
+        } else if (type === 'lord') {
+            this.hp   = GAME.maxLordHP;
+            this.dmg  = GAME.lordDmg;
+            this.baseAtkSpeed = GAME.lordBaseAtkSpeed;
+            this.atkSpeedBonus = GAME.lordAtkSpeedBonus;
+            this.speed = 0;
+            this.color = '#aa00ff';
+            this.size  = 40;
+            this.level = 0;
+        }
+
+        this.maxHp = this.hp;
+        this.state = 'idle';
+        this.fightTarget = null;
+        this.attackCooldown = 0;
+    }
+
+    update() {
+        if (GAME.gameOver) return;
+
+        // Реген монстра і героя (паладін)
+        if (this.regen > 0 && this.hp < this.maxHp)
+            this.hp = Math.min(this.hp + this.regen / 60, this.maxHp);
+
+        // ── Пасив WARCRY (Воєначальник): сусіди-герої +10% dmg ───────────
+        if (this.type === 'hero' && this.heroPassive === 'warcry') {
+            units.forEach(u => {
+                if (u === this || u.type !== 'hero' || u.floorIdx !== this.floorIdx) return;
+                if (Math.abs(u.x - this.x) < 80 && !u._warcryBuff) {
+                    u._warcryBuff = true;
+                    u._warcryDmg = u.dmg;
+                    u.dmg *= 1.10;
+                }
+            });
+        }
+        // Скидаємо warcry buff якщо воєначальника вже немає
+        if (this.type === 'hero' && this._warcryBuff) {
+            let warlord = units.find(u => u.type === 'hero' && u.heroPassive === 'warcry'
+                && u.floorIdx === this.floorIdx && Math.abs(u.x - this.x) < 80 && u.hp > 0);
+            if (!warlord) {
+                this.dmg = this._warcryDmg || this.dmg;
+                this._warcryBuff = false;
+            }
+        }
+
+        // ── АУРА ДЕМОНА: -2 HP/сек сусіднім монстрам на тому ж поверсі ──
+        if (this.type === 'monster' && this.monsterKind === 'demon') {
+            units.forEach(u => {
+                if (u === this || u.type !== 'monster' || u.floorIdx !== this.floorIdx) return;
+                if (Math.abs(u.x - this.x) < 80) u.hp = Math.max(0, u.hp - 2/60);
+            });
+        }
+
+        // ── ГОБЛІН: дальня атака — кидає топір ────────────────────────────
+        if (this.type === 'monster' && this.monsterKind === 'goblin') {
+            if (this.axeCooldown > 0) this.axeCooldown--;
+            if (this.axeCooldown <= 0) {
+                // Шукаємо ворога в дальньому радіусі (120px) — фокус на найслабшому
+                let rangedCandidates = units.filter(u => u.type === 'hero' && u.floorIdx === this.floorIdx
+                    && Math.abs(u.x - this.x) < 120 && Math.abs(u.x - this.x) > 40 && u.hp > 0);
+                let rangedEnemy = rangedCandidates.length > 0
+                    ? rangedCandidates.reduce((min, u) => u.hp < min.hp ? u : min, rangedCandidates[0])
+                    : null;
+                if (rangedEnemy) {
+                    axeProjectiles.push({
+                        x: this.x, y: this.y - this.size/2,
+                        tx: rangedEnemy.x, ty: rangedEnemy.y - rangedEnemy.size/2,
+                        dmg: this.dmg * (Math.random() < 0.12 ? 2 : 1), // 12% крит x2
+                        speed: 4, angle: 0,
+                        floorIdx: this.floorIdx
+                    });
+                    this.axeCooldown = Math.round(60 / ((this.baseAtkSpeed||0.9) + (this.atkSpeedBonus||0))) * 2;
+                }
+            }
+        }
+
+        // Герой під дією запаморочення
+        if (this.dazeMode) { this.moveMonster(); return; }
+
+        // ── Радіус атаки: ближній бій ─────────────────────────────────────
+        let enemyTypes = (this.type === 'hero') ? ['monster','lord'] : ['hero'];
+        let range = this.type === 'lord' ? 60 : (this.monsterKind === 'goblin' ? 45 : 38);
+
+        // Координована атака монстрів: якщо 2+ героїв на поверсі — всі б'ють того з найменшим HP
+        let enemy = null;
+        if (this.type === 'monster') {
+            let heroesOnFloor = units.filter(u => u.type === 'hero' && u.floorIdx === this.floorIdx && u.hp > 0);
+            if (heroesOnFloor.length >= 2) {
+                // Фокус: герой з найменшим HP в радіусі
+                let inRange = heroesOnFloor.filter(u => Math.abs(u.x - this.x) < range && Math.abs(u.y - this.y) < 40);
+                if (inRange.length > 0) {
+                    enemy = inRange.reduce((min, u) => u.hp < min.hp ? u : min, inRange[0]);
+                }
+            } else {
+                // 1 герой або немає — звичайний пошук
+                enemy = units.find(u => u.type === 'hero'
+                    && Math.abs(u.x - this.x) < range && Math.abs(u.y - this.y) < 40 && u.hp > 0);
+            }
+        } else {
+            // Герої та лорд — звичайний пошук
+            enemy = units.find(u => enemyTypes.includes(u.type)
+                && Math.abs(u.x - this.x) < range && Math.abs(u.y - this.y) < 40 && u.hp > 0);
+        }
+
+        if (enemy) {
+            this.state = 'fight';
+            if (this.attackCooldown <= 0) {
+                let dmgDealt = this.dmg;
+
+                // Гоблін: 12% крит ×2
+                if (this.monsterKind === 'goblin' && Math.random() < 0.12) {
+                    dmgDealt *= 2;
+                    spawnParticle(enemy.x, enemy.y - enemy.size - 8, 'orange');
+                }
+                // Берсерк: 15% крит ×2
+                if (this.type === 'hero' && this.critChance && Math.random() < this.critChance) {
+                    dmgDealt *= 2;
+                    spawnParticle(enemy.x, enemy.y - enemy.size - 8, 'orange');
+                }
+                // Асасин: перший удар ×2
+                if (this.type === 'hero' && this.firstBlood) {
+                    dmgDealt *= 2;
+                    this.firstBlood = false; // тільки один раз
+                    spawnParticle(enemy.x, enemy.y - enemy.size - 8, 'red');
+                }
+                // dmgReduction цілі (Солдат: -10%)
+                if (enemy.dmgReduction) dmgDealt *= (1 - enemy.dmgReduction);
+
+                // Блок урону (Слизь 5%, Лицар 10%, Чемпіон імун до блоку)
+                let blocked = false;
+                if (!this.blockImmune && enemy.blockChance > 0)
+                    blocked = Math.random() < enemy.blockChance;
+                if (!blocked) {
+                    enemy.hp -= dmgDealt;
+                    // ── ЗОМБІ: 3% перетворити героя ───────────────────────
+                    if (this.monsterKind === 'zombie' && enemy.type === 'hero' && enemy.hp > 0) {
+                        if (Math.random() < 0.03) {
+                            let floorMonsters = units.filter(u => u.type==='monster' && u.floorIdx===this.floorIdx).length;
+                            let floorObj = floors[this.floorIdx];
+                            if (floorObj && floorMonsters < floorObj.maxMonsters) {
+                                // Перетворюємо героя на зомбі
+                                enemy.type = 'monster';
+                                enemy.monsterKind = 'zombie';
+                                enemy.monsterEmoji = '🧟';
+                                enemy.color = '#5a8c3a';
+                                enemy.heroRank = 'normal';
+                                enemy.blockChance = 0;
+                                enemy.baseAtkSpeed = 0.6;
+                                enemy.atkSpeedBonus = 0;
+                                enemy.floorIdx = this.floorIdx;
+                                spawnParticle(enemy.x, enemy.y - enemy.size, 'green');
+                            }
+                        }
+                    }
+                } else {
+                    spawnParticle(enemy.x, enemy.y - enemy.size - 5, 'cyan');
+                }
+                {
+                    let atkSpd = (this.baseAtkSpeed || 0.83) + (this.atkSpeedBonus || 0);
+                    this.attackCooldown = Math.max(8, Math.round(60 / atkSpd));
+                }
+                spawnParticle((this.x+enemy.x)/2, (this.y+enemy.y)/2, this.type==='lord'?'purple':'white');
+                if (this.type !== 'lord') this.x += (Math.random()-.5)*4;
+            } else {
+                this.attackCooldown--;
+            }
+            return;
+        }
+        this.state = 'move';
+        if (this.type === 'hero') this.moveHero();
+        else if (this.type === 'monster') this.moveMonster();
+    }
+
+    moveHero() {
+        if (this.floorIdx < 0) {
+            // Герой іде до входу в печеру (CAVE_X)
+            if (Math.abs(this.x - CAVE_X) > 5) {
+                this.x += (CAVE_X - this.x > 0 ? 1 : -1) * this.speed;
+            } else {
+                this.y += 2; this.x = CAVE_X;
+                if (floors[0] && this.y >= floors[0].y) {
+                    this.y = floors[0].y; this.floorIdx = 0; this.isClimbing = false;
+                }
+            }
+            return;
+        }
+        let cur = floors[this.floorIdx];
+        if (!cur) return;
+
+        // Пастки — шипи і запаморочення (тригеруються при наступі)
+        if (cur.hasTrap && !this.trapDamaged) {
+            if (cur.trapType === 'spike') {
+                this.hp -= 20;
+                this.trapDamaged = true;
+                spawnParticle(this.x, this.y, 'red');
+            } else if (cur.trapType === 'daze') {
+                if (Math.random() < 0.01 && !this.dazeMode) { // 1% шанс
+                    this.dazeMode = true;
+                    this.color = '#ffaa00';
+                    this.waveActive = true;
+                    spawnParticle(this.x, this.y, 'gold');
+                }
+                this.trapDamaged = true;
+            }
+            // Телепорт НЕ тут — він глобальний через tickTeleports()
+        }
+
+        let next = floors[this.floorIdx + 1];
+        if (next) {
+            let ladX = cur.ladderX;
+            if (this.isClimbing) {
+                this.y += 2;
+                if (this.y >= next.y) { this.y = next.y; this.floorIdx++; this.isClimbing = false; this.trapDamaged = false; }
+            } else {
+                if (Math.abs(this.x - ladX) > 5) this.x += (ladX - this.x > 0 ? 1 : -1) * this.speed;
+                else { this.x = ladX; this.isClimbing = true; }
+            }
+        } else {
+            if (this.isClimbing) {
+                this.y += 2;
+                if (this.y >= cur.y) { this.y = cur.y; this.isClimbing = false; }
+            } else {
+                if (Math.abs(this.x - centerX) > 30) this.x += (centerX - this.x > 0 ? 1 : -1) * this.speed;
+            }
+        }
+    }
+
+    moveMonster() {
+        if (this.waveActive) {
+            // Поверхня — біжить до міста
+            if (this.floorIdx < 0) {
+                this.y = CFG.surfaceY;
+                let cityX = gW - 100;
+                if (this.x < cityX) { this.x += this.speed * 2; }
+                else { GAME.cityHP -= this.dmg * 5; this.hp = 0; spawnParticle(this.x, this.y, 'red'); }
+                return;
+            }
+            // Поверх 0 — до виходу (CAVE_X)
+            if (this.floorIdx === 0) {
+                if (this.isClimbingUp) {
+                    this.y -= this.speed * 2; this.x = CAVE_X;
+                    if (this.y <= CFG.surfaceY) { this.y = CFG.surfaceY; this.floorIdx = -1; this.isClimbingUp = false; }
+                } else {
+                    if (Math.abs(this.x - CAVE_X) > 10) this.x += (CAVE_X - this.x > 0 ? 1 : -1) * this.speed * 1.5;
+                    else { this.x = CAVE_X; this.isClimbingUp = true; }
+                }
+                return;
+            }
+            // Вищі поверхи
+            let prev = floors[this.floorIdx - 1];
+            let ladX = prev ? prev.ladderX : CAVE_X;
+            if (this.isClimbingUp) {
+                this.y -= this.speed * 2; this.x = ladX;
+                let tY = prev ? prev.y : CFG.surfaceY;
+                if (this.y <= tY) { this.y = tY; this.floorIdx--; this.isClimbingUp = false; }
+            } else {
+                if (Math.abs(this.x - ladX) > 10) this.x += (ladX - this.x > 0 ? 1 : -1) * this.speed * 1.5;
+                else { this.x = ladX; this.isClimbingUp = true; }
+            }
+        } else {
+            // Агр: якщо герой на цьому поверсі в радіусі 70px — біжимо до нього
+            let aggroTarget = units.find(u =>
+                u.type === 'hero' && u.floorIdx === this.floorIdx &&
+                u.hp > 0 && Math.abs(u.x - this.x) < 70
+            );
+            if (aggroTarget) {
+                // Біжимо до героя
+                let dir = aggroTarget.x > this.x ? 1 : -1;
+                this.x += dir * this.speed * 0.9;
+            } else {
+                // Патруль
+                if (!this.patrolDir) this.patrolDir = 1;
+                this.x += this.speed * 0.5 * this.patrolDir;
+                let fx = centerX - CFG.floorW/2 + 30;
+                let fw = CFG.floorW - 60;
+                if (this.x > fx + fw) this.patrolDir = -1;
+                if (this.x < fx)      this.patrolDir = 1;
+            }
+        }
+    }
+
+    draw(camY) {
+        if (this.hp <= 0) return;
+        let dx = this.x - this.size/2;
+        let dy = this.y - this.size - camY;
+
+        // Обводки для рангів — тільки для боса (еліти без квадратів)
+        if (this.type === 'hero' && this.heroRank === 'boss') {
+            let pulse = 0.6 + 0.4 * Math.sin(Date.now() / 200);
+            ctx.strokeStyle = `rgba(255,0,255,${pulse})`; ctx.lineWidth = 4;
+            ctx.beginPath(); ctx.arc(this.x, dy + this.size/2, this.size/2 + 6, 0, Math.PI*2); ctx.stroke();
+        }
+
+        // ── Відмальовка тіла юніта ────────────────────────────────────────
+        if (this.type === 'monster' && this.monsterKind === 'slime') {
+            // Слизь — кругла, напівпрозора, желеподібна
+            let t = Date.now() / 600;
+            let wobble = Math.sin(t) * 2;
+            let rg = ctx.createRadialGradient(this.x - 4, dy + 6, 2, this.x, dy + this.size/2, this.size/2 + 2);
+            rg.addColorStop(0,   'rgba(150,255,150,0.95)');
+            rg.addColorStop(0.5, 'rgba(60,200,60,0.85)');
+            rg.addColorStop(1,   'rgba(20,120,20,0.7)');
+            ctx.fillStyle = rg;
+            ctx.beginPath();
+            ctx.ellipse(this.x, dy + this.size/2 + wobble*0.3, this.size/2 + wobble*0.4, this.size/2 - wobble*0.3, 0, 0, Math.PI*2);
+            ctx.fill();
+            // Очі
+            ctx.fillStyle = '#000';
+            ctx.beginPath(); ctx.arc(this.x - 5, dy + this.size/2 - 2, 2.5, 0, Math.PI*2); ctx.fill();
+            ctx.beginPath(); ctx.arc(this.x + 5, dy + this.size/2 - 2, 2.5, 0, Math.PI*2); ctx.fill();
+            ctx.fillStyle = '#fff';
+            ctx.beginPath(); ctx.arc(this.x - 4, dy + this.size/2 - 3, 1, 0, Math.PI*2); ctx.fill();
+            ctx.beginPath(); ctx.arc(this.x + 6, dy + this.size/2 - 3, 1, 0, Math.PI*2); ctx.fill();
+            // Блиск
+            ctx.fillStyle = 'rgba(255,255,255,0.35)';
+            ctx.beginPath(); ctx.ellipse(this.x - 6, dy + 7, 4, 2.5, -0.5, 0, Math.PI*2); ctx.fill();
+
+        } else if (this.type === 'monster' && this.monsterKind === 'skeleton') {
+            // Скелет — кістяний, сірувато-жовтий, з черепом
+            let s = this.size;
+            // Тіло (тулуб)
+            ctx.fillStyle = '#c8b870';
+            ctx.fillRect(dx + s*0.3, dy + s*0.45, s*0.4, s*0.4);
+            // Ребра
+            ctx.strokeStyle = '#a09050'; ctx.lineWidth = 1.5;
+            for (let r = 0; r < 3; r++) {
+                let ry = dy + s*0.5 + r*4;
+                ctx.beginPath(); ctx.moveTo(dx+s*0.3, ry); ctx.lineTo(dx+s*0.1, ry+2); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(dx+s*0.7, ry); ctx.lineTo(dx+s*0.9, ry+2); ctx.stroke();
+            }
+            // Ноги
+            ctx.fillStyle = '#c8b870';
+            ctx.fillRect(dx + s*0.25, dy + s*0.82, s*0.18, s*0.18);
+            ctx.fillRect(dx + s*0.57, dy + s*0.82, s*0.18, s*0.18);
+            // Руки
+            ctx.fillRect(dx + s*0.05, dy + s*0.48, s*0.18, s*0.1);
+            ctx.fillRect(dx + s*0.77, dy + s*0.48, s*0.18, s*0.1);
+            // Череп
+            ctx.fillStyle = '#ddd4a0';
+            ctx.beginPath(); ctx.arc(this.x, dy + s*0.28, s*0.26, 0, Math.PI*2); ctx.fill();
+            // Очниці
+            ctx.fillStyle = '#1a1408';
+            ctx.beginPath(); ctx.ellipse(this.x - s*0.1, dy + s*0.26, s*0.08, s*0.1, 0, 0, Math.PI*2); ctx.fill();
+            ctx.beginPath(); ctx.ellipse(this.x + s*0.1, dy + s*0.26, s*0.08, s*0.1, 0, 0, Math.PI*2); ctx.fill();
+            // Посмішка
+            ctx.strokeStyle = '#1a1408'; ctx.lineWidth = 1;
+            ctx.beginPath(); ctx.arc(this.x, dy + s*0.34, s*0.1, 0.1, Math.PI-0.1); ctx.stroke();
+
+        } else if (this.type === 'monster' && this.monsterKind === 'zombie') {
+            // Зомбі — зеленуватий, повільний, розхристаний
+            let s = this.size;
+            // Тіло
+            ctx.fillStyle = '#4a7a30';
+            ctx.fillRect(dx + s*0.2, dy + s*0.4, s*0.6, s*0.45);
+            // Голова
+            ctx.fillStyle = '#5a8c3a';
+            ctx.beginPath(); ctx.arc(this.x, dy + s*0.28, s*0.28, 0, Math.PI*2); ctx.fill();
+            // Шия
+            ctx.fillStyle = '#4a7a30';
+            ctx.fillRect(dx + s*0.38, dy + s*0.37, s*0.24, s*0.1);
+            // Руки (зомбі тягнуть вперед одну руку)
+            ctx.strokeStyle = '#4a7a30'; ctx.lineWidth = 4;
+            ctx.beginPath(); ctx.moveTo(dx + s*0.1, dy + s*0.5); ctx.lineTo(dx - s*0.12, dy + s*0.45); ctx.stroke(); // ліва — вниз
+            ctx.beginPath(); ctx.moveTo(dx + s*0.9, dy + s*0.5); ctx.lineTo(dx + s*1.15, dy + s*0.3); ctx.stroke(); // права — вперед
+            // Ноги
+            ctx.fillStyle = '#3a6020';
+            ctx.fillRect(dx + s*0.22, dy + s*0.82, s*0.22, s*0.18);
+            ctx.fillRect(dx + s*0.56, dy + s*0.82, s*0.22, s*0.18);
+            // Очі — жовті, запалі
+            ctx.fillStyle = '#aacc00';
+            ctx.beginPath(); ctx.arc(this.x - s*0.1, dy + s*0.25, s*0.09, 0, Math.PI*2); ctx.fill();
+            ctx.beginPath(); ctx.arc(this.x + s*0.1, dy + s*0.25, s*0.09, 0, Math.PI*2); ctx.fill();
+            ctx.fillStyle = '#000';
+            ctx.beginPath(); ctx.arc(this.x - s*0.1, dy + s*0.25, s*0.05, 0, Math.PI*2); ctx.fill();
+            ctx.beginPath(); ctx.arc(this.x + s*0.1, dy + s*0.25, s*0.05, 0, Math.PI*2); ctx.fill();
+            // Рот — крива щілина
+            ctx.strokeStyle = '#2a4a18'; ctx.lineWidth = 1.5;
+            ctx.beginPath(); ctx.moveTo(this.x - s*0.12, dy + s*0.36); ctx.quadraticCurveTo(this.x, dy + s*0.42, this.x + s*0.12, dy + s*0.35); ctx.stroke();
+
+        } else if (this.type === 'monster' && this.monsterKind === 'goblin') {
+            // Гоблін — маленький, зелений, вуха торчать
+            let s = this.size;
+            // Вуха
+            ctx.fillStyle = '#2a8830';
+            ctx.beginPath(); ctx.moveTo(this.x - s*0.28, dy + s*0.22); ctx.lineTo(this.x - s*0.42, dy + s*0.05); ctx.lineTo(this.x - s*0.15, dy + s*0.15); ctx.closePath(); ctx.fill();
+            ctx.beginPath(); ctx.moveTo(this.x + s*0.28, dy + s*0.22); ctx.lineTo(this.x + s*0.42, dy + s*0.05); ctx.lineTo(this.x + s*0.15, dy + s*0.15); ctx.closePath(); ctx.fill();
+            // Тіло (приземкуватий)
+            ctx.fillStyle = '#2f9940';
+            ctx.fillRect(dx + s*0.15, dy + s*0.45, s*0.7, s*0.4);
+            // Голова (більша за тіло)
+            ctx.fillStyle = '#38b848';
+            ctx.beginPath(); ctx.ellipse(this.x, dy + s*0.28, s*0.32, s*0.26, 0, 0, Math.PI*2); ctx.fill();
+            // Руки з топором
+            ctx.strokeStyle = '#2f9940'; ctx.lineWidth = 3;
+            ctx.beginPath(); ctx.moveTo(dx + s*0.15, dy + s*0.5); ctx.lineTo(dx - s*0.05, dy + s*0.42); ctx.stroke();
+            // Топір в руці
+            ctx.fillStyle = '#888'; ctx.strokeStyle = '#555'; ctx.lineWidth = 1;
+            ctx.fillRect(dx - s*0.1, dy + s*0.36, 3, s*0.22);
+            ctx.beginPath(); ctx.moveTo(dx - s*0.1, dy + s*0.36); ctx.lineTo(dx - s*0.22, dy + s*0.28); ctx.lineTo(dx - s*0.18, dy + s*0.48); ctx.closePath(); ctx.fill(); ctx.stroke();
+            // Ноги
+            ctx.fillStyle = '#2a7a30';
+            ctx.fillRect(dx + s*0.2, dy + s*0.82, s*0.22, s*0.18);
+            ctx.fillRect(dx + s*0.58, dy + s*0.82, s*0.22, s*0.18);
+            // Очі — жовті, хитрі
+            ctx.fillStyle = '#ffcc00';
+            ctx.beginPath(); ctx.arc(this.x - s*0.12, dy + s*0.26, s*0.09, 0, Math.PI*2); ctx.fill();
+            ctx.beginPath(); ctx.arc(this.x + s*0.12, dy + s*0.26, s*0.09, 0, Math.PI*2); ctx.fill();
+            ctx.fillStyle = '#000';
+            ctx.beginPath(); ctx.arc(this.x - s*0.1, dy + s*0.26, s*0.05, 0, Math.PI*2); ctx.fill();
+            ctx.beginPath(); ctx.arc(this.x + s*0.1, dy + s*0.26, s*0.05, 0, Math.PI*2); ctx.fill();
+            // Посмішка зуби
+            ctx.strokeStyle = '#1a5520'; ctx.lineWidth = 1;
+            ctx.beginPath(); ctx.arc(this.x, dy + s*0.35, s*0.1, 0.1, Math.PI-0.1); ctx.stroke();
+            ctx.fillStyle = '#fff';
+            ctx.fillRect(this.x - s*0.08, dy + s*0.35, s*0.06, s*0.06);
+            ctx.fillRect(this.x + s*0.02, dy + s*0.35, s*0.06, s*0.06);
+
+        } else if (this.type === 'monster' && this.monsterKind === 'demon') {
+            // Демон — темно-червоний, роги, крила, аура
+            let s = this.size;
+            // Аура (пульсуюче світіння навколо)
+            let auraPulse = 0.15 + 0.1 * Math.sin(Date.now() / 300);
+            ctx.fillStyle = 'rgba(200,0,0,' + auraPulse + ')';
+            ctx.beginPath(); ctx.arc(this.x, dy + s*0.5, s*0.85, 0, Math.PI*2); ctx.fill();
+            // Крила (позаду тіла)
+            ctx.fillStyle = 'rgba(120,0,0,0.7)';
+            ctx.beginPath(); ctx.moveTo(this.x, dy + s*0.45); ctx.quadraticCurveTo(this.x - s*0.8, dy + s*0.1, this.x - s*0.5, dy + s*0.7); ctx.closePath(); ctx.fill();
+            ctx.beginPath(); ctx.moveTo(this.x, dy + s*0.45); ctx.quadraticCurveTo(this.x + s*0.8, dy + s*0.1, this.x + s*0.5, dy + s*0.7); ctx.closePath(); ctx.fill();
+            // Тіло
+            ctx.fillStyle = '#880000';
+            ctx.fillRect(dx + s*0.2, dy + s*0.42, s*0.6, s*0.45);
+            // Голова
+            ctx.fillStyle = '#aa1100';
+            ctx.beginPath(); ctx.arc(this.x, dy + s*0.28, s*0.28, 0, Math.PI*2); ctx.fill();
+            // Роги
+            ctx.fillStyle = '#661100';
+            ctx.beginPath(); ctx.moveTo(this.x - s*0.18, dy + s*0.1); ctx.lineTo(this.x - s*0.28, dy - s*0.1); ctx.lineTo(this.x - s*0.08, dy + s*0.08); ctx.closePath(); ctx.fill();
+            ctx.beginPath(); ctx.moveTo(this.x + s*0.18, dy + s*0.1); ctx.lineTo(this.x + s*0.28, dy - s*0.1); ctx.lineTo(this.x + s*0.08, dy + s*0.08); ctx.closePath(); ctx.fill();
+            // Ноги
+            ctx.fillStyle = '#771100';
+            ctx.fillRect(dx + s*0.22, dy + s*0.84, s*0.22, s*0.16);
+            ctx.fillRect(dx + s*0.56, dy + s*0.84, s*0.22, s*0.16);
+            // Очі — яскраво-жовті
+            ctx.fillStyle = '#ffaa00';
+            ctx.beginPath(); ctx.arc(this.x - s*0.1, dy + s*0.25, s*0.1, 0, Math.PI*2); ctx.fill();
+            ctx.beginPath(); ctx.arc(this.x + s*0.1, dy + s*0.25, s*0.1, 0, Math.PI*2); ctx.fill();
+            ctx.fillStyle = '#ff4400';
+            ctx.beginPath(); ctx.arc(this.x - s*0.1, dy + s*0.25, s*0.05, 0, Math.PI*2); ctx.fill();
+            ctx.beginPath(); ctx.arc(this.x + s*0.1, dy + s*0.25, s*0.05, 0, Math.PI*2); ctx.fill();
+            // Рот — злий
+            ctx.strokeStyle = '#440000'; ctx.lineWidth = 1.5;
+            ctx.beginPath(); ctx.moveTo(this.x - s*0.12, dy + s*0.35); ctx.lineTo(this.x, dy + s*0.4); ctx.lineTo(this.x + s*0.12, dy + s*0.35); ctx.stroke();
+
+        } else if (this.type === 'hero') {
+            let s = this.size;
+            let rank = this.heroRank || 'normal';
+            let lv   = this.level || 1;
+
+            // Кольори з типу героя (або overrides для елітів/босів)
+            let cloakCol  = this.heroCloakCol  || '#661122';
+            let bodyCol   = this.heroBodyCol   || '#cc2233';
+            let helmetCol = this.heroHelmetCol || '#666677';
+            if (rank === 'elite_hp')  { cloakCol='#115533'; bodyCol='#22aa66'; helmetCol='#44cc88'; }
+            if (rank === 'elite_atk') { cloakCol='#883300'; bodyCol='#ee6600'; helmetCol='#ffaa44'; }
+            if (rank === 'boss')      { cloakCol='#550066'; bodyCol='#aa00cc'; helmetCol='#cc88ff'; }
+
+            // Плащ
+            ctx.fillStyle = cloakCol;
+            ctx.beginPath(); ctx.moveTo(this.x, dy + s*0.3); ctx.lineTo(this.x - s*0.45, dy + s); ctx.lineTo(this.x + s*0.45, dy + s); ctx.closePath(); ctx.fill();
+
+            // Тіло
+            ctx.fillStyle = bodyCol;
+            ctx.fillRect(dx + s*0.22, dy + s*0.42, s*0.56, s*0.42);
+
+            // Шолом
+            ctx.fillStyle = helmetCol;
+            ctx.beginPath(); ctx.arc(this.x, dy + s*0.27, s*0.27, 0, Math.PI*2); ctx.fill();
+            ctx.fillStyle = '#333344';
+            ctx.fillRect(dx + s*0.08, dy + s*0.3, s*0.84, s*0.1);
+
+            // Зброя по типу
+            let wpn = this.heroWeapon || 'sword';
+            ctx.lineWidth = lv >= 7 ? 3 : 2;
+            if (wpn === 'sword') {
+                ctx.strokeStyle = lv >= 8 ? '#aaeeff' : '#aaaaaa';
+                ctx.beginPath(); ctx.moveTo(dx + s*1.0, dy + s*0.15); ctx.lineTo(dx + s*0.85, dy + s*0.72); ctx.stroke();
+                // Гарда
+                ctx.strokeStyle = '#888'; ctx.lineWidth = 2;
+                ctx.beginPath(); ctx.moveTo(dx + s*0.78, dy + s*0.5); ctx.lineTo(dx + s*1.05, dy + s*0.5); ctx.stroke();
+            } else if (wpn === 'spear') {
+                ctx.strokeStyle = '#88ccff';
+                ctx.beginPath(); ctx.moveTo(dx + s*1.0, dy + s*0.02); ctx.lineTo(dx + s*0.85, dy + s*0.78); ctx.stroke();
+                // Вістря
+                ctx.fillStyle = '#cceeff';
+                ctx.beginPath(); ctx.moveTo(dx + s*1.0, dy + s*0.02); ctx.lineTo(dx + s*0.9, dy + s*0.18); ctx.lineTo(dx + s*1.08, dy + s*0.18); ctx.closePath(); ctx.fill();
+            } else if (wpn === 'staff') {
+                ctx.strokeStyle = '#cc88ff'; ctx.lineWidth = 2;
+                ctx.beginPath(); ctx.moveTo(dx + s*1.0, dy + s*0.15); ctx.lineTo(dx + s*0.85, dy + s*0.85); ctx.stroke();
+                let glow2 = 0.5 + 0.5*Math.sin(Date.now()/300);
+                ctx.fillStyle = `rgba(180,100,255,${glow2})`;
+                ctx.beginPath(); ctx.arc(dx + s*1.0, dy + s*0.1, s*0.1, 0, Math.PI*2); ctx.fill();
+            } else if (wpn === 'axe') {
+                ctx.strokeStyle = '#ff6644'; ctx.lineWidth = 2;
+                ctx.beginPath(); ctx.moveTo(dx + s*1.0, dy + s*0.2); ctx.lineTo(dx + s*0.85, dy + s*0.75); ctx.stroke();
+                ctx.fillStyle = '#cc4422';
+                ctx.beginPath(); ctx.moveTo(dx + s*0.9, dy + s*0.2); ctx.lineTo(dx + s*1.12, dy + s*0.12); ctx.lineTo(dx + s*1.08, dy + s*0.38); ctx.closePath(); ctx.fill();
+            } else if (wpn === 'dagger') {
+                ctx.strokeStyle = '#88ffcc'; ctx.lineWidth = 1.5;
+                ctx.beginPath(); ctx.moveTo(dx + s*1.0, dy + s*0.25); ctx.lineTo(dx + s*0.9, dy + s*0.6); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(dx + s*0.78, dy + s*0.45); ctx.lineTo(dx + s*1.05, dy + s*0.38); ctx.stroke();
+            }
+
+            // Очі
+            ctx.fillStyle = '#ffeecc';
+            ctx.fillRect(this.x - s*0.12, dy + s*0.27, s*0.08, s*0.07);
+            ctx.fillRect(this.x + s*0.04, dy + s*0.27, s*0.08, s*0.07);
+
+            // Іконка пасиву (маленька, під HP баром)
+            const PASSIVE_ICONS = {
+                toughness:'🛡', swift:'💨', armor:'⚔', spellburn:'🔥',
+                holyaura:'✨', rage:'💢', firstblood:'🗡', warcry:'📯', unstoppable:'👁'
+            };
+            if (this.heroPassive && PASSIVE_ICONS[this.heroPassive]) {
+                ctx.font = '8px Arial'; ctx.textAlign = 'center';
+                ctx.fillText(PASSIVE_ICONS[this.heroPassive], this.x + s*0.55, dy + s*0.08);
+            }
+
+            // Назва типу (маленька, над головою)
+            if (this.heroLabel) {
+                ctx.fillStyle = 'rgba(255,220,180,0.85)';
+                ctx.font = '7px Arial'; ctx.textAlign = 'center';
+                ctx.fillText(this.heroLabel, this.x, dy - 2);
+            }
+
+        } else if (this.type === 'lord') {
+            // Повна текстура Лорда
+            let s = this.size; // 40
+            // Темна аура навколо
+            let lordAura = ctx.createRadialGradient(this.x, dy + s*0.5, 5, this.x, dy + s*0.5, s*1.1);
+            lordAura.addColorStop(0, 'rgba(160,0,255,0.25)');
+            lordAura.addColorStop(1, 'rgba(80,0,160,0)');
+            ctx.fillStyle = lordAura;
+            ctx.beginPath(); ctx.arc(this.x, dy + s*0.5, s*1.1, 0, Math.PI*2); ctx.fill();
+            // Мантія
+            ctx.fillStyle = '#3d0066';
+            ctx.beginPath(); ctx.moveTo(this.x, dy + s*0.3); ctx.lineTo(this.x - s*0.7, dy + s*1.05); ctx.lineTo(this.x + s*0.7, dy + s*1.05); ctx.closePath(); ctx.fill();
+            ctx.fillStyle = '#280044';
+            ctx.beginPath(); ctx.moveTo(this.x - s*0.25, dy + s*0.55); ctx.lineTo(this.x - s*0.7, dy + s*1.05); ctx.lineTo(this.x, dy + s*1.05); ctx.closePath(); ctx.fill();
+            // Тіло в обладунку
+            ctx.fillStyle = '#551188';
+            ctx.fillRect(this.x - s*0.28, dy + s*0.42, s*0.56, s*0.46);
+            let armorGrad = ctx.createLinearGradient(this.x - s*0.25, dy + s*0.45, this.x + s*0.25, dy + s*0.45);
+            armorGrad.addColorStop(0,   '#7700cc');
+            armorGrad.addColorStop(0.4, '#aa44ff');
+            armorGrad.addColorStop(1,   '#6600bb');
+            ctx.fillStyle = armorGrad;
+            ctx.fillRect(this.x - s*0.24, dy + s*0.44, s*0.48, s*0.38);
+            ctx.strokeStyle = '#cc88ff'; ctx.lineWidth = 1;
+            ctx.strokeRect(this.x - s*0.2, dy + s*0.47, s*0.4, s*0.28);
+            ctx.beginPath(); ctx.moveTo(this.x, dy + s*0.47); ctx.lineTo(this.x, dy + s*0.75); ctx.stroke();
+            // Голова
+            let headGrad = ctx.createRadialGradient(this.x - 4, dy + s*0.22, 2, this.x, dy + s*0.27, s*0.3);
+            headGrad.addColorStop(0, '#cc66ff');
+            headGrad.addColorStop(1, '#660099');
+            ctx.fillStyle = headGrad;
+            ctx.beginPath(); ctx.arc(this.x, dy + s*0.27, s*0.29, 0, Math.PI*2); ctx.fill();
+            // Корона
+            ctx.fillStyle = '#ffcc00';
+            ctx.fillRect(this.x - s*0.28, dy + s*0.06, s*0.56, s*0.1);
+            let crownX = this.x - s*0.26;
+            for (let c = 0; c < 5; c++) {
+                let bx = crownX + c * s*0.13;
+                let bh = (c % 2 === 0) ? s*0.16 : s*0.1;
+                ctx.fillRect(bx, dy + s*0.06 - bh, s*0.1, bh);
+            }
+            ctx.fillStyle = '#ff2244';
+            ctx.beginPath(); ctx.arc(this.x, dy + s*0.06 - s*0.11, s*0.05, 0, Math.PI*2); ctx.fill();
+            ctx.fillStyle = '#44aaff';
+            ctx.beginPath(); ctx.arc(this.x - s*0.26, dy + s*0.06 - s*0.11, s*0.04, 0, Math.PI*2); ctx.fill();
+            ctx.beginPath(); ctx.arc(this.x + s*0.26, dy + s*0.06 - s*0.11, s*0.04, 0, Math.PI*2); ctx.fill();
+            // Очі
+            ctx.fillStyle = '#ddaaff';
+            ctx.beginPath(); ctx.arc(this.x - s*0.12, dy + s*0.25, s*0.09, 0, Math.PI*2); ctx.fill();
+            ctx.beginPath(); ctx.arc(this.x + s*0.12, dy + s*0.25, s*0.09, 0, Math.PI*2); ctx.fill();
+            ctx.fillStyle = '#aa00ff';
+            ctx.beginPath(); ctx.arc(this.x - s*0.12, dy + s*0.25, s*0.05, 0, Math.PI*2); ctx.fill();
+            ctx.beginPath(); ctx.arc(this.x + s*0.12, dy + s*0.25, s*0.05, 0, Math.PI*2); ctx.fill();
+            // Борода
+            ctx.fillStyle = '#8844aa';
+            ctx.beginPath(); ctx.moveTo(this.x - s*0.18, dy + s*0.37); ctx.quadraticCurveTo(this.x, dy + s*0.55, this.x + s*0.18, dy + s*0.37); ctx.quadraticCurveTo(this.x, dy + s*0.48, this.x - s*0.18, dy + s*0.37); ctx.closePath(); ctx.fill();
+            // Посох
+            ctx.strokeStyle = '#cc8800'; ctx.lineWidth = 3;
+            ctx.beginPath(); ctx.moveTo(this.x + s*0.65, dy + s*0.4); ctx.lineTo(this.x + s*0.65, dy + s*1.05); ctx.stroke();
+            let gemGlow = 0.5 + 0.5*Math.sin(Date.now()/400);
+            ctx.fillStyle = 'rgba(200,100,255,' + gemGlow + ')';
+            ctx.beginPath(); ctx.arc(this.x + s*0.65, dy + s*0.3, s*0.13, 0, Math.PI*2); ctx.fill();
+            ctx.strokeStyle = '#ffaaff'; ctx.lineWidth = 1.5;
+            ctx.stroke();
+
+        } else {
+            // Дефолт fallback
+            ctx.fillStyle = this.color;
+            ctx.fillRect(dx, dy, this.size, this.size);
+            ctx.fillStyle = '#fff';
+            ctx.font = 'bold ' + Math.floor(this.size * 0.65) + 'px Arial';
+            ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+            ctx.fillText(this.level, this.x, dy + this.size/2);
+            ctx.textBaseline = 'alphabetic';
+        }
+
+        // HP бар (для всіх)
+        let pct = this.hp / this.maxHp;
+        ctx.fillStyle = '#600'; ctx.fillRect(this.x-15, dy-10, 30, 4);
+        ctx.fillStyle = '#0f0'; ctx.fillRect(this.x-15, dy-10, 30*pct, 4);
+
+        // Іконка рангу (герої)
+        ctx.font = '10px Arial'; ctx.textAlign = 'center';
+        if (this.heroRank === 'elite_hp')       ctx.fillText('💚', this.x, dy - 12);
+        else if (this.heroRank === 'elite_atk') ctx.fillText('🔥', this.x, dy - 12);
+        else if (this.heroRank === 'boss')      ctx.fillText('☠️', this.x, dy - 14);
+
+        // Емодзі виду монстра над головою
+        if (this.type === 'monster' && this.monsterEmoji) {
+            ctx.font = '11px Arial';
+            ctx.fillText(this.monsterEmoji, this.x, dy - 12);
+        }
+
+    }
+}
+
+// =================== ІНІЦІАЛІЗАЦІЯ ===================
+function init() {
+    resize();
+    window.addEventListener('resize', resize);
+
+    let saved = _store.get('DLSiege_v3');
+    if (saved) {
+        try {
+            let d = JSON.parse(saved);
+            GAME = Object.assign(GAME, d.game);
+            GAME.eliteChance     = Math.min(GAME.eliteChance, 100);
+            GAME.captainChance   = Math.min(GAME.captainChance, 100);
+            GAME.extraHeroChance = Math.min(GAME.extraHeroChance, 100);
+            floors = [];
+            d.floors.forEach(fd => {
+                let f = new Floor(fd.depth);
+                f.hasTrap = fd.hasTrap || false;
+                f.trapType = fd.trapType || null;
+                f.maxMonsters = fd.maxMonsters || 2;
+                f.floorUpgradeCost = fd.floorUpgradeCost || 60;
+                floors.push(f);
+            });
+            // Є збереження — пропускаємо стартовий екран
+            document.getElementById('start-screen').style.display = 'none';
+            beginGame();
+        } catch(e) { hardReset(); return; }
+    }
+    // Якщо немає збереження — стартовий екран вже видимий, чекаємо натискання
+}
+
+function startGame() {
+    let threatVal = _startThreatVal;
+    GAME.maxThreatLevel = threatVal;
+    document.getElementById('threat-cap-input').value = threatVal;
+
+    floors.push(new Floor(0));
+    floors.push(new Floor(1));
+    GAME.souls = 150;
+
+    document.getElementById('start-screen').style.display = 'none';
+    beginGame();
+}
+
+function beginGame() {
+    if (!units.some(u => u.type === 'lord')) spawnLord();
+    loop();
+    scheduleNextEnemy();
+    setInterval(spawnMinions, 1000);
+}
+
+function spawnLord() {
+    units = units.filter(u => u.type !== 'lord');
+    let last = floors[floors.length-1];
+    units.push(new Unit('lord', centerX, last.y, floors.length-1));
+}
+
+// =================== СПАВН ГЕРОЇВ ===================
+function scheduleNextEnemy() {
+    if (GAME.gameOver) return;
+    // 6 сек базово + 2.5 сек за кожен поверх з монстрами
+    let monsterFloors = Math.max(1, floors.length - 1);
+    let delay = (6 + (monsterFloors - 1) * 2.5) * 1000;
+    setTimeout(() => {
+        // Якщо гра на паузі — чекаємо виходу з паузи, потім спавнимо
+        if (GAME_PAUSED) {
+            let waitPause = setInterval(() => {
+                if (!GAME_PAUSED) {
+                    clearInterval(waitPause);
+                    spawnEnemy();
+                    scheduleNextEnemy();
+                }
+            }, 200);
+        } else {
+            spawnEnemy();
+            scheduleNextEnemy();
+        }
+    }, delay);
+}
+
+function spawnEnemy() {
+    if (GAME.gameOver) return;
+    GAME.waveCount++;
+
+    // Кількість поверхів з монстрами (всі крім поверху лорда)
+    let monsterFloors = Math.max(1, floors.length - 1);
+
+    // Кількість героїв: 1 поверх = завжди 1; 2+ поверхів = від 1 до monsterFloors рівномірно
+    let heroCount = 1;
+    if (monsterFloors >= 2) {
+        heroCount = 1 + Math.floor(Math.random() * monsterFloors);
+    }
+
+    // Бонус від рівня загрози (+2% за рівень, макс 60%) — один шанс на +1 героя
+    if (GAME.extraHeroChance > 0 && Math.random() * 100 < GAME.extraHeroChance) {
+        heroCount++;
+    }
+
+    // Обмеження: не більше кількості поверхів з монстрами
+    heroCount = Math.min(heroCount, monsterFloors);
+    heroCount = Math.max(1, heroCount);
+
+    for (let i = 0; i < heroCount; i++) {
+        // Зважений рандом рівня: вищі рівні мають більший шанс
+        // Ваги: рівень 1 = 1, рівень 2 = 2, ..., рівень N = N (трикутний розподіл)
+        let totalWeight = monsterFloors * (monsterFloors + 1) / 2;
+        let roll = Math.random() * totalWeight;
+        let level = 1;
+        let cumulative = 0;
+        for (let lv = 1; lv <= monsterFloors; lv++) {
+            cumulative += lv;
+            if (roll < cumulative) { level = lv; break; }
+        }
+        // Герої спавняться з воріт міста (cityX+100 = ворота)
+        let cityGateX = gW - 110;
+        let hero = new Unit('hero', cityGateX - i*30, CFG.surfaceY, -1, level);
+        let r = Math.random() * 100;
+        if (r < GAME.captainChance)                          makeEliteAtk(hero);
+        else if (r < GAME.captainChance + GAME.eliteChance)  makeEliteHp(hero);
+        units.push(hero);
+    }
+
+    // Боси за HP міста
+    checkCityBoss();
+}
+
+function checkCityBoss() {
+    let pct = GAME.cityHP / GAME.maxCityHP * 100;
+    let monsterFloors = Math.max(1, floors.length - 1);
+    let bossLevel = monsterFloors; // максимальний рівень
+
+    if (!GAME.bossSent75 && pct < 75) {
+        GAME.bossSent75 = true;
+        spawnBoss(bossLevel, 3);
+    }
+    if (!GAME.bossSent50 && pct < 50) {
+        GAME.bossSent50 = true;
+        spawnBoss(bossLevel, 4);
+    }
+    if (!GAME.bossSent20 && pct < 20) {
+        GAME.bossSent20 = true;
+        spawnBoss(bossLevel, 5);
+    }
+}
+
+function spawnBoss(level, mult) {
+    let boss = new Unit('hero', gW + 60, CFG.surfaceY, -1, level);
+    boss.hp *= mult; boss.maxHp = boss.hp;
+    boss.dmg *= mult;
+    boss.speed *= 0.85;
+    boss.heroRank = 'boss';
+    boss.color = '#cc00cc';
+    boss.size = 34 + mult * 2;
+    boss.soulReward = 30 * mult;
+    units.push(boss);
+}
+
+function makeEliteHp(hero) {
+    hero.heroRank = 'elite_hp';
+    hero.hp *= 2; hero.maxHp = hero.hp;
+    hero.color = '#33cc88';
+    hero.size = 24;
+    hero.soulReward = 25;
+}
+
+function makeEliteAtk(hero) {
+    hero.heroRank = 'elite_atk';
+    hero.dmg *= 2;
+    hero.color = '#ff6600';
+    hero.size = 24;
+    hero.soulReward = 25;
+}
+
+// =================== СПАВН МОНСТРІВ ===================
+function spawnMinions() {
+    if (GAME.gameOver || GAME_PAUSED) return;
+    let lordFloor = floors.length - 1;
+    floors.forEach(f => {
+        if (f.depth === lordFloor) return;
+        let count = units.filter(u => u.type==='monster' && u.floorIdx===f.depth).length;
+        if (count < f.maxMonsters) {
+            // 1-й поверх: 4 сек, кожен наступний +3 сек (в тіках по 1 сек)
+            let spawnInterval = 4 + f.depth * 3;
+            f.spawnTimer++;
+            if (f.spawnTimer >= spawnInterval) {
+                units.push(new Unit('monster', centerX, f.y, f.depth, f.depth + 1));
+                f.spawnTimer = 0;
+            }
+        }
+    });
+}
+
+// =================== ГОЛОВНИЙ ЦИКЛ ===================
+let heroScaleTimer = 0;
+
+function loop() {
+    if (GAME_PAUSED || GAME.gameOver) return;
+
+    // Таймер складності
+    heroScaleTimer++;
+    if (heroScaleTimer >= 60) {
+        heroScaleTimer = 0;
+        GAME.gameTime++;
+        if (GAME.gameTime % 60 === 0) { // кожні 60 сек
+            GAME.difficultyLevel++;
+            GAME.eliteChance     = Math.min(100, GAME.eliteChance + 1);
+            GAME.captainChance   = Math.min(100, GAME.captainChance + 1);
+            // +4% за рівень загрози, макс 100%
+            GAME.extraHeroChance = Math.min(100, GAME.difficultyLevel * 4);
+            let maxScalePercent  = GAME.maxThreatLevel * 4;
+            if (GAME.heroScalePercent < maxScalePercent) GAME.heroScalePercent += 4;
+        }
+    }
+
+    // Телепорт: глобальний тік (кожні 10 сек — один герой з кожного поверху з телепортом)
+    tickTeleports();
+
+    ctx.fillStyle = '#0d0820';
+    ctx.fillRect(0, 0, gW, gH);
+
+    // Камера
+    if (manualCameraY !== null) {
+        GAME.cameraY += (manualCameraY - GAME.cameraY) * 0.2;
+        if (++cameraReturnTimer > 180) { manualCameraY = null; cameraReturnTimer = 0; }
+    } else {
+        let target = floors.length * CFG.floorH - gH/2;
+        GAME.cameraY += (target - GAME.cameraY) * 0.1;
+    }
+    let maxCam = Math.max(0, floors[floors.length-1].y - gH + 150);
+    GAME.cameraY = Math.max(0, Math.min(GAME.cameraY, maxCam));
+
+    // ── Фон поверхні (ніч, небо) ────────────────────────────────────────
+    let skyGrad = ctx.createLinearGradient(0, 0, 0, CFG.surfaceY - GAME.cameraY);
+    skyGrad.addColorStop(0,   '#05030f');
+    skyGrad.addColorStop(0.6, '#0d0624');
+    skyGrad.addColorStop(1,   '#1a0a30');
+    ctx.fillStyle = skyGrad;
+    ctx.fillRect(0, -500 - GAME.cameraY, gW, CFG.surfaceY + 500);
+
+    // Зірки (детерміновані)
+    ctx.fillStyle = 'rgba(255,255,255,0.7)';
+    for (let i = 0; i < 60; i++) {
+        let sx = ((i * 347 + 11) % gW);
+        let sy = ((i * 193 + 7)  % (CFG.surfaceY - 40)) - GAME.cameraY;
+        let blink = 0.4 + 0.6 * Math.sin(Date.now()/700 + i);
+        ctx.globalAlpha = blink * 0.8;
+        ctx.fillRect(sx, sy, 1.5, 1.5);
+    }
+    ctx.globalAlpha = 1;
+
+    // ── Земля (кам'яна порода зверху) ────────────────────────────────────
+    let groundY = CFG.surfaceY - GAME.cameraY;
+    let groundGrad = ctx.createLinearGradient(0, groundY, 0, groundY + 30);
+    groundGrad.addColorStop(0, '#3a2850');
+    groundGrad.addColorStop(1, '#1a1025');
+    ctx.fillStyle = groundGrad;
+    ctx.fillRect(0, groundY, gW, 30);
+
+    // ── Підземна порода (нижче входу) ────────────────────────────────────
+    ctx.fillStyle = '#0e0916';
+    ctx.fillRect(0, groundY + 30, gW, 5000);
+
+    // ── Печерний вхід ─────────────────────────────────────────────────────
+    let caveX  = CAVE_X;  // зміщено праворуч від центру (глобальна змінна)
+    let caveW  = 80;
+    let caveH  = 70;
+    let caveY  = groundY + 2;
+
+    // Тінь навколо входу
+    let caveShadow = ctx.createRadialGradient(caveX, caveY + caveH/2, 10, caveX, caveY + caveH/2, 90);
+    caveShadow.addColorStop(0, 'rgba(0,0,0,0.6)');
+    caveShadow.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = caveShadow;
+    ctx.beginPath(); ctx.arc(caveX, caveY + caveH*0.6, 90, 0, Math.PI*2); ctx.fill();
+
+    // Арка входу — темна діра
+    ctx.fillStyle = '#000';
+    ctx.beginPath();
+    ctx.arc(caveX, caveY + 4, caveW/2, Math.PI, 0);
+    ctx.lineTo(caveX + caveW/2, caveY + caveH);
+    ctx.lineTo(caveX - caveW/2, caveY + caveH);
+    ctx.closePath(); ctx.fill();
+
+    // Обводка арки — камінь
+    ctx.strokeStyle = '#5a3e70'; ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.arc(caveX, caveY + 4, caveW/2, Math.PI, 0);
+    ctx.lineTo(caveX + caveW/2, caveY + caveH);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(caveX, caveY + 4, caveW/2, Math.PI, 0);
+    ctx.lineTo(caveX - caveW/2, caveY + caveH);
+    ctx.stroke();
+
+    // Камінці навколо арки
+    let arcStones = [[-38,18,12,9], [-30,-8,10,8], [-12,-20,9,7],
+                     [12,-20,9,7],  [30,-8,10,8],  [38,18,12,9]];
+    arcStones.forEach(([ox,oy,sw2,sh2]) => {
+        ctx.fillStyle = '#4a3260';
+        ctx.beginPath();
+        ctx.ellipse(caveX + ox, caveY + 4 + oy, sw2, sh2, ox*0.02, 0, Math.PI*2);
+        ctx.fill();
+        ctx.strokeStyle = '#2e1e40'; ctx.lineWidth = 1; ctx.stroke();
+    });
+
+    // Підпис
+    ctx.fillStyle = 'rgba(200,160,255,0.7)';
+    ctx.font = 'bold 11px Arial'; ctx.textAlign = 'center';
+    ctx.fillText('⛏ ПІДЗЕМЕЛЛЯ', caveX, caveY - 10);
+
+    // ── Місто — ворота відцентровані по лівих сходинках (floors[0].ladderX) ──
+    // ladderX поверху 0 = centerX - CFG.floorW/2 + 25
+    let _ladX0 = centerX - CFG.floorW / 2 + 25;
+    // Доступний простір зліва від лівої стіни кімнати
+    let _floorLeft = centerX - CFG.floorW / 2 - 22;
+    let _cityAvail = _floorLeft;
+    // Масштаб: місто шириною 200px, центр воріт на offset 100px від лівого краю
+    let _cityScale = Math.min(1, _cityAvail / 210);
+    // cityX такий, щоб центр воріт (offset 100) збігався з _ladX0
+    let cityX = _ladX0 - 100 * _cityScale;
+    // Малюємо місто з масштабуванням через ctx.save/scale
+    ctx.save();
+    ctx.translate(cityX, groundY); // точка відліку — підошва міста на рівні землі
+    ctx.scale(_cityScale, _cityScale);
+    // Всі координати відносно (0,0) = нижній лівий кут міста
+    let _cy = -140; // верх міста відносно землі
+    // Основа
+    ctx.fillStyle = '#2a2035';
+    ctx.fillRect(0, _cy + 80, 200, 60);
+    // Вежа ліва
+    ctx.fillStyle = '#352848';
+    ctx.fillRect(10, _cy + 20, 40, 100);
+    ctx.fillStyle = '#4a3660';
+    ctx.beginPath(); ctx.moveTo(10,_cy+20); ctx.lineTo(30,_cy); ctx.lineTo(50,_cy+20); ctx.closePath(); ctx.fill();
+    // Вежа права
+    ctx.fillStyle = '#352848';
+    ctx.fillRect(150, _cy + 20, 40, 100);
+    ctx.fillStyle = '#4a3660';
+    ctx.beginPath(); ctx.moveTo(150,_cy+20); ctx.lineTo(170,_cy); ctx.lineTo(190,_cy+20); ctx.closePath(); ctx.fill();
+    // Прапор
+    ctx.fillStyle = '#cc2244';
+    ctx.fillRect(29, _cy, 2, 20);
+    ctx.beginPath(); ctx.moveTo(31,_cy); ctx.lineTo(44,_cy+7); ctx.lineTo(31,_cy+14); ctx.closePath(); ctx.fill();
+    // Ворота
+    ctx.fillStyle = '#000';
+    ctx.beginPath(); ctx.arc(100, _cy+140, 22, Math.PI, 0); ctx.rect(78, _cy+140, 44, 20); ctx.fill();
+    // Вогники
+    ['#ff8800','#ffaa00'].forEach((c,i) => {
+        let fa = 0.7 + 0.3*Math.sin(Date.now()/300 + i*2);
+        ctx.fillStyle = c; ctx.globalAlpha = fa;
+        ctx.beginPath(); ctx.arc(i===0?30:170, _cy - 3, 4, 0, Math.PI*2); ctx.fill();
+        ctx.globalAlpha = 1;
+    });
+    ctx.fillStyle = '#ffcc88';
+    ctx.font = 'bold 12px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText('🏰 МІСТО', 100, _cy + 15);
+    ctx.restore();
+
+    floors.forEach(f => f.draw(GAME.cameraY));
+
+    // Реген Лорда (завжди активний, базово 1 HP/сек)
+    {
+        let lord = units.find(u => u.type==='lord');
+        if (lord && lord.hp < GAME.maxLordHP)
+            lord.hp = Math.min(lord.hp + GAME.lordRegen/60, GAME.maxLordHP);
+    }
+
+    // ── Стек-бейдж: показуємо кількість юнітів у купці ──────────────────
+    // Групуємо юнітів по (floorIdx, тип) і малюємо бейдж якщо >1 в радіусі 14px
+    {
+        let drawn = new Set();
+        for (let i = 0; i < units.length; i++) {
+            if (drawn.has(i)) continue;
+            let a = units[i];
+            if (a.hp <= 0) continue;
+            let cluster = [i];
+            for (let j = i + 1; j < units.length; j++) {
+                if (drawn.has(j)) continue;
+                let b = units[j];
+                if (b.hp <= 0 || b.floorIdx !== a.floorIdx || b.type !== a.type) continue;
+                if (Math.abs(b.x - a.x) < 14 && Math.abs(b.y - a.y) < 14) {
+                    cluster.push(j);
+                    drawn.add(j);
+                }
+            }
+            drawn.add(i);
+            if (cluster.length > 1) {
+                // Малюємо бейдж ×N над першим юнітом у кластері
+                let u = units[cluster[0]];
+                let bdy = u.y - u.size - GAME.cameraY - 18;
+                let bdx = u.x;
+                ctx.fillStyle = 'rgba(20,10,40,0.82)';
+                ctx.beginPath(); ctx.roundRect(bdx - 13, bdy - 10, 26, 14, 5); ctx.fill();
+                ctx.fillStyle = '#ffcc00';
+                ctx.font = 'bold 11px Arial'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                ctx.fillText('×' + cluster.length, bdx, bdy - 3);
+                ctx.textBaseline = 'alphabetic';
+            }
+        }
+    }
+
+    // Юніти
+    units.forEach((u, i) => {
+        u.update(); u.draw(GAME.cameraY);
+        if (u.hp <= 0) {
+            if (u.type === 'hero') {
+                let reward = u.soulReward || (u.heroRank === 'boss' ? 80 : u.heroRank.startsWith('elite') ? 25 : 15);
+                GAME.souls += reward;
+                let pcol = u.heroRank === 'boss' ? 'purple' : u.heroRank.startsWith('elite') ? 'orange' : 'gold';
+                let pcount = u.heroRank === 'boss' ? 6 : u.heroRank.startsWith('elite') ? 3 : 1;
+                for (let p=0; p<pcount; p++) spawnParticle(u.x+(Math.random()-.5)*20, u.y, pcol);
+                updateUI();
+            } else if (u.type === 'lord') { gameOver(); }
+            units.splice(i, 1);
+        }
+    });
+
+    // Частинки
+    particles.forEach((p,i) => {
+        p.life--; p.y -= 1;
+        ctx.fillStyle = p.color==='gold'?'#ffcc00':p.color==='orange'?'#ff8800':p.color==='purple'?'#cc44ff':p.color==='blue'?'#4488ff':p.color==='green'?'#44ff88':p.color==='cyan'?'#00ffff':p.color;
+        ctx.fillRect(p.x, p.y - GAME.cameraY, 4, 4);
+        if (p.life <= 0) particles.splice(i, 1);
+    });
+
+    // ── Топори гоблінів ──────────────────────────────────────────────────
+    for (let i = axeProjectiles.length - 1; i >= 0; i--) {
+        let a = axeProjectiles[i];
+        let dx2 = a.tx - a.x, dy2 = a.ty - a.y;
+        let dist = Math.sqrt(dx2*dx2 + dy2*dy2);
+        if (dist < a.speed) {
+            // Влучив — наносимо урон
+            let target = units.find(u => u.type === 'hero' && u.floorIdx === a.floorIdx
+                && Math.abs(u.x - a.tx) < 20 && u.hp > 0);
+            if (target) {
+                let blocked = target.blockChance > 0 && Math.random() < target.blockChance;
+                if (!blocked) {
+                    target.hp -= a.dmg;
+                    let isCrit = a.dmg > 8; // крит якщо dmg подвоєний
+                    spawnParticle(target.x, target.y - target.size, isCrit ? 'orange' : 'white');
+                }
+            }
+            axeProjectiles.splice(i, 1);
+            continue;
+        }
+        // Рухаємо
+        a.x += (dx2 / dist) * a.speed;
+        a.y += (dy2 / dist) * a.speed;
+        a.angle += 0.3;
+        // Малюємо топір
+        ctx.save();
+        ctx.translate(a.x, a.y - GAME.cameraY);
+        ctx.rotate(a.angle);
+        ctx.font = '14px Arial'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText('🪓', 0, 0);
+        ctx.restore();
+    }
+
+    updateUI();
+
+    if (GAME.cityHP <= 0 && !GAME.gameOver) {
+        document.getElementById('go-title').innerText = 'ПЕРЕМОГА!';
+        document.getElementById('go-title').style.color = 'lime';
+        document.getElementById('go-desc').innerText = 'Місто знищено!';
+        document.getElementById('game-over').style.display = 'flex';
+        GAME.gameOver = true;
+        return;
+    }
+
+    requestAnimationFrame(loop);
+}
+
+// =================== МЕНЮ ===================
+let openMenu = null;
+
+function toggleMenu(name) {
+    if (openMenu === name) {
+        closeAllMenus();
+    } else {
+        closeAllMenus();
+        openMenu = name;
+        document.getElementById('sub-' + name).classList.add('open');
+        let mainBtn = document.getElementById('menu-' + name).querySelector('.circle-main-btn');
+        if (mainBtn) mainBtn.classList.add('active');
+    }
+}
+
+function closeAllMenus() {
+    ['lord','monster','trap'].forEach(n => {
+        let sub = document.getElementById('sub-' + n);
+        let menu = document.getElementById('menu-' + n);
+        let btn = menu ? menu.querySelector('.circle-main-btn') : null;
+        if (sub) sub.classList.remove('open');
+        if (btn) btn.classList.remove('active');
+    });
+    openMenu = null;
+}
+
+document.addEventListener('click', e => {
+    if (openMenu && !e.target.closest('.circle-menu')) closeAllMenus();
+});
+document.addEventListener('touchend', e => {
+    if (openMenu && !e.target.closest('.circle-menu')) closeAllMenus();
+});
+
+// =================== АПГРЕЙДИ ЛОРДА ===================
+function upgradeLordAttack() {
+    if (GAME.souls < GAME.lordAtkCost) return;
+    GAME.souls -= GAME.lordAtkCost;
+    GAME.lordDmg += 5;
+    GAME.lordAtkSpeedBonus += 0.1;
+    let lord = units.find(u => u.type==='lord');
+    if (lord) {
+        lord.dmg = GAME.lordDmg;
+        lord.atkSpeedBonus = GAME.lordAtkSpeedBonus;
+    }
+    GAME.lordAtkCost = Math.floor(GAME.lordAtkCost * 1.45);
+    updateUI(); saveGame();
+}
+
+function upgradeLordVit() {
+    if (GAME.souls < GAME.lordVitCost) return;
+    GAME.souls -= GAME.lordVitCost;
+    GAME.maxLordHP += 100;
+    GAME.lordRegen += 1;
+    let lord = units.find(u => u.type==='lord');
+    if (lord) { lord.maxHp = GAME.maxLordHP; lord.hp = Math.min(lord.hp + 100, GAME.maxLordHP); }
+    GAME.lordVitCost = Math.floor(GAME.lordVitCost * 1.35);
+    updateUI(); saveGame();
+}
+
+// =================== АПГРЕЙДИ МОНСТРІВ ===================
+function upgradeMonsterAtk() {
+    if (GAME.souls < GAME.mobAtkCost) return;
+    GAME.souls -= GAME.mobAtkCost;
+    GAME.monsterDmgBonus += 0.6;
+    // +0.15 до ША (Dota2-стиль: кожен бонус зменшує cooldown нелінійно)
+    GAME.monsterAtkSpeedBonus += 0.15;
+    units.filter(u => u.type === 'monster').forEach(m => {
+        m.dmg += 0.6;
+        m.atkSpeedBonus = GAME.monsterAtkSpeedBonus;
+        // перераховуємо cooldown одразу для живих монстрів
+        let atkSpd = (m.baseAtkSpeed || 0.83) + m.atkSpeedBonus;
+        m.attackCooldownBase = Math.max(8, Math.round(60 / atkSpd));
+    });
+    GAME.mobAtkCost = Math.floor(GAME.mobAtkCost * 1.4);
+    updateUI(); saveGame();
+}
+
+function upgradeMonsterVit() {
+    if (GAME.souls < GAME.mobVitCost) return;
+    GAME.souls -= GAME.mobVitCost;
+    GAME.monsterHpBonus += 25;
+    GAME.monsterRegenBonus += 0.5;
+    units.filter(u => u.type==='monster').forEach(m => { m.maxHp += 25; m.hp = Math.min(m.hp+25, m.maxHp); m.regen = (m.regen||0) + 0.5; });
+    GAME.mobVitCost = Math.floor(GAME.mobVitCost * 1.35);
+    updateUI(); saveGame();
+}
+
+// =================== ТЕЛЕПОРТ — ГЛОБАЛЬНИЙ ТІК ===================
+function tickTeleports() {
+    floors.forEach(f => {
+        if (!f.hasTrap || f.trapType !== 'teleport') return;
+
+        // Зменшуємо cooldown (10 сек = 600 кадрів)
+        if (f.teleportCooldown > 0) { f.teleportCooldown--; return; }
+
+        // Знаходимо одного героя на цьому поверсі
+        let victims = units.filter(u => u.type === 'hero' && u.floorIdx === f.depth && !u.dazeMode);
+        if (victims.length === 0) return;
+
+        let victim = victims[Math.floor(Math.random() * victims.length)];
+
+        // Рандомний поверх (не поверх лорда, не той самий)
+        let available = floors.filter(fl => fl.depth !== floors.length - 1 && fl.depth !== f.depth);
+        if (available.length === 0) return;
+        let dest = available[Math.floor(Math.random() * available.length)];
+
+        // Телепортуємо в центр кімнати
+        spawnParticle(victim.x, victim.y, 'blue');
+        victim.floorIdx = dest.depth;
+        victim.y = dest.y;
+        victim.x = centerX; // центр кімнати
+        victim.isClimbing = false;
+        victim.trapDamaged = false;
+        spawnParticle(victim.x, victim.y, 'blue');
+
+        f.teleportCooldown = 10 * 60; // 10 сек
+    });
+}
+
+function showTrapPlacementHint(type) {
+    const icons = { spike: '🗡️', teleport: '🌀', daze: '💫' };
+    document.getElementById('trap-hint-icon').innerText = icons[type] || '🪤';
+    document.getElementById('trap-hint').style.display = 'block';
+    document.body.classList.add('trap-placement-mode');
+}
+
+function hideTrapPlacementHint() {
+    document.getElementById('trap-hint').style.display = 'none';
+    document.body.classList.remove('trap-placement-mode');
+}
+
+// =================== ПАСТКИ ===================
+const TRAP_COSTS = { spike: 50, teleport: 120, daze: 200 };
+
+// Режим вибору поверху для пастки
+let pendingTrapType = null; // якщо не null — чекаємо кліку на поверх
+
+function buyTrap(type) {
+    let cost = TRAP_COSTS[type];
+    if (GAME.souls < cost) return;
+
+    // Перевіряємо чи є вільні поверхи
+    let available = floors.slice(0, floors.length - 1).filter(f => !f.hasTrap);
+    if (available.length === 0) return;
+
+    // Якщо тільки один поверх доступний — ставимо одразу
+    if (available.length === 1) {
+        GAME.souls -= cost;
+        available[0].hasTrap = true;
+        available[0].trapType = type;
+        updateUI(); saveGame();
+        return;
+    }
+
+    // Інакше входимо в режим вибору
+    pendingTrapType = type;
+    showTrapPlacementHint(type);
+}
+
+// =================== ПОВЕРХ / ХВИЛЯ ===================
+function buyFloor() {
+    if (GAME.souls < GAME.floorCost) return;
+    GAME.souls -= GAME.floorCost;
+    floors.push(new Floor(floors.length));
+    GAME.floorCost = Math.floor(GAME.floorCost * 1.3);
+    spawnLord();
+    updateUI(); saveGame();
+}
+
+function triggerWave() {
+    if (GAME.isWave) return;
+    GAME.isWave = true;
+    // Тільки поточні монстри отримують waveActive — нові спавн не отримають
+    units.forEach(u => { if (u.type === 'monster') u.waveActive = true; });
+    setTimeout(() => { GAME.isWave = false; }, 8000);
+}
+
+// =================== UI ===================
+function updateUI() {
+    document.getElementById('souls-display').innerText = Math.floor(GAME.souls);
+    document.getElementById('floor-cost-lbl').innerText = GAME.floorCost + '💀';
+    document.getElementById('difficulty-level').innerText = GAME.difficultyLevel;
+    document.getElementById('hero-scale').innerText = GAME.heroScalePercent;
+
+    // Лорд
+    document.getElementById('lord-atk-cost').innerText = GAME.lordAtkCost + '💀';
+    document.getElementById('lord-vit-cost').innerText = GAME.lordVitCost + '💀';
+    document.getElementById('btn-lord-atk').disabled = GAME.souls < GAME.lordAtkCost;
+    document.getElementById('btn-lord-vit').disabled = GAME.souls < GAME.lordVitCost;
+
+    // Монстри
+    document.getElementById('mob-atk-cost').innerText = GAME.mobAtkCost + '💀';
+    document.getElementById('mob-vit-cost').innerText = GAME.mobVitCost + '💀';
+    document.getElementById('btn-mob-atk').disabled = GAME.souls < GAME.mobAtkCost;
+    document.getElementById('btn-mob-vit').disabled = GAME.souls < GAME.mobVitCost;
+
+    // Пастки
+    document.getElementById('btn-trap-spike').disabled = GAME.souls < 50;
+    document.getElementById('btn-trap-tele').disabled  = GAME.souls < 120;
+    document.getElementById('btn-trap-daze').disabled  = GAME.souls < 200;
+
+    // HP bars
+    document.getElementById('city-hp').style.width = Math.max(0, GAME.cityHP/GAME.maxCityHP*100) + '%';
+    let lord = units.find(u => u.type==='lord');
+    if (lord) document.getElementById('lord-hp').style.width = Math.max(0, lord.hp/GAME.maxLordHP*100) + '%';
+}
+
+// =================== УТИЛІТИ ===================
+function spawnParticle(x, y, color) { particles.push({x, y, color, life:30}); }
+
+// ── localStorage з fallback (Telegram / приватний режим можуть блокувати) ──
+const _store = (() => {
+    let mem = {};
+    try {
+        localStorage.setItem('__test', '1');
+        localStorage.removeItem('__test');
+        return {
+            get: k => localStorage.getItem(k),
+            set: (k, v) => localStorage.setItem(k, v),
+            del: k => localStorage.removeItem(k),
+        };
+    } catch(e) {
+        // fallback — зберігаємо в пам'яті (прогрес втрачається при перезавантаженні)
+        return {
+            get: k => mem[k] ?? null,
+            set: (k, v) => { mem[k] = v; },
+            del: k => { delete mem[k]; },
+        };
+    }
+})();
+
+function saveGame() {
+    try {
+        _store.set('DLSiege_v3', JSON.stringify({
+            game: GAME,
+            floors: floors.map(f => ({ depth:f.depth, hasTrap:f.hasTrap, trapType:f.trapType, maxMonsters:f.maxMonsters, floorUpgradeCost:f.floorUpgradeCost }))
+        }));
+    } catch(e) { /* ігноруємо помилку серіалізації */ }
+}
+
+function hardReset() { _store.del('DLSiege_v3'); location.reload(); }
+function gameOver() { GAME.gameOver = true; document.getElementById('game-over').style.display = 'flex'; }
+
+function resize() {
+    let dpr = Math.min(window.devicePixelRatio || 1, 2);
+    // canvas займає #canvas-wrap, а не весь екран
+    let wrap = document.getElementById('canvas-wrap');
+    gW = wrap ? wrap.clientWidth  : window.innerWidth;
+    gH = wrap ? wrap.clientHeight : window.innerHeight;
+    canvas.width  = Math.round(gW * dpr);
+    canvas.height = Math.round(gH * dpr);
+    canvas.style.width  = gW + 'px';
+    canvas.style.height = gH + 'px';
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    centerX = gW / 2;
+    // Під вертикальний формат — вужчі поверхи
+    CFG.floorW = Math.min(gW - 60, 380);
+    CAVE_X = centerX + CFG.floorW * 0.35;
+}
+
+// =================== DRAG/TOUCH ===================
+canvas.addEventListener('mousedown',  e => { isDragging=true; lastDragY=e.clientY; });
+canvas.addEventListener('mousemove',  e => { if(!isDragging)return; let d=lastDragY-e.clientY; lastDragY=e.clientY; if(manualCameraY===null)manualCameraY=GAME.cameraY; manualCameraY+=d; cameraReturnTimer=0; });
+canvas.addEventListener('mouseup',    ()=> isDragging=false);
+canvas.addEventListener('mouseleave', ()=> isDragging=false);
+let _touchStartX=0, _touchStartY=0, _touchMoved=false;
+
+canvas.addEventListener('touchstart', e => {
+    if (e.touches.length === 1) {
+        isDragging   = true;
+        lastDragY    = e.touches[0].clientY;
+        _touchStartX = e.touches[0].clientX;
+        _touchStartY = e.touches[0].clientY;
+        _touchMoved  = false;
+        // НЕ викликаємо preventDefault тут — це ламає touch delivery в Telegram WKWebView.
+        // Scroll блокується в touchmove нижче.
+    }
+}, { passive: true }); // passive:true — iOS може обробляти inertia scroll паралельно
+
+canvas.addEventListener('touchmove', e => {
+    if (isDragging && e.touches.length === 1) {
+        e.preventDefault();
+        let d = lastDragY - e.touches[0].clientY;
+        if (Math.abs(d) > 4) _touchMoved = true;
+        lastDragY = e.touches[0].clientY;
+        if (manualCameraY === null) manualCameraY = GAME.cameraY;
+        manualCameraY += d;
+        cameraReturnTimer = 0;
+    }
+}, { passive: false });
+
+canvas.addEventListener('touchend', e => {
+    isDragging = false;
+    if (!_touchMoved && e.changedTouches.length === 1) {
+        // Викликаємо обробник кліку напряму — без dispatchEvent (iOS ігнорує)
+        let t = e.changedTouches[0];
+        _handleCanvasTap(t.clientX, t.clientY);
+    }
+}, { passive: true });
+
+canvas.addEventListener('touchcancel', () => { isDragging = false; }, { passive: true });
+
+// ─── Обробник кліку / тапу по canvas ───────────────────────────────────────
+// Викликається і з 'click' (desktop), і з touchend (iOS/Android)
+function _handleCanvasTap(clientX, clientY) {
+    let rect = canvas.getBoundingClientRect();
+    let cx   = clientX - rect.left;
+    let cy   = (clientY - rect.top) + GAME.cameraY;
+    let lordIdx = floors.length - 1;
+
+    // Режим вибору поверху для пастки
+    if (pendingTrapType !== null) {
+        let cost = TRAP_COSTS[pendingTrapType];
+        let clicked = false;
+        floors.forEach(f => {
+            if (f.depth === lordIdx || f.hasTrap) return;
+            let fx1 = centerX - CFG.floorW / 2;
+            let fx2 = centerX + CFG.floorW / 2;
+            // cy вже в world-координатах
+            if (cx >= fx1 && cx <= fx2 && cy >= f.y - CFG.floorH && cy <= f.y) {
+                if (GAME.souls >= cost) {
+                    GAME.souls -= cost;
+                    f.hasTrap = true;
+                    f.trapType = pendingTrapType;
+                    if (f.trapType === 'teleport') f.teleportCooldown = 0;
+                    updateUI(); saveGame();
+                }
+                pendingTrapType = null;
+                hideTrapPlacementHint();
+                clicked = true;
+            }
+        });
+        if (!clicked) {
+            pendingTrapType = null;
+            hideTrapPlacementHint();
+        }
+        return;
+    }
+
+    // Кнопки апгрейду поверху (права сторона)
+    floors.forEach(f => {
+        if (f.depth === lordIdx || f.maxMonsters >= 5 || f._btnX == null) return;
+        let pad = (typeof _TAP_PAD !== 'undefined') ? _TAP_PAD : 0;
+        if (cx >= f._btnX - pad && cx <= f._btnX + f._btnW + pad &&
+            cy >= f._btnY - pad && cy <= f._btnY + f._btnH + pad) {
+            if (GAME.souls >= f.floorUpgradeCost) {
+                GAME.souls -= f.floorUpgradeCost;
+                f.maxMonsters++;
+                f.floorUpgradeCost = Math.floor(f.floorUpgradeCost * 1.5);
+                updateUI(); saveGame();
+            }
+        }
+    });
+
+    // Кнопки "Купити монстра" (ліва сторона)
+    floors.forEach(f => {
+        if (f.depth === lordIdx || f._buyBtnX == null) return;
+        let pad = (typeof _TAP_PAD !== 'undefined') ? _TAP_PAD : 0;
+        if (cx >= f._buyBtnX - pad && cx <= f._buyBtnX + f._buyBtnW + pad &&
+            cy >= f._buyBtnY - pad && cy <= f._buyBtnY + f._buyBtnH + pad) {
+            let count = units.filter(u => u.type === 'monster' && u.floorIdx === f.depth).length;
+            let buyCost = 15 + f.depth * 5;
+            if (GAME.souls >= buyCost && count < f.maxMonsters) {
+                GAME.souls -= buyCost;
+                units.push(new Unit('monster', centerX, f.y, f.depth, f.depth + 1));
+                updateUI(); saveGame();
+            }
+        }
+    });
+}
+
+// Desktop click → той самий обробник
+canvas.addEventListener('click', e => _handleCanvasTap(e.clientX, e.clientY));
+
+// =================== ПАУЗА ===================
+let GAME_PAUSED = false;
+
+function togglePause() {
+    GAME_PAUSED = !GAME_PAUSED;
+    document.getElementById('pause-overlay').style.display = GAME_PAUSED ? 'flex' : 'none';
+    // Оновлюємо значення інпута при відкритті
+    if (GAME_PAUSED) {
+        document.getElementById('threat-cap-input').value = GAME.maxThreatLevel >= 999 ? 999 : GAME.maxThreatLevel;
+    } else {
+        requestAnimationFrame(loop);
+    }
+}
+
+// Авто-пауза при згортанні / перемиканні вкладки
+document.addEventListener('visibilitychange', () => {
+    if (document.hidden && !GAME_PAUSED && !GAME.gameOver) {
+        togglePause();
+    }
+});
+
+function setThreatCap() {
+    let val = parseInt(document.getElementById('threat-cap-input').value);
+    GAME.maxThreatLevel = isNaN(val) || val < 0 ? 999 : val;
+}
+
+// Escape — скасувати вибір пастки
+document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && pendingTrapType !== null) {
+        pendingTrapType = null;
+        hideTrapPlacementHint();
+    }
+});
+
+// =================== СТАРТОВИЙ ЕКРАН — обробники ===================
+let _startThreatVal = 10;
+
+function _updateThreatDisplay() {
+    document.getElementById('start-threat-val').textContent = _startThreatVal;
+}
+
+// Крок загрози — викликається через onclick атрибут
+function _threatStep(delta) {
+    _startThreatVal = Math.max(1, Math.min(100, _startThreatVal + delta));
+    _updateThreatDisplay();
+}
+
+// Автоповтор для − / + при утриманні (desktop + touch)
+function _bindRepeat(id, fn) {
+    let el = document.getElementById(id);
+    if (!el) return;
+    let timer = null;
+    function start() { fn(); timer = setTimeout(() => { timer = setInterval(fn, 80); }, 500); }
+    function stop()  { clearTimeout(timer); clearInterval(timer); timer = null; }
+    el.addEventListener('mousedown',  start);
+    el.addEventListener('mouseup',    stop);
+    el.addEventListener('mouseleave', stop);
+    el.addEventListener('touchstart', function(e){ e.preventDefault(); start(); }, { passive: false });
+    el.addEventListener('touchend',   stop);
+    el.addEventListener('touchcancel',stop);
+}
+_bindRepeat('threat-minus', () => _threatStep(-1));
+_bindRepeat('threat-plus',  () => _threatStep(1));
+
+// Всі кнопки мають onclick атрибути в HTML — це основний механізм для iOS.
+// Нижче нічого додаткового не потрібно.
+
+// ── FPS throttle — 30fps на слабких пристроях ────────────────────────────────
+// Визначаємо по першому кадру: якщо devicePixelRatio > 2 або CPU слабий — 30fps
+let _targetFps = 60;
+let _fpsLastTime = 0;
+const _origLoop = loop;
+// Патчимо loop щоб вона перевіряла інтервал
+window._loopFpsThrottle = function(ts) {
+    if (GAME_PAUSED || GAME.gameOver) return;
+    if (!_fpsLastTime) _fpsLastTime = ts;
+    let elapsed = ts - _fpsLastTime;
+    let interval = 1000 / _targetFps;
+    if (elapsed >= interval - 1) {
+        _fpsLastTime = ts - (elapsed % interval);
+        _origLoop();
+    } else {
+        requestAnimationFrame(window._loopFpsThrottle);
+    }
+};
+// Після першого кадру міряємо реальний FPS і якщо слабкий — знижуємо до 30
+let _fpsSample = [];
+let _fpsProbe = function(ts) {
+    _fpsSample.push(ts);
+    if (_fpsSample.length < 10) { requestAnimationFrame(_fpsProbe); return; }
+    let avg = 0;
+    for (let i = 1; i < _fpsSample.length; i++) avg += _fpsSample[i] - _fpsSample[i-1];
+    avg /= (_fpsSample.length - 1);
+    _targetFps = avg > 20 ? 60 : 30; // якщо кадр > 20мс в середньому — вже гальмує
+};
+requestAnimationFrame(_fpsProbe);
+
+// ── Canvas tap-зони: збільшуємо хіт-бокс кнопок апгрейду та купівлі ────────
+// Зберігаємо оригінальний _btnH/W для збільшення зони на ±10px з кожного боку
+const _TAP_PAD = isMobile ? 12 : 0;
+
+init();
+</script>
+</body>
+</html>
