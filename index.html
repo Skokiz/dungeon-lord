@@ -1772,8 +1772,10 @@ class Unit {
 function init() {
     resize();
     // iOS Safari рендерить flex після JS — повторний resize виправляє висоту canvas
-    setTimeout(resize, 100);
-    setTimeout(resize, 500);
+    setTimeout(resize, 50);
+    setTimeout(resize, 200);
+    setTimeout(resize, 600);
+    setTimeout(resize, 1500);
     window.addEventListener('resize', resize);
 
     let saved = _store.get('DLSiege_v3');
@@ -1816,6 +1818,7 @@ function startGame() {
 
 function beginGame() {
     if (!units.some(u => u.type === 'lord')) spawnLord();
+    resize(); // примусово перераховуємо розміри canvas перед першим кадром
     loop();
     scheduleNextEnemy();
     setInterval(spawnMinions, 1000);
@@ -2492,8 +2495,10 @@ function resize() {
     // На iOS Safari flex-контейнер може повернути clientHeight=0 до першого paint,
     // тому рахуємо висоту canvas як window.innerHeight мінус панель управління
     let controlsH = controls ? controls.offsetHeight : 0;
+    // Якщо controls ще не відрендерився — використовуємо 160px як мінімальну висоту панелі
+    if (controlsH < 10) controlsH = 160;
     gW = window.innerWidth;
-    gH = Math.max(window.innerHeight - controlsH, 100);
+    gH = Math.max(window.innerHeight - controlsH, 200);
     canvas.width  = Math.round(gW * dpr);
     canvas.height = Math.round(gH * dpr);
     canvas.style.width  = gW + 'px';
