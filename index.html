@@ -1770,6 +1770,9 @@ class Unit {
 // =================== ІНІЦІАЛІЗАЦІЯ ===================
 function init() {
     resize();
+    // iOS Safari рендерить flex після JS — повторний resize виправляє висоту canvas
+    setTimeout(resize, 100);
+    setTimeout(resize, 500);
     window.addEventListener('resize', resize);
 
     let saved = _store.get('DLSiege_v3');
@@ -2484,10 +2487,12 @@ function gameOver() { GAME.gameOver = true; document.getElementById('game-over')
 
 function resize() {
     let dpr = Math.min(window.devicePixelRatio || 1, 2);
-    // canvas займає #canvas-wrap, а не весь екран
-    let wrap = document.getElementById('canvas-wrap');
-    gW = wrap ? wrap.clientWidth  : window.innerWidth;
-    gH = wrap ? wrap.clientHeight : window.innerHeight;
+    let controls = document.getElementById('controls');
+    // На iOS Safari flex-контейнер може повернути clientHeight=0 до першого paint,
+    // тому рахуємо висоту canvas як window.innerHeight мінус панель управління
+    let controlsH = controls ? controls.offsetHeight : 0;
+    gW = window.innerWidth;
+    gH = Math.max(window.innerHeight - controlsH, 100);
     canvas.width  = Math.round(gW * dpr);
     canvas.height = Math.round(gH * dpr);
     canvas.style.width  = gW + 'px';
