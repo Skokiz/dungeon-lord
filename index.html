@@ -567,8 +567,6 @@
         <!-- Кнопка паузи -->
         <button id="pause-toggle-btn" onclick="togglePause()">⏸ Пауза</button>
 
-        <!-- Кнопка reset -->
-        <button id="btn-hard-reset" onclick="hardReset()">Скинути Save</button>
     </div>
 
     <!-- ── ПАНЕЛЬ УПРАВЛІННЯ ── -->
@@ -710,6 +708,7 @@ let particles = [];
 let axeProjectiles = []; // снаряди гоблінів
 let centerX = gW / 2;
 let CAVE_X = centerX + CFG.floorW * 0.35; // точка виходу монстрів з підземелля
+let CITY_GATE_X = 104; // X воріт міста (оновлюється в resize і при малюванні)
 
 // Drag/touch
 let isDragging = false;
@@ -1364,8 +1363,7 @@ class Unit {
             // Поверхня — біжить до міста
             if (this.floorIdx < 0) {
                 this.y = CFG.surfaceY;
-                let cityX = gW - 100;
-                if (this.x < cityX) { this.x += this.speed * 2; }
+                if (this.x > CITY_GATE_X) { this.x -= this.speed * 2; }
                 else { GAME.cityHP -= this.dmg * 5; this.hp = 0; spawnParticle(this.x, this.y, 'red'); }
                 return;
             }
@@ -1884,9 +1882,8 @@ function spawnEnemy() {
             cumulative += lv;
             if (roll < cumulative) { level = lv; break; }
         }
-        // Герої спавняться з воріт міста (cityX+100 = ворота)
-        let cityGateX = gW - 110;
-        let hero = new Unit('hero', cityGateX - i*30, CFG.surfaceY, -1, level);
+        // Герої спавняться з воріт міста
+        let hero = new Unit('hero', CITY_GATE_X + i*10, CFG.surfaceY, -1, level);
         let r = Math.random() * 100;
         if (r < GAME.captainChance)                          makeEliteAtk(hero);
         else if (r < GAME.captainChance + GAME.eliteChance)  makeEliteHp(hero);
@@ -1917,7 +1914,7 @@ function checkCityBoss() {
 }
 
 function spawnBoss(level, mult) {
-    let boss = new Unit('hero', gW + 60, CFG.surfaceY, -1, level);
+    let boss = new Unit('hero', CITY_GATE_X, CFG.surfaceY, -1, level);
     boss.hp *= mult; boss.maxHp = boss.hp;
     boss.dmg *= mult;
     boss.speed *= 0.85;
@@ -2085,16 +2082,12 @@ function loop() {
     ctx.font = 'bold 11px Arial'; ctx.textAlign = 'center';
     ctx.fillText('⛏ ПІДЗЕМЕЛЛЯ', caveX, caveY - 10);
 
-    // ── Місто — ворота відцентровані по лівих сходинках (floors[0].ladderX) ──
-    // ladderX поверху 0 = centerX - CFG.floorW/2 + 25
-    let _ladX0 = centerX - CFG.floorW / 2 + 25;
-    // Доступний простір зліва від лівої стіни кімнати
-    let _floorLeft = centerX - CFG.floorW / 2 - 22;
-    let _cityAvail = _floorLeft;
-    // Масштаб: місто шириною 200px, центр воріт на offset 100px від лівого краю
-    let _cityScale = Math.min(1, _cityAvail / 210);
-    // cityX такий, щоб центр воріт (offset 100) збігався з _ladX0
-    let cityX = _ladX0 - 100 * _cityScale;
+    // ── Місто — фіксовано зліва від екрану ──────────────────────────────────
+    let _cityAvail = centerX - CFG.floorW / 2 - 10;
+    let _cityScale = Math.min(1, Math.max(0.35, _cityAvail / 210));
+    let cityX = 4;
+    // Оновлюємо глобальну X воріт для спавну героїв
+    CITY_GATE_X = cityX + 100 * _cityScale;
     // Малюємо місто з масштабуванням через ctx.save/scale
     ctx.save();
     ctx.translate(cityX, groundY); // точка відліку — підошва міста на рівні землі
@@ -2245,16 +2238,6 @@ function loop() {
         return;
     }
 
-    // DEBUG: показуємо розміри canvas (видалити після тесту)
-    ctx.save();
-    ctx.fillStyle = 'rgba(0,0,0,0.6)';
-    ctx.fillRect(0, 0, 220, 28);
-    ctx.fillStyle = '#fff';
-    ctx.font = '12px monospace';
-    ctx.textAlign = 'left';
-    ctx.textBaseline = 'top';
-    ctx.fillText('gW=' + gW + ' gH=' + gH + ' cW=' + canvas.width + ' cH=' + canvas.height, 4, 6);
-    ctx.restore();
 
     requestAnimationFrame(loop);
 }
