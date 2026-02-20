@@ -2243,6 +2243,17 @@ function loop() {
         return;
     }
 
+    // DEBUG: показуємо розміри canvas (видалити після тесту)
+    ctx.save();
+    ctx.fillStyle = 'rgba(0,0,0,0.6)';
+    ctx.fillRect(0, 0, 220, 28);
+    ctx.fillStyle = '#fff';
+    ctx.font = '12px monospace';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'top';
+    ctx.fillText('gW=' + gW + ' gH=' + gH + ' cW=' + canvas.width + ' cH=' + canvas.height, 4, 6);
+    ctx.restore();
+
     requestAnimationFrame(loop);
 }
 
