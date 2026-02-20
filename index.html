@@ -1804,6 +1804,7 @@ function init() {
 }
 
 function startGame() {
+    alert('startGame OK, gW=' + gW + ' gH=' + gH);
     let threatVal = _startThreatVal;
     GAME.maxThreatLevel = threatVal;
     document.getElementById('threat-cap-input').value = threatVal;
@@ -1814,6 +1815,7 @@ function startGame() {
 
     document.getElementById('start-screen').style.display = 'none';
     beginGame();
+    alert('beginGame done, PAUSED=' + GAME_PAUSED + ' gameOver=' + GAME.gameOver);
 }
 
 function beginGame() {
