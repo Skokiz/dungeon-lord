@@ -679,6 +679,7 @@ let GAME = {
     lordBaseAtkSpeed: 0.8,   // базова ША (Dota2-стиль)
     lordAtkSpeedBonus: 0,    // бонус ША від апгрейдів
     lordArmor: 5,            // броня лорда (5 базово + апгрейди)
+    lordRegen: 1,            // базовий реген HP/сек (завжди активний)
     lordRegenPct: 0,         // % макс HP/сек (накопичується з апгрейдів)
     // Ціни — Володар
     lordAtkCost: 80,
@@ -2474,7 +2475,7 @@ function loop() {
     // Реген Лорда (завжди активний, базово 1 HP/сек)
     {
         let lord = units.find(u => u.type==='lord');
-        if (lord && lord.hp < GAME.maxLordHP)
+        if (lord && lord.hp > 0 && lord.hp < GAME.maxLordHP)
             lord.hp = Math.min(lord.hp + GAME.lordRegen/60, GAME.maxLordHP);
     }
 
