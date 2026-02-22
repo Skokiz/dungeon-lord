@@ -1198,7 +1198,7 @@ class Unit {
         if (this.regen > 0 && this.hp < this.maxHp)
             this.hp = Math.min(this.hp + this.regen / 60, this.maxHp);
         // Реген лорда (% від макс HP)
-        if (this.type === 'lord' && GAME.lordRegenPct > 0 && this.hp < this.maxHp)
+        if (this.type === 'lord' && GAME.lordRegenPct > 0 && this.hp > 0 && this.hp < this.maxHp)
             this.hp = Math.min(this.hp + GAME.lordRegenPct * this.maxHp / 60, this.maxHp);
 
         // ── Пасив WARCRY (Воєначальник): сусіди-герої +10% dmg ───────────
@@ -2076,7 +2076,7 @@ class Unit {
 
         // ── HP бар (без shadow щоб не розмивало) ─────────────────────────
         ctx.shadowBlur = 0;
-        let pct = this.hp / this.maxHp;
+        let pct = Math.max(0, this.hp / this.maxHp);
         ctx.fillStyle = '#600'; ctx.fillRect(this.x-15, dy-10, 30, 4);
         ctx.fillStyle = '#0f0'; ctx.fillRect(this.x-15, dy-10, 30*pct, 4);
 
