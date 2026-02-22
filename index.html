@@ -1363,8 +1363,8 @@ class Unit {
                 if (this.fightTarget && this.fightTarget.hp > 0 && inRange.includes(this.fightTarget)) {
                     enemy = this.fightTarget;
                 } else {
-                    // Вибираємо нову ціль: 50% найслабший, 50% випадковий
-                    if (Math.random() < 0.5) {
+                    // Вибираємо нову ціль: 80% найслабший, 20% випадковий
+                    if (Math.random() < 0.8) {
                         enemy = inRange.reduce((min, u) => u.hp < min.hp ? u : min, inRange[0]);
                     } else {
                         enemy = inRange[Math.floor(Math.random() * inRange.length)];
@@ -1632,7 +1632,9 @@ class Unit {
             ctx.beginPath(); ctx.arc(this.x, dy + this.size/2, this.size/2 + 6, 0, Math.PI*2); ctx.stroke();
         }
 
-        // ── Відмальовка тіла юніта ────────────────────────────────────────
+        // ── Відмальовка тіла юніта (чорний контур через shadow) ──────────
+        ctx.shadowColor = '#000';
+        ctx.shadowBlur  = 6;
         if (this.type === 'monster' && this.monsterKind === 'slime') {
             // Слизь — кругла, напівпрозора, желеподібна
             let t = Date.now() / 600;
@@ -2073,7 +2075,8 @@ class Unit {
             ctx.textBaseline = 'alphabetic';
         }
 
-        // HP бар (для всіх)
+        // ── HP бар (без shadow щоб не розмивало) ─────────────────────────
+        ctx.shadowBlur = 0;
         let pct = this.hp / this.maxHp;
         ctx.fillStyle = '#600'; ctx.fillRect(this.x-15, dy-10, 30, 4);
         ctx.fillStyle = '#0f0'; ctx.fillRect(this.x-15, dy-10, 30*pct, 4);
@@ -2786,7 +2789,15 @@ function buyFloor() {
     GAME.souls -= GAME.floorCost;
     floors.push(new Floor(floors.length));
     GAME.floorCost = Math.floor(GAME.floorCost * 1.3);
-    spawnLord();
+    // Переміщуємо лорда на новий (нижній) поверх — НЕ перестворюємо, HP зберігається
+    let lord = units.find(u => u.type === 'lord');
+    let last = floors[floors.length - 1];
+    if (lord) {
+        lord.x = centerX; lord.y = last.y;
+        lord.floorIdx = floors.length - 1;
+    } else {
+        spawnLord(); // тільки якщо лорда взагалі немає
+    }
     updateUI(); saveGame();
 }
 
