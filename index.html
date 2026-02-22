@@ -1341,14 +1341,36 @@ class Unit {
         if (this.type === 'monster' && this.ability === 'dodge' && Math.random() < 0.10)
             return; // пропускаємо цей тік оновлення бойової логіки
 
+        // Герої та монстри б'ються лише стоячи на землі поверху (не на сходинках)
+        if (this.isClimbing || this.isClimbingUp) {
+            this.state = 'move';
+            if (this.type === 'hero') this.moveHero();
+            else this.moveMonster();
+            return;
+        }
+
         let enemy = null;
         if (this.type === 'monster') {
-            let heroesOnFloor = units.filter(u => u.type === 'hero' && u.floorIdx === this.floorIdx && isTargetable(u));
-            if (heroesOnFloor.length >= 2) {
-                let inRange = heroesOnFloor.filter(u => Math.abs(u.x - this.x) < range && Math.abs(u.y - this.y) < 40);
-                if (inRange.length > 0) enemy = inRange.reduce((min, u) => u.hp < min.hp ? u : min, inRange[0]);
-            } else {
-                enemy = heroesOnFloor.find(u => Math.abs(u.x - this.x) < range && Math.abs(u.y - this.y) < 40);
+            // Герої, що стоять на тому ж поверсі (не на сходинках)
+            let heroesOnFloor = units.filter(u =>
+                u.type === 'hero' && u.floorIdx === this.floorIdx &&
+                !u.isClimbing && isTargetable(u)
+            );
+            let inRange = heroesOnFloor.filter(u => Math.abs(u.x - this.x) < range && Math.abs(u.y - this.y) < 40);
+
+            if (inRange.length > 0) {
+                // Перевіряємо: чи поточна ціль ще жива і в радіусі
+                if (this.fightTarget && this.fightTarget.hp > 0 && inRange.includes(this.fightTarget)) {
+                    enemy = this.fightTarget;
+                } else {
+                    // Вибираємо нову ціль: 50% найслабший, 50% випадковий
+                    if (Math.random() < 0.5) {
+                        enemy = inRange.reduce((min, u) => u.hp < min.hp ? u : min, inRange[0]);
+                    } else {
+                        enemy = inRange[Math.floor(Math.random() * inRange.length)];
+                    }
+                    this.fightTarget = enemy;
+                }
             }
         } else {
             enemy = units.find(u => enemyTypes.includes(u.type) && isTargetable(u)
@@ -1577,10 +1599,10 @@ class Unit {
                 else { this.x = ladX; this.isClimbingUp = true; }
             }
         } else {
-            // Агр: якщо герой на цьому поверсі в радіусі 70px — біжимо до нього
+            // Агр: якщо герой на цьому поверсі в радіусі 210px (не на сходинках) — біжимо до нього
             let aggroTarget = units.find(u =>
                 u.type === 'hero' && u.floorIdx === this.floorIdx &&
-                u.hp > 0 && Math.abs(u.x - this.x) < 70
+                u.hp > 0 && !u.isClimbing && Math.abs(u.x - this.x) < 210
             );
             if (aggroTarget) {
                 // Біжимо до героя
