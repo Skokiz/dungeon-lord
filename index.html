@@ -281,7 +281,7 @@
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: radial-gradient(ellipse at center, #1a0a35 0%, #0d0820 60%, #050310 100%);
             display: flex; flex-direction: column;
-            justify-content: center; align-items: center;
+            justify-content: center; align-items: center; gap: 16px;
             z-index: 300;
         }
         #start-screen h1 {
@@ -289,34 +289,30 @@
             text-transform: uppercase; letter-spacing: 3px; text-align: center;
         }
         #start-screen .subtitle { color: #886699; letter-spacing: 2px; }
-        .start-card {
-            background: rgba(40,10,70,0.93); border: 1px solid #6633aa;
-            border-radius: 16px;
+        #start-screen .diff-label { color: #cc99ff; font-size: 13px; letter-spacing: 1px; }
+        .diff-grid {
+            display: grid; grid-template-columns: 1fr 1fr;
+            gap: 10px; width: 90%; max-width: 340px;
+        }
+        .diff-btn {
             display: flex; flex-direction: column; align-items: center;
-            width: 90%; max-width: 320px;
+            gap: 4px; padding: 10px 6px;
+            background: rgba(40,10,70,0.93); border: 2px solid #5522aa;
+            border-radius: 14px; color: #fff; cursor: pointer;
+            -webkit-appearance: none; touch-action: manipulation;
+            transition: border-color 0.15s, transform 0.1s;
         }
-        .start-card label { color: #cc99ff; text-align: center; line-height: 1.5; }
-        .threat-slider-wrap { display: flex; flex-direction: column; align-items: center; width: 100%; }
-        .threat-labels { display: flex; justify-content: space-between; width: 100%; color: #664477; }
-        .threat-slider-val { font-weight: bold; color: #ffcc00; text-shadow: 0 0 10px #ff8800; }
-        .threat-picker { display: flex; align-items: center; justify-content: center; }
-        .threat-step-btn {
-            border-radius: 50%;
-            background: linear-gradient(145deg,#5500aa,#7700cc);
-            border: 2px solid #cc66ff; color: #fff; font-weight: bold;
-            cursor: pointer; display: flex; align-items: center; justify-content: center;
-            -webkit-appearance: none; touch-action: manipulation; line-height: 1;
-        }
-        .threat-step-btn:active { transform: scale(0.9); }
-        .start-btn {
-            background: linear-gradient(145deg,#7700cc,#aa00ff);
-            border: 2px solid #cc66ff; color: #fff;
-            border-radius: 12px; font-weight: bold;
-            cursor: pointer; -webkit-appearance: none; touch-action: manipulation;
-            box-shadow: 0 0 20px rgba(170,0,255,0.5);
-            width: 90%; max-width: 240px; text-align: center;
-        }
-        .start-btn:active { transform: scale(0.96); }
+        .diff-btn:active { transform: scale(0.95); }
+        .diff-btn .d-name { font-weight: bold; font-size: 13px; }
+        .diff-btn .d-stat { font-size: 10px; color: #bb99dd; line-height: 1.4; }
+        .diff-btn.d1 { border-color: #44aa44; }
+        .diff-btn.d1 .d-name { color: #66ff66; }
+        .diff-btn.d2 { border-color: #88aa00; }
+        .diff-btn.d2 .d-name { color: #ccee44; }
+        .diff-btn.d3 { border-color: #cc6600; }
+        .diff-btn.d3 .d-name { color: #ff9944; }
+        .diff-btn.d4 { border-color: #cc0000; }
+        .diff-btn.d4 .d-name { color: #ff4444; }
 
         /* ═══════════════════════════════════════════════════
            МЕДІАЗАПИТИ — розміри під кожен екран
@@ -347,13 +343,10 @@
 
             #start-screen h1 { font-size: 26px; letter-spacing: 2px; }
             #start-screen .subtitle { font-size: 10px; margin-top: -8px; }
-            .start-card { padding: 14px 16px; gap: 10px; }
-            .start-card label { font-size: 11px; }
-            .threat-slider-val { font-size: 26px; }
-            .threat-step-btn { width: 46px; height: 46px; font-size: 24px; }
-            .threat-picker { gap: 16px; }
-            .threat-labels { font-size: 9px; }
-            .start-btn { font-size: 16px; padding: 11px 0; }
+            .diff-grid { gap: 8px; max-width: 300px; }
+            .diff-btn { padding: 8px 5px; }
+            .diff-btn .d-name { font-size: 12px; }
+            .diff-btn .d-stat { font-size: 9px; }
 
             #pause-overlay h2 { font-size: 24px; }
             .pause-btn { font-size: 14px; padding: 10px 22px; }
@@ -389,14 +382,11 @@
 
             #start-screen h1 { font-size: 30px; letter-spacing: 2px; margin-bottom: 4px; }
             #start-screen .subtitle { font-size: 11px; margin-top: -10px; }
-            .start-card { padding: 16px 20px; gap: 12px; }
-            .start-card label { font-size: 13px; }
-            .threat-slider-val { font-size: 30px; }
-            .threat-step-btn { width: 50px; height: 50px; font-size: 26px; }
-            .threat-picker { gap: 18px; }
-            .threat-labels { font-size: 10px; }
-            .start-btn { font-size: 18px; padding: 13px 0; }
-            #start-screen { gap: 16px; }
+            #start-screen { gap: 14px; }
+            .diff-grid { gap: 9px; max-width: 310px; }
+            .diff-btn { padding: 9px 5px; }
+            .diff-btn .d-name { font-size: 12px; }
+            .diff-btn .d-stat { font-size: 10px; }
 
             #pause-overlay h2 { font-size: 26px; }
             .pause-btn { font-size: 15px; padding: 11px 26px; }
@@ -432,14 +422,11 @@
 
             #start-screen h1 { font-size: 34px; letter-spacing: 3px; }
             #start-screen .subtitle { font-size: 12px; margin-top: -12px; }
-            .start-card { padding: 18px 24px; gap: 13px; }
-            .start-card label { font-size: 14px; }
-            .threat-slider-val { font-size: 34px; }
-            .threat-step-btn { width: 54px; height: 54px; font-size: 28px; }
-            .threat-picker { gap: 20px; }
-            .threat-labels { font-size: 10px; }
-            .start-btn { font-size: 19px; padding: 14px 0; }
-            #start-screen { gap: 18px; }
+            #start-screen { gap: 16px; }
+            .diff-grid { gap: 10px; max-width: 320px; }
+            .diff-btn { padding: 10px 6px; }
+            .diff-btn .d-name { font-size: 13px; }
+            .diff-btn .d-stat { font-size: 10px; }
 
             #pause-overlay h2 { font-size: 28px; }
             .pause-btn { font-size: 16px; padding: 12px 28px; }
@@ -475,14 +462,11 @@
 
             #start-screen h1 { font-size: 44px; letter-spacing: 4px; }
             #start-screen .subtitle { font-size: 15px; margin-top: -14px; }
-            .start-card { padding: 26px 36px; gap: 18px; max-width: 380px; }
-            .start-card label { font-size: 15px; }
-            .threat-slider-val { font-size: 40px; }
-            .threat-step-btn { width: 60px; height: 60px; font-size: 32px; }
-            .threat-picker { gap: 24px; }
-            .threat-labels { font-size: 11px; }
-            .start-btn { font-size: 22px; padding: 16px 0; max-width: 280px; }
-            #start-screen { gap: 24px; }
+            #start-screen { gap: 22px; }
+            .diff-grid { gap: 12px; max-width: 380px; }
+            .diff-btn { padding: 14px 8px; border-radius: 16px; }
+            .diff-btn .d-name { font-size: 15px; }
+            .diff-btn .d-stat { font-size: 12px; }
 
             #pause-overlay h2 { font-size: 34px; }
             .pause-btn { font-size: 18px; padding: 14px 34px; }
@@ -510,19 +494,33 @@
 <div id="start-screen">
     <h1>👑 Dungeon Lord</h1>
     <div class="subtitle">Siege Defense</div>
-
-    <div class="start-card">
-        <label>Максимальний рівень загрози</label>
-        <div class="threat-slider-wrap">
-            <div class="threat-picker">
-                <button class="threat-step-btn" id="threat-minus" onclick="_threatStep(-1)">−</button>
-                <div class="threat-slider-val" id="start-threat-val">10</div>
-                <button class="threat-step-btn" id="threat-plus" onclick="_threatStep(1)">+</button>
-            </div>
-            <div class="threat-labels"><span>Легко (1)</span><span>Пекло (100)</span></div>
-        </div>
+    <div class="diff-label">Оберіть складність</div>
+    <div class="diff-grid">
+        <button class="diff-btn d1" onclick="startGame(1)">
+            <div class="d-name">⚔️ Легкий</div>
+            <div class="d-stat">🏰 2000 HP міста</div>
+            <div class="d-stat">👤 Стандарт</div>
+            <div class="d-stat">💀 Загроза до 20</div>
+        </button>
+        <button class="diff-btn d2" onclick="startGame(2)">
+            <div class="d-name">🗡️ Нормальний</div>
+            <div class="d-stat">🏰 4000 HP міста</div>
+            <div class="d-stat">👤 +10% герої</div>
+            <div class="d-stat">💀 Загроза до 40</div>
+        </button>
+        <button class="diff-btn d3" onclick="startGame(3)">
+            <div class="d-name">🔥 Важкий</div>
+            <div class="d-stat">🏰 8000 HP міста</div>
+            <div class="d-stat">👤 +20% герої</div>
+            <div class="d-stat">💀 Загроза до 60</div>
+        </button>
+        <button class="diff-btn d4" onclick="startGame(4)">
+            <div class="d-name">💀 Пекло</div>
+            <div class="d-stat">🏰 15000 HP міста</div>
+            <div class="d-stat">👤 +30% герої</div>
+            <div class="d-stat">💀 Загроза до 80</div>
+        </button>
     </div>
-    <button class="start-btn" id="start-game-btn" onclick="startGame()">⚔️ ПОЧАТИ</button>
 </div>
 
 <!-- ── ПАУЗА ── -->
@@ -680,7 +678,7 @@ let GAME = {
     maxLordHP: 500, lordDmg: 20,
     lordBaseAtkSpeed: 0.8,   // базова ША (Dota2-стиль)
     lordAtkSpeedBonus: 0,    // бонус ША від апгрейдів
-    lordArmor: 0,            // броня лорда (тільки від апгрейдів)
+    lordArmor: 5,            // броня лорда (5 базово + апгрейди)
     lordRegenPct: 0,         // % макс HP/сек (накопичується з апгрейдів)
     // Ціни — Володар
     lordAtkCost: 80,
@@ -1374,6 +1372,7 @@ class Unit {
             }
         } else {
             enemy = units.find(u => enemyTypes.includes(u.type) && isTargetable(u)
+                && u.floorIdx === this.floorIdx
                 && Math.abs(u.x - this.x) < range && Math.abs(u.y - this.y) < 40);
         }
 
@@ -2132,16 +2131,24 @@ function init() {
     // Якщо немає збереження — стартовий екран вже видимий, чекаємо натискання
 }
 
-function startGame() {
-    let threatVal = _startThreatVal;
-    GAME.maxThreatLevel = threatVal;
-    document.getElementById('threat-cap-input').value = threatVal;
+function startGame(diff) {
+    const DIFFS = {
+        1: { cityHP: 2000,  heroScale: 0,  maxThreat: 20 },
+        2: { cityHP: 4000,  heroScale: 10, maxThreat: 40 },
+        3: { cityHP: 8000,  heroScale: 20, maxThreat: 60 },
+        4: { cityHP: 15000, heroScale: 30, maxThreat: 80 },
+    };
+    let d = DIFFS[diff] || DIFFS[1];
+    GAME.cityHP = d.cityHP;
+    GAME.maxCityHP = d.cityHP;
+    GAME.heroScalePercent = d.heroScale;
+    GAME.maxThreatLevel = d.maxThreat;
+    document.getElementById('threat-cap-input').value = d.maxThreat;
 
     floors.push(new Floor(0));
     floors.push(new Floor(1));
     GAME.souls = 150;
 
-    // Повністю прибираємо стартовий екран з DOM
     let ss = document.getElementById('start-screen');
     if (ss) ss.parentNode.removeChild(ss);
     beginGame();
@@ -2330,8 +2337,7 @@ function loop() {
 
     // Камера
     if (manualCameraY !== null) {
-        GAME.cameraY += (manualCameraY - GAME.cameraY) * 0.2;
-        if (++cameraReturnTimer > 180) { manualCameraY = null; cameraReturnTimer = 0; }
+        GAME.cameraY = manualCameraY;
     } else {
         let target = floors.length * CFG.floorH - gH/2;
         GAME.cameraY += (target - GAME.cameraY) * 0.1;
@@ -2671,7 +2677,7 @@ function upgradeLordVit() {
     if (GAME.souls < GAME.lordVitCost) return;
     GAME.souls -= GAME.lordVitCost;
     GAME.maxLordHP += 100;
-    GAME.lordArmor += 1;
+    GAME.lordArmor += 2;
     GAME.lordRegenPct += 0.001; // +0.1% макс HP/сек
     let lord = units.find(u => u.type==='lord');
     if (lord) {
@@ -3065,34 +3071,7 @@ document.addEventListener('keydown', e => {
 });
 
 // =================== СТАРТОВИЙ ЕКРАН — обробники ===================
-let _startThreatVal = 10;
-
-function _updateThreatDisplay() {
-    document.getElementById('start-threat-val').textContent = _startThreatVal;
-}
-
-// Крок загрози — викликається через onclick атрибут
-function _threatStep(delta) {
-    _startThreatVal = Math.max(1, Math.min(100, _startThreatVal + delta));
-    _updateThreatDisplay();
-}
-
-// Автоповтор для − / + при утриманні (desktop + touch)
-function _bindRepeat(id, fn) {
-    let el = document.getElementById(id);
-    if (!el) return;
-    let timer = null;
-    function start() { fn(); timer = setTimeout(() => { timer = setInterval(fn, 80); }, 500); }
-    function stop()  { clearTimeout(timer); clearInterval(timer); timer = null; }
-    el.addEventListener('mousedown',  start);
-    el.addEventListener('mouseup',    stop);
-    el.addEventListener('mouseleave', stop);
-    el.addEventListener('touchstart', function(e){ e.preventDefault(); start(); }, { passive: false });
-    el.addEventListener('touchend',   stop);
-    el.addEventListener('touchcancel',stop);
-}
-_bindRepeat('threat-minus', () => _threatStep(-1));
-_bindRepeat('threat-plus',  () => _threatStep(1));
+// Вибір складності через startGame(diff)
 
 // Всі кнопки мають onclick атрибути в HTML — це основний механізм для iOS.
 // Нижче нічого додаткового не потрібно.
