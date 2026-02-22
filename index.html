@@ -680,7 +680,7 @@ let GAME = {
     maxLordHP: 500, lordDmg: 20,
     lordBaseAtkSpeed: 0.8,   // базова ША (Dota2-стиль)
     lordAtkSpeedBonus: 0,    // бонус ША від апгрейдів
-    lordArmor: 5,            // 5 броні базово
+    lordArmor: 0,            // броня лорда (тільки від апгрейдів)
     lordRegenPct: 0,         // % макс HP/сек (накопичується з апгрейдів)
     // Ціни — Володар
     lordAtkCost: 80,
@@ -1142,9 +1142,9 @@ class Unit {
             this.heroHelmetCol = htype.helmet;
             this.heroWeapon    = htype.weapon;
 
-            // ── Стати (збільшені, бо монстри мають броню) ────────────────
-            let monHp  = 120 + n * 30;
-            let monDmg = (n < 5) ? 8 + n * 2 : 8 + 4*2 + (n - 4) * 3;
+            // ── Стати героїв ──────────────────────────────────────────────
+            let monHp  = 90 + n * 22;
+            let monDmg = (n < 5) ? 6 + n : 6 + 4 + (n - 4) * 2;
             this.hp   = monHp  * scale;
             this.dmg  = monDmg * scale;
 
@@ -2671,7 +2671,7 @@ function upgradeLordVit() {
     if (GAME.souls < GAME.lordVitCost) return;
     GAME.souls -= GAME.lordVitCost;
     GAME.maxLordHP += 100;
-    GAME.lordArmor += 2;
+    GAME.lordArmor += 1;
     GAME.lordRegenPct += 0.001; // +0.1% макс HP/сек
     let lord = units.find(u => u.type==='lord');
     if (lord) {
