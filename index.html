@@ -1321,6 +1321,19 @@ class Unit {
             return; // Заморожені — не рухаються і не атакують
         }
 
+        // Герой під дією переляку (Дух) — біжить до міста 2 сек
+        if (this.type === 'hero' && (this._scareTimer || 0) > 0) {
+            this._scareTimer--;
+            this.color = '#88ccff'; // синюватий відтінок поки перелякано
+            if (this._scareTimer <= 0) {
+                this.waveActive = false;
+                this.color = '#ff3333'; // відновити нормальний колір
+            } else {
+                this.moveFeared();
+                return;
+            }
+        }
+
         // Герой під дією запаморочення
         if (this.dazeMode) { this.moveMonster(); return; }
 
@@ -1564,6 +1577,38 @@ class Unit {
             } else {
                 if (Math.abs(this.x - centerX) > 30) this.x += (centerX - this.x > 0 ? 1 : -1) * this.speed;
             }
+        }
+    }
+
+    moveFeared() {
+        // Герой тікає до міста — дзеркально moveMonster, але без пошкодження міста
+        if (this.floorIdx < 0) {
+            // На поверхні — зупиняється біля воріт, не атакує місто
+            this.y = CFG.surfaceY;
+            if (this.x > CITY_GATE_X + 20) this.x -= this.speed;
+            return;
+        }
+        if (this.floorIdx === 0) {
+            // Поверх 0 → піднімається через CAVE_X на поверхню
+            if (this.isClimbingUp) {
+                this.y -= this.speed * 2; this.x = CAVE_X;
+                if (this.y <= CFG.surfaceY) { this.y = CFG.surfaceY; this.floorIdx = -1; this.isClimbingUp = false; }
+            } else {
+                if (Math.abs(this.x - CAVE_X) > 10) this.x += (CAVE_X - this.x > 0 ? 1 : -1) * this.speed;
+                else { this.x = CAVE_X; this.isClimbingUp = true; }
+            }
+            return;
+        }
+        // Глибші поверхи → до сходів поверху вище
+        let prev = floors[this.floorIdx - 1];
+        let ladX = prev ? prev.ladderX : CAVE_X;
+        if (this.isClimbingUp) {
+            this.y -= this.speed * 2; this.x = ladX;
+            let tY = prev ? prev.y : CFG.surfaceY;
+            if (this.y <= tY) { this.y = tY; this.floorIdx--; this.isClimbingUp = false; }
+        } else {
+            if (Math.abs(this.x - ladX) > 10) this.x += (ladX - this.x > 0 ? 1 : -1) * this.speed;
+            else { this.x = ladX; this.isClimbingUp = true; }
         }
     }
 
