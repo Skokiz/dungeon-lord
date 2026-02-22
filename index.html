@@ -2316,10 +2316,13 @@ function loop() {
         heroScaleTimer = 0;
         GAME.gameTime++;
         if (GAME.gameTime % 60 === 0) { // кожні 60 сек
-            GAME.difficultyLevel++;
-            GAME.eliteChance     = Math.min(100, GAME.eliteChance + 1);
-            GAME.captainChance   = Math.min(100, GAME.captainChance + 1);
-            // +4% за рівень загрози, макс 100%
+            // Рівень загрози зростає тільки до maxThreatLevel
+            if (GAME.difficultyLevel < GAME.maxThreatLevel) {
+                GAME.difficultyLevel++;
+                GAME.eliteChance   = Math.min(100, GAME.eliteChance + 1);
+                GAME.captainChance = Math.min(100, GAME.captainChance + 1);
+            }
+            // extraHeroChance і heroScalePercent теж обмежені рівнем складності
             GAME.extraHeroChance = Math.min(100, GAME.difficultyLevel * 4);
             let maxScalePercent  = GAME.maxThreatLevel * 4;
             if (GAME.heroScalePercent < maxScalePercent) GAME.heroScalePercent += 4;
