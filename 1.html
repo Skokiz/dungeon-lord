@@ -1740,9 +1740,9 @@ class Unit {
         let dy = this.y - this.size - camY;
 
         // ── Жива анімація погойдування ────────────────────────────────────
-        let _bt  = Date.now() / 600 + this.x * 0.07;
+        let _bt  = Date.now() / 600 + this.x * 0.009;
         let _bob = this.state === 'move'
-            ? Math.abs(Math.sin(_bt * 1.8)) * 3
+            ? Math.abs(Math.sin(_bt * 1.5)) * 3
             : (this.type === 'lord' ? Math.sin(_bt * 0.38) * 2 : Math.sin(_bt * 0.55) * 1.2);
         dy -= _bob;
         dx  = this.x - this.size / 2; // перераховуємо на випадок якщо x змінився
