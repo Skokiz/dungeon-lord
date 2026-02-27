@@ -1653,30 +1653,16 @@ class Unit {
         // Пастки — тригеруються при вході на поверх
         if (cur.hasTrap && !this.trapDamaged) {
             if (cur.trapType === 'spike') {
-                // 🗡️ Шипи: 20% maxHP при вході
+                // 🗡️ Шипи: 50% шанс спрацювання, 20% maxHP при вході
+                this.trapDamaged = true;
+                if (Math.random() < 0.50) {
                 let spikeDmg = Math.round(this.maxHp * 0.20);
                 this.hp -= spikeDmg;
-                this.trapDamaged = true;
                 spawnDmgText(this.x, this.y - this.size - 8, '-' + spikeDmg, '#ff4444');
                 for (let _si = 0; _si < 6; _si++)
                     spawnParticle(this.x + (Math.random()-.5)*14, this.y - 4, 'red',
                         {size: 1.2 + Math.random()*1.5, vy: -(1.5+Math.random()*2), vx:(Math.random()-.5)*3});
-            } else if (cur.trapType === 'summon') {
-                // ⭐ Виклик: 35% шанс заспавнити елітного монстра при вході героя
-                this.trapDamaged = true;
-                if (Math.random() < 0.35) {
-                    let monLevel = Math.max(1, Math.min(cur.depth + 1, 20));
-                    let elite = new Unit('monster', cur.ladderX + (Math.random()-.5)*30, cur.y, cur.depth, monLevel);
-                    elite.heroRank = Math.random() < 0.5 ? 'elite_atk' : 'elite_hp';
-                    if (elite.heroRank === 'elite_atk') { elite.dmg *= 2; elite.baseDmg *= 2; }
-                    else                                 { elite.hp  *= 2; elite.maxHp *= 2; }
-                    units.push(elite);
-                    spawnParticle(elite.x, elite.y - elite.size, 'gold',
-                        {size:2, vy:-2, vx:0});
-                    for (let _gi=0;_gi<8;_gi++)
-                        spawnParticle(elite.x+(Math.random()-.5)*20, elite.y-elite.size*0.5, 'yellow',
-                            {size:1+Math.random(), vy:-(1+Math.random()*2), vx:(Math.random()-.5)*3});
-                }
+                } // кінець if (Math.random() < 0.50)
             }
             // Телепорт і Дротик НЕ тут — глобальний тік
         }
@@ -1684,7 +1670,7 @@ class Unit {
         // 🪃 Дротик: незалежний таймер на поверсі (не залежить від trapDamaged)
         if (cur.hasTrap && cur.trapType === 'dart') {
             if (!cur._dartTimer || cur._dartTimer <= 0) {
-                cur._dartTimer = 4 * 60; // кожні 4 сек
+                cur._dartTimer = 5 * 60; // кожні 5 сек
             }
             cur._dartTimer--;
             if (cur._dartTimer === 1) {
@@ -1693,7 +1679,7 @@ class Unit {
                 if (hOnFloor.length > 0) {
                     let target = hOnFloor[Math.floor(Math.random() * hOnFloor.length)];
                     let poisonDps  = target.maxHp * 0.03; // 3% maxHP/сек
-                    let poisonSecs = 5;                    // 5 секунд
+                    let poisonSecs = 3;                    // 3 секунди
                     target._poisonTicks = (target._poisonTicks || 0) + poisonSecs * 60;
                     target._poisonDps   = Math.max(target._poisonDps || 0, poisonDps);
                     spawnDmgText(target.x, target.y - target.size - 10, '☠️ Отрута', '#44ff88');
@@ -2523,6 +2509,18 @@ function spawnMinions() {
             f.spawnTimer++;
             if (f.spawnTimer >= spawnInterval) {
                 units.push(new Unit('monster', centerX, f.y, f.depth, f.depth + 1));
+                // ⭐ Виклик: 15% шанс заспавнити елітного монстра разом зі звичайним
+                if (f.hasTrap && f.trapType === 'summon' && Math.random() < 0.15) {
+                    let monLevel = Math.max(1, Math.min(f.depth + 1, 20));
+                    let elite = new Unit('monster', centerX + (Math.random()-.5)*40, f.y, f.depth, monLevel);
+                    elite.heroRank = Math.random() < 0.5 ? 'elite_atk' : 'elite_hp';
+                    if (elite.heroRank === 'elite_atk') { elite.dmg *= 2; elite.baseDmg *= 2; }
+                    else                                 { elite.hp  *= 2; elite.maxHp  *= 2; }
+                    units.push(elite);
+                    for (let _gi = 0; _gi < 8; _gi++)
+                        spawnParticle(elite.x+(Math.random()-.5)*20, elite.y-elite.size*0.5, 'yellow',
+                            {size:1+Math.random(), vy:-(1+Math.random()*2), vx:(Math.random()-.5)*3});
+                }
                 f.spawnTimer = 0;
             }
         }
@@ -3052,7 +3050,7 @@ function tickTeleports() {
             spawnParticle(victim.x + (Math.random()-.5)*20, victim.y - victim.size * 0.5, 'cyan',
                 {size: 1 + Math.random()*2, vy: -(1+Math.random()*2), vx: (Math.random()-.5)*3});
 
-        f.teleportCooldown = 7 * 60; // 7 сек
+        f.teleportCooldown = 10 * 60; // 10 сек
     });
 }
 
