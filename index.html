@@ -990,51 +990,49 @@ class Floor {
             let byBtn = fty + pad; // верхній край — під стелею кімнати
             let onRight = (this.depth % 2 === 1); // непарні → правий кут
 
-            // Визначаємо x першої кнопки (ліворуч у парі)
-            let bxFirst, bxSecond;
+            // Монстр — завжди крайня (outer) кнопка, Рівень — внутрішня
+            let bxMon, bxUpg;
             if (onRight) {
-                // обидві кнопки притиснуті до правої стіни
-                bxSecond = fx + fw - pad - bw;           // права кнопка (крайня права)
-                bxFirst  = bxSecond - gap - bw;          // ліва кнопка (зліва від правої)
+                bxMon = fx + fw - pad - bw;      // Монстр — крайня права
+                bxUpg = bxMon - gap - bw;         // Рівень — лівіше
             } else {
-                // обидві кнопки притиснуті до лівої стіни
-                bxFirst  = fx + pad;                     // ліва кнопка (крайня ліва)
-                bxSecond = bxFirst + bw + gap;           // права кнопка (праворуч від лівої)
+                bxMon = fx + pad;                 // Монстр — крайня ліва
+                bxUpg = bxMon + bw + gap;         // Рівень — правіше
             }
 
-            // ── "Апгрейд поверху" (перша кнопка) ────────────────────────
+            // ── "Апгрейд поверху" ─────────────────────────────────────────
             if (this.maxMonsters < 5) {
-                this._btnX = bxFirst; this._btnY = byBtn + camY; this._btnW = bw; this._btnH = bh;
+                this._btnX = bxUpg; this._btnY = byBtn + camY; this._btnW = bw; this._btnH = bh;
                 let can = GAME.souls >= this.floorUpgradeCost;
                 ctx.fillStyle = can ? 'rgba(0,140,55,0.90)' : 'rgba(40,40,40,0.85)';
-                ctx.beginPath(); ctx.roundRect(bxFirst, byBtn, bw, bh, 5); ctx.fill();
+                ctx.beginPath(); ctx.roundRect(bxUpg, byBtn, bw, bh, 5); ctx.fill();
                 ctx.strokeStyle = can ? '#00ff66' : '#444'; ctx.lineWidth = 1; ctx.stroke();
                 ctx.fillStyle = can ? '#fff' : '#666';
                 ctx.textAlign = 'center';
                 let _fs1 = isMobile ? '8px' : '9px';
                 ctx.font = 'bold ' + _fs1 + ' Arial';
-                ctx.fillText('Рівень', bxFirst + bw/2, byBtn + bh/2 - (isMobile ? 2 : 2));
+                ctx.fillText('Рівень', bxUpg + bw/2, byBtn + bh/2 - (isMobile ? 2 : 2));
                 ctx.font = _fs1 + ' Arial';
-                ctx.fillText(this.floorUpgradeCost + ' душ', bxFirst + bw/2, byBtn + bh/2 + (isMobile ? 8 : 9));
+                ctx.fillText(this.floorUpgradeCost + ' душ', bxUpg + bw/2, byBtn + bh/2 + (isMobile ? 8 : 9));
             } else {
                 this._btnX = null;
             }
 
-            // ── "Купити монстра" (друга кнопка) ──────────────────────────
+            // ── "Купити монстра" — завжди крайня кнопка ─────────────────
             let count   = units.filter(u => u.type==='monster' && u.floorIdx===this.depth).length;
             let buyCost = 15 + this.depth * 5;
             let canBuy  = GAME.souls >= buyCost && count < this.maxMonsters;
-            this._buyBtnX = bxSecond; this._buyBtnY = byBtn + camY; this._buyBtnW = bw; this._buyBtnH = bh;
+            this._buyBtnX = bxMon; this._buyBtnY = byBtn + camY; this._buyBtnW = bw; this._buyBtnH = bh;
             ctx.fillStyle = canBuy ? 'rgba(180,60,0,0.90)' : 'rgba(40,40,40,0.85)';
-            ctx.beginPath(); ctx.roundRect(bxSecond, byBtn, bw, bh, 5); ctx.fill();
+            ctx.beginPath(); ctx.roundRect(bxMon, byBtn, bw, bh, 5); ctx.fill();
             ctx.strokeStyle = canBuy ? '#ff8844' : '#444'; ctx.lineWidth = 1; ctx.stroke();
             ctx.fillStyle = canBuy ? '#fff' : '#666';
             ctx.textAlign = 'center';
             let _fs2 = isMobile ? '8px' : '9px';
             ctx.font = 'bold ' + _fs2 + ' Arial';
-            ctx.fillText('Монстр', bxSecond + bw/2, byBtn + bh/2 - (isMobile ? 2 : 2));
+            ctx.fillText('Монстр', bxMon + bw/2, byBtn + bh/2 - (isMobile ? 2 : 2));
             ctx.font = _fs2 + ' Arial';
-            ctx.fillText(buyCost + ' душ', bxSecond + bw/2, byBtn + bh/2 + (isMobile ? 8 : 9));
+            ctx.fillText(buyCost + ' душ', bxMon + bw/2, byBtn + bh/2 + (isMobile ? 8 : 9));
         } else {
             this._btnX    = null;
             this._buyBtnX = null;
