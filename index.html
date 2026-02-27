@@ -847,7 +847,44 @@ class Floor {
             lg.addColorStop(1,   `rgba(255,160,30,0)`);
             ctx.fillStyle = lg;
             ctx.beginPath(); ctx.arc(tx, torchY, 35, 0, Math.PI*2); ctx.fill();
+
+            // ── Дим над факелом ───────────────────────────────────────────
+            {
+                let ts = Date.now() / 1400 + ti * 1.57;
+                for (let sm = 0; sm < 3; sm++) {
+                    let phase = (ts + sm * 0.33) % 1;          // 0 → 1 (цикл)
+                    let sox   = tx + Math.sin(ts * 2.5 + sm * 2.1) * 5;
+                    let soy   = torchY - 14 - phase * 34;
+                    let soa   = 0.09 * (1 - phase);
+                    ctx.globalAlpha = Math.max(0, soa);
+                    ctx.fillStyle = '#998877';
+                    ctx.beginPath();
+                    ctx.arc(sox, soy, 2.5 + phase * 3.5, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                ctx.globalAlpha = 1;
+            }
         });
+
+        // ── 5б. Підземний пил (атмосфера) ───────────────────────────────
+        {
+            let t  = Date.now() / 1000;
+            let ds = this.depth * 89 + 17;
+            let dp = (n) => { ds = (ds * 1664525 + 1013904223) & 0xffffffff; return Math.abs(ds % n); };
+            ctx.shadowBlur = 0;
+            for (let d = 0; d < 7; d++) {
+                let bx  = fx + 18 + dp(fw - 36);
+                let by  = fty + 14 + dp(fh - 24);
+                let ax  = bx + Math.sin(t * 0.28 + d * 1.73) * 14;
+                let ay  = by + Math.cos(t * 0.19 + d * 2.31) * 10;
+                let al  = 0.04 + 0.025 * Math.abs(Math.sin(t * 0.6 + d * 1.1));
+                let rad = 1.0 + 0.5 * Math.abs(Math.sin(t * 0.9 + d));
+                ctx.globalAlpha = al;
+                ctx.fillStyle = '#c8c0ee';
+                ctx.beginPath(); ctx.arc(ax, ay, rad, 0, Math.PI * 2); ctx.fill();
+            }
+            ctx.globalAlpha = 1;
+        }
 
         // ── 6. Тунель/сходи між поверхами ───────────────────────────────
         if (this.depth >= 0) {
@@ -1427,12 +1464,12 @@ class Unit {
                 let _isCrit = false;
                 if (this.type === 'hero' && this.critChance && Math.random() < this.critChance) {
                     dmgDealt *= 2; _isCrit = true;
-                    for (let _ci=0;_ci<5;_ci++) spawnParticle(enemy.x+(Math.random()-.5)*10, enemy.y-enemy.size-4, 'orange',{size:3+Math.random()*3,vy:-(1.5+Math.random())});
+                    for (let _ci=0;_ci<6;_ci++) spawnParticle(enemy.x+(Math.random()-.5)*10, enemy.y-enemy.size-4, 'orange',{size:1+Math.random()*1.5,vy:-(1.5+Math.random()*2),vx:(Math.random()-.5)*3});
                 }
                 // Асасін: перший удар ×2
                 if (this.type === 'hero' && this.firstBlood) {
                     dmgDealt *= 2; this.firstBlood = false; _isCrit = true;
-                    for (let _fi=0;_fi<5;_fi++) spawnParticle(enemy.x+(Math.random()-.5)*8, enemy.y-enemy.size-4, 'red',{size:3+Math.random()*3,vy:-(1.5+Math.random())});
+                    for (let _fi=0;_fi<6;_fi++) spawnParticle(enemy.x+(Math.random()-.5)*8, enemy.y-enemy.size-4, 'red',{size:1+Math.random()*1.5,vy:-(1.5+Math.random()*2),vx:(Math.random()-.5)*3});
                 }
                 if (_isCrit) spawnDmgText(enemy.x, enemy.y - enemy.size - 10, '✦КРИТ ' + Math.round(dmgDealt), '#ffcc00', true);
 
@@ -1702,11 +1739,32 @@ class Unit {
         let dx = this.x - this.size/2;
         let dy = this.y - this.size - camY;
 
+        // ── Жива анімація погойдування ────────────────────────────────────
+        let _bt  = Date.now() / 280 + this.x * 0.07;
+        let _bob = this.state === 'move'
+            ? Math.abs(Math.sin(_bt * 2.5)) * 3.5
+            : (this.type === 'lord' ? Math.sin(_bt * 0.5) * 2 : Math.sin(_bt * 0.8) * 1.2);
+        dy -= _bob;
+        dx  = this.x - this.size / 2; // перераховуємо на випадок якщо x змінився
+
         // Обводки для рангів — тільки для боса (еліти без квадратів)
         if (this.type === 'hero' && this.heroRank === 'boss') {
             let pulse = 0.6 + 0.4 * Math.sin(Date.now() / 200);
             ctx.strokeStyle = `rgba(255,0,255,${pulse})`; ctx.lineWidth = 4;
             ctx.beginPath(); ctx.arc(this.x, dy + this.size/2, this.size/2 + 6, 0, Math.PI*2); ctx.stroke();
+        }
+
+        // ── Тінь під юнітом (еліпс на підлозі) ──────────────────────────
+        {
+            let _sy  = this.y - camY;
+            let _sw  = this.size * 0.45 * (1 - _bob * 0.015);
+            let _sh  = this.size * 0.09;
+            let _sal = 0.28 * (1 - _bob * 0.04);
+            ctx.shadowBlur  = 0;
+            ctx.fillStyle   = `rgba(0,0,0,${Math.max(0.05, _sal)})`;
+            ctx.beginPath();
+            ctx.ellipse(this.x, _sy, _sw, _sh, 0, 0, Math.PI * 2);
+            ctx.fill();
         }
 
         // ── Відмальовка тіла юніта (чорний контур через shadow) ──────────
@@ -2701,7 +2759,7 @@ function loop() {
                     let spd = 1.5 + Math.random() * 2.5;
                     spawnParticle(u.x, u.y - u.size * 0.4, pcol, {
                         vx: Math.cos(ang) * spd, vy: Math.sin(ang) * spd - 1.5,
-                        size: 3 + Math.random() * 3.5, life: 40 + Math.random() * 20
+                        size: 1.5 + Math.random() * 2, life: 40 + Math.random() * 20
                     });
                 }
                 if (u.heroRank === 'boss')            triggerScreenShake(10);
@@ -2727,10 +2785,6 @@ function loop() {
         ctx.globalAlpha = a;
         ctx.fillStyle = col;
         ctx.beginPath(); ctx.arc(p.x, p.y - GAME.cameraY, p.size, 0, Math.PI * 2); ctx.fill();
-        if (p.size > 4) { // Ореол для великих частинок
-            ctx.globalAlpha = a * 0.25;
-            ctx.beginPath(); ctx.arc(p.x, p.y - GAME.cameraY, p.size * 2, 0, Math.PI * 2); ctx.fill();
-        }
         if (p.life <= 0) particles.splice(i, 1);
     }
     ctx.globalAlpha = 1;
@@ -3036,9 +3090,9 @@ function updateUI() {
 function spawnParticle(x, y, color, opts = {}) {
     particles.push({
         x, y, color,
-        vx:  opts.vx  !== undefined ? opts.vx  : (Math.random() - 0.5) * 3,
-        vy:  opts.vy  !== undefined ? opts.vy  : -(1 + Math.random() * 2.5),
-        size: opts.size || (2 + Math.random() * 3),
+        vx:  opts.vx  !== undefined ? opts.vx  : (Math.random() - 0.5) * 2.5,
+        vy:  opts.vy  !== undefined ? opts.vy  : -(0.8 + Math.random() * 1.8),
+        size: opts.size || (0.8 + Math.random() * 1.2),
         life: opts.life || 35,
         maxLife: opts.life || 35,
     });
