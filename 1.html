@@ -740,10 +740,11 @@ class Floor {
         this.trapType = null; // 'spike','teleport'
         this.teleportCooldown = 0;
         this.maxMonsters = 2;
-        this.floorUpgradeCost = 60;
+        // Базова ціна залежить від глибини: поверх N+1 на 10% дорожче від поверху N
+        this.floorUpgradeCost = Math.round(60 * Math.pow(1.1, depth) / 5) * 5;
         this.ladderX = (depth % 2 === 0)
-            ? centerX - CFG.floorW/2 + 25   // 25px від лівої стіни
-            : centerX + CFG.floorW/2 - 25;  // 25px від правої стіни
+            ? centerX - CFG.floorW/2 + 75   // 75px від лівої стіни
+            : centerX + CFG.floorW/2 - 75;  // 75px від правої стіни
     }
 
     draw(camY) {
@@ -958,24 +959,29 @@ class Floor {
                 ctx.beginPath(); ctx.arc(ladX, fy - 10, 16, 0, Math.PI*2); ctx.fill();
                 ctx.globalAlpha = 1;
             } else if (this.trapType === 'dart') {
-                // Дротик у стіні
-                let wx = this.ladderX < centerX ? fx : fx + fw; // яка стіна ближче до сходів
-                let dartT = (Date.now() / 2200 + this.depth * 0.37) % 1;
-                let dartX = wx + (wx < centerX ? 8 : -8);
-                let dartY = fy - fh * 0.4;
+                // Дротик зі сторони сходів — стріляє в бік кімнати
+                let onLeft  = this.ladderX < centerX; // сходи зліва?
+                let dartDir = onLeft ? 1 : -1;        // дротик летить вправо або вліво
+                let dartT   = (Date.now() / 2200 + this.depth * 0.37) % 1;
+                // Дротик висить поруч зі стіною тунелю
+                let dartX   = this.ladderX + dartDir * 16;
+                let dartY   = fy - fh * 0.4;
                 ctx.strokeStyle = '#44bb66'; ctx.lineWidth = 2;
-                ctx.beginPath(); ctx.moveTo(dartX, dartY); ctx.lineTo(dartX + (wx < centerX ? 14 : -14), dartY); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(dartX, dartY);
+                ctx.lineTo(dartX + dartDir * 14, dartY); ctx.stroke();
                 // наконечник
                 ctx.fillStyle = '#88ffaa';
+                let tip = dartX + dartDir * 14;
                 ctx.beginPath();
-                let tip = wx < centerX ? dartX + 14 : dartX - 14;
-                ctx.moveTo(tip, dartY); ctx.lineTo(tip + (wx < centerX ? 6 : -6), dartY - 3);
-                ctx.lineTo(tip + (wx < centerX ? 6 : -6), dartY + 3); ctx.closePath(); ctx.fill();
-                // крапля отрути
+                ctx.moveTo(tip, dartY);
+                ctx.lineTo(tip + dartDir * 6, dartY - 3);
+                ctx.lineTo(tip + dartDir * 6, dartY + 3);
+                ctx.closePath(); ctx.fill();
+                // крапля отрути при польоті
                 if (dartT > 0.85) {
                     ctx.globalAlpha = (1 - dartT) * 6;
                     ctx.fillStyle = '#00ff88';
-                    ctx.beginPath(); ctx.arc(tip + (wx < centerX ? 8 : -8), dartY + 3, 2.5, 0, Math.PI*2); ctx.fill();
+                    ctx.beginPath(); ctx.arc(tip + dartDir * 8, dartY + 3, 2.5, 0, Math.PI*2); ctx.fill();
                     ctx.globalAlpha = 1;
                 }
             }
@@ -2331,7 +2337,9 @@ function init() {
                 f.hasTrap = fd.hasTrap || false;
                 f.trapType = fd.trapType || null;
                 f.maxMonsters = fd.maxMonsters || 2;
-                f.floorUpgradeCost = fd.floorUpgradeCost || 60;
+                // Перераховуємо ціну з depth + скількох апгрейдів куплено
+                { let _b = Math.round(60 * Math.pow(1.1, f.depth) / 5) * 5;
+                  f.floorUpgradeCost = Math.round(_b * (1 + 0.5 * (f.maxMonsters - 2)) / 5) * 5; }
                 floors.push(f);
             });
             // Є збереження — повністю прибираємо стартовий екран з DOM
@@ -3334,7 +3342,10 @@ function _handleCanvasTap(clientX, clientY) {
             if (GAME.souls >= f.floorUpgradeCost) {
                 GAME.souls -= f.floorUpgradeCost;
                 f.maxMonsters++;
-                f.floorUpgradeCost = r5(f.floorUpgradeCost * 1.10);
+                // Ціна: base(depth) × (1 + 0.5 × апгрейдів_зроблено)
+                // maxMonsters 2→3→4→5 означає 0/1/2/3 апгрейди вже куплені
+                let _fBase = Math.round(60 * Math.pow(1.1, f.depth) / 5) * 5;
+                f.floorUpgradeCost = r5(_fBase * (1 + 0.5 * (f.maxMonsters - 2)));
                 updateUI(); saveGame();
             }
         }
