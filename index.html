@@ -192,9 +192,10 @@
         .cmain-trap    { background: linear-gradient(145deg,#886600,#554400); border-color: #ffcc00; }
         .s-atk   { background: linear-gradient(145deg,#cc2222,#881111); border-color: #ff5555; }
         .s-vit   { background: linear-gradient(145deg,#1a8822,#115511); border-color: #44ff66; }
-        .s-spike { background: linear-gradient(145deg,#888,#555);       border-color: #bbb; }
-        .s-tele  { background: linear-gradient(145deg,#2244cc,#112288); border-color: #6699ff; }
-        .s-daze  { background: linear-gradient(145deg,#cc8800,#886600); border-color: #ffcc44; }
+        .s-spike   { background: linear-gradient(145deg,#888,#555);       border-color: #bbb; }
+        .s-tele    { background: linear-gradient(145deg,#2244cc,#112288); border-color: #6699ff; }
+        .s-summon  { background: linear-gradient(145deg,#886600,#554400); border-color: #ffdd44; }
+        .s-dart    { background: linear-gradient(145deg,#226622,#114411); border-color: #44ff88; }
 
         /* Прямокутні кнопки */
         .rect-btn {
@@ -622,17 +623,22 @@
                     <button class="sub-btn s-spike" id="btn-trap-spike" onclick="buyTrap('spike')">
                         <span class="sicon">🗡️</span>
                         <span class="slabel">Шипи</span>
-                        <span class="scost">50💀</span>
+                        <span class="scost">70💀</span>
                     </button>
                     <button class="sub-btn s-tele" id="btn-trap-tele" onclick="buyTrap('teleport')">
                         <span class="sicon">🌀</span>
                         <span class="slabel">Телепорт</span>
-                        <span class="scost">120💀</span>
+                        <span class="scost">100💀</span>
                     </button>
-                    <button class="sub-btn s-daze" id="btn-trap-daze" onclick="buyTrap('daze')">
-                        <span class="sicon">💫</span>
-                        <span class="slabel">Запамор.</span>
-                        <span class="scost">200💀</span>
+                    <button class="sub-btn s-summon" id="btn-trap-summon" onclick="buyTrap('summon')">
+                        <span class="sicon">⭐</span>
+                        <span class="slabel">Виклик</span>
+                        <span class="scost">90💀</span>
+                    </button>
+                    <button class="sub-btn s-dart" id="btn-trap-dart" onclick="buyTrap('dart')">
+                        <span class="sicon">🪃</span>
+                        <span class="slabel">Дротик</span>
+                        <span class="scost">80💀</span>
                     </button>
                 </div>
                 <button class="circle-main-btn cmain-trap" id="btn-menu-trap" onclick="toggleMenu('trap')">
@@ -731,7 +737,7 @@ class Floor {
         this.y = 250 + depth * CFG.floorH;
         this.spawnTimer = 0;
         this.hasTrap = false;
-        this.trapType = null; // 'spike','teleport','daze'
+        this.trapType = null; // 'spike','teleport'
         this.teleportCooldown = 0;
         this.maxMonsters = 2;
         this.floorUpgradeCost = 60;
@@ -941,10 +947,37 @@ class Floor {
                 ctx.strokeStyle = `rgba(160,200,255,${alpha})`;
                 ctx.lineWidth = 2;
                 ctx.beginPath(); ctx.arc(ladX, fy - 6, 18, 0, Math.PI*2); ctx.stroke();
-            } else if (this.trapType === 'daze') {
-                ctx.font = '16px Arial'; ctx.textAlign = 'center';
-                for (let i = -1; i <= 1; i++)
-                    ctx.fillText('💫', ladX + i * 24, fy - 4);
+            } else if (this.trapType === 'summon') {
+                // Зірочка-портал виклику монстра
+                let pulse = 0.6 + 0.4 * Math.sin(Date.now() / 350);
+                ctx.font = '22px Arial'; ctx.textAlign = 'center';
+                ctx.globalAlpha = pulse;
+                ctx.fillText('⭐', ladX, fy - 4);
+                ctx.globalAlpha = 0.25 * pulse;
+                ctx.fillStyle = '#ffdd44';
+                ctx.beginPath(); ctx.arc(ladX, fy - 10, 16, 0, Math.PI*2); ctx.fill();
+                ctx.globalAlpha = 1;
+            } else if (this.trapType === 'dart') {
+                // Дротик у стіні
+                let wx = this.ladderX < centerX ? fx : fx + fw; // яка стіна ближче до сходів
+                let dartT = (Date.now() / 2200 + this.depth * 0.37) % 1;
+                let dartX = wx + (wx < centerX ? 8 : -8);
+                let dartY = fy - fh * 0.4;
+                ctx.strokeStyle = '#44bb66'; ctx.lineWidth = 2;
+                ctx.beginPath(); ctx.moveTo(dartX, dartY); ctx.lineTo(dartX + (wx < centerX ? 14 : -14), dartY); ctx.stroke();
+                // наконечник
+                ctx.fillStyle = '#88ffaa';
+                ctx.beginPath();
+                let tip = wx < centerX ? dartX + 14 : dartX - 14;
+                ctx.moveTo(tip, dartY); ctx.lineTo(tip + (wx < centerX ? 6 : -6), dartY - 3);
+                ctx.lineTo(tip + (wx < centerX ? 6 : -6), dartY + 3); ctx.closePath(); ctx.fill();
+                // крапля отрути
+                if (dartT > 0.85) {
+                    ctx.globalAlpha = (1 - dartT) * 6;
+                    ctx.fillStyle = '#00ff88';
+                    ctx.beginPath(); ctx.arc(tip + (wx < centerX ? 8 : -8), dartY + 3, 2.5, 0, Math.PI*2); ctx.fill();
+                    ctx.globalAlpha = 1;
+                }
             }
         }
 
@@ -1399,8 +1432,6 @@ class Unit {
             }
         }
 
-        // Герой під дією запаморочення
-        if (this.dazeMode) { this.moveMonster(); return; }
 
         // ── Радіус атаки ─────────────────────────────────────────────────
         let enemyTypes = (this.type === 'hero') ? ['monster','lord'] : ['hero'];
@@ -1581,6 +1612,14 @@ class Unit {
                         this._bleedTicks--;
                         this.hp -= (this._bleedDps||0) / 60;
                     }
+                    // Отрута від дротика
+                    if (this.type==='hero' && (this._poisonTicks||0) > 0) {
+                        this._poisonTicks--;
+                        this.hp -= (this._poisonDps||0) / 60;
+                        if (this._poisonTicks % 40 === 0)
+                            spawnParticle(this.x+(Math.random()-.5)*8, this.y-this.size*0.5, 'green',
+                                {size:0.8+Math.random(), vy:-0.8, vx:(Math.random()-.5)*1.5});
+                    }
                     this.attackCooldown = Math.max(8, Math.round(60 / (atkSpd * slow)));
                 }
                 spawnParticle((this.x+enemy.x)/2, (this.y+enemy.y)/2, this.type==='lord'?'purple':'white');
@@ -1611,22 +1650,58 @@ class Unit {
         let cur = floors[this.floorIdx];
         if (!cur) return;
 
-        // Пастки — шипи і запаморочення (тригеруються при наступі)
+        // Пастки — тригеруються при вході на поверх
         if (cur.hasTrap && !this.trapDamaged) {
             if (cur.trapType === 'spike') {
-                this.hp -= 20;
+                // 🗡️ Шипи: 20% maxHP при вході
+                let spikeDmg = Math.round(this.maxHp * 0.20);
+                this.hp -= spikeDmg;
                 this.trapDamaged = true;
-                spawnParticle(this.x, this.y, 'red');
-            } else if (cur.trapType === 'daze') {
-                if (Math.random() < 0.01 && !this.dazeMode) { // 1% шанс
-                    this.dazeMode = true;
-                    this.color = '#ffaa00';
-                    this.waveActive = true;
-                    spawnParticle(this.x, this.y, 'gold');
+                spawnDmgText(this.x, this.y - this.size - 8, '-' + spikeDmg, '#ff4444');
+                for (let _si = 0; _si < 6; _si++)
+                    spawnParticle(this.x + (Math.random()-.5)*14, this.y - 4, 'red',
+                        {size: 1.2 + Math.random()*1.5, vy: -(1.5+Math.random()*2), vx:(Math.random()-.5)*3});
+            } else if (cur.trapType === 'summon') {
+                // ⭐ Виклик: 35% шанс заспавнити елітного монстра при вході героя
+                this.trapDamaged = true;
+                if (Math.random() < 0.35) {
+                    let monLevel = Math.max(1, Math.min(cur.depth + 1, 20));
+                    let elite = new Unit('monster', cur.ladderX + (Math.random()-.5)*30, cur.y, cur.depth, monLevel);
+                    elite.heroRank = Math.random() < 0.5 ? 'elite_atk' : 'elite_hp';
+                    if (elite.heroRank === 'elite_atk') { elite.dmg *= 2; elite.baseDmg *= 2; }
+                    else                                 { elite.hp  *= 2; elite.maxHp *= 2; }
+                    units.push(elite);
+                    spawnParticle(elite.x, elite.y - elite.size, 'gold',
+                        {size:2, vy:-2, vx:0});
+                    for (let _gi=0;_gi<8;_gi++)
+                        spawnParticle(elite.x+(Math.random()-.5)*20, elite.y-elite.size*0.5, 'yellow',
+                            {size:1+Math.random(), vy:-(1+Math.random()*2), vx:(Math.random()-.5)*3});
                 }
-                this.trapDamaged = true;
             }
-            // Телепорт НЕ тут — він глобальний через tickTeleports()
+            // Телепорт і Дротик НЕ тут — глобальний тік
+        }
+
+        // 🪃 Дротик: незалежний таймер на поверсі (не залежить від trapDamaged)
+        if (cur.hasTrap && cur.trapType === 'dart') {
+            if (!cur._dartTimer || cur._dartTimer <= 0) {
+                cur._dartTimer = 4 * 60; // кожні 4 сек
+            }
+            cur._dartTimer--;
+            if (cur._dartTimer === 1) {
+                // Знаходимо одного рандомного героя на поверсі
+                let hOnFloor = units.filter(u => u.type === 'hero' && u.floorIdx === cur.depth && u.hp > 0);
+                if (hOnFloor.length > 0) {
+                    let target = hOnFloor[Math.floor(Math.random() * hOnFloor.length)];
+                    let poisonDps  = target.maxHp * 0.03; // 3% maxHP/сек
+                    let poisonSecs = 5;                    // 5 секунд
+                    target._poisonTicks = (target._poisonTicks || 0) + poisonSecs * 60;
+                    target._poisonDps   = Math.max(target._poisonDps || 0, poisonDps);
+                    spawnDmgText(target.x, target.y - target.size - 10, '☠️ Отрута', '#44ff88');
+                    for (let _pi = 0; _pi < 6; _pi++)
+                        spawnParticle(target.x+(Math.random()-.5)*12, target.y-target.size*0.5, 'green',
+                            {size:1+Math.random()*1.5, vy:-(1+Math.random()*1.5), vx:(Math.random()-.5)*2.5});
+                }
+            }
         }
 
         let next = floors[this.floorIdx + 1];
@@ -2954,31 +3029,35 @@ function tickTeleports() {
         if (f.teleportCooldown > 0) { f.teleportCooldown--; return; }
 
         // Знаходимо одного героя на цьому поверсі
-        let victims = units.filter(u => u.type === 'hero' && u.floorIdx === f.depth && !u.dazeMode);
+        let victims = units.filter(u => u.type === 'hero' && u.floorIdx === f.depth);
         if (victims.length === 0) return;
 
         let victim = victims[Math.floor(Math.random() * victims.length)];
 
-        // Рандомний поверх (не поверх лорда, не той самий)
+        // Рандомний поверх (не поверх лорда, не той самий) — будь-який напрямок
         let available = floors.filter(fl => fl.depth !== floors.length - 1 && fl.depth !== f.depth);
         if (available.length === 0) return;
         let dest = available[Math.floor(Math.random() * available.length)];
 
-        // Телепортуємо в центр кімнати
-        spawnParticle(victim.x, victim.y, 'blue');
+        // Телепортуємо в центр кімнати + спалах частинок
+        for (let _ti = 0; _ti < 8; _ti++)
+            spawnParticle(victim.x + (Math.random()-.5)*20, victim.y - victim.size * 0.5, 'blue',
+                {size: 1 + Math.random()*2, vy: -(1+Math.random()*2), vx: (Math.random()-.5)*3});
         victim.floorIdx = dest.depth;
         victim.y = dest.y;
-        victim.x = centerX; // центр кімнати
+        victim.x = centerX + (Math.random()-.5) * 40; // трохи рандомна позиція
         victim.isClimbing = false;
         victim.trapDamaged = false;
-        spawnParticle(victim.x, victim.y, 'blue');
+        for (let _ti = 0; _ti < 8; _ti++)
+            spawnParticle(victim.x + (Math.random()-.5)*20, victim.y - victim.size * 0.5, 'cyan',
+                {size: 1 + Math.random()*2, vy: -(1+Math.random()*2), vx: (Math.random()-.5)*3});
 
-        f.teleportCooldown = 10 * 60; // 10 сек
+        f.teleportCooldown = 7 * 60; // 7 сек
     });
 }
 
 function showTrapPlacementHint(type) {
-    const icons = { spike: '🗡️', teleport: '🌀', daze: '💫' };
+    const icons = { spike: '🗡️', teleport: '🌀', summon: '⭐', dart: '🪃' };
     document.getElementById('trap-hint-icon').innerText = icons[type] || '🪤';
     document.getElementById('trap-hint').style.display = 'block';
     document.body.classList.add('trap-placement-mode');
@@ -2990,7 +3069,7 @@ function hideTrapPlacementHint() {
 }
 
 // =================== ПАСТКИ ===================
-const TRAP_COSTS = { spike: 50, teleport: 120, daze: 200 };
+const TRAP_COSTS = { spike: 70, teleport: 100, summon: 90, dart: 80 };
 
 // Режим вибору поверху для пастки
 let pendingTrapType = null; // якщо не null — чекаємо кліку на поверх
@@ -3068,14 +3147,15 @@ function updateUI() {
     document.getElementById('btn-mob-vit').disabled = s < GAME.mobVitCost;
 
     // Пастки
-    document.getElementById('btn-trap-spike').disabled = s < 50;
-    document.getElementById('btn-trap-tele').disabled  = s < 120;
-    document.getElementById('btn-trap-daze').disabled  = s < 200;
+    document.getElementById('btn-trap-spike').disabled  = s < TRAP_COSTS.spike;
+    document.getElementById('btn-trap-tele').disabled   = s < TRAP_COSTS.teleport;
+    document.getElementById('btn-trap-summon').disabled = s < TRAP_COSTS.summon;
+    document.getElementById('btn-trap-dart').disabled   = s < TRAP_COSTS.dart;
 
     // Анімація: підсвічуємо кола якщо є доступні апгрейди
     const lordAfford  = s >= GAME.lordAtkCost  || s >= GAME.lordVitCost;
     const mobAfford   = s >= GAME.mobAtkCost   || s >= GAME.mobVitCost;
-    const trapAfford  = s >= 50;
+    const trapAfford  = s >= Math.min(...Object.values(TRAP_COSTS));
     document.querySelectorAll('.cmain-lord').forEach(b => b.classList.toggle('can-afford', lordAfford));
     document.querySelectorAll('.cmain-monster').forEach(b => b.classList.toggle('can-afford', mobAfford));
     document.querySelectorAll('.cmain-trap').forEach(b => b.classList.toggle('can-afford', trapAfford));
