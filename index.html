@@ -625,6 +625,11 @@
                         <span class="slabel">Шипи</span>
                         <span class="scost">70💀</span>
                     </button>
+                    <button class="sub-btn s-dart" id="btn-trap-dart" onclick="buyTrap('dart')">
+                        <span class="sicon">🪃</span>
+                        <span class="slabel">Дротик</span>
+                        <span class="scost">80💀</span>
+                    </button>
                     <button class="sub-btn s-tele" id="btn-trap-tele" onclick="buyTrap('teleport')">
                         <span class="sicon">🌀</span>
                         <span class="slabel">Телепорт</span>
@@ -633,12 +638,7 @@
                     <button class="sub-btn s-summon" id="btn-trap-summon" onclick="buyTrap('summon')">
                         <span class="sicon">⭐</span>
                         <span class="slabel">Виклик</span>
-                        <span class="scost">90💀</span>
-                    </button>
-                    <button class="sub-btn s-dart" id="btn-trap-dart" onclick="buyTrap('dart')">
-                        <span class="sicon">🪃</span>
-                        <span class="slabel">Дротик</span>
-                        <span class="scost">80💀</span>
+                        <span class="scost">120💀</span>
                     </button>
                 </div>
                 <button class="circle-main-btn cmain-trap" id="btn-menu-trap" onclick="toggleMenu('trap')">
@@ -2959,6 +2959,9 @@ document.addEventListener('touchend', e => {
     if (openMenu && !e.target.closest('.circle-menu')) closeAllMenus();
 });
 
+// Округлення до найближчих 5
+const r5 = v => Math.round(v / 5) * 5;
+
 // =================== АПГРЕЙДИ ЛОРДА ===================
 function upgradeLordAttack() {
     if (GAME.souls < GAME.lordAtkCost) return;
@@ -2970,7 +2973,7 @@ function upgradeLordAttack() {
         lord.dmg = GAME.lordDmg;
         lord.atkSpeedBonus = GAME.lordAtkSpeedBonus;
     }
-    GAME.lordAtkCost = Math.floor(GAME.lordAtkCost * 1.45);
+    GAME.lordAtkCost = r5(GAME.lordAtkCost * 1.45);
     updateUI(); saveGame();
 }
 
@@ -2986,7 +2989,7 @@ function upgradeLordVit() {
         lord.hp = Math.min(lord.hp + 100, GAME.maxLordHP);
         lord.armor = GAME.lordArmor;
     }
-    GAME.lordVitCost = Math.floor(GAME.lordVitCost * 1.35);
+    GAME.lordVitCost = r5(GAME.lordVitCost * 1.35);
     updateUI(); saveGame();
 }
 
@@ -3004,7 +3007,7 @@ function upgradeMonsterAtk() {
         let atkSpd = (m.baseAtkSpeed || 0.83) + m.atkSpeedBonus;
         m.attackCooldownBase = Math.max(8, Math.round(60 / atkSpd));
     });
-    GAME.mobAtkCost = Math.floor(GAME.mobAtkCost * 1.4);
+    GAME.mobAtkCost = r5(GAME.mobAtkCost * 1.4);
     updateUI(); saveGame();
 }
 
@@ -3014,7 +3017,7 @@ function upgradeMonsterVit() {
     GAME.monsterHpBonus += 25;
     GAME.monsterArmorBonus += 1;
     units.filter(u => u.type==='monster').forEach(m => { m.maxHp += 25; m.hp = Math.min(m.hp+25, m.maxHp); m.armor = (m.armor||0) + 1; });
-    GAME.mobVitCost = Math.floor(GAME.mobVitCost * 1.35);
+    GAME.mobVitCost = r5(GAME.mobVitCost * 1.35);
     updateUI(); saveGame();
 }
 
@@ -3067,7 +3070,7 @@ function hideTrapPlacementHint() {
 }
 
 // =================== ПАСТКИ ===================
-const TRAP_COSTS = { spike: 70, teleport: 100, summon: 90, dart: 80 };
+const TRAP_COSTS = { spike: 70, dart: 80, teleport: 100, summon: 120 };
 
 // Режим вибору поверху для пастки
 let pendingTrapType = null; // якщо не null — чекаємо кліку на поверх
@@ -3099,7 +3102,7 @@ function buyFloor() {
     if (GAME.souls < GAME.floorCost) return;
     GAME.souls -= GAME.floorCost;
     floors.push(new Floor(floors.length));
-    GAME.floorCost = Math.floor(GAME.floorCost * 1.3);
+    GAME.floorCost = r5(GAME.floorCost * 1.3);
     // Переміщуємо лорда на новий (нижній) поверх — НЕ перестворюємо, HP зберігається
     let lord = units.find(u => u.type === 'lord');
     let last = floors[floors.length - 1];
@@ -3331,7 +3334,7 @@ function _handleCanvasTap(clientX, clientY) {
             if (GAME.souls >= f.floorUpgradeCost) {
                 GAME.souls -= f.floorUpgradeCost;
                 f.maxMonsters++;
-                f.floorUpgradeCost = Math.floor(f.floorUpgradeCost * 1.5);
+                f.floorUpgradeCost = r5(f.floorUpgradeCost * 1.10);
                 updateUI(); saveGame();
             }
         }
