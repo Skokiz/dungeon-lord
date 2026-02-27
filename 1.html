@@ -1119,20 +1119,31 @@ class Unit {
             let n = this.level - 1;
             let scale = 1 + GAME.heroScalePercent / 100;
 
-            // ── Типи героїв за рівнем (скін + пасивний скіл) ──────────────
+            // ── Типи героїв за рівнем (10 типів × 2 рівні = 20 рівнів) ────
+            // Tier II: успадковує + посилює пасив Tier I
             const HERO_TYPES = {
-                1:  { name:'recruit',    label:'Рекрут',      cloak:'#661122', body:'#cc2233', helmet:'#555566', weapon:'sword',   passive:'none'       },
-                2:  { name:'soldier',    label:'Солдат',      cloak:'#772200', body:'#cc4400', helmet:'#667788', weapon:'sword',   passive:'toughness'  }, // -10% dmg taken
-                3:  { name:'scout',      label:'Розвідник',   cloak:'#224400', body:'#448822', helmet:'#445544', weapon:'spear',   passive:'swift'      }, // +20% move speed
-                4:  { name:'knight',     label:'Лицар',       cloak:'#334455', body:'#446688', helmet:'#99aabb', weapon:'spear',   passive:'armor'      }, // 10% block
-                5:  { name:'mage',       label:'Маг',         cloak:'#330066', body:'#6600cc', helmet:'#aa66ff', weapon:'staff',   passive:'spellburn'  }, // +15% dmg
-                6:  { name:'paladin',    label:'Паладін',     cloak:'#553300', body:'#bb6600', helmet:'#ddbb44', weapon:'spear',   passive:'holyaura'   }, // реген 1hp/сек
-                7:  { name:'berserker',  label:'Берсерк',     cloak:'#440000', body:'#aa0000', helmet:'#882222', weapon:'axe',     passive:'rage'       }, // крит 15%
-                8:  { name:'assassin',   label:'Асасин',      cloak:'#111111', body:'#333344', helmet:'#224433', weapon:'dagger',  passive:'firstblood' }, // перший удар x2
-                9:  { name:'warlord',    label:'Воєначальник',cloak:'#552200', body:'#884400', helmet:'#ccaa66', weapon:'sword',   passive:'warcry'     }, // сусіди +10% dmg
-                10: { name:'champion',   label:'Чемпіон',     cloak:'#550055', body:'#aa00aa', helmet:'#ff88ff', weapon:'staff',   passive:'unstoppable'}, // імун до блоку
+                1:  { name:'recruit',     label:'Рекрут I',       cloak:'#551122', body:'#cc2233', helmet:'#555566', weapon:'sword',  passive:'none'       }, // без пасиву
+                2:  { name:'recruit2',    label:'Рекрут II',      cloak:'#661122', body:'#dd2233', helmet:'#6a6a7a', weapon:'sword',  passive:'hardened'   }, // +3 броні
+                3:  { name:'soldier',     label:'Солдат I',       cloak:'#772200', body:'#cc4400', helmet:'#778899', weapon:'sword',  passive:'toughness'  }, // +6 броні
+                4:  { name:'soldier2',    label:'Солдат II',      cloak:'#883300', body:'#dd5500', helmet:'#99aabb', weapon:'spear',  passive:'veteran'    }, // +8 броні + реген 1
+                5:  { name:'scout',       label:'Розвідник I',    cloak:'#224400', body:'#448822', helmet:'#556655', weapon:'spear',  passive:'swift'      }, // швидкість ×1.5
+                6:  { name:'scout2',      label:'Розвідник II',   cloak:'#336600', body:'#559933', helmet:'#66aa55', weapon:'dagger', passive:'hunter'     }, // ×1.5 швидк + перший удар ×2
+                7:  { name:'knight',      label:'Лицар I',        cloak:'#334455', body:'#446688', helmet:'#99aabb', weapon:'spear',  passive:'armor'      }, // +12 броні
+                8:  { name:'knight2',     label:'Лицар II',       cloak:'#445566', body:'#557799', helmet:'#aabbcc', weapon:'spear',  passive:'guardian'   }, // +12 броні + реген 1.5
+                9:  { name:'mage',        label:'Маг I',          cloak:'#330066', body:'#6600cc', helmet:'#aa66ff', weapon:'staff',  passive:'spellburn'  }, // +25% dmg
+                10: { name:'mage2',       label:'Маг II',         cloak:'#440077', body:'#7711dd', helmet:'#cc88ff', weapon:'staff',  passive:'arcane'     }, // +35% dmg + пробиває броню
+                11: { name:'paladin',     label:'Паладін I',      cloak:'#553300', body:'#bb6600', helmet:'#ddbb44', weapon:'spear',  passive:'holyaura'   }, // реген 2 + броня 4
+                12: { name:'paladin2',    label:'Паладін II',     cloak:'#664400', body:'#cc7700', helmet:'#eeccaa', weapon:'spear',  passive:'divine'     }, // реген 3 + броня 6
+                13: { name:'berserker',   label:'Берсерк I',      cloak:'#440000', body:'#aa0000', helmet:'#882222', weapon:'axe',    passive:'rage'       }, // крит 20% ×2, швидк 1.3
+                14: { name:'berserker2',  label:'Берсерк II',     cloak:'#660000', body:'#cc0000', helmet:'#aa3333', weapon:'axe',    passive:'fury'       }, // крит 25% ×2, швидк 1.4
+                15: { name:'assassin',    label:'Асасін I',       cloak:'#111111', body:'#333344', helmet:'#224433', weapon:'dagger', passive:'firstblood' }, // перший удар ×2, швидк 1.4
+                16: { name:'assassin2',   label:'Асасін II',      cloak:'#222222', body:'#444455', helmet:'#335544', weapon:'dagger', passive:'shadowstrike'}, // перший удар ×2 + пробиває броню
+                17: { name:'warlord',     label:'Воєначальник I', cloak:'#552200', body:'#884400', helmet:'#ccaa66', weapon:'sword',  passive:'warcry'     }, // союзники +10% dmg
+                18: { name:'warlord2',    label:'Воєначальник II',cloak:'#663300', body:'#995500', helmet:'#ddbb77', weapon:'sword',  passive:'warcry2'    }, // союзники +10% dmg + крит 15%
+                19: { name:'champion',    label:'Чемпіон I',      cloak:'#550055', body:'#aa00aa', helmet:'#ff88ff', weapon:'staff',  passive:'unstoppable'}, // +25% dmg + пробиває броню
+                20: { name:'champion2',   label:'Чемпіон II',     cloak:'#660066', body:'#bb00bb', helmet:'#ffaaff', weapon:'staff',  passive:'conqueror'  }, // +25% dmg + пробиває броню + крит 20%
             };
-            let htype = HERO_TYPES[Math.min(this.level, 10)] || HERO_TYPES[10];
+            let htype = HERO_TYPES[Math.min(this.level, 20)] || HERO_TYPES[20];
             this.heroType    = htype.name;
             this.heroLabel   = htype.label;
             this.heroPassive = htype.passive;
@@ -1147,23 +1158,40 @@ class Unit {
             this.hp   = monHp  * scale;
             this.dmg  = monDmg * scale;
 
-            // ── Броня по типу героя ───────────────────────────────────────
+            // ── Базова броня по типу (до пасивних бонусів) ───────────────
             const HERO_ARMOR = {
-                recruit:0, soldier:3, scout:1, knight:8,
-                mage:0, paladin:4, berserker:2, assassin:1,
-                warlord:5, champion:6
+                recruit:0, recruit2:0,
+                soldier:0, soldier2:0,
+                scout:1,   scout2:1,
+                knight:0,  knight2:0,
+                mage:0,    mage2:0,
+                paladin:0, paladin2:0,
+                berserker:2, berserker2:2,
+                assassin:1,  assassin2:1,
+                warlord:4,   warlord2:4,
+                champion:3,  champion2:3,
             };
             this.armor = HERO_ARMOR[htype.name] || 0;
 
-            // Пасивні модифікатори
-            if (htype.passive === 'toughness')  this.armor += 4;             // Солдат: +4 броні
-            if (htype.passive === 'swift')       this.speed = 1.5;
-            if (htype.passive === 'armor')       this.armor += 5;            // Лицар: +5 броні
-            if (htype.passive === 'spellburn')   this.dmg *= 1.20;
-            if (htype.passive === 'holyaura')    this.regen = 2;             // Паладін: 2 HP/сек
-            if (htype.passive === 'rage')        this.critChance = 0.20;     // Берсерк: 20% крит
-            if (htype.passive === 'firstblood')  this.firstBlood = true;
-            if (htype.passive === 'unstoppable') this.armorPierce = true;    // Чемпіон: ігнорує броню
+            // ── Пасивні модифікатори ──────────────────────────────────────
+            if (htype.passive === 'hardened')     this.armor += 3;                                    // Рекрут II: +3 броні
+            if (htype.passive === 'toughness')    this.armor += 6;                                    // Солдат I: +6 броні
+            if (htype.passive === 'veteran')    { this.armor += 8;  this.regen = 1; }                 // Солдат II: +8 броні + реген 1
+            if (htype.passive === 'swift')        this.speed = 1.5;                                   // Розвідник I: швидк ×1.5
+            if (htype.passive === 'hunter')     { this.speed = 1.5; this.firstBlood = true; }         // Розвідник II: + перший удар ×2
+            if (htype.passive === 'armor')        this.armor += 12;                                   // Лицар I: +12 броні
+            if (htype.passive === 'guardian')   { this.armor += 12; this.regen = 1.5; }               // Лицар II: +12 броні + реген 1.5
+            if (htype.passive === 'spellburn')    this.dmg *= 1.25;                                   // Маг I: +25% dmg
+            if (htype.passive === 'arcane')     { this.dmg *= 1.35; this.armorPierce = true; }        // Маг II: +35% dmg + пробиває броню
+            if (htype.passive === 'holyaura')   { this.armor += 4;  this.regen = 2; }                 // Паладін I: броня 4 + реген 2
+            if (htype.passive === 'divine')     { this.armor += 6;  this.regen = 3; }                 // Паладін II: броня 6 + реген 3
+            if (htype.passive === 'rage')       { this.critChance = 0.20; this.speed = 1.3; }         // Берсерк I: крит 20% + швидк 1.3
+            if (htype.passive === 'fury')       { this.critChance = 0.25; this.speed = 1.4; }         // Берсерк II: крит 25% + швидк 1.4
+            if (htype.passive === 'firstblood') { this.firstBlood = true; this.speed = 1.4; }         // Асасін I: перший удар ×2 + швидк 1.4
+            if (htype.passive === 'shadowstrike'){ this.firstBlood = true; this.speed = 1.4; this.armorPierce = true; } // Асасін II: + пробиває броню
+            if (htype.passive === 'warcry2')    { this.heroPassive = 'warcry'; this.critChance = 0.15; } // Воєначальник II: аура + крит 15%
+            if (htype.passive === 'unstoppable'){ this.dmg *= 1.25; this.armorPierce = true; }        // Чемпіон I: +25% dmg + пробиває броню
+            if (htype.passive === 'conqueror')  { this.dmg *= 1.25; this.armorPierce = true; this.critChance = 0.20; } // Чемпіон II: + крит 20%
 
             // базова ША героя = 0.83 атк/сек
             this.baseAtkSpeed = 0.83;
