@@ -711,6 +711,8 @@ let GAME = {
 let floors = [];
 let units = [];
 let particles = [];
+let dmgTexts = [];        // плаваючі числа пошкоджень
+let screenShake = 0;      // кадри тремтіння екрану
 let axeProjectiles = []; // снаряди гоблінів
 let centerX = gW / 2;
 let CAVE_X = centerX + CFG.floorW * 0.35; // точка виходу монстрів з підземелля
@@ -1423,16 +1425,18 @@ class Unit {
             if (this.attackCooldown <= 0) {
                 let dmgDealt = this.dmg;
 
-                // Берсерк: 20% крит ×2
+                // Берсерк: крит ×2
+                let _isCrit = false;
                 if (this.type === 'hero' && this.critChance && Math.random() < this.critChance) {
-                    dmgDealt *= 2;
-                    spawnParticle(enemy.x, enemy.y - enemy.size - 8, 'orange');
+                    dmgDealt *= 2; _isCrit = true;
+                    for (let _ci=0;_ci<5;_ci++) spawnParticle(enemy.x+(Math.random()-.5)*10, enemy.y-enemy.size-4, 'orange',{size:3+Math.random()*3,vy:-(1.5+Math.random())});
                 }
-                // Асасин: перший удар ×2
+                // Асасін: перший удар ×2
                 if (this.type === 'hero' && this.firstBlood) {
-                    dmgDealt *= 2; this.firstBlood = false;
-                    spawnParticle(enemy.x, enemy.y - enemy.size - 8, 'red');
+                    dmgDealt *= 2; this.firstBlood = false; _isCrit = true;
+                    for (let _fi=0;_fi<5;_fi++) spawnParticle(enemy.x+(Math.random()-.5)*8, enemy.y-enemy.size-4, 'red',{size:3+Math.random()*3,vy:-(1.5+Math.random())});
                 }
+                if (_isCrit) spawnDmgText(enemy.x, enemy.y - enemy.size - 10, '✦КРИТ ' + Math.round(dmgDealt), '#ffcc00', true);
 
                 // ── Броня (Dota-формула) ──────────────────────────────────
                 // Ліч ігнорує броню; Чемпіон ігнорує броню
@@ -1455,6 +1459,8 @@ class Unit {
                 }
 
                 enemy.hp -= dmgDealt;
+                // Лорд отримав удар — мале тремтіння
+                if (enemy.type === 'lord') triggerScreenShake(3);
 
                 // ── On-hit здібності атакуючого ───────────────────────────
 
@@ -2148,11 +2154,26 @@ class Unit {
             ctx.textBaseline = 'alphabetic';
         }
 
-        // ── HP бар (без shadow щоб не розмивало) ─────────────────────────
+        // ── HP бар з градієнтом ──────────────────────────────────────────
         ctx.shadowBlur = 0;
         let pct = Math.max(0, this.hp / this.maxHp);
-        ctx.fillStyle = '#600'; ctx.fillRect(this.x-15, dy-10, 30, 4);
-        ctx.fillStyle = '#0f0'; ctx.fillRect(this.x-15, dy-10, 30*pct, 4);
+        let _isLord = this.type === 'lord';
+        let _bw = _isLord ? 44 : 30, _bh = _isLord ? 6 : 4;
+        let _bx = this.x - _bw / 2;
+        // Фон
+        ctx.fillStyle = '#220000'; ctx.fillRect(_bx, dy - 11, _bw, _bh + 1);
+        // Заповнення з градієнтом (зелений→жовтий→червоний)
+        if (pct > 0) {
+            let _hg = ctx.createLinearGradient(_bx, 0, _bx + _bw, 0);
+            if (pct > 0.55) { _hg.addColorStop(0,'#1a9e1a'); _hg.addColorStop(1,'#44ff44'); }
+            else if (pct > 0.28) { _hg.addColorStop(0,'#bb7700'); _hg.addColorStop(1,'#ffcc00'); }
+            else { _hg.addColorStop(0,'#bb1100'); _hg.addColorStop(1,'#ff3300'); }
+            if (_isLord) { _hg = ctx.createLinearGradient(_bx,0,_bx+_bw,0); _hg.addColorStop(0,'#7700bb'); _hg.addColorStop(1,pct>0.5?'#cc44ff':'#ff44cc'); }
+            ctx.fillStyle = _hg;
+            ctx.fillRect(_bx, dy - 11, _bw * pct, _bh + 1);
+        }
+        // Відблиск зверху
+        ctx.fillStyle = 'rgba(255,255,255,0.18)'; ctx.fillRect(_bx, dy - 11, _bw * pct, 2);
 
         // Іконка рангу (герої)
         ctx.font = '10px Arial'; ctx.textAlign = 'center';
@@ -2407,7 +2428,10 @@ function loop() {
 
     // Скидаємо трансформацію і перевстановлюємо dpr scale кожен кадр
     let _dpr = Math.min(window.devicePixelRatio || 1, 2);
-    ctx.setTransform(_dpr, 0, 0, _dpr, 0, 0);
+    if (screenShake > 0) screenShake--;
+    let _sx = screenShake > 0 ? (Math.random() - 0.5) * screenShake * 2 : 0;
+    let _sy = screenShake > 0 ? (Math.random() - 0.5) * screenShake * 2 : 0;
+    ctx.setTransform(_dpr, 0, 0, _dpr, _sx * _dpr, _sy * _dpr);
 
     ctx.fillStyle = '#0d0820';
     ctx.fillRect(0, 0, gW, gH);
@@ -2422,36 +2446,74 @@ function loop() {
     let maxCam = Math.max(0, floors[floors.length-1].y - gH + 150);
     GAME.cameraY = Math.max(0, Math.min(GAME.cameraY, maxCam));
 
-    // ── Фон поверхні (ніч, небо) ────────────────────────────────────────
+    // ── Нічне небо ──────────────────────────────────────────────────────
     let skyGrad = ctx.createLinearGradient(0, 0, 0, CFG.surfaceY - GAME.cameraY);
-    skyGrad.addColorStop(0,   '#05030f');
-    skyGrad.addColorStop(0.6, '#0d0624');
-    skyGrad.addColorStop(1,   '#1a0a30');
+    skyGrad.addColorStop(0,   '#03020a');
+    skyGrad.addColorStop(0.5, '#08041a');
+    skyGrad.addColorStop(1,   '#14082e');
     ctx.fillStyle = skyGrad;
     ctx.fillRect(0, -500 - GAME.cameraY, gW, CFG.surfaceY + 500);
 
-    // Зірки (детерміновані)
-    ctx.fillStyle = 'rgba(255,255,255,0.7)';
-    for (let i = 0; i < 60; i++) {
-        let sx = ((i * 347 + 11) % gW);
-        let sy = ((i * 193 + 7)  % (CFG.surfaceY - 40)) - GAME.cameraY;
-        let blink = 0.4 + 0.6 * Math.sin(Date.now()/700 + i);
-        ctx.globalAlpha = blink * 0.8;
-        ctx.fillRect(sx, sy, 1.5, 1.5);
+    // ── Місяць ──────────────────────────────────────────────────────────
+    {
+        let mx = gW * 0.76, my = 55 - GAME.cameraY * 0.08;
+        let mr = 26;
+        // Ореол місяця
+        let mg = ctx.createRadialGradient(mx, my, mr * 0.6, mx, my, mr * 3.5);
+        mg.addColorStop(0, 'rgba(210,195,160,0.18)'); mg.addColorStop(1, 'rgba(210,195,160,0)');
+        ctx.fillStyle = mg; ctx.beginPath(); ctx.arc(mx, my, mr*3.5, 0, Math.PI*2); ctx.fill();
+        // Тіло місяця
+        let mbg = ctx.createRadialGradient(mx-7, my-7, 2, mx, my, mr);
+        mbg.addColorStop(0, '#fffff2'); mbg.addColorStop(0.5, '#e8dfc0'); mbg.addColorStop(1, '#c0aa80');
+        ctx.fillStyle = mbg; ctx.beginPath(); ctx.arc(mx, my, mr, 0, Math.PI*2); ctx.fill();
+        // Кратери
+        [[mx-8,my-6,5],[mx+7,my+8,3],[mx-4,my+11,4]].forEach(([cx,cy,cr])=>{
+            ctx.fillStyle='rgba(150,130,90,0.22)'; ctx.beginPath(); ctx.arc(cx,cy,cr,0,Math.PI*2); ctx.fill();
+        });
+    }
+
+    // ── Зірки (різних розмірів, різного кольору) ────────────────────────
+    for (let i = 0; i < 90; i++) {
+        let sx = (i * 347 + 11) % gW;
+        let sy = (i * 193 + 7) % (CFG.surfaceY - 20) - GAME.cameraY;
+        if (sy > CFG.surfaceY - GAME.cameraY - 5) continue;
+        let blink = 0.25 + 0.75 * Math.sin(Date.now() / (600 + i * 20) + i * 2.3);
+        let sr = i % 14 === 0 ? 2.2 : i % 7 === 0 ? 1.5 : 0.9;
+        ctx.globalAlpha = blink * 0.85;
+        ctx.fillStyle = i % 17 === 0 ? '#ffeedd' : i % 11 === 0 ? '#cce0ff' : '#ffffff';
+        ctx.beginPath(); ctx.arc(sx, sy, sr, 0, Math.PI * 2); ctx.fill();
     }
     ctx.globalAlpha = 1;
 
-    // ── Земля (кам'яна порода зверху) ────────────────────────────────────
+    // ── Силует гір на горизонті ─────────────────────────────────────────
     let groundY = CFG.surfaceY - GAME.cameraY;
-    let groundGrad = ctx.createLinearGradient(0, groundY, 0, groundY + 30);
-    groundGrad.addColorStop(0, '#3a2850');
-    groundGrad.addColorStop(1, '#1a1025');
-    ctx.fillStyle = groundGrad;
-    ctx.fillRect(0, groundY, gW, 30);
+    ctx.fillStyle = '#0a0618';
+    ctx.beginPath(); ctx.moveTo(0, groundY + 2);
+    [[0,0],[gW*.07,-48],[gW*.15,-18],[gW*.25,-75],[gW*.33,-35],
+     [gW*.42,-92],[gW*.5,-44],[gW*.58,-65],[gW*.67,-28],[gW*.76,-82],
+     [gW*.84,-40],[gW*.92,-60],[gW,0]].forEach(([mx,my])=>ctx.lineTo(mx, groundY+my));
+    ctx.lineTo(gW, groundY+2); ctx.closePath(); ctx.fill();
 
-    // ── Підземна порода (нижче входу) ────────────────────────────────────
-    ctx.fillStyle = '#0e0916';
-    ctx.fillRect(0, groundY + 30, gW, 5000);
+    // Другий шар гір (ближчий, трохи світліший)
+    ctx.fillStyle = '#0f0820';
+    ctx.beginPath(); ctx.moveTo(0, groundY + 2);
+    [[0,0],[gW*.1,-22],[gW*.2,-8],[gW*.3,-38],[gW*.4,-14],
+     [gW*.5,-28],[gW*.62,-10],[gW*.72,-35],[gW*.82,-15],[gW*.9,-24],[gW,0]].forEach(([mx,my])=>ctx.lineTo(mx, groundY+my));
+    ctx.lineTo(gW, groundY+2); ctx.closePath(); ctx.fill();
+
+    // ── Земля ────────────────────────────────────────────────────────────
+    let groundGrad = ctx.createLinearGradient(0, groundY, 0, groundY + 32);
+    groundGrad.addColorStop(0, '#3a2850'); groundGrad.addColorStop(1, '#180e22');
+    ctx.fillStyle = groundGrad; ctx.fillRect(0, groundY, gW, 32);
+
+    // ── Туман на горизонті ────────────────────────────────────────────────
+    let fogG = ctx.createLinearGradient(0, groundY - 35, 0, groundY + 5);
+    fogG.addColorStop(0, 'rgba(50,20,90,0)'); fogG.addColorStop(1, 'rgba(30,12,60,0.5)');
+    ctx.fillStyle = fogG; ctx.fillRect(0, groundY - 35, gW, 40);
+
+    // ── Підземна порода ───────────────────────────────────────────────────
+    ctx.fillStyle = '#0c0814';
+    ctx.fillRect(0, groundY + 32, gW, 5000);
 
     // ── Печерний вхід ─────────────────────────────────────────────────────
     let caveX  = CAVE_X;  // зміщено праворуч від центру (глобальна змінна)
@@ -2630,13 +2692,23 @@ function loop() {
                     }
                 }
             }
-            // Смерть героя — нагорода
+            // Смерть героя — нагорода + спалах частинок
             if (u.type === 'hero') {
                 let reward = u.soulReward || (u.heroRank === 'boss' ? 80 : u.heroRank.startsWith('elite') ? 25 : 15);
                 GAME.souls += reward;
                 let pcol = u.heroRank === 'boss' ? 'purple' : u.heroRank.startsWith('elite') ? 'orange' : 'gold';
-                let pcount = u.heroRank === 'boss' ? 6 : u.heroRank.startsWith('elite') ? 3 : 1;
-                for (let p=0; p<pcount; p++) spawnParticle(u.x+(Math.random()-.5)*20, u.y, pcol);
+                let pcount = u.heroRank === 'boss' ? 16 : u.heroRank.startsWith('elite') ? 9 : 5;
+                for (let p = 0; p < pcount; p++) {
+                    let ang = (p / pcount) * Math.PI * 2;
+                    let spd = 1.5 + Math.random() * 2.5;
+                    spawnParticle(u.x, u.y - u.size * 0.4, pcol, {
+                        vx: Math.cos(ang) * spd, vy: Math.sin(ang) * spd - 1.5,
+                        size: 3 + Math.random() * 3.5, life: 40 + Math.random() * 20
+                    });
+                }
+                if (u.heroRank === 'boss')            triggerScreenShake(10);
+                else if (u.heroRank.startsWith('elite')) triggerScreenShake(5);
+                spawnDmgText(u.x, u.y - u.size, '+' + reward + '💀', '#ffcc00', u.heroRank !== 'normal');
                 updateUI();
             } else if (u.type === 'lord') { gameOver(); }
             units.splice(i, 1);
@@ -2646,13 +2718,40 @@ function loop() {
         }
     }
 
-    // Частинки
-    particles.forEach((p,i) => {
-        p.life--; p.y -= 1;
-        ctx.fillStyle = p.color==='gold'?'#ffcc00':p.color==='orange'?'#ff8800':p.color==='purple'?'#cc44ff':p.color==='blue'?'#4488ff':p.color==='green'?'#44ff88':p.color==='cyan'?'#00ffff':p.color;
-        ctx.fillRect(p.x, p.y - GAME.cameraY, 4, 4);
+    // ── Частинки: кола з альфа-згасанням і фізикою ──────────────────────
+    const _PC = {gold:'#ffcc00',orange:'#ff8800',purple:'#cc44ff',blue:'#4488ff',
+                 green:'#44ee88',cyan:'#00ffff',red:'#ff3333',white:'#ffffff',yellow:'#ffff55'};
+    for (let i = particles.length - 1; i >= 0; i--) {
+        let p = particles[i];
+        p.life--; p.x += p.vx; p.y += p.vy; p.vy += 0.06;
+        let a = Math.pow(p.life / p.maxLife, 0.8);
+        let col = _PC[p.color] || p.color;
+        ctx.globalAlpha = a;
+        ctx.fillStyle = col;
+        ctx.beginPath(); ctx.arc(p.x, p.y - GAME.cameraY, p.size, 0, Math.PI * 2); ctx.fill();
+        if (p.size > 4) { // Ореол для великих частинок
+            ctx.globalAlpha = a * 0.25;
+            ctx.beginPath(); ctx.arc(p.x, p.y - GAME.cameraY, p.size * 2, 0, Math.PI * 2); ctx.fill();
+        }
         if (p.life <= 0) particles.splice(i, 1);
-    });
+    }
+    ctx.globalAlpha = 1;
+
+    // ── Числа пошкоджень ────────────────────────────────────────────────
+    for (let i = dmgTexts.length - 1; i >= 0; i--) {
+        let d = dmgTexts[i];
+        d.life--; d.x += d.vx; d.y += d.vy; d.vy *= 0.94;
+        let a = Math.min(1, d.life / (d.maxLife * 0.4));
+        ctx.globalAlpha = a;
+        ctx.font = d.big ? 'bold 15px Arial' : 'bold 11px Arial';
+        ctx.textAlign = 'center';
+        ctx.shadowColor = 'rgba(0,0,0,0.9)'; ctx.shadowBlur = 4;
+        ctx.fillStyle = d.color;
+        ctx.fillText(d.text, d.x, d.y - GAME.cameraY);
+        ctx.shadowBlur = 0;
+        if (d.life <= 0) dmgTexts.splice(i, 1);
+    }
+    ctx.globalAlpha = 1;
 
     // ── Топори гоблінів ──────────────────────────────────────────────────
     for (let i = axeProjectiles.length - 1; i >= 0; i--) {
@@ -2936,7 +3035,23 @@ function updateUI() {
 }
 
 // =================== УТИЛІТИ ===================
-function spawnParticle(x, y, color) { particles.push({x, y, color, life:30}); }
+function spawnParticle(x, y, color, opts = {}) {
+    particles.push({
+        x, y, color,
+        vx:  opts.vx  !== undefined ? opts.vx  : (Math.random() - 0.5) * 3,
+        vy:  opts.vy  !== undefined ? opts.vy  : -(1 + Math.random() * 2.5),
+        size: opts.size || (2 + Math.random() * 3),
+        life: opts.life || 35,
+        maxLife: opts.life || 35,
+    });
+}
+function spawnDmgText(x, y, text, color = '#ffffff', big = false) {
+    dmgTexts.push({ x, y, text, color, big, life: 50, maxLife: 50,
+        vx: (Math.random() - 0.5) * 0.8, vy: -1.4 });
+}
+function triggerScreenShake(intensity) {
+    screenShake = Math.max(screenShake, intensity || 6);
+}
 
 // Dota2-стиль броні: ефективне зниження = armor*0.06/(1+armor*0.06)
 function applyArmor(dmg, armor, pierce) {
