@@ -739,7 +739,8 @@ class Floor {
         this.hasTrap = false;
         this.trapType = null; // 'spike','teleport'
         this.teleportCooldown = 0;
-        this.maxMonsters = 2;
+        this.isBatFloor  = (depth + 1 === 6); // глибина 5 → рівень 6 → кажан
+        this.maxMonsters = this.isBatFloor ? 6 : 2;
         // Базова ціна залежить від глибини: поверх N+1 на 10% дорожче від поверху N
         this.floorUpgradeCost = Math.round(60 * Math.pow(1.1, depth) / 5) * 5;
         this.ladderX = (depth % 2 === 0)
@@ -1145,7 +1146,7 @@ class Floor {
             ctx.fillStyle = 'rgba(255,255,255,0.28)';
             ctx.font = '12px Arial';
             ctx.textAlign = 'left';
-            ctx.fillText('🧟 ' + this.maxMonsters + '/5', fx + 5, fy - 5);
+            ctx.fillText((this.isBatFloor ? '🦇' : '🧟') + ' ' + this.maxMonsters + '/' + (this.isBatFloor ? 10 : 5), fx + 5, fy - 5);
         }
 
         // ── 11 + 12. Дві кнопки горизонтально, чергують сторону по глибині ─
@@ -1169,7 +1170,7 @@ class Floor {
             }
 
             // ── "Апгрейд поверху" ─────────────────────────────────────────
-            if (this.maxMonsters < 5) {
+            if (this.maxMonsters < (this.isBatFloor ? 10 : 5)) {
                 this._btnX = bxUpg; this._btnY = byBtn + camY; this._btnW = bw; this._btnH = bh;
                 let can = GAME.souls >= this.floorUpgradeCost;
                 ctx.fillStyle = can ? 'rgba(0,140,55,0.90)' : 'rgba(40,40,40,0.85)';
@@ -1229,7 +1230,7 @@ class Unit {
                 3:  { name:'hounds',      color:'#c87040', baseAtk:6,  baseSpd:1.3,  hpMult:0.75, armor:1,  ability:'bleed'       },
                 4:  { name:'zombie',      color:'#5a8c3a', baseAtk:9,  baseSpd:0.55, hpMult:1.5,  armor:3,  ability:'infect'      },
                 5:  { name:'spirit',      color:'#aabbff', baseAtk:7,  baseSpd:1.1,  hpMult:0.9,  armor:2,  ability:'scare'       },
-                6:  { name:'bat',         color:'#553366', baseAtk:6,  baseSpd:1.4,  hpMult:0.65, armor:0,  ability:'dodge'       },
+                6:  { name:'bat',         color:'#553366', baseAtk:3,  baseSpd:1.4,  hpMult:0.33, armor:0,  ability:'dodge'       },
                 7:  { name:'golem',       color:'#887766', baseAtk:12, baseSpd:0.5,  hpMult:2.0,  armor:8,  ability:'stun'        },
                 8:  { name:'minotaur',    color:'#885522', baseAtk:10, baseSpd:0.7,  hpMult:1.6,  armor:5,  ability:'aoe4th'      },
                 9:  { name:'shadow',      color:'#334455', baseAtk:9,  baseSpd:1.2,  hpMult:1.0,  armor:4,  ability:'invis'       },
@@ -2444,10 +2445,13 @@ function init() {
                 let f = new Floor(fd.depth);
                 f.hasTrap = fd.hasTrap || false;
                 f.trapType = fd.trapType || null;
-                f.maxMonsters = fd.maxMonsters || 2;
+                f.maxMonsters = fd.maxMonsters || (f.isBatFloor ? 6 : 2);
+                // Мінімум для кажанів — 6 (міграція старих збережень)
+                if (f.isBatFloor && f.maxMonsters < 6) f.maxMonsters = 6;
                 // Перераховуємо ціну з depth + скількох апгрейдів куплено
                 { let _b = Math.round(60 * Math.pow(1.1, f.depth) / 5) * 5;
-                  f.floorUpgradeCost = Math.round(_b * (1 + 0.5 * (f.maxMonsters - 2)) / 5) * 5; }
+                  let _upg = f.isBatFloor ? (f.maxMonsters - 6) / 2 : (f.maxMonsters - 2);
+                  f.floorUpgradeCost = Math.round(_b * (1 + 0.5 * _upg) / 5) * 5; }
                 floors.push(f);
             });
             // Є збереження — повністю прибираємо стартовий екран з DOM
@@ -2624,7 +2628,11 @@ function spawnMinions() {
             let spawnInterval = 4 + f.depth * 3;
             f.spawnTimer++;
             if (f.spawnTimer >= spawnInterval) {
-                units.push(new Unit('monster', centerX, f.y, f.depth, f.depth + 1));
+                let spawnCount = f.isBatFloor ? 2 : 1;
+                for (let _sc = 0; _sc < spawnCount; _sc++) {
+                    if (count + _sc < f.maxMonsters)
+                        units.push(new Unit('monster', centerX + (_sc - 0.5) * 22, f.y, f.depth, f.depth + 1));
+                }
                 // ⭐ Виклик: 15% шанс заспавнити елітного монстра разом зі звичайним
                 if (f.hasTrap && f.trapType === 'summon' && Math.random() < 0.15) {
                     let monLevel = Math.max(1, Math.min(f.depth + 1, 20));
@@ -3522,17 +3530,18 @@ function _handleCanvasTap(clientX, clientY) {
 
     // Кнопки апгрейду поверху (права сторона)
     floors.forEach(f => {
-        if (f.depth === lordIdx || f.maxMonsters >= 5 || f._btnX == null) return;
+        let _maxMon = f.isBatFloor ? 10 : 5;
+        if (f.depth === lordIdx || f.maxMonsters >= _maxMon || f._btnX == null) return;
         let pad = (typeof _TAP_PAD !== 'undefined') ? _TAP_PAD : 0;
         if (cx >= f._btnX - pad && cx <= f._btnX + f._btnW + pad &&
             cy >= f._btnY - pad && cy <= f._btnY + f._btnH + pad) {
             if (GAME.souls >= f.floorUpgradeCost) {
                 GAME.souls -= f.floorUpgradeCost;
-                f.maxMonsters++;
-                // Ціна: base(depth) × (1 + 0.5 × апгрейдів_зроблено)
-                // maxMonsters 2→3→4→5 означає 0/1/2/3 апгрейди вже куплені
+                f.maxMonsters += f.isBatFloor ? 2 : 1; // кажани: +2 за апгрейд
                 let _fBase = Math.round(60 * Math.pow(1.1, f.depth) / 5) * 5;
-                f.floorUpgradeCost = r5(_fBase * (1 + 0.5 * (f.maxMonsters - 2)));
+                // Кількість куплених апгрейдів (для формули ціни)
+                let _upg = f.isBatFloor ? (f.maxMonsters - 6) / 2 : (f.maxMonsters - 2);
+                f.floorUpgradeCost = r5(_fBase * (1 + 0.5 * _upg));
                 updateUI(); saveGame();
             }
         }
