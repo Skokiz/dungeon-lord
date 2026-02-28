@@ -1281,7 +1281,7 @@ class Unit {
             if (this.ability === 'invis')       { this.invisCooldown = 360; this.invisTimer = 0; this.invisActive = false; }
             if (this.ability === 'aoe4th')      { this.aoeHitCount = 0; }
             if (this.ability === 'raise_dead')  { /* on-kill */ }
-            if (this.ability === 'absorb')      { this.absorbShield = this.hp * 0.2; }
+            if (this.ability === 'absorb')      { this.absorbShieldMax = this.maxHp * 0.2; this.absorbShield = this.absorbShieldMax; }
             if (this.ability === 'knockback')   { /* on-hit */ }
             if (this.ability === 'no_die')      { this.noDieUsed = false; }
             if (this.ability === 'explode')     { /* on-death */ }
@@ -1469,6 +1469,7 @@ class Unit {
                     if (allHeroes.length > 0) {
                         for (let wave=0; wave<3; wave++) {
                             setTimeout(() => {
+                                if (GAME.gameOver || GAME_PAUSED) return;
                                 allHeroes.forEach(h => {
                                     if (h.hp <= 0) return;
                                     let raw = this.dmg * 0.8;
@@ -1552,10 +1553,6 @@ class Unit {
             return true;
         };
 
-        // Bat: 10% ухилення
-        if (this.type === 'monster' && this.ability === 'dodge' && Math.random() < 0.10)
-            return; // пропускаємо цей тік оновлення бойової логіки
-
         // Герої та монстри б'ються лише стоячи на землі поверху (не на сходинках)
         if (this.isClimbing || this.isClimbingUp) {
             this.state = 'move';
@@ -1596,6 +1593,14 @@ class Unit {
         if (enemy) {
             this.state = 'fight';
             if (this.attackCooldown <= 0) {
+                // BAT: 10% шанс промаху (атакуючий промахується по кажану)
+                if (enemy.ability === 'dodge' && enemy.type === 'monster' && Math.random() < 0.10) {
+                    spawnDmgText(enemy.x, enemy.y - enemy.size - 10, 'Міс!', '#aaaaff');
+                    let _atkSpd = (this.baseAtkSpeed||0.83) + (this.atkSpeedBonus||0);
+                    this.attackCooldown = Math.max(8, Math.round(60 / _atkSpd));
+                    return;
+                }
+
                 let dmgDealt = this.dmg;
 
                 // Берсерк: крит ×2
@@ -1616,9 +1621,9 @@ class Unit {
                 let pierceArmor = (this.ability === 'armor_pierce') || (this.type === 'hero' && this.armorPierce);
                 dmgDealt = applyArmor(dmgDealt, enemy.armor || 0, pierceArmor);
 
-                // WATER_ELE: поглинає 20% вхідного урону (лишок не накопичується)
+                // WATER_ELE: щит поглинає вхідний урон повністю поки не спустошений
                 if (enemy.ability === 'absorb' && (enemy.absorbShield||0) > 0) {
-                    let absorbed = Math.min(enemy.absorbShield, dmgDealt * 0.2);
+                    let absorbed = Math.min(enemy.absorbShield, dmgDealt);
                     enemy.absorbShield -= absorbed;
                     dmgDealt -= absorbed;
                     spawnParticle(enemy.x, enemy.y - enemy.size, 'blue');
@@ -1659,11 +1664,13 @@ class Unit {
                     spawnParticle(enemy.x, enemy.y - enemy.size, 'green');
                 }
 
-                // HOUNDS: 15% кровотеча — 1% maxHP/сек на 5 сек
+                // HOUNDS: 15% кровотеча — стакується до 5 одиниць на героя (1% maxHP/сек за стак)
                 if (this.ability === 'bleed' && Math.random() < 0.15 && enemy.type === 'hero') {
-                    enemy._bleedTicks = (enemy._bleedTicks||0) + 300; // 5 сек * 60
-                    enemy._bleedDps   = enemy.maxHp * 0.01;
+                    enemy._bleedStacks = Math.min(5, (enemy._bleedStacks||0) + 1);
+                    enemy._bleedTicks  = 300; // 5 сек, оновлюється при кожному стаку
+                    enemy._bleedDps    = enemy.maxHp * 0.01 * enemy._bleedStacks;
                     spawnParticle(enemy.x, enemy.y - enemy.size, 'red');
+                    spawnDmgText(enemy.x, enemy.y - enemy.size - 10, '🩸×' + enemy._bleedStacks, '#ff4444');
                 }
 
                 // ZOMBIE: 3% заразити героя (рейтинг: boss=0, elite=1%, normal=3%)
@@ -1687,10 +1694,11 @@ class Unit {
                     spawnParticle(enemy.x, enemy.y - enemy.size, 'cyan');
                 }
 
-                // STONE GOLEM: 12% стан на 2 сек
-                if (this.ability === 'stun' && Math.random() < 0.12 && enemy.type === 'hero') {
-                    enemy._stunTimer = (enemy._stunTimer||0) + 120;
-                    spawnParticle(enemy.x, enemy.y - enemy.size, 'cyan');
+                // STONE GOLEM: 12% стан — герой що б'є голема отримує стан (не навпаки)
+                if (enemy.ability === 'stun' && enemy.type === 'monster' && this.type === 'hero' && Math.random() < 0.12) {
+                    this._stunTimer = (this._stunTimer||0) + 120;
+                    spawnDmgText(this.x, this.y - this.size - 10, '⚡Стан!', '#00ffff', true);
+                    spawnParticle(this.x, this.y - this.size, 'cyan');
                 }
 
                 // MINOTAUR: кожен 4-й удар — AОЕ 25% урону по всіх героях на поверсі
@@ -1714,8 +1722,8 @@ class Unit {
                     spawnParticle(enemy.x, enemy.y-enemy.size, 'red');
                 }
 
-                // LIGHTNING: 15% ланцюгова блискавка до рандомного героя
-                if (this.ability === 'chain' && Math.random() < 0.15) {
+                // LIGHTNING: 22% ланцюгова блискавка до рандомного героя
+                if (this.ability === 'chain' && Math.random() < 0.22) {
                     let others = units.filter(u=>u.type==='hero'&&u!==enemy&&u.floorIdx===this.floorIdx&&u.hp>0);
                     if (others.length > 0) {
                         let ch = others[Math.floor(Math.random()*others.length)];
@@ -1729,10 +1737,11 @@ class Unit {
                 {
                     let atkSpd = (this.baseAtkSpeed || 0.83) + (this.atkSpeedBonus || 0);
                     let slow = (this.type==='hero') ? (this._atkSlowMult || 1) : 1;
-                    // Кровотеча героя
+                    // Кровотеча героя (стаки кажанів: 1-5, 1% maxHP/сек за стак)
                     if (this.type==='hero' && (this._bleedTicks||0) > 0) {
                         this._bleedTicks--;
                         this.hp -= (this._bleedDps||0) / 60;
+                        if (this._bleedTicks <= 0) { this._bleedStacks = 0; this._bleedDps = 0; }
                     }
                     // Отрута від дротика
                     if (this.type==='hero' && (this._poisonTicks||0) > 0) {
@@ -2425,6 +2434,39 @@ class Unit {
             ctx.fillText(this.monsterEmoji, this.x, dy - 12);
         }
 
+        // СТАН (Golem): іконка ⚡ над заглушеним героєм
+        if (this.type === 'hero' && (this._stunTimer||0) > 0) {
+            let _sp = 0.6 + 0.4 * Math.sin(Date.now() / 120);
+            ctx.globalAlpha = _sp;
+            ctx.font = 'bold 13px Arial';
+            ctx.fillText('⚡', this.x, dy - 14);
+            ctx.globalAlpha = 1;
+        }
+
+        // WATER_ELE: щит-бар під HP-баром
+        if (this.ability === 'absorb' && (this.absorbShieldMax||0) > 0) {
+            // Максимальна ширина щит-бару = 30px (як HP), але може бути ширше якщо excess shield
+            let _sbw = 30;
+            let _sbh = 3;
+            let _sbx = this.x - _sbw / 2;
+            let _sby = dy - 6; // під HP-баром
+            let _shPct = Math.min(1, (this.absorbShield||0) / this.absorbShieldMax);
+            // Фон
+            ctx.fillStyle = '#001133';
+            ctx.fillRect(_sbx, _sby, _sbw, _sbh);
+            // Заповнення — блакитний щит
+            if (_shPct > 0) {
+                ctx.fillStyle = '#44aaff';
+                ctx.fillRect(_sbx, _sby, _sbw * _shPct, _sbh);
+                // Надлишок (перерозподілений щит) — яскравіший
+                let _excess = Math.max(0, (this.absorbShield||0) - this.absorbShieldMax);
+                if (_excess > 0) {
+                    ctx.fillStyle = '#aaddff';
+                    ctx.fillRect(_sbx + _sbw * _shPct - 1, _sby, Math.min(6, _sbw * (_excess / this.absorbShieldMax)), _sbh);
+                }
+            }
+        }
+
     }
 }
 
@@ -2636,8 +2678,24 @@ function spawnMinions() {
             if (f.spawnTimer >= spawnInterval) {
                 let spawnCount = f.isBatFloor ? 2 : 1;
                 for (let _sc = 0; _sc < spawnCount; _sc++) {
-                    if (count + _sc < f.maxMonsters)
-                        units.push(new Unit('monster', centerX + (_sc - 0.5) * 22, f.y, f.depth, f.depth + 1));
+                    if (count + _sc < f.maxMonsters) {
+                        let _newMon = new Unit('monster', centerX + (_sc - 0.5) * 22, f.y, f.depth, f.depth + 1);
+                        units.push(_newMon);
+                        // WATER_ELE: відроджений дух забирає свій щит (20%) назад від донора
+                        if (_newMon.ability === 'absorb') {
+                            let _donors = units.filter(m => m !== _newMon && m.type === 'monster'
+                                && m.ability === 'absorb' && m.floorIdx === f.depth && m.hp > 0
+                                && (m.absorbShield||0) > (m.absorbShieldMax||0));
+                            if (_donors.length > 0) {
+                                let _donor = _donors[Math.floor(Math.random() * _donors.length)];
+                                let _reclaim = Math.min(_newMon.absorbShieldMax||0,
+                                    (_donor.absorbShield||0) - (_donor.absorbShieldMax||0));
+                                _donor.absorbShield = Math.max(_donor.absorbShieldMax||0,
+                                    (_donor.absorbShield||0) - _reclaim);
+                                // Новий елементаль вже має свій щит з init — без змін
+                            }
+                        }
+                    }
                 }
                 // ⭐ Виклик: 15% шанс заспавнити елітного монстра разом зі звичайним
                 if (f.hasTrap && f.trapType === 'summon' && Math.random() < 0.15) {
@@ -2878,6 +2936,17 @@ function loop() {
             lord.hp = Math.min(lord.hp + GAME.lordRegen/60, GAME.maxLordHP);
     }
 
+    // Реген щита водяних елементалів: 1% їх базового absorbShieldMax/сек
+    units.forEach(u => {
+        if (u.type === 'monster' && u.ability === 'absorb' && u.hp > 0
+            && (u.absorbShield||0) < (u.absorbShieldMax||0)) {
+            u.absorbShield = Math.min(
+                u.absorbShieldMax,
+                (u.absorbShield||0) + u.absorbShieldMax * 0.01 / 60
+            );
+        }
+    });
+
     // ── Стек-бейдж: показуємо кількість юнітів у купці ──────────────────
     // Групуємо юнітів по (floorIdx, тип) і малюємо бейдж якщо >1 в радіусі 14px
     {
@@ -2929,8 +2998,24 @@ function loop() {
                 if (Math.random() < 0.40) {
                     u.noDieUsed = true; u.hp = 1;
                     u._transparent = true; u._transparentTimer = 300;
+                    // Буст: +10% урону за кожного героя на поверсі
+                    let _heroesNow = units.filter(h => h.type==='hero' && h.floorIdx===u.floorIdx && h.hp>0).length;
+                    u._noDieDmgBuff = u.dmg * 0.10 * _heroesNow;
+                    u.dmg += u._noDieDmgBuff;
+                    if (_heroesNow > 0)
+                        spawnDmgText(u.x, u.y - u.size - 12, '+' + Math.round(u._noDieDmgBuff) + ' ⚡', '#00ffff', true);
                     spawnParticle(u.x, u.y - u.size, 'cyan');
                     continue;
+                }
+            }
+            // ── WATER_ELE: перерозподіл щита між живими водяними на поверсі ──
+            if (u.type === 'monster' && u.ability === 'absorb') {
+                let livingWater = units.filter(m => m !== u && m.type === 'monster'
+                    && m.ability === 'absorb' && m.floorIdx === u.floorIdx && m.hp > 0);
+                if (livingWater.length > 0) {
+                    let recipient = livingWater[Math.floor(Math.random() * livingWater.length)];
+                    recipient.absorbShield = (recipient.absorbShield||0) + (u.absorbShieldMax||0);
+                    spawnParticle(recipient.x, recipient.y - recipient.size, 'blue');
                 }
             }
             // ── FIRE_ELE: вибух — 20% maxHP AОЕ по героях на поверсі ──────
@@ -2980,8 +3065,14 @@ function loop() {
             } else if (u.type === 'lord') { gameOver(); }
             units.splice(i, 1);
         } else {
-            // AIR_ELE напівпрозорий таймер
-            if (u._transparentTimer > 0) { u._transparentTimer--; if (u._transparentTimer <= 0) u._transparent = false; }
+            // AIR_ELE напівпрозорий таймер + зняття бусту урону
+            if (u._transparentTimer > 0) {
+                u._transparentTimer--;
+                if (u._transparentTimer <= 0) {
+                    u._transparent = false;
+                    if (u._noDieDmgBuff) { u.dmg = Math.max(1, u.dmg - u._noDieDmgBuff); u._noDieDmgBuff = 0; }
+                }
+            }
         }
     }
 
