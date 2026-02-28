@@ -740,7 +740,7 @@ class Floor {
         this.trapType = null; // 'spike','teleport'
         this.teleportCooldown = 0;
         this.isBatFloor  = (depth + 1 === 6); // глибина 5 → рівень 6 → кажан
-        this.maxMonsters = this.isBatFloor ? 6 : 2;
+        this.maxMonsters = this.isBatFloor ? 4 : 2;
         // Базова ціна залежить від глибини: поверх N+1 на 10% дорожче від поверху N
         this.floorUpgradeCost = Math.round(60 * Math.pow(1.1, depth) / 5) * 5;
         this.ladderX = (depth % 2 === 0)
@@ -2445,12 +2445,12 @@ function init() {
                 let f = new Floor(fd.depth);
                 f.hasTrap = fd.hasTrap || false;
                 f.trapType = fd.trapType || null;
-                f.maxMonsters = fd.maxMonsters || (f.isBatFloor ? 6 : 2);
-                // Мінімум для кажанів — 6 (міграція старих збережень)
-                if (f.isBatFloor && f.maxMonsters < 6) f.maxMonsters = 6;
+                f.maxMonsters = fd.maxMonsters || (f.isBatFloor ? 4 : 2);
+                // Мінімум для кажанів — 4 (міграція старих збережень)
+                if (f.isBatFloor && f.maxMonsters < 4) f.maxMonsters = 4;
                 // Перераховуємо ціну з depth + скількох апгрейдів куплено
                 { let _b = Math.round(60 * Math.pow(1.1, f.depth) / 5) * 5;
-                  let _upg = f.isBatFloor ? (f.maxMonsters - 6) / 2 : (f.maxMonsters - 2);
+                  let _upg = f.isBatFloor ? (f.maxMonsters - 4) / 2 : (f.maxMonsters - 2);
                   f.floorUpgradeCost = Math.round(_b * (1 + 0.5 * _upg) / 5) * 5; }
                 floors.push(f);
             });
@@ -3540,7 +3540,7 @@ function _handleCanvasTap(clientX, clientY) {
                 f.maxMonsters += f.isBatFloor ? 2 : 1; // кажани: +2 за апгрейд
                 let _fBase = Math.round(60 * Math.pow(1.1, f.depth) / 5) * 5;
                 // Кількість куплених апгрейдів (для формули ціни)
-                let _upg = f.isBatFloor ? (f.maxMonsters - 6) / 2 : (f.maxMonsters - 2);
+                let _upg = f.isBatFloor ? (f.maxMonsters - 4) / 2 : (f.maxMonsters - 2);
                 f.floorUpgradeCost = r5(_fBase * (1 + 0.5 * _upg));
                 updateUI(); saveGame();
             }
