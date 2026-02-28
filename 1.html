@@ -1233,7 +1233,7 @@ class Unit {
                 7:  { name:'golem',       color:'#887766', baseAtk:12, baseSpd:0.5,  hpMult:2.0,  armor:8,  ability:'stun'        },
                 8:  { name:'minotaur',    color:'#885522', baseAtk:10, baseSpd:0.7,  hpMult:1.6,  armor:5,  ability:'aoe4th'      },
                 9:  { name:'shadow',      color:'#334455', baseAtk:9,  baseSpd:1.2,  hpMult:1.0,  armor:4,  ability:'invis'       },
-                10: { name:'necromancer', color:'#6622aa', baseAtk:8,  baseSpd:0.8,  hpMult:1.1,  armor:3,  ability:'raise_dead'  },
+                10: { name:'necromancer', color:'#6622aa', baseAtk:11, baseSpd:0.8,  hpMult:1.4,  armor:4,  ability:'raise_dead'  },
                 11: { name:'water_ele',   color:'#4488ff', baseAtk:9,  baseSpd:0.9,  hpMult:1.2,  armor:4,  ability:'absorb'      },
                 12: { name:'earth_ele',   color:'#887733', baseAtk:11, baseSpd:0.6,  hpMult:1.8,  armor:9,  ability:'knockback'   },
                 13: { name:'air_ele',     color:'#ccddff', baseAtk:8,  baseSpd:1.5,  hpMult:0.8,  armor:2,  ability:'no_die'      },
@@ -2907,20 +2907,24 @@ function loop() {
                     spawnParticle(h.x, h.y-h.size, 'orange');
                 });
             }
-            // ── NECROMANCER: 50% підняти мерця як слабкого скелета ────────
-            if (u.type === 'monster' && u.ability === 'raise_dead') {
-                if (Math.random() < 0.50) {
-                    let deadHero = units.find(h=>h.type==='hero'&&h.hp<=0&&h.floorIdx===u.floorIdx);
-                    if (deadHero) {
-                        let sk = new Unit('monster', deadHero.x, deadHero.y, u.floorIdx, 2);
-                        sk.hp = sk.maxHp * 0.4; sk.dmg *= 0.5;
-                        units.push(sk);
-                        spawnParticle(deadHero.x, deadHero.y-sk.size, 'purple');
-                    }
-                }
-            }
             // Смерть героя — нагорода + спалах частинок
             if (u.type === 'hero') {
+                // ── NECROMANCER: 50% підняти мерця поки герой ще в масиві ──
+                let necro = units.find(m => m.type==='monster' && m.ability==='raise_dead'
+                    && m.floorIdx===u.floorIdx && m.hp>0);
+                if (necro && Math.random() < 0.50) {
+                    let sk = new Unit('monster', u.x, u.y, u.floorIdx, Math.max(1, u.level));
+                    sk.monsterKind = 'skeleton'; sk.color = '#aabbcc';
+                    sk.ability = 'rebirth';
+                    sk.hp = sk.maxHp * 0.5; sk.dmg = Math.round(sk.dmg * 0.65);
+                    for (let _pi=0; _pi<10; _pi++)
+                        spawnParticle(u.x+(Math.random()-.5)*18, u.y-u.size*0.5, 'purple',
+                            {size:1.5+Math.random()*2, vy:-(2+Math.random()*2), vx:(Math.random()-.5)*3});
+                    spawnDmgText(u.x, u.y-u.size-4, '💀 Піднятий!', '#cc88ff', true);
+                    units.push(sk);
+                    units.splice(i, 1);
+                    continue; // без нагороди душами
+                }
                 let reward = u.soulReward || (u.heroRank === 'boss' ? 80 : u.heroRank.startsWith('elite') ? 25 : 15);
                 GAME.souls += reward;
                 let pcol = u.heroRank === 'boss' ? 'purple' : u.heroRank.startsWith('elite') ? 'orange' : 'gold';
