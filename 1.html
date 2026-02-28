@@ -1099,7 +1099,7 @@ class Floor {
 
         // ── 9б. Таймер спавну монстрів (по центру поверху) ───────────────
         if (!isLordFloor) {
-            let monCount     = units.filter(u => u.type === 'monster' && u.floorIdx === this.depth).length;
+            let monCount     = units.filter(u => u.type === 'monster' && u.floorIdx === this.depth && !u._summoned).length;
             let spawnInterval = 4 + this.depth * 3;
             let cr       = isMobile ? 12 : 15;
             let timerY   = fty + cr + 6;  // близько до стелі, з невеликим відступом
@@ -1143,10 +1143,16 @@ class Floor {
 
         // ── 10. Ліміт монстрів ───────────────────────────────────────────
         if (!isLordFloor) {
+            let _sumCnt = units.filter(u=>u.type==='monster'&&u.floorIdx===this.depth&&u._summoned).length;
             ctx.fillStyle = 'rgba(255,255,255,0.28)';
             ctx.font = '12px Arial';
             ctx.textAlign = 'left';
             ctx.fillText((this.isBatFloor ? '🦇' : '🧟') + ' ' + this.maxMonsters + '/' + (this.isBatFloor ? 10 : 5), fx + 5, fy - 5);
+            // Призвані — окремий рядок якщо є
+            if (_sumCnt > 0) {
+                ctx.fillStyle = 'rgba(180,120,255,0.70)';
+                ctx.fillText('✦ ' + _sumCnt + '/5', fx + 5, fy - 18);
+            }
         }
 
         // ── 11 + 12. Дві кнопки горизонтально, чергують сторону по глибині ─
@@ -1188,7 +1194,7 @@ class Floor {
             }
 
             // ── "Купити монстра" — завжди крайня кнопка ─────────────────
-            let count   = units.filter(u => u.type==='monster' && u.floorIdx===this.depth).length;
+            let count   = units.filter(u => u.type==='monster' && u.floorIdx===this.depth && !u._summoned).length;
             let buyCost = 15 + this.depth * 5;
             let canBuy  = GAME.souls >= buyCost && count < this.maxMonsters;
             this._buyBtnX = bxMon; this._buyBtnY = byBtn + camY; this._buyBtnW = bw; this._buyBtnH = bh;
@@ -1664,12 +1670,12 @@ class Unit {
                 if (this.ability === 'infect' && enemy.type === 'hero' && enemy.hp > 0) {
                     let chance = enemy.heroRank==='boss'?0 : enemy.heroRank&&enemy.heroRank.startsWith('elite')?0.01:0.03;
                     if (Math.random() < chance) {
-                        let floorMonsters = units.filter(u=>u.type==='monster'&&u.floorIdx===this.floorIdx).length;
-                        let floorObj = floors[this.floorIdx];
-                        if (floorObj && floorMonsters < floorObj.maxMonsters) {
+                        let summonedOnFloor = units.filter(u=>u.type==='monster'&&u.floorIdx===this.floorIdx&&u._summoned).length;
+                        if (summonedOnFloor < 5) {
                             enemy.type='monster'; enemy.monsterKind='zombie'; enemy.ability='infect';
                             enemy.color='#5a8c3a'; enemy.armor=3; enemy.baseAtkSpeed=0.55; enemy.atkSpeedBonus=0;
                             enemy.floorIdx=this.floorIdx;
+                            enemy._summoned = true; // окремий пул призваних
                             spawnParticle(enemy.x, enemy.y-enemy.size, 'green');
                         }
                     }
@@ -2622,7 +2628,7 @@ function spawnMinions() {
     let lordFloor = floors.length - 1;
     floors.forEach(f => {
         if (f.depth === lordFloor) return;
-        let count = units.filter(u => u.type==='monster' && u.floorIdx===f.depth).length;
+        let count = units.filter(u => u.type==='monster' && u.floorIdx===f.depth && !u._summoned).length;
         if (count < f.maxMonsters) {
             // 1-й поверх: 4 сек, кожен наступний +3 сек (в тіках по 1 сек)
             let spawnInterval = 4 + f.depth * 3;
@@ -2940,11 +2946,13 @@ function loop() {
                 // ── NECROMANCER: 50% підняти мерця поки герой ще в масиві ──
                 let necro = units.find(m => m.type==='monster' && m.ability==='raise_dead'
                     && m.floorIdx===u.floorIdx && m.hp>0);
-                if (necro && Math.random() < 0.50) {
+                let _summonedOnFloor = units.filter(m=>m.type==='monster'&&m.floorIdx===u.floorIdx&&m._summoned).length;
+                if (necro && Math.random() < 0.50 && _summonedOnFloor < 5) {
                     let sk = new Unit('monster', u.x, u.y, u.floorIdx, Math.max(1, u.level));
                     sk.monsterKind = 'skeleton'; sk.color = '#aabbcc';
                     sk.ability = 'rebirth';
                     sk.hp = sk.maxHp * 0.5; sk.dmg = Math.round(sk.dmg * 0.65);
+                    sk._summoned = true; // окремий пул призваних
                     for (let _pi=0; _pi<10; _pi++)
                         spawnParticle(u.x+(Math.random()-.5)*18, u.y-u.size*0.5, 'purple',
                             {size:1.5+Math.random()*2, vy:-(2+Math.random()*2), vx:(Math.random()-.5)*3});
@@ -3553,7 +3561,7 @@ function _handleCanvasTap(clientX, clientY) {
         let pad = (typeof _TAP_PAD !== 'undefined') ? _TAP_PAD : 0;
         if (cx >= f._buyBtnX - pad && cx <= f._buyBtnX + f._buyBtnW + pad &&
             cy >= f._buyBtnY - pad && cy <= f._buyBtnY + f._buyBtnH + pad) {
-            let count = units.filter(u => u.type === 'monster' && u.floorIdx === f.depth).length;
+            let count = units.filter(u => u.type === 'monster' && u.floorIdx === f.depth && !u._summoned).length;
             let buyCost = 15 + f.depth * 5;
             if (GAME.souls >= buyCost && count < f.maxMonsters) {
                 GAME.souls -= buyCost;
