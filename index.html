@@ -3091,10 +3091,13 @@ function loop() {
     ctx.font = 'bold 11px Arial'; ctx.textAlign = 'center';
     ctx.fillText('⛏ ПІДЗЕМЕЛЛЯ', caveX, caveY - 10);
 
-    // ── Місто — фіксовано зліва від екрану ──────────────────────────────────
+    // ── Місто — ворота на одній вертикальній лінії з лівим факелом поверхів ─
     let _cityAvail = centerX - CFG.floorW / 2 - 10;
     let _cityScale = Math.min(1, Math.max(0.35, _cityAvail / 210));
-    let cityX = 4;
+    // X лівого факела поверхів: centerX - floorW/2 - wallW(22) + 11 = centerX - floorW/2 - 11
+    let _torchLineX = centerX - CFG.floorW / 2 - 11;
+    // Зсуваємо місто так, щоб його ворота (x=100 в локальних координатах) стояли на torchLineX
+    let cityX = Math.max(4, _torchLineX - 100 * _cityScale);
     CITY_GATE_X = cityX + 100 * _cityScale;
     ctx.save();
     ctx.translate(cityX, groundY);
