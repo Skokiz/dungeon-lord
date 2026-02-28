@@ -1533,7 +1533,9 @@ class Unit {
 
         // ── Радіус атаки ─────────────────────────────────────────────────
         let enemyTypes = (this.type === 'hero') ? ['monster','lord'] : ['hero'];
-        let range = this.type === 'lord' ? 60 : 38;
+        let range = this.type === 'lord' ? 60
+            : (this.ability === 'raise_dead') ? 220  // некромант — дальній бій
+            : 38;
 
         // Пропускаємо непроникних і поглинених монстрів при виборі цілі
         const isTargetable = u => {
@@ -1622,9 +1624,24 @@ class Unit {
                     spawnParticle(this.x, this.y - this.size, 'orange');
                 }
 
-                enemy.hp -= dmgDealt;
-                // Лорд отримав удар — мале тремтіння
-                if (enemy.type === 'lord') triggerScreenShake(3);
+                // NECROMANCER: дальній знаряд — чорep летить до цілі
+                if (this.ability === 'raise_dead') {
+                    axeProjectiles.push({
+                        x: this.x, y: this.y - this.size * 0.5,
+                        tx: enemy.x, ty: enemy.y - enemy.size * 0.5,
+                        floorIdx: this.floorIdx,
+                        dmg: dmgDealt,
+                        speed: 5,
+                        angle: 0,
+                        kind: 'necro_orb'
+                    });
+                    spawnParticle(this.x, this.y - this.size * 0.5, 'purple',
+                        {size:1.5, vy:-1, vx:(Math.random()-.5)*2});
+                } else {
+                    enemy.hp -= dmgDealt;
+                    // Лорд отримав удар — мале тремтіння
+                    if (enemy.type === 'lord') triggerScreenShake(3);
+                }
 
                 // ── On-hit здібності атакуючого ───────────────────────────
 
@@ -1720,8 +1737,11 @@ class Unit {
                     }
                     this.attackCooldown = Math.max(8, Math.round(60 / (atkSpd * slow)));
                 }
-                spawnParticle((this.x+enemy.x)/2, (this.y+enemy.y)/2, this.type==='lord'?'purple':'white');
-                if (this.type !== 'lord') this.x += (Math.random()-.5)*4;
+                // Частинка зіткнення — тільки для ближнього бою
+                if (this.ability !== 'raise_dead') {
+                    spawnParticle((this.x+enemy.x)/2, (this.y+enemy.y)/2, this.type==='lord'?'purple':'white');
+                    if (this.type !== 'lord') this.x += (Math.random()-.5)*4;
+                }
             } else {
                 this.attackCooldown--;
             }
@@ -2980,21 +3000,28 @@ function loop() {
     }
     ctx.globalAlpha = 1;
 
-    // ── Топори гоблінів ──────────────────────────────────────────────────
+    // ── Снаряди (топори, кулі некроманта) ───────────────────────────────
     for (let i = axeProjectiles.length - 1; i >= 0; i--) {
         let a = axeProjectiles[i];
         let dx2 = a.tx - a.x, dy2 = a.ty - a.y;
         let dist = Math.sqrt(dx2*dx2 + dy2*dy2);
         if (dist < a.speed) {
-            // Влучив — наносимо урон
-            let target = units.find(u => u.type === 'hero' && u.floorIdx === a.floorIdx
-                && Math.abs(u.x - a.tx) < 20 && u.hp > 0);
+            // Влучив — наносимо урон найближчому ворогу
+            let targetType = (a.kind === 'necro_orb') ? 'hero' : 'hero';
+            let target = units.find(u => u.type === targetType && u.floorIdx === a.floorIdx
+                && Math.abs(u.x - a.tx) < 28 && u.hp > 0);
             if (target) {
                 let blocked = target.blockChance > 0 && Math.random() < target.blockChance;
                 if (!blocked) {
                     target.hp -= a.dmg;
-                    let isCrit = a.dmg > 8; // крит якщо dmg подвоєний
-                    spawnParticle(target.x, target.y - target.size, isCrit ? 'orange' : 'white');
+                    if (a.kind === 'necro_orb') {
+                        for (let _pi=0; _pi<5; _pi++)
+                            spawnParticle(target.x+(Math.random()-.5)*12, target.y-target.size*0.5, 'purple',
+                                {size:1+Math.random()*1.5, vy:-(1+Math.random()*2), vx:(Math.random()-.5)*3});
+                        spawnDmgText(target.x, target.y-target.size-6, '-'+Math.round(a.dmg), '#cc44ff');
+                    } else {
+                        spawnParticle(target.x, target.y - target.size, a.dmg > 8 ? 'orange' : 'white');
+                    }
                 }
             }
             axeProjectiles.splice(i, 1);
@@ -3003,13 +3030,26 @@ function loop() {
         // Рухаємо
         a.x += (dx2 / dist) * a.speed;
         a.y += (dy2 / dist) * a.speed;
-        a.angle += 0.3;
-        // Малюємо топір
+        a.angle += 0.25;
+        // Малюємо
         ctx.save();
         ctx.translate(a.x, a.y - GAME.cameraY);
-        ctx.rotate(a.angle);
-        ctx.font = '14px Arial'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-        ctx.fillText('🪓', 0, 0);
+        if (a.kind === 'necro_orb') {
+            // Куля некроманта — пульсуюча фіолетова сфера з черепом
+            let op = 0.7 + 0.3 * Math.sin(Date.now() / 120 + i);
+            let rg = ctx.createRadialGradient(0, 0, 1, 0, 0, 8);
+            rg.addColorStop(0, `rgba(255,200,255,${op})`);
+            rg.addColorStop(0.5, `rgba(160,50,255,${op * 0.85})`);
+            rg.addColorStop(1, 'rgba(60,0,120,0)');
+            ctx.fillStyle = rg;
+            ctx.beginPath(); ctx.arc(0, 0, 8, 0, Math.PI*2); ctx.fill();
+            ctx.font = '10px Arial'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+            ctx.fillText('💀', 0, 0);
+        } else {
+            ctx.rotate(a.angle);
+            ctx.font = '14px Arial'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+            ctx.fillText('🪓', 0, 0);
+        }
         ctx.restore();
     }
 
