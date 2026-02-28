@@ -949,14 +949,47 @@ class Floor {
                 ctx.lineWidth = 2;
                 ctx.beginPath(); ctx.arc(ladX, fy - 6, 18, 0, Math.PI*2); ctx.stroke();
             } else if (this.trapType === 'summon') {
-                // Зірочка-портал виклику монстра
-                let pulse = 0.6 + 0.4 * Math.sin(Date.now() / 350);
-                ctx.font = '22px Arial'; ctx.textAlign = 'center';
-                ctx.globalAlpha = pulse;
-                ctx.fillText('⭐', ladX, fy - 4);
-                ctx.globalAlpha = 0.25 * pulse;
-                ctx.fillStyle = '#ffdd44';
-                ctx.beginPath(); ctx.arc(ladX, fy - 10, 16, 0, Math.PI*2); ctx.fill();
+                // ── Портал виклику: магічне коло зі спалахами ────────────────
+                let t   = Date.now() / 1000;
+                let cx2 = ladX, cy2 = fy - 14;
+                let pulse = 0.55 + 0.45 * Math.sin(t * 2.2);
+                // Зовнішнє зарево
+                let glow = ctx.createRadialGradient(cx2, cy2, 4, cx2, cy2, 22);
+                glow.addColorStop(0, `rgba(140,0,255,${0.35 * pulse})`);
+                glow.addColorStop(1, 'rgba(80,0,160,0)');
+                ctx.fillStyle = glow;
+                ctx.beginPath(); ctx.arc(cx2, cy2, 22, 0, Math.PI*2); ctx.fill();
+                // Зовнішнє кільце (обертається)
+                ctx.save(); ctx.translate(cx2, cy2); ctx.rotate(t * 1.1);
+                ctx.strokeStyle = `rgba(200,100,255,${0.7 * pulse})`;
+                ctx.lineWidth = 1.5;
+                ctx.setLineDash([4, 3]);
+                ctx.beginPath(); ctx.arc(0, 0, 16, 0, Math.PI*2); ctx.stroke();
+                ctx.setLineDash([]);
+                // Руни на кільці (6 крапок)
+                for (let ri = 0; ri < 6; ri++) {
+                    let ra = ri * Math.PI / 3;
+                    ctx.fillStyle = ri % 2 === 0 ? '#ffdd44' : '#cc88ff';
+                    ctx.beginPath(); ctx.arc(Math.cos(ra)*16, Math.sin(ra)*16, 1.8, 0, Math.PI*2); ctx.fill();
+                }
+                ctx.restore();
+                // Внутрішнє кільце (обертається зворотно)
+                ctx.save(); ctx.translate(cx2, cy2); ctx.rotate(-t * 1.8);
+                ctx.strokeStyle = `rgba(255,180,80,${0.5 * pulse})`;
+                ctx.lineWidth = 1;
+                ctx.beginPath(); ctx.arc(0, 0, 9, 0, Math.PI*2); ctx.stroke();
+                ctx.restore();
+                // Центр — пульсуюче ядро
+                let core = ctx.createRadialGradient(cx2, cy2, 0, cx2, cy2, 7 * pulse);
+                core.addColorStop(0, `rgba(255,220,255,${0.9 * pulse})`);
+                core.addColorStop(0.5, `rgba(160,60,255,${0.7 * pulse})`);
+                core.addColorStop(1, 'rgba(80,0,160,0)');
+                ctx.fillStyle = core;
+                ctx.beginPath(); ctx.arc(cx2, cy2, 7 * pulse, 0, Math.PI*2); ctx.fill();
+                // Іконка зверху
+                ctx.globalAlpha = 0.85;
+                ctx.font = '11px Arial'; ctx.textAlign = 'center';
+                ctx.fillText('⭐', cx2, cy2 + 4);
                 ctx.globalAlpha = 1;
             } else if (this.trapType === 'dart') {
                 // ── Дротик: на стіні зі сторони сходів ─────────────────────
@@ -2315,6 +2348,23 @@ class Unit {
             ctx.textBaseline = 'alphabetic';
         }
 
+        // ── Контур еліт-монстрів (summoned by trap) ─────────────────────
+        if (this.type === 'monster' && this.heroRank && this.heroRank.startsWith('elite')) {
+            let isHp   = this.heroRank === 'elite_hp';
+            let eCol   = isHp ? '#33ff88' : '#ff3322';
+            let ePulse = 0.55 + 0.45 * Math.sin(Date.now() / 280 + this.x * 0.01);
+            ctx.shadowColor = eCol;
+            ctx.shadowBlur  = 8 + 5 * ePulse;
+            ctx.strokeStyle = eCol;
+            ctx.lineWidth   = 2;
+            ctx.globalAlpha = 0.65 + 0.35 * ePulse;
+            ctx.beginPath();
+            ctx.arc(this.x, dy + this.size * 0.5, this.size * 0.58, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.globalAlpha = 1;
+            ctx.shadowBlur  = 0;
+        }
+
         // ── HP бар з градієнтом ──────────────────────────────────────────
         ctx.shadowBlur = 0;
         let pct = Math.max(0, this.hp / this.maxHp);
@@ -3106,21 +3156,26 @@ function tickTeleports() {
 }
 
 function tickDarts() {
-    const DART_LOAD = 30; // кадрів у зарядженому стані перед пострілом
+    const DART_LOAD = 25; // кадрів у зарядженому стані
     const DART_FLY  = 40; // кадрів польоту
+    const CYCLE     = 5 * 60; // 5 секунд між пострілами
     floors.forEach(f => {
         if (!f.hasTrap || f.trapType !== 'dart') return;
 
-        // Кулдаун між пострілами
-        if ((f._dartCooldown || 0) > 0) { f._dartCooldown--; }
+        let hOnFloor = units.filter(u => u.type === 'hero' && u.floorIdx === f.depth && u.hp > 0);
 
-        // Якщо анімація йде — тікаємо її
+        // Анімація завжди йде до кінця навіть якщо герої пішли
         if ((f._dartTimer || 0) > 0) {
             f._dartTimer--;
-            // Коли дротик долетів до цілі — застосовуємо отруту
-            if (f._dartTimer === 0 && f._dartTargetId != null) {
-                let target = units.find(u => u._uid === f._dartTargetId && u.hp > 0);
-                if (target) {
+            if (f._dartTimer === 0) {
+                // Постріл: знаходимо ближнього героя
+                let wallX = f.ladderX < centerX
+                    ? centerX - CFG.floorW / 2
+                    : centerX + CFG.floorW / 2;
+                let alive = units.filter(u => u.type === 'hero' && u.floorIdx === f.depth && u.hp > 0);
+                if (alive.length > 0) {
+                    let target = alive.reduce((a, b) =>
+                        Math.abs(a.x - wallX) < Math.abs(b.x - wallX) ? a : b);
                     let poisonDps = target.maxHp * 0.03;
                     target._poisonTicks = (target._poisonTicks || 0) + 3 * 60;
                     target._poisonDps   = Math.max(target._poisonDps || 0, poisonDps);
@@ -3129,31 +3184,27 @@ function tickDarts() {
                         spawnParticle(target.x+(Math.random()-.5)*12, target.y-target.size*0.5, 'green',
                             {size:1+Math.random()*1.5, vy:-(1+Math.random()*1.5), vx:(Math.random()-.5)*2.5});
                 }
-                f._dartTargetId = null;
-                f._dartCooldown = 5 * 60; // 5 сек кулдаун після пострілу
+                f._dartCycle = CYCLE; // починаємо відлік наступного пострілу
             }
             return;
         }
 
-        // Тригер: герої з'явились на поверсі і кулдаун пройшов
-        if ((f._dartCooldown || 0) > 0) return;
-        let hOnFloor = units.filter(u => u.type === 'hero' && u.floorIdx === f.depth && u.hp > 0);
+        // Таймер циклу тікає ТІЛЬКИ поки є герої
         if (hOnFloor.length === 0) return;
 
-        // Ближній до стіни зі сторони дротика
+        if ((f._dartCycle || 0) > 0) {
+            f._dartCycle--;
+            return;
+        }
+
+        // Цикл закінчився — запускаємо анімацію пострілу
         let wallX = f.ladderX < centerX
-            ? centerX - CFG.floorW / 2  // ліва стіна
-            : centerX + CFG.floorW / 2; // права стіна
+            ? centerX - CFG.floorW / 2
+            : centerX + CFG.floorW / 2;
         let target = hOnFloor.reduce((a, b) =>
             Math.abs(a.x - wallX) < Math.abs(b.x - wallX) ? a : b);
-
-        // Даємо UID герою якщо немає
-        if (target._uid == null) target._uid = Math.random();
-        f._dartTargetId = target._uid;
-        // Зберігаємо x-позицію цілі для анімації польоту
-        f._dartTargetX  = target.x;
-        // Запускаємо анімацію: LOAD + FLY кадрів
-        f._dartTimer = DART_LOAD + DART_FLY;
+        f._dartTargetX = target.x; // для анімації польоту
+        f._dartTimer   = DART_LOAD + DART_FLY;
     });
 }
 
