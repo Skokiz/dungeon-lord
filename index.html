@@ -1281,7 +1281,7 @@ class Unit {
             if (this.ability === 'invis')       { this.invisCooldown = 360; this.invisTimer = 0; this.invisActive = false; }
             if (this.ability === 'aoe4th')      { this.aoeHitCount = 0; }
             if (this.ability === 'raise_dead')  { /* on-kill */ }
-            if (this.ability === 'absorb')      { this.absorbShieldMax = this.maxHp * 0.2; this.absorbShield = this.absorbShieldMax; }
+            if (this.ability === 'absorb')      { this.absorbShieldMax = this.hp * 0.2; this.absorbShield = this.absorbShieldMax; }
             if (this.ability === 'knockback')   { /* on-hit */ }
             if (this.ability === 'no_die')      { this.noDieUsed = false; }
             if (this.ability === 'explode')     { /* on-death */ }
