@@ -3049,16 +3049,22 @@ function loop() {
     let archR   = 58;               // радіус арки
     let wallThk = 36;               // товщина стін по боках
     let wallH   = 110;              // висота стін над землею
-    let archCY  = groundY + archR;  // центр кола арки
-    let cavBot  = groundY + 15;     // низ порталу
+    let archCY  = groundY;          // центр арки — на рівні землі (арка відкривається вгору)
+    let cavBot  = groundY;          // низ порталу — рівень землі
+    // Масштаб для телефонів
+    let _caveScale = isMobile ? 0.52 : 1.0;
+    ctx.save();
+    ctx.translate(caveX, groundY);
+    ctx.scale(_caveScale, _caveScale);
+    ctx.translate(-caveX, -groundY);
 
     // ── Загальна темна аура ───────────────────────────────────────────
-    let auraG = ctx.createRadialGradient(caveX, groundY + 30, 15, caveX, groundY + 30, 200);
+    let auraG = ctx.createRadialGradient(caveX, groundY - 40, 15, caveX, groundY - 40, 200);
     auraG.addColorStop(0,   'rgba(60,0,30,0.55)');
     auraG.addColorStop(0.45,'rgba(30,0,60,0.28)');
     auraG.addColorStop(1,   'rgba(0,0,0,0)');
     ctx.fillStyle = auraG;
-    ctx.beginPath(); ctx.arc(caveX, groundY + 30, 200, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(caveX, groundY - 40, 200, 0, Math.PI*2); ctx.fill();
 
     // ── Кам'яні стіни з цегляною текстурою ───────────────────────────
     function _caveWall(wx, wy, ww, wh) {
@@ -3082,8 +3088,8 @@ function loop() {
         ctx.fillStyle=sh; ctx.fillRect(wx+ww-4, wy, 4, wh);
     }
     let wallTop = groundY - wallH;
-    _caveWall(caveX - archR - wallThk, wallTop, wallThk, wallH + 17);
-    _caveWall(caveX + archR,           wallTop, wallThk, wallH + 17);
+    _caveWall(caveX - archR - wallThk, wallTop, wallThk, wallH + 5);
+    _caveWall(caveX + archR,           wallTop, wallThk, wallH + 5);
 
     // ── Зубці (мерлони) на верхівці стін ─────────────────────────────
     [[caveX - archR - wallThk, wallTop],[caveX + archR, wallTop]].forEach(([wx]) => {
@@ -3155,13 +3161,6 @@ function loop() {
             ctx.fillStyle='rgba(20,60,20,0.2)';
             ctx.beginPath(); ctx.arc(caveX+Math.cos(aMid)*mR, archCY+Math.sin(aMid)*mR, 4, 0, Math.PI*2); ctx.fill();
         }
-        // Вертикальні пілони по боках арки
-        let pilW=10;
-        [[caveX-archR-outR%archR, archCY, pilW],[caveX+archR+1, archCY, pilW]].forEach(([px,py,pw]) => {
-            let pg = ctx.createLinearGradient(px,0,px+pw,0);
-            pg.addColorStop(0,'#180e28'); pg.addColorStop(0.4,'#2e1e44'); pg.addColorStop(1,'#100818');
-            ctx.fillStyle=pg; ctx.fillRect(px, py, pw, cavBot-py+12);
-        });
     }
 
     // ── Замковий камінь — ВЕЛИКА ДЕМОНІЧНА ПАЩЕКА ─────────────────────
@@ -3206,7 +3205,7 @@ function loop() {
         let ep=0.5+0.5*Math.sin(_t/550), ep2=0.3+0.3*Math.sin(_t/820+1.8);
         // Великі очі — головний монстр
         [[-18,0],[18,0]].forEach(([ex]) => {
-            let ey=archCY+18;
+            let ey=archCY-28;
             let eg=ctx.createRadialGradient(caveX+ex,ey,0,caveX+ex,ey,13);
             eg.addColorStop(0,`rgba(255,40,0,${0.9*ep})`);
             eg.addColorStop(0.5,`rgba(180,10,0,${0.5*ep})`);
@@ -3218,7 +3217,7 @@ function loop() {
             ctx.beginPath(); ctx.ellipse(caveX+ex,ey,2,2.2,0,0,Math.PI*2); ctx.fill();
         });
         // Малі фіолетові очі — щось позаду
-        [[-10,38],[10,38]].forEach(([ex,ey]) => {
+        [[-10,-18],[10,-18]].forEach(([ex,ey]) => {
             let eg=ctx.createRadialGradient(caveX+ex,archCY+ey,0,caveX+ex,archCY+ey,8);
             eg.addColorStop(0,`rgba(180,0,220,${0.75*ep2})`);
             eg.addColorStop(1,'rgba(0,0,0,0)');
@@ -3307,11 +3306,12 @@ function loop() {
         ctx.fillText('⚠ ПІДЗЕМЕЛЛЯ', caveX, groundY - wallH - 22);
         ctx.globalAlpha=1;
     }
+    ctx.restore(); // кінець cave scale
     } // end cave block
 
     // ── Місто — ворота на одній вертикальній лінії з лівим факелом поверхів ─
     let _cityAvail = centerX - CFG.floorW / 2 - 10;
-    let _cityScale = Math.min(1, Math.max(isMobile ? 0.7 : 0.35, _cityAvail / 210));
+    let _cityScale = Math.min(1, Math.max(isMobile ? 0.52 : 0.35, _cityAvail / 210));
     // X лівого факела поверхів: centerX - floorW/2 - wallW(22) + 11 = centerX - floorW/2 - 11
     let _torchLineX = centerX - CFG.floorW / 2 - 11;
     // Зсуваємо місто так, щоб його ворота (x=100 в локальних координатах) стояли на torchLineX
