@@ -1240,7 +1240,7 @@ class Unit {
                 7:  { name:'golem',       color:'#887766', baseAtk:12, baseSpd:0.5,  hpMult:2.0,  armor:8,  ability:'stun'        },
                 8:  { name:'minotaur',    color:'#885522', baseAtk:10, baseSpd:0.7,  hpMult:1.6,  armor:5,  ability:'aoe4th'      },
                 9:  { name:'shadow',      color:'#334455', baseAtk:9,  baseSpd:1.2,  hpMult:1.0,  armor:4,  ability:'invis'       },
-                10: { name:'necromancer', color:'#6622aa', baseAtk:11, baseSpd:0.8,  hpMult:1.4,  armor:4,  ability:'raise_dead'  },
+                10: { name:'necromancer', color:'#6622aa', baseAtk:9,  baseSpd:0.8,  hpMult:1.4,  armor:4,  ability:'raise_dead'  },
                 11: { name:'water_ele',   color:'#4488ff', baseAtk:9,  baseSpd:0.9,  hpMult:1.2,  armor:4,  ability:'absorb'      },
                 12: { name:'earth_ele',   color:'#887733', baseAtk:11, baseSpd:0.6,  hpMult:1.8,  armor:9,  ability:'knockback'   },
                 13: { name:'air_ele',     color:'#ccddff', baseAtk:8,  baseSpd:1.5,  hpMult:0.8,  armor:2,  ability:'no_die'      },
@@ -1593,8 +1593,8 @@ class Unit {
         if (enemy) {
             this.state = 'fight';
             if (this.attackCooldown <= 0) {
-                // BAT: 10% шанс промаху (атакуючий промахується по кажану)
-                if (enemy.ability === 'dodge' && enemy.type === 'monster' && Math.random() < 0.10) {
+                // BAT: 15% шанс промаху (атакуючий промахується по кажану)
+                if (enemy.ability === 'dodge' && enemy.type === 'monster' && Math.random() < 0.15) {
                     spawnDmgText(enemy.x, enemy.y - enemy.size - 10, 'Міс!', '#aaaaff');
                     let _atkSpd = (this.baseAtkSpeed||0.83) + (this.atkSpeedBonus||0);
                     this.attackCooldown = Math.max(8, Math.round(60 / _atkSpd));
