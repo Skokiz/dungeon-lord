@@ -1735,28 +1735,7 @@ class Unit {
             // Телепорт і Дротик НЕ тут — глобальний тік
         }
 
-        // 🪃 Дротик: незалежний таймер на поверсі (не залежить від trapDamaged)
-        if (cur.hasTrap && cur.trapType === 'dart') {
-            if (!cur._dartTimer || cur._dartTimer <= 0) {
-                cur._dartTimer = 5 * 60; // кожні 5 сек
-            }
-            cur._dartTimer--;
-            if (cur._dartTimer === 1) {
-                // Знаходимо одного рандомного героя на поверсі
-                let hOnFloor = units.filter(u => u.type === 'hero' && u.floorIdx === cur.depth && u.hp > 0);
-                if (hOnFloor.length > 0) {
-                    let target = hOnFloor[Math.floor(Math.random() * hOnFloor.length)];
-                    let poisonDps  = target.maxHp * 0.03; // 3% maxHP/сек
-                    let poisonSecs = 3;                    // 3 секунди
-                    target._poisonTicks = (target._poisonTicks || 0) + poisonSecs * 60;
-                    target._poisonDps   = Math.max(target._poisonDps || 0, poisonDps);
-                    spawnDmgText(target.x, target.y - target.size - 10, '☠️ Отрута', '#44ff88');
-                    for (let _pi = 0; _pi < 6; _pi++)
-                        spawnParticle(target.x+(Math.random()-.5)*12, target.y-target.size*0.5, 'green',
-                            {size:1+Math.random()*1.5, vy:-(1+Math.random()*1.5), vx:(Math.random()-.5)*2.5});
-                }
-            }
-        }
+        // 🪃 Дротик: тік перенесено до tickDarts() у глобальний loop()
 
         let next = floors[this.floorIdx + 1];
         if (next) {
@@ -2624,6 +2603,8 @@ function loop() {
 
     // Телепорт: глобальний тік (кожні 10 сек — один герой з кожного поверху з телепортом)
     tickTeleports();
+    // Дротик: глобальний тік — 1 раз за кадр незалежно від кількості героїв
+    tickDarts();
 
     // Скидаємо трансформацію і перевстановлюємо dpr scale кожен кадр
     let _dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -3124,6 +3105,32 @@ function tickTeleports() {
                 {size: 1 + Math.random()*2, vy: -(1+Math.random()*2), vx: (Math.random()-.5)*3});
 
         f.teleportCooldown = 10 * 60; // 10 сек
+    });
+}
+
+function tickDarts() {
+    floors.forEach(f => {
+        if (!f.hasTrap || f.trapType !== 'dart') return;
+
+        // Зменшуємо таймер рівно 1 раз за кадр (незалежно від кількості героїв)
+        if (!f._dartTimer || f._dartTimer <= 0) {
+            f._dartTimer = 5 * 60; // 5 секунд
+        }
+        f._dartTimer--;
+
+        if (f._dartTimer === 1) {
+            let hOnFloor = units.filter(u => u.type === 'hero' && u.floorIdx === f.depth && u.hp > 0);
+            if (hOnFloor.length === 0) return;
+            let target    = hOnFloor[Math.floor(Math.random() * hOnFloor.length)];
+            let poisonDps = target.maxHp * 0.03; // 3% maxHP/сек
+            let poisonSecs = 3;
+            target._poisonTicks = (target._poisonTicks || 0) + poisonSecs * 60;
+            target._poisonDps   = Math.max(target._poisonDps || 0, poisonDps);
+            spawnDmgText(target.x, target.y - target.size - 10, '☠️ Отрута', '#44ff88');
+            for (let _pi = 0; _pi < 6; _pi++)
+                spawnParticle(target.x + (Math.random()-.5)*12, target.y - target.size*0.5, 'green',
+                    {size: 1+Math.random()*1.5, vy: -(1+Math.random()*1.5), vx: (Math.random()-.5)*2.5});
+        }
     });
 }
 
