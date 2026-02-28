@@ -680,7 +680,7 @@ let CFG = {
 let GAME = {
     souls: 150,
     floorCost: 100,
-    cityHP: 2000, maxCityHP: 2000,
+    cityHP: 2000, maxCityHP: 2000, difficultyType: 1,
     maxLordHP: 500, lordDmg: 20,
     lordBaseAtkSpeed: 0.8,   // базова ША (Dota2-стиль)
     lordAtkSpeedBonus: 0,    // бонус ША від апгрейдів
@@ -2523,6 +2523,7 @@ function startGame(diff) {
     GAME.maxCityHP = d.cityHP;
     GAME.heroScalePercent = d.heroScale;
     GAME.maxThreatLevel = d.maxThreat;
+    GAME.difficultyType = diff;
     document.getElementById('threat-cap-input').value = d.maxThreat;
 
     floors.push(new Floor(0));
@@ -2886,45 +2887,445 @@ function loop() {
     let _cityAvail = centerX - CFG.floorW / 2 - 10;
     let _cityScale = Math.min(1, Math.max(0.35, _cityAvail / 210));
     let cityX = 4;
-    // Оновлюємо глобальну X воріт для спавну героїв
     CITY_GATE_X = cityX + 100 * _cityScale;
-    // Малюємо місто з масштабуванням через ctx.save/scale
     ctx.save();
-    ctx.translate(cityX, groundY); // точка відліку — підошва міста на рівні землі
+    ctx.translate(cityX, groundY);
     ctx.scale(_cityScale, _cityScale);
-    // Всі координати відносно (0,0) = нижній лівий кут міста
-    let _cy = -140; // верх міста відносно землі
-    // Основа
-    ctx.fillStyle = '#2a2035';
-    ctx.fillRect(0, _cy + 80, 200, 60);
-    // Вежа ліва
-    ctx.fillStyle = '#352848';
-    ctx.fillRect(10, _cy + 20, 40, 100);
-    ctx.fillStyle = '#4a3660';
-    ctx.beginPath(); ctx.moveTo(10,_cy+20); ctx.lineTo(30,_cy); ctx.lineTo(50,_cy+20); ctx.closePath(); ctx.fill();
-    // Вежа права
-    ctx.fillStyle = '#352848';
-    ctx.fillRect(150, _cy + 20, 40, 100);
-    ctx.fillStyle = '#4a3660';
-    ctx.beginPath(); ctx.moveTo(150,_cy+20); ctx.lineTo(170,_cy); ctx.lineTo(190,_cy+20); ctx.closePath(); ctx.fill();
-    // Прапор
-    ctx.fillStyle = '#cc2244';
-    ctx.fillRect(29, _cy, 2, 20);
-    ctx.beginPath(); ctx.moveTo(31,_cy); ctx.lineTo(44,_cy+7); ctx.lineTo(31,_cy+14); ctx.closePath(); ctx.fill();
-    // Ворота
-    ctx.fillStyle = '#000';
-    ctx.beginPath(); ctx.arc(100, _cy+140, 22, Math.PI, 0); ctx.rect(78, _cy+140, 44, 20); ctx.fill();
-    // Вогники
-    ['#ff8800','#ffaa00'].forEach((c,i) => {
-        let fa = 0.7 + 0.3*Math.sin(Date.now()/300 + i*2);
-        ctx.fillStyle = c; ctx.globalAlpha = fa;
-        ctx.beginPath(); ctx.arc(i===0?30:170, _cy - 3, 4, 0, Math.PI*2); ctx.fill();
+    let _cy = -140;
+    let _dt = GAME.difficultyType || 1;
+    let _fl = Date.now() / 300; // flame flicker time
+
+    // ─── Допоміжні функції малювання ────────────────────────────────────────
+    // Намалювати цеглу (горизонтальні ряди з перев'язкою)
+    function _drawBricks(x, y, w, h, bCol, mCol) {
+        ctx.fillStyle = bCol;
+        ctx.fillRect(x, y, w, h);
+        ctx.strokeStyle = mCol;
+        ctx.lineWidth = 0.8;
+        let bh = 8, bw = 18;
+        for (let row = 0; row * bh < h; row++) {
+            let off = (row % 2 === 0) ? 0 : bw / 2;
+            for (let col = -bw; col < w + bw; col += bw) {
+                ctx.strokeRect(x + col + off, y + row * bh, bw, bh);
+            }
+        }
+    }
+    // Намалювати дерев'яні дошки (вертикальні)
+    function _drawPlanks(x, y, w, h, woodCol, lineCol) {
+        ctx.fillStyle = woodCol;
+        ctx.fillRect(x, y, w, h);
+        ctx.strokeStyle = lineCol;
+        ctx.lineWidth = 1;
+        let pw = 9;
+        for (let col = x; col < x + w; col += pw) {
+            ctx.beginPath(); ctx.moveTo(col, y); ctx.lineTo(col, y + h); ctx.stroke();
+        }
+        // горизонтальна балка посередині
+        ctx.beginPath(); ctx.moveTo(x, y + h * 0.5); ctx.lineTo(x + w, y + h * 0.5); ctx.stroke();
+    }
+    // Соломʼяний дах (трикутник з штрихами)
+    function _drawThatch(x, y, w, h, col) {
+        ctx.fillStyle = col;
+        ctx.beginPath(); ctx.moveTo(x - 4, y + h); ctx.lineTo(x + w / 2, y); ctx.lineTo(x + w + 4, y + h); ctx.closePath(); ctx.fill();
+        ctx.strokeStyle = 'rgba(0,0,0,0.18)';
+        ctx.lineWidth = 1;
+        for (let i = 1; i < 6; i++) {
+            let t = i / 6, xi = x - 4 + t * (w + 8), yi = y + h - t * (h - 4);
+            ctx.beginPath(); ctx.moveTo(xi - 6, yi + 4); ctx.lineTo(xi + 6, yi + 4); ctx.stroke();
+        }
+    }
+    // Намалювати вікно
+    function _drawWindow(x, y, w, h, frameCol, glassCol) {
+        ctx.fillStyle = frameCol; ctx.fillRect(x, y, w, h);
+        ctx.fillStyle = glassCol; ctx.fillRect(x + 2, y + 2, w - 4, h - 4);
+        ctx.strokeStyle = frameCol; ctx.lineWidth = 0.8;
+        ctx.beginPath(); ctx.moveTo(x + w / 2, y + 2); ctx.lineTo(x + w / 2, y + h - 2); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(x + 2, y + h / 2); ctx.lineTo(x + w - 2, y + h / 2); ctx.stroke();
+    }
+    // Полумʼя-ліхтарик
+    function _drawLantern(lx, ly, flkPhase) {
+        let fa = 0.7 + 0.3 * Math.sin(_fl + flkPhase);
+        ctx.globalAlpha = fa * 0.35;
+        ctx.fillStyle = '#ffdd66';
+        ctx.beginPath(); ctx.arc(lx, ly, 10, 0, Math.PI * 2); ctx.fill();
+        ctx.globalAlpha = fa;
+        ctx.fillStyle = '#ffaa00';
+        ctx.beginPath(); ctx.arc(lx, ly, 4, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#ffffaa';
+        ctx.beginPath(); ctx.arc(lx, ly, 2, 0, Math.PI * 2); ctx.fill();
         ctx.globalAlpha = 1;
-    });
-    ctx.fillStyle = '#ffcc88';
-    ctx.font = 'bold 12px Arial';
-    ctx.textAlign = 'center';
-    ctx.fillText('🏰 МІСТО', 100, _cy + 15);
+    }
+
+    if (_dt === 1) {
+        // ════════════════════════════════════════════════════════════════
+        // ТИП 1: Маленька деревня
+        // Дерев'яний паркан, соломʼяні дахи, дерев'яні ворота, криниця
+        // ════════════════════════════════════════════════════════════════
+        // Земля під містом
+        ctx.fillStyle = '#4a7c3f';
+        ctx.fillRect(0, -6, 200, 6);
+
+        // Паркан (фон)
+        ctx.fillStyle = '#7a5c3a';
+        ctx.fillRect(0, _cy + 90, 200, 50);
+        // Кілки паркану
+        for (let px = 2; px < 200; px += 12) {
+            ctx.fillStyle = '#8a6a42';
+            ctx.fillRect(px, _cy + 82, 10, 58);
+            ctx.fillStyle = '#6e4e2e';
+            ctx.beginPath(); ctx.moveTo(px, _cy + 82); ctx.lineTo(px + 5, _cy + 75); ctx.lineTo(px + 10, _cy + 82); ctx.closePath(); ctx.fill();
+        }
+        // Горизонтальні перекладини паркану
+        ctx.fillStyle = '#6e4e2e';
+        ctx.fillRect(0, _cy + 92, 200, 5);
+        ctx.fillRect(0, _cy + 112, 200, 5);
+
+        // Будинок лівий
+        _drawPlanks(12, _cy + 50, 50, 50, '#a07850', '#7a5530');
+        _drawThatch(10, _cy + 28, 52, 24, '#c8a444');
+        _drawWindow(22, _cy + 58, 12, 12, '#7a5530', '#c8e8ff');
+        _drawWindow(40, _cy + 58, 12, 12, '#7a5530', '#c8e8ff');
+
+        // Будинок правий
+        _drawPlanks(138, _cy + 50, 50, 50, '#9a7040', '#7a5530');
+        _drawThatch(136, _cy + 28, 52, 24, '#ba9a38');
+        _drawWindow(148, _cy + 58, 12, 12, '#7a5530', '#c8e8ff');
+        _drawWindow(166, _cy + 58, 12, 12, '#7a5530', '#c8e8ff');
+
+        // Криниця по центру (позаду воріт)
+        ctx.fillStyle = '#8a8070'; ctx.fillRect(86, _cy + 68, 28, 18);
+        ctx.fillStyle = '#6a6060'; ctx.fillRect(84, _cy + 64, 32, 6);
+        ctx.fillStyle = '#5a4a38'; ctx.fillRect(86, _cy + 54, 4, 16);
+        ctx.fillStyle = '#5a4a38'; ctx.fillRect(110, _cy + 54, 4, 16);
+        ctx.fillStyle = '#7a6a50'; ctx.fillRect(84, _cy + 52, 32, 4);
+        ctx.fillStyle = '#224488'; ctx.fillRect(89, _cy + 70, 22, 12);
+
+        // Ворота — дерев'яні
+        ctx.fillStyle = '#7a5530';
+        ctx.fillRect(72, _cy + 100, 56, 40);
+        ctx.fillStyle = '#5a3a20';
+        ctx.fillRect(72, _cy + 100, 4, 40);
+        ctx.fillRect(124, _cy + 100, 4, 40);
+        ctx.fillRect(94, _cy + 100, 4, 40);
+        ctx.fillRect(72, _cy + 118, 56, 4);
+        // Арка з колод над воротами
+        ctx.fillStyle = '#5a3a20';
+        ctx.fillRect(68, _cy + 94, 64, 8);
+        // Отвір воріт
+        ctx.fillStyle = '#1a1008';
+        ctx.beginPath(); ctx.arc(100, _cy + 100, 24, Math.PI, 0); ctx.rect(76, _cy + 100, 48, 44); ctx.fill();
+
+        // Ліхтарі
+        _drawLantern(30, _cy - 3, 0);
+        _drawLantern(170, _cy - 3, 2);
+        // Стовпи ліхтарів
+        ctx.fillStyle = '#7a5530';
+        ctx.fillRect(27, _cy - 2, 6, 50);
+        ctx.fillRect(167, _cy - 2, 6, 50);
+        ctx.fillStyle = '#5a3a18';
+        ctx.fillRect(25, _cy + 46, 10, 6);
+        ctx.fillRect(165, _cy + 46, 10, 6);
+
+        // Назва
+        ctx.fillStyle = '#ffe8a0';
+        ctx.font = 'bold 11px Arial'; ctx.textAlign = 'center';
+        ctx.fillText('🌿 ДЕРЕВНЯ', 100, _cy + 18);
+
+    } else if (_dt === 2) {
+        // ════════════════════════════════════════════════════════════════
+        // ТИП 2: Багата деревня
+        // Фахверк (half-timber), кам'яна арка воріт, шпиль каплиці
+        // ════════════════════════════════════════════════════════════════
+        ctx.fillStyle = '#55803a';
+        ctx.fillRect(0, -6, 200, 6);
+
+        // Кам'яна стіна (невисока)
+        _drawBricks(0, _cy + 90, 200, 50, '#9a9080', '#6a6058');
+
+        // Будинок лівий — фахверк
+        ctx.fillStyle = '#e8d8b8'; ctx.fillRect(8, _cy + 42, 55, 52);
+        ctx.strokeStyle = '#5a3a18'; ctx.lineWidth = 2.5;
+        // вертикальні балки
+        ctx.beginPath(); ctx.moveTo(8, _cy+42); ctx.lineTo(8, _cy+94); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(63, _cy+42); ctx.lineTo(63, _cy+94); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(35, _cy+42); ctx.lineTo(35, _cy+94); ctx.stroke();
+        // горизонтальні
+        ctx.beginPath(); ctx.moveTo(8, _cy+64); ctx.lineTo(63, _cy+64); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(8, _cy+84); ctx.lineTo(63, _cy+84); ctx.stroke();
+        // діагоналі
+        ctx.beginPath(); ctx.moveTo(8, _cy+42); ctx.lineTo(35, _cy+64); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(35, _cy+42); ctx.lineTo(8, _cy+64); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(35, _cy+64); ctx.lineTo(63, _cy+84); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(63, _cy+64); ctx.lineTo(35, _cy+84); ctx.stroke();
+        // Дах двосхилий
+        ctx.fillStyle = '#cc4422';
+        ctx.beginPath(); ctx.moveTo(4, _cy+42); ctx.lineTo(35, _cy+20); ctx.lineTo(67, _cy+42); ctx.closePath(); ctx.fill();
+        ctx.strokeStyle = '#882200'; ctx.lineWidth = 1;
+        for (let i = 1; i < 6; i++) {
+            let tx = 4 + i * (63/6), ty = 42 - i * (22/6);
+            ctx.beginPath(); ctx.moveTo(tx, _cy+ty+4); ctx.lineTo(tx+8, _cy+ty+4); ctx.stroke();
+        }
+        _drawWindow(14, _cy + 47, 14, 14, '#5a3a18', '#b0d8ff');
+        _drawWindow(40, _cy + 47, 14, 14, '#5a3a18', '#b0d8ff');
+
+        // Каплиця по центру (за воротами)
+        ctx.fillStyle = '#d0c8b8';
+        ctx.fillRect(84, _cy + 40, 32, 60);
+        _drawBricks(84, _cy + 40, 32, 60, '#c8c0b0', '#989080');
+        // Шпиль
+        ctx.fillStyle = '#8844aa';
+        ctx.beginPath(); ctx.moveTo(100, _cy + 5); ctx.lineTo(92, _cy + 40); ctx.lineTo(108, _cy + 40); ctx.closePath(); ctx.fill();
+        ctx.fillStyle = '#aa66cc';
+        ctx.beginPath(); ctx.moveTo(100, _cy + 5); ctx.lineTo(97, _cy + 40); ctx.lineTo(103, _cy + 40); ctx.closePath(); ctx.fill();
+        // Хрест
+        ctx.fillStyle = '#ffd700'; ctx.fillRect(98, _cy + 2, 4, 14); ctx.fillRect(94, _cy + 8, 12, 4);
+        _drawWindow(91, _cy + 50, 18, 18, '#8844aa', '#d0c0ff');
+
+        // Будинок правий — фахверк
+        ctx.fillStyle = '#e8d8b8'; ctx.fillRect(137, _cy + 42, 55, 52);
+        ctx.strokeStyle = '#5a3a18'; ctx.lineWidth = 2.5;
+        ctx.beginPath(); ctx.moveTo(137, _cy+42); ctx.lineTo(137, _cy+94); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(192, _cy+42); ctx.lineTo(192, _cy+94); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(165, _cy+42); ctx.lineTo(165, _cy+94); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(137, _cy+64); ctx.lineTo(192, _cy+64); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(137, _cy+84); ctx.lineTo(192, _cy+84); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(137, _cy+42); ctx.lineTo(165, _cy+64); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(165, _cy+42); ctx.lineTo(137, _cy+64); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(165, _cy+64); ctx.lineTo(192, _cy+84); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(192, _cy+64); ctx.lineTo(165, _cy+84); ctx.stroke();
+        ctx.fillStyle = '#cc4422';
+        ctx.beginPath(); ctx.moveTo(133, _cy+42); ctx.lineTo(165, _cy+20); ctx.lineTo(196, _cy+42); ctx.closePath(); ctx.fill();
+        _drawWindow(142, _cy + 47, 14, 14, '#5a3a18', '#b0d8ff');
+        _drawWindow(169, _cy + 47, 14, 14, '#5a3a18', '#b0d8ff');
+
+        // Кам'яна арка воріт
+        ctx.fillStyle = '#b8b0a0';
+        ctx.fillRect(66, _cy + 88, 68, 12);
+        _drawBricks(66, _cy + 88, 68, 12, '#b0a898', '#888078');
+        // Отвір воріт
+        ctx.fillStyle = '#1a120a';
+        ctx.beginPath(); ctx.arc(100, _cy + 100, 24, Math.PI, 0); ctx.rect(76, _cy + 100, 48, 44); ctx.fill();
+        // Замковий камінь арки
+        ctx.fillStyle = '#d4c8b0';
+        ctx.beginPath(); ctx.moveTo(93, _cy+88); ctx.lineTo(100, _cy+80); ctx.lineTo(107, _cy+88); ctx.closePath(); ctx.fill();
+
+        // Залізні ліхтарі
+        ctx.fillStyle = '#444450';
+        ctx.fillRect(26, _cy + 0, 5, 52); ctx.fillRect(169, _cy + 0, 5, 52);
+        ctx.fillRect(22, _cy + 48, 14, 5); ctx.fillRect(165, _cy + 48, 14, 5);
+        ctx.fillRect(24, _cy + 44, 10, 6); ctx.fillRect(168, _cy + 44, 10, 6);
+        _drawLantern(29, _cy - 4, 0);
+        _drawLantern(171, _cy - 4, 2);
+
+        ctx.fillStyle = '#ffeec0';
+        ctx.font = 'bold 11px Arial'; ctx.textAlign = 'center';
+        ctx.fillText('⛪ БАГАТА ДЕРЕВНЯ', 100, _cy + 13);
+
+    } else if (_dt === 3) {
+        // ════════════════════════════════════════════════════════════════
+        // ТИП 3: Бідне місто
+        // Стара цегляна стіна з вежами, іржаві ворота, натовп будівель
+        // ════════════════════════════════════════════════════════════════
+        ctx.fillStyle = '#4a4840';
+        ctx.fillRect(0, -6, 200, 6);
+
+        // Стара цегляна стіна (загальний фон)
+        _drawBricks(0, _cy + 60, 200, 80, '#6a5a50', '#3e3028');
+
+        // Тріщини та плями (потертість)
+        ctx.fillStyle = 'rgba(0,0,0,0.18)';
+        ctx.fillRect(18, _cy+70, 3, 30); ctx.fillRect(45, _cy+80, 2, 20);
+        ctx.fillRect(110, _cy+65, 3, 25); ctx.fillRect(155, _cy+75, 2, 22);
+        ctx.fillRect(178, _cy+68, 3, 28);
+
+        // Будівлі за стіною
+        ctx.fillStyle = '#5a4838'; ctx.fillRect(20, _cy+20, 40, 42);
+        ctx.fillStyle = '#6a5848'; ctx.fillRect(22, _cy+18, 36, 4);
+        _drawBricks(20, _cy+20, 40, 42, '#5a4838', '#3e2e22');
+        _drawWindow(28, _cy+30, 10, 10, '#3e2e22', '#8898a8');
+        _drawWindow(42, _cy+30, 10, 10, '#3e2e22', '#8898a8');
+
+        ctx.fillStyle = '#524038'; ctx.fillRect(140, _cy+25, 42, 38);
+        _drawBricks(140, _cy+25, 42, 38, '#524038', '#3e2e22');
+        _drawWindow(148, _cy+33, 10, 10, '#3e2e22', '#8898a8');
+        _drawWindow(162, _cy+33, 10, 10, '#3e2e22', '#8898a8');
+
+        // Потріскана вежа ліва
+        _drawBricks(5, _cy + 30, 50, 110, '#6e5e52', '#3e2e20');
+        // Зубці вежі
+        for (let bx = 5; bx < 55; bx += 10) {
+            ctx.fillStyle = '#6e5e52'; ctx.fillRect(bx, _cy+22, 7, 10);
+        }
+        // Тріщина на вежі
+        ctx.strokeStyle = 'rgba(0,0,0,0.35)'; ctx.lineWidth = 1.5;
+        ctx.beginPath(); ctx.moveTo(22, _cy+30); ctx.lineTo(18, _cy+70); ctx.lineTo(25, _cy+110); ctx.stroke();
+        _drawWindow(14, _cy + 50, 14, 16, '#3e2e20', '#708088');
+        _drawWindow(32, _cy + 50, 14, 16, '#3e2e20', '#708088');
+
+        // Потріскана вежа права
+        _drawBricks(145, _cy + 30, 50, 110, '#6e5e52', '#3e2e20');
+        for (let bx = 145; bx < 195; bx += 10) {
+            ctx.fillStyle = '#6e5e52'; ctx.fillRect(bx, _cy+22, 7, 10);
+        }
+        ctx.strokeStyle = 'rgba(0,0,0,0.35)'; ctx.lineWidth = 1.5;
+        ctx.beginPath(); ctx.moveTo(162, _cy+30); ctx.lineTo(168, _cy+72); ctx.lineTo(160, _cy+110); ctx.stroke();
+        _drawWindow(154, _cy + 50, 14, 16, '#3e2e20', '#708088');
+        _drawWindow(172, _cy + 50, 14, 16, '#3e2e20', '#708088');
+
+        // Іржаві ворота
+        ctx.fillStyle = '#5a4a38'; ctx.fillRect(68, _cy + 90, 64, 10);
+        // Ґрати воріт (іржаве залізо)
+        ctx.strokeStyle = '#7a5a30'; ctx.lineWidth = 3;
+        for (let gx = 78; gx < 124; gx += 9) {
+            ctx.beginPath(); ctx.moveTo(gx, _cy + 100); ctx.lineTo(gx, _cy + 144); ctx.stroke();
+        }
+        ctx.beginPath(); ctx.moveTo(76, _cy+110); ctx.lineTo(124, _cy+110); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(76, _cy+126); ctx.lineTo(124, _cy+126); ctx.stroke();
+        ctx.strokeStyle = '#4a3820'; ctx.lineWidth = 1;
+        for (let gx = 78; gx < 124; gx += 9) {
+            ctx.beginPath(); ctx.moveTo(gx+1, _cy+100); ctx.lineTo(gx+1, _cy+144); ctx.stroke();
+        }
+        // Отвір воріт
+        ctx.fillStyle = '#100c08';
+        ctx.beginPath(); ctx.arc(100, _cy + 100, 24, Math.PI, 0); ctx.rect(76, _cy + 100, 48, 44); ctx.fill();
+
+        // Смолоскипи
+        ctx.fillStyle = '#5a4030'; ctx.fillRect(57, _cy+66, 5, 25); ctx.fillRect(138, _cy+66, 5, 25);
+        ctx.fillStyle = '#cc6620';
+        ctx.beginPath(); ctx.moveTo(60, _cy+58); ctx.lineTo(55, _cy+67); ctx.lineTo(65, _cy+67); ctx.closePath(); ctx.fill();
+        ctx.beginPath(); ctx.moveTo(140, _cy+58); ctx.lineTo(135, _cy+67); ctx.lineTo(145, _cy+67); ctx.closePath(); ctx.fill();
+        _drawLantern(60, _cy + 58, 0);
+        _drawLantern(140, _cy + 58, 1.5);
+
+        ctx.fillStyle = '#ffddaa';
+        ctx.font = 'bold 11px Arial'; ctx.textAlign = 'center';
+        ctx.fillText('🏚 БІДНЕ МІСТО', 100, _cy + 16);
+
+    } else {
+        // ════════════════════════════════════════════════════════════════
+        // ТИП 4: Багате місто
+        // Вапняна стіна з зубцями, орнаментальні вежі, катедра, банери
+        // ════════════════════════════════════════════════════════════════
+        ctx.fillStyle = '#606858';
+        ctx.fillRect(0, -6, 200, 6);
+
+        // Центральний собор (за стіною)
+        _drawBricks(76, _cy + 5, 48, 98, '#d8d0c0', '#a89880');
+        // Вікна-троянди
+        ctx.fillStyle = '#8844cc';
+        ctx.beginPath(); ctx.arc(100, _cy+35, 10, 0, Math.PI*2); ctx.fill();
+        ctx.fillStyle = '#aa66ee';
+        for (let a = 0; a < Math.PI*2; a += Math.PI/4) {
+            ctx.beginPath(); ctx.arc(100 + Math.cos(a)*7, _cy+35 + Math.sin(a)*7, 3, 0, Math.PI*2); ctx.fill();
+        }
+        ctx.fillStyle = '#ffd700'; ctx.beginPath(); ctx.arc(100, _cy+35, 3, 0, Math.PI*2); ctx.fill();
+        _drawWindow(86, _cy + 55, 12, 18, '#8844cc', '#c8a8ff');
+        _drawWindow(102, _cy + 55, 12, 18, '#8844cc', '#c8a8ff');
+        // Два шпилі собору
+        ctx.fillStyle = '#7733aa';
+        ctx.beginPath(); ctx.moveTo(83, _cy+2); ctx.lineTo(79, _cy+22); ctx.lineTo(87, _cy+22); ctx.closePath(); ctx.fill();
+        ctx.beginPath(); ctx.moveTo(117, _cy+2); ctx.lineTo(113, _cy+22); ctx.lineTo(121, _cy+22); ctx.closePath(); ctx.fill();
+        ctx.fillStyle = '#ffdd44'; ctx.fillRect(81, _cy-1, 4, 12); ctx.fillRect(78, _cy+4, 10, 3);
+        ctx.fillStyle = '#ffdd44'; ctx.fillRect(115, _cy-1, 4, 12); ctx.fillRect(112, _cy+4, 10, 3);
+
+        // Головний шпиль
+        ctx.fillStyle = '#5522aa';
+        ctx.beginPath(); ctx.moveTo(100, _cy-8); ctx.lineTo(92, _cy+18); ctx.lineTo(108, _cy+18); ctx.closePath(); ctx.fill();
+        ctx.fillStyle = '#9966ff';
+        ctx.beginPath(); ctx.moveTo(100, _cy-8); ctx.lineTo(97, _cy+18); ctx.lineTo(103, _cy+18); ctx.closePath(); ctx.fill();
+        ctx.fillStyle = '#ffd700'; ctx.fillRect(98, _cy-12, 4, 18); ctx.fillRect(93, _cy-5, 14, 4);
+
+        // Масивна вапняна стіна
+        _drawBricks(0, _cy + 62, 200, 78, '#d0c8b8', '#a09888');
+
+        // Зубці стіни
+        for (let bx = 0; bx < 200; bx += 12) {
+            ctx.fillStyle = '#d8d0c0'; ctx.fillRect(bx, _cy+54, 8, 10);
+        }
+
+        // Ліва вежа (більша)
+        _drawBricks(2, _cy + 22, 58, 118, '#c8c0b0', '#989080');
+        for (let bx = 2; bx < 60; bx += 11) {
+            ctx.fillStyle = '#d0c8b8'; ctx.fillRect(bx, _cy+14, 8, 10);
+        }
+        // Орнамент вежі — аркові ніші
+        ctx.strokeStyle = '#888070'; ctx.lineWidth = 1.5;
+        ctx.beginPath(); ctx.arc(20, _cy+48, 10, Math.PI, 0); ctx.stroke();
+        ctx.beginPath(); ctx.arc(44, _cy+48, 10, Math.PI, 0); ctx.stroke();
+        _drawWindow(12, _cy + 48, 16, 18, '#8866aa', '#d0b8ff');
+        _drawWindow(36, _cy + 48, 16, 18, '#8866aa', '#d0b8ff');
+        // Прапор лівої вежі
+        ctx.fillStyle = '#cc2244'; ctx.fillRect(10, _cy+14, 2, 18);
+        ctx.beginPath(); ctx.moveTo(12,_cy+14); ctx.lineTo(24,_cy+21); ctx.lineTo(12,_cy+28); ctx.closePath(); ctx.fill();
+
+        // Права вежа (більша)
+        _drawBricks(140, _cy + 22, 58, 118, '#c8c0b0', '#989080');
+        for (let bx = 140; bx < 198; bx += 11) {
+            ctx.fillStyle = '#d0c8b8'; ctx.fillRect(bx, _cy+14, 8, 10);
+        }
+        ctx.strokeStyle = '#888070'; ctx.lineWidth = 1.5;
+        ctx.beginPath(); ctx.arc(156, _cy+48, 10, Math.PI, 0); ctx.stroke();
+        ctx.beginPath(); ctx.arc(180, _cy+48, 10, Math.PI, 0); ctx.stroke();
+        _drawWindow(148, _cy + 48, 16, 18, '#8866aa', '#d0b8ff');
+        _drawWindow(172, _cy + 48, 16, 18, '#8866aa', '#d0b8ff');
+        ctx.fillStyle = '#cc2244'; ctx.fillRect(188, _cy+14, 2, 18);
+        ctx.beginPath(); ctx.moveTo(188,_cy+14); ctx.lineTo(176,_cy+21); ctx.lineTo(188,_cy+28); ctx.closePath(); ctx.fill();
+
+        // Орнаментальна надбрамна арка (над воротами)
+        _drawBricks(60, _cy + 82, 80, 18, '#d0c8b8', '#a09888');
+        // Орнамент аркосолія
+        ctx.strokeStyle = '#b8a888'; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.arc(100, _cy+100, 30, Math.PI, 0); ctx.stroke();
+        ctx.strokeStyle = '#cc9944'; ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.arc(100, _cy+100, 28, Math.PI, 0); ctx.stroke();
+        // Замковий камінь — золотий
+        ctx.fillStyle = '#ffd700';
+        ctx.beginPath(); ctx.moveTo(94, _cy+82); ctx.lineTo(100, _cy+74); ctx.lineTo(106, _cy+82); ctx.closePath(); ctx.fill();
+
+        // Ґратчаста брама (портикуліс)
+        ctx.strokeStyle = '#5a5040'; ctx.lineWidth = 2.5;
+        for (let gx = 80; gx <= 120; gx += 8) {
+            ctx.beginPath(); ctx.moveTo(gx, _cy+100); ctx.lineTo(gx, _cy+144); ctx.stroke();
+        }
+        ctx.beginPath(); ctx.moveTo(78, _cy+108); ctx.lineTo(122, _cy+108); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(78, _cy+120); ctx.lineTo(122, _cy+120); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(78, _cy+132); ctx.lineTo(122, _cy+132); ctx.stroke();
+        // Кінці решіток — гострі
+        for (let gx = 80; gx <= 120; gx += 8) {
+            ctx.fillStyle = '#5a5040';
+            ctx.beginPath(); ctx.moveTo(gx - 1, _cy+100); ctx.lineTo(gx + 1, _cy+100); ctx.lineTo(gx, _cy+95); ctx.closePath(); ctx.fill();
+        }
+        // Отвір воріт
+        ctx.fillStyle = '#0a0808';
+        ctx.beginPath(); ctx.arc(100, _cy + 100, 24, Math.PI, 0); ctx.rect(76, _cy + 100, 48, 44); ctx.fill();
+
+        // Банери по боках
+        ctx.fillStyle = '#8822cc'; ctx.fillRect(60, _cy+64, 4, 28); ctx.fillRect(136, _cy+64, 4, 28);
+        ctx.fillStyle = '#aa44ee';
+        ctx.beginPath(); ctx.moveTo(60, _cy+68); ctx.lineTo(52, _cy+76); ctx.lineTo(60, _cy+84); ctx.closePath(); ctx.fill();
+        ctx.beginPath(); ctx.moveTo(140, _cy+68); ctx.lineTo(148, _cy+76); ctx.lineTo(140, _cy+84); ctx.closePath(); ctx.fill();
+        ctx.fillStyle = '#ffd700'; ctx.font = '8px Arial'; ctx.textAlign = 'center';
+        ctx.fillText('✦', 55, _cy+78); ctx.fillText('✦', 145, _cy+78);
+
+        // Золоті ліхтарі-кронштейни
+        ctx.fillStyle = '#aa8822';
+        ctx.fillRect(27, _cy+6, 5, 50); ctx.fillRect(168, _cy+6, 5, 50);
+        ctx.fillRect(24, _cy+52, 14, 4); ctx.fillRect(165, _cy+52, 14, 4);
+        _drawLantern(31, _cy - 2, 0);
+        _drawLantern(169, _cy - 2, 2);
+        // Гало навколо ліхтарів
+        let _gfa = 0.15 + 0.1 * Math.sin(_fl);
+        ctx.globalAlpha = _gfa;
+        ctx.fillStyle = '#ffffaa';
+        ctx.beginPath(); ctx.arc(31, _cy - 2, 18, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(169, _cy - 2, 18, 0, Math.PI * 2); ctx.fill();
+        ctx.globalAlpha = 1;
+
+        ctx.fillStyle = '#ffeedd';
+        ctx.font = 'bold 11px Arial'; ctx.textAlign = 'center';
+        ctx.fillText('👑 БАГАТЕ МІСТО', 100, _cy + 10);
+    }
+
     ctx.restore();
 
     floors.forEach(f => f.draw(GAME.cameraY));
