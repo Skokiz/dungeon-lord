@@ -3043,53 +3043,271 @@ function loop() {
     ctx.fillStyle = '#0c0814';
     ctx.fillRect(0, groundY + 36, gW, 5000);
 
-    // ── Печерний вхід ─────────────────────────────────────────────────────
-    let caveX  = CAVE_X;  // зміщено праворуч від центру (глобальна змінна)
-    let caveW  = 80;
-    let caveH  = 70;
-    let caveY  = groundY + 2;
+    // ── Ворота Підземелля ─────────────────────────────────────────────────
+    {
+    let caveX   = CAVE_X;
+    let archR   = 58;               // радіус арки
+    let wallThk = 36;               // товщина стін по боках
+    let wallH   = 110;              // висота стін над землею
+    let archCY  = groundY + archR;  // центр кола арки
+    let cavBot  = groundY + 15;     // низ порталу
 
-    // Тінь навколо входу
-    let caveShadow = ctx.createRadialGradient(caveX, caveY + caveH/2, 10, caveX, caveY + caveH/2, 90);
-    caveShadow.addColorStop(0, 'rgba(0,0,0,0.6)');
-    caveShadow.addColorStop(1, 'rgba(0,0,0,0)');
-    ctx.fillStyle = caveShadow;
-    ctx.beginPath(); ctx.arc(caveX, caveY + caveH*0.6, 90, 0, Math.PI*2); ctx.fill();
+    // ── Загальна темна аура ───────────────────────────────────────────
+    let auraG = ctx.createRadialGradient(caveX, groundY + 30, 15, caveX, groundY + 30, 200);
+    auraG.addColorStop(0,   'rgba(60,0,30,0.55)');
+    auraG.addColorStop(0.45,'rgba(30,0,60,0.28)');
+    auraG.addColorStop(1,   'rgba(0,0,0,0)');
+    ctx.fillStyle = auraG;
+    ctx.beginPath(); ctx.arc(caveX, groundY + 30, 200, 0, Math.PI*2); ctx.fill();
 
-    // Арка входу — темна діра
-    ctx.fillStyle = '#000';
-    ctx.beginPath();
-    ctx.arc(caveX, caveY + 4, caveW/2, Math.PI, 0);
-    ctx.lineTo(caveX + caveW/2, caveY + caveH);
-    ctx.lineTo(caveX - caveW/2, caveY + caveH);
-    ctx.closePath(); ctx.fill();
+    // ── Кам'яні стіни з цегляною текстурою ───────────────────────────
+    function _caveWall(wx, wy, ww, wh) {
+        let wg = ctx.createLinearGradient(wx, 0, wx + ww, 0);
+        wg.addColorStop(0, '#140c1c'); wg.addColorStop(0.35,'#2c1c3e');
+        wg.addColorStop(0.65,'#221430'); wg.addColorStop(1, '#100818');
+        ctx.fillStyle = wg; ctx.fillRect(wx, wy, ww, wh);
+        // Цегляна кладка
+        ctx.strokeStyle = 'rgba(0,0,0,0.55)'; ctx.lineWidth = 0.9;
+        let bh=10, bw=20;
+        for (let r=0; r*bh < wh+bh; r++) {
+            let off = (r%2===0)?0:bw/2;
+            for (let c=-bw; c<=ww+bw; c+=bw) ctx.strokeRect(wx+c+off, wy+r*bh, bw, bh);
+        }
+        // Підсвітка ребра
+        let hi = ctx.createLinearGradient(wx,0,wx+4,0);
+        hi.addColorStop(0,'rgba(120,60,200,0.18)'); hi.addColorStop(1,'rgba(0,0,0,0)');
+        ctx.fillStyle=hi; ctx.fillRect(wx, wy, 4, wh);
+        let sh = ctx.createLinearGradient(wx+ww-4,0,wx+ww,0);
+        sh.addColorStop(0,'rgba(0,0,0,0)'); sh.addColorStop(1,'rgba(0,0,0,0.35)');
+        ctx.fillStyle=sh; ctx.fillRect(wx+ww-4, wy, 4, wh);
+    }
+    let wallTop = groundY - wallH;
+    _caveWall(caveX - archR - wallThk, wallTop, wallThk, wallH + 17);
+    _caveWall(caveX + archR,           wallTop, wallThk, wallH + 17);
 
-    // Обводка арки — камінь
-    ctx.strokeStyle = '#5a3e70'; ctx.lineWidth = 4;
-    ctx.beginPath();
-    ctx.arc(caveX, caveY + 4, caveW/2, Math.PI, 0);
-    ctx.lineTo(caveX + caveW/2, caveY + caveH);
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.arc(caveX, caveY + 4, caveW/2, Math.PI, 0);
-    ctx.lineTo(caveX - caveW/2, caveY + caveH);
-    ctx.stroke();
-
-    // Камінці навколо арки
-    let arcStones = [[-38,18,12,9], [-30,-8,10,8], [-12,-20,9,7],
-                     [12,-20,9,7],  [30,-8,10,8],  [38,18,12,9]];
-    arcStones.forEach(([ox,oy,sw2,sh2]) => {
-        ctx.fillStyle = '#4a3260';
-        ctx.beginPath();
-        ctx.ellipse(caveX + ox, caveY + 4 + oy, sw2, sh2, ox*0.02, 0, Math.PI*2);
-        ctx.fill();
-        ctx.strokeStyle = '#2e1e40'; ctx.lineWidth = 1; ctx.stroke();
+    // ── Зубці (мерлони) на верхівці стін ─────────────────────────────
+    [[caveX - archR - wallThk, wallTop],[caveX + archR, wallTop]].forEach(([wx]) => {
+        let mw=10, mg=7;
+        for (let mx=2; mx < wallThk-mw; mx+=mw+mg) {
+            ctx.fillStyle='#2c1c3e'; ctx.fillRect(wx+mx, wallTop-15, mw, 15);
+            ctx.fillStyle='rgba(0,0,0,0.4)'; ctx.fillRect(wx+mx+mw, wallTop-7, mg, 7);
+            // Тріщина на мерлоні
+            ctx.strokeStyle='rgba(0,0,0,0.5)'; ctx.lineWidth=0.7;
+            ctx.beginPath(); ctx.moveTo(wx+mx+3,wallTop-15); ctx.lineTo(wx+mx+4,wallTop-3); ctx.stroke();
+        }
     });
 
-    // Підпис
-    ctx.fillStyle = 'rgba(200,160,255,0.7)';
-    ctx.font = 'bold 11px Arial'; ctx.textAlign = 'center';
-    ctx.fillText('⛏ ПІДЗЕМЕЛЛЯ', caveX, caveY - 10);
+    // ── Руни на стінах (мерехтять) ────────────────────────────────────
+    {
+        let ra = 0.35 + 0.2 * Math.sin(_t/700);
+        ctx.globalAlpha = ra;
+        ctx.fillStyle = '#cc44ff'; ctx.font = 'bold 12px serif'; ctx.textAlign = 'center';
+        ['ᚠ','ᚢ','ᚦ'].forEach((r,i) => ctx.fillText(r, caveX-archR-wallThk/2, wallTop+18+i*24));
+        ['ᚨ','ᚱ','ᚲ'].forEach((r,i) => ctx.fillText(r, caveX+archR+wallThk/2, wallTop+18+i*24));
+        ctx.globalAlpha = 1;
+    }
+
+    // ── Кривавий підтік на стінах ─────────────────────────────────────
+    [[caveX-archR-8, wallTop+28, 12],[caveX-archR-18, wallTop+48, 9],
+     [caveX+archR+6, wallTop+35, 14],[caveX+archR+20, wallTop+22, 8]].forEach(([dx,dy,dl]) => {
+        ctx.fillStyle='#550018';
+        ctx.beginPath(); ctx.arc(dx,dy,2.5,0,Math.PI*2); ctx.fill();
+        ctx.strokeStyle='#440012'; ctx.lineWidth=1.5;
+        ctx.beginPath(); ctx.moveTo(dx,dy); ctx.quadraticCurveTo(dx-1,dy+dl*0.5,dx+1,dy+dl); ctx.stroke();
+    });
+
+    // ── Портал — чорна безодня ────────────────────────────────────────
+    ctx.fillStyle='#000004';
+    ctx.beginPath();
+    ctx.arc(caveX, archCY, archR, Math.PI, 0, false);
+    ctx.lineTo(caveX+archR, cavBot); ctx.lineTo(caveX-archR, cavBot);
+    ctx.closePath(); ctx.fill();
+
+    // Радіальний градієнт глибини
+    let depG = ctx.createRadialGradient(caveX, archCY+10, 4, caveX, archCY+15, archR*1.25);
+    depG.addColorStop(0, 'rgba(40,0,60,0)');
+    depG.addColorStop(0.6,'rgba(10,0,25,0.5)');
+    depG.addColorStop(1,  'rgba(0,0,0,0.95)');
+    ctx.fillStyle=depG;
+    ctx.beginPath();
+    ctx.arc(caveX, archCY, archR, Math.PI, 0, false);
+    ctx.lineTo(caveX+archR, cavBot); ctx.lineTo(caveX-archR, cavBot);
+    ctx.closePath(); ctx.fill();
+
+    // ── Тесані камені арки (11 блоків) ───────────────────────────────
+    {
+        let nb=11, inR=archR, outR=archR+24;
+        for (let bi=0; bi<nb; bi++) {
+            let a1=Math.PI+(bi/nb)*Math.PI, a2=Math.PI+((bi+1)/nb)*Math.PI;
+            let x1i=caveX+Math.cos(a1)*inR,  y1i=archCY+Math.sin(a1)*inR;
+            let x2i=caveX+Math.cos(a2)*inR,  y2i=archCY+Math.sin(a2)*inR;
+            let shade = bi===5 ? '#4a2e60' : bi%2===0 ? '#3a2450' : '#2a1840';
+            ctx.fillStyle=shade;
+            ctx.beginPath();
+            ctx.moveTo(x1i,y1i);
+            ctx.arc(caveX, archCY, outR, a1, a2);
+            ctx.lineTo(x2i,y2i);
+            ctx.arc(caveX, archCY, inR, a2, a1, true);
+            ctx.closePath(); ctx.fill();
+            ctx.strokeStyle='#100618'; ctx.lineWidth=1; ctx.stroke();
+            // Замшіла смуга на блоці
+            let aMid=(a1+a2)/2, mR=inR+10;
+            ctx.fillStyle='rgba(20,60,20,0.2)';
+            ctx.beginPath(); ctx.arc(caveX+Math.cos(aMid)*mR, archCY+Math.sin(aMid)*mR, 4, 0, Math.PI*2); ctx.fill();
+        }
+        // Вертикальні пілони по боках арки
+        let pilW=10;
+        [[caveX-archR-outR%archR, archCY, pilW],[caveX+archR+1, archCY, pilW]].forEach(([px,py,pw]) => {
+            let pg = ctx.createLinearGradient(px,0,px+pw,0);
+            pg.addColorStop(0,'#180e28'); pg.addColorStop(0.4,'#2e1e44'); pg.addColorStop(1,'#100818');
+            ctx.fillStyle=pg; ctx.fillRect(px, py, pw, cavBot-py+12);
+        });
+    }
+
+    // ── Замковий камінь — ВЕЛИКА ДЕМОНІЧНА ПАЩЕКА ─────────────────────
+    {
+        let kx=caveX, ky=archCY-archR-20;
+        // Тло каменя
+        ctx.fillStyle='#3a2050';
+        ctx.beginPath(); ctx.ellipse(kx,ky,20,17,0,0,Math.PI*2); ctx.fill();
+        ctx.strokeStyle='#100618'; ctx.lineWidth=1.5; ctx.stroke();
+        // Черепна основа
+        ctx.fillStyle='#c8c090';
+        ctx.beginPath(); ctx.ellipse(kx,ky-3,11,9,0,0,Math.PI*2); ctx.fill();
+        // Щелепа
+        ctx.fillStyle='#b0a878';
+        ctx.beginPath(); ctx.ellipse(kx,ky+5,8,5,0,0,Math.PI); ctx.fill();
+        // Зуби
+        ctx.fillStyle='#d0c8a0';
+        [-5,-2,1.5,4.5].forEach(tx => { ctx.fillRect(kx+tx-1.2,ky+3,2.4,4); });
+        // Очниці
+        ctx.fillStyle='#0a0006';
+        ctx.beginPath(); ctx.ellipse(kx-4,ky-4,3.5,3,-0.2,0,Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.ellipse(kx+4,ky-4,3.5,3,0.2,0,Math.PI*2); ctx.fill();
+        // Пульсуюче свічення очей
+        let eg2 = 0.4+0.4*Math.sin(_t/380);
+        ctx.globalAlpha=eg2;
+        ctx.fillStyle='#ff2000';
+        ctx.beginPath(); ctx.ellipse(kx-4,ky-4,2.5,2,-0.2,0,Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.ellipse(kx+4,ky-4,2.5,2,0.2,0,Math.PI*2); ctx.fill();
+        ctx.globalAlpha=1;
+        // Промені від очей (зловісне сяйво)
+        let eyeRayA = eg2*0.3;
+        [-4,4].forEach(ex => {
+            let eg3=ctx.createRadialGradient(kx+ex,ky-4,0,kx+ex,ky-4,22);
+            eg3.addColorStop(0,`rgba(255,40,0,${eyeRayA})`);
+            eg3.addColorStop(1,'rgba(0,0,0,0)');
+            ctx.fillStyle=eg3; ctx.beginPath(); ctx.arc(kx+ex,ky-4,22,0,Math.PI*2); ctx.fill();
+        });
+    }
+
+    // ── Пара очей у темряві (анімовані) ──────────────────────────────
+    {
+        let ep=0.5+0.5*Math.sin(_t/550), ep2=0.3+0.3*Math.sin(_t/820+1.8);
+        // Великі очі — головний монстр
+        [[-18,0],[18,0]].forEach(([ex]) => {
+            let ey=archCY+18;
+            let eg=ctx.createRadialGradient(caveX+ex,ey,0,caveX+ex,ey,13);
+            eg.addColorStop(0,`rgba(255,40,0,${0.9*ep})`);
+            eg.addColorStop(0.5,`rgba(180,10,0,${0.5*ep})`);
+            eg.addColorStop(1,'rgba(0,0,0,0)');
+            ctx.fillStyle=eg; ctx.beginPath(); ctx.arc(caveX+ex,ey,13,0,Math.PI*2); ctx.fill();
+            ctx.fillStyle=`rgba(255,90,10,${0.95*ep})`;
+            ctx.beginPath(); ctx.ellipse(caveX+ex,ey,4.5,2.5,0,0,Math.PI*2); ctx.fill();
+            ctx.fillStyle='#0e0002';
+            ctx.beginPath(); ctx.ellipse(caveX+ex,ey,2,2.2,0,0,Math.PI*2); ctx.fill();
+        });
+        // Малі фіолетові очі — щось позаду
+        [[-10,38],[10,38]].forEach(([ex,ey]) => {
+            let eg=ctx.createRadialGradient(caveX+ex,archCY+ey,0,caveX+ex,archCY+ey,8);
+            eg.addColorStop(0,`rgba(180,0,220,${0.75*ep2})`);
+            eg.addColorStop(1,'rgba(0,0,0,0)');
+            ctx.fillStyle=eg; ctx.beginPath(); ctx.arc(caveX+ex,archCY+ey,8,0,Math.PI*2); ctx.fill();
+            ctx.fillStyle=`rgba(210,0,255,${0.65*ep2})`;
+            ctx.beginPath(); ctx.ellipse(caveX+ex,archCY+ey,3,1.8,0,0,Math.PI*2); ctx.fill();
+        });
+    }
+
+    // ── Смердючий туман із підземелля (анімований) ────────────────────
+    {
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(caveX,archCY,archR-3,Math.PI,0,false);
+        ctx.lineTo(caveX+archR-3,cavBot); ctx.lineTo(caveX-archR+3,cavBot);
+        ctx.closePath(); ctx.clip();
+        for (let mi=0; mi<7; mi++) {
+            let ph=(_t/2200+mi*0.18)%1;
+            let mx2=caveX+Math.sin(ph*Math.PI*2+mi*1.1)*22;
+            let my2=cavBot - ph*(archR*1.6+10);
+            let ma=(ph<0.15?ph/0.15:1-(ph-0.15)/0.85)*0.32;
+            let ms=10+ph*32;
+            let mg=ctx.createRadialGradient(mx2,my2,0,mx2,my2,ms);
+            mg.addColorStop(0,`rgba(${mi%2?20:50},${mi%3?140:80},${mi%2?20:10},${ma})`);
+            mg.addColorStop(1,'rgba(0,0,0,0)');
+            ctx.fillStyle=mg; ctx.beginPath(); ctx.arc(mx2,my2,ms,0,Math.PI*2); ctx.fill();
+        }
+        ctx.restore();
+    }
+
+    // ── Ланцюги (звисають з арки) ─────────────────────────────────────
+    [caveX-22, caveX+22].forEach((cx2,ci) => {
+        let ctop=archCY-archR*0.7+4, clen=32;
+        for (let cl=0; cl<clen; cl+=5) {
+            let sw=Math.sin(_t/750+ci*2.3+cl*0.12)*2.5;
+            ctx.fillStyle=cl%10<5?'#3a2860':'#5a4080';
+            ctx.beginPath();
+            ctx.ellipse(cx2+sw,ctop+cl+2.5,3.5,2,Math.sin(cl*0.4)*0.4,0,Math.PI*2);
+            ctx.fill();
+            ctx.strokeStyle='#1a0e28'; ctx.lineWidth=0.7;
+            ctx.beginPath(); ctx.arc(cx2+sw,ctop+cl+2.5,3.5,0,Math.PI*2); ctx.stroke();
+        }
+    });
+
+    // ── Черепи і кістки біля підніжжя ────────────────────────────────
+    [[-40,6,7],[42,8,6],[-10,4,5]].forEach(([ox,oy,sr]) => {
+        let bx=caveX+ox, by=cavBot+oy;
+        ctx.fillStyle='#a09060';
+        ctx.beginPath(); ctx.ellipse(bx,by,sr,sr*0.75,ox*0.01,0,Math.PI*2); ctx.fill();
+        ctx.fillStyle='#0e0804';
+        ctx.beginPath(); ctx.ellipse(bx-sr*0.4,by-sr*0.2,sr*0.28,sr*0.28,0,0,Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.ellipse(bx+sr*0.4,by-sr*0.2,sr*0.28,sr*0.28,0,0,Math.PI*2); ctx.fill();
+    });
+    // Кістки навхрест
+    [[-55,10,16,0.4],[52,12,14,-0.35]].forEach(([ox,oy,bl,ba]) => {
+        ctx.save(); ctx.translate(caveX+ox,cavBot+oy); ctx.rotate(ba);
+        ctx.strokeStyle='#a09060'; ctx.lineWidth=2.5;
+        ctx.beginPath(); ctx.moveTo(-bl/2,0); ctx.lineTo(bl/2,0); ctx.stroke();
+        ctx.fillStyle='#a09060';
+        [-bl/2, bl/2].forEach(ex => { ctx.beginPath(); ctx.arc(ex,0,3.5,0,Math.PI*2); ctx.fill(); });
+        ctx.restore();
+        ctx.save(); ctx.translate(caveX+ox,cavBot+oy); ctx.rotate(ba+Math.PI/2);
+        ctx.strokeStyle='#a09060'; ctx.lineWidth=2;
+        ctx.beginPath(); ctx.moveTo(-bl/2+4,0); ctx.lineTo(bl/2-4,0); ctx.stroke();
+        ctx.restore();
+    });
+
+    // ── Фіолетове мерехтіння навколо арки ────────────────────────────
+    {
+        let ga=0.10+0.07*Math.sin(_t/900);
+        let ag=ctx.createRadialGradient(caveX,archCY,archR,caveX,archCY,archR+40);
+        ag.addColorStop(0,`rgba(130,0,240,${ga*2.5})`);
+        ag.addColorStop(1,'rgba(0,0,0,0)');
+        ctx.fillStyle=ag;
+        ctx.beginPath();
+        ctx.arc(caveX,archCY,archR+40,Math.PI,0,false);
+        ctx.lineTo(caveX+archR+40,cavBot+40); ctx.lineTo(caveX-archR-40,cavBot+40);
+        ctx.closePath(); ctx.fill();
+    }
+
+    // ── Підпис ────────────────────────────────────────────────────────
+    {
+        let la=0.55+0.2*Math.sin(_t/600);
+        ctx.globalAlpha=la;
+        ctx.fillStyle='#dd88ff'; ctx.font='bold 10px Arial'; ctx.textAlign='center';
+        ctx.fillText('⚠ ПІДЗЕМЕЛЛЯ', caveX, groundY - wallH - 22);
+        ctx.globalAlpha=1;
+    }
+    } // end cave block
 
     // ── Місто — ворота на одній вертикальній лінії з лівим факелом поверхів ─
     let _cityAvail = centerX - CFG.floorW / 2 - 10;
