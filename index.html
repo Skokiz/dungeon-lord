@@ -806,6 +806,34 @@ class Floor {
         ctx.fillStyle = 'rgba(180,140,255,0.08)';
         ctx.fillRect(fx, fy, fw, 3);
 
+        // ── 3б. Калюжі + мох біля стін ──────────────────────────────────
+        {
+            let _ps = this.depth * 77 + 31;
+            let _pp = (n) => { _ps = (_ps * 1664525 + 1013904223) & 0xffffffff; return Math.abs(_ps % n); };
+            let _pc = 1 + _pp(3);
+            for (let _pi = 0; _pi < _pc; _pi++) {
+                let _px = fx + 50 + _pp(fw - 100);
+                let _pw = 15 + _pp(18); let _ph = 3 + _pp(3);
+                let _shim = 0.28 + 0.1 * Math.sin(Date.now()/950 + _pi * 2.4);
+                let _pudG = ctx.createRadialGradient(_px, fy - 2, 0, _px, fy - 2, _pw);
+                _pudG.addColorStop(0, `rgba(90,70,140,${_shim + 0.18})`);
+                _pudG.addColorStop(0.7, `rgba(40,25,90,${_shim})`);
+                _pudG.addColorStop(1, 'rgba(0,0,0,0)');
+                ctx.fillStyle = _pudG;
+                ctx.beginPath(); ctx.ellipse(_px, fy - _ph/2, _pw, _ph, 0, 0, Math.PI*2); ctx.fill();
+                // Відблиск на воді
+                ctx.fillStyle = `rgba(170,155,220,${_shim * 0.32})`;
+                ctx.beginPath(); ctx.ellipse(_px - _pw*0.12, fy - _ph*0.45, _pw*0.27, _ph*0.2, -0.3, 0, Math.PI*2); ctx.fill();
+            }
+            // Мох на підлозі біля стін
+            ctx.fillStyle = 'rgba(22,72,12,0.28)';
+            for (let _mi = 0; _mi < 7; _mi++) {
+                let _mr = 3 + Math.sin(_mi * 1.87 + this.depth * 0.7) * 1.5;
+                ctx.beginPath(); ctx.arc(fx + 4 + _mi * 11, fy + 5, _mr, Math.PI, 0); ctx.fill();
+                ctx.beginPath(); ctx.arc(fx + fw - 4 - _mi * 11, fy + 5, _mr, Math.PI, 0); ctx.fill();
+            }
+        }
+
         // ── 4. Стеля — сталактити ────────────────────────────────────────
         ctx.fillStyle = '#120e1a';
         ctx.fillRect(fx, fty, fw, 8);
@@ -828,6 +856,31 @@ class Floor {
                 let dropAlpha = 0.4 + 0.4 * Math.sin(Date.now()/800 + s);
                 ctx.fillStyle = `rgba(100,180,255,${dropAlpha})`;
                 ctx.beginPath(); ctx.arc(sx, fty + 8 + sh + 3, 2, 0, Math.PI*2); ctx.fill();
+            }
+        }
+
+        // ── 4б. Павутина в кутах (детермінована за глибиною) ────────────
+        {
+            let _ws = this.depth * 53 + 17;
+            let _wp = (n) => { _ws = (_ws * 1664525 + 1013904223) & 0xffffffff; return Math.abs(_ws % n); };
+            ctx.strokeStyle = 'rgba(200,190,225,0.15)'; ctx.lineWidth = 0.5;
+            // Ліво-верхній кут
+            if (_wp(3) !== 0) {
+                for (let _wi = 0; _wi < 5; _wi++) {
+                    ctx.beginPath(); ctx.moveTo(fx, fty + 8 + _wi * 8); ctx.lineTo(fx + 26 + _wi * 3, fty + 8); ctx.stroke();
+                }
+                for (let _wj = 1; _wj <= 4; _wj++) {
+                    ctx.beginPath(); ctx.arc(fx, fty + 8, _wj * 8, 0, Math.PI/2); ctx.stroke();
+                }
+            }
+            // Право-верхній кут
+            if (_wp(3) !== 0) {
+                for (let _wi = 0; _wi < 5; _wi++) {
+                    ctx.beginPath(); ctx.moveTo(fx + fw, fty + 8 + _wi * 8); ctx.lineTo(fx + fw - 26 - _wi * 3, fty + 8); ctx.stroke();
+                }
+                for (let _wj = 1; _wj <= 4; _wj++) {
+                    ctx.beginPath(); ctx.arc(fx + fw, fty + 8, _wj * 8, Math.PI/2, Math.PI); ctx.stroke();
+                }
             }
         }
 
@@ -1966,6 +2019,19 @@ class Unit {
             // Блиск
             ctx.fillStyle = 'rgba(255,255,255,0.35)';
             ctx.beginPath(); ctx.ellipse(this.x - 6, dy + 7, 4, 2.5, -0.5, 0, Math.PI*2); ctx.fill();
+            // Бульбашки, що спливають
+            let _bt2 = Date.now() / 700;
+            for (let _bi = 0; _bi < 3; _bi++) {
+                let _bPhase = (_bt2 * 0.65 + _bi * 0.33) % 1;
+                let _bx = this.x + (_bi - 1) * s * 0.18;
+                let _by = dy + s * (0.88 - _bPhase * 0.72);
+                let _br = s * 0.038 * (1 - _bPhase * 0.45);
+                ctx.strokeStyle = `rgba(140,255,140,${0.38 * (1 - _bPhase)})`;
+                ctx.lineWidth = 0.8;
+                ctx.beginPath(); ctx.arc(_bx, _by, _br, 0, Math.PI*2); ctx.stroke();
+                ctx.fillStyle = `rgba(200,255,200,${0.1 * (1 - _bPhase)})`;
+                ctx.beginPath(); ctx.arc(_bx, _by, _br, 0, Math.PI*2); ctx.fill();
+            }
 
         } else if (this.type === 'monster' && this.monsterKind === 'skeleton') {
             // Скелет — кістяний, сірувато-жовтий, з черепом
@@ -1990,10 +2056,17 @@ class Unit {
             // Череп
             ctx.fillStyle = '#ddd4a0';
             ctx.beginPath(); ctx.arc(this.x, dy + s*0.28, s*0.26, 0, Math.PI*2); ctx.fill();
-            // Очниці
-            ctx.fillStyle = '#1a1408';
+            // Очниці (чорні западини)
+            ctx.fillStyle = '#0d0c08';
             ctx.beginPath(); ctx.ellipse(this.x - s*0.1, dy + s*0.26, s*0.08, s*0.1, 0, 0, Math.PI*2); ctx.fill();
             ctx.beginPath(); ctx.ellipse(this.x + s*0.1, dy + s*0.26, s*0.08, s*0.1, 0, 0, Math.PI*2); ctx.fill();
+            // Потойбічне зелено-блакитне свічення
+            let _skelGlow = 0.45 + 0.35 * Math.sin(Date.now() / 480);
+            ctx.shadowColor = '#33ffaa'; ctx.shadowBlur = 9;
+            ctx.fillStyle = `rgba(45,210,140,${_skelGlow})`;
+            ctx.beginPath(); ctx.ellipse(this.x - s*0.1, dy + s*0.26, s*0.038, s*0.05, 0, 0, Math.PI*2); ctx.fill();
+            ctx.beginPath(); ctx.ellipse(this.x + s*0.1, dy + s*0.26, s*0.038, s*0.05, 0, 0, Math.PI*2); ctx.fill();
+            ctx.shadowBlur = 0;
             // Посмішка
             ctx.strokeStyle = '#1a1408'; ctx.lineWidth = 1;
             ctx.beginPath(); ctx.arc(this.x, dy + s*0.34, s*0.1, 0.1, Math.PI-0.1); ctx.stroke();
@@ -2056,21 +2129,83 @@ class Unit {
 
         } else if (this.type === 'monster' && this.monsterKind === 'bat') {
             let s = this.size;
-            ctx.fillStyle='#553366';
-            ctx.beginPath();ctx.moveTo(this.x,dy+s*0.5);ctx.quadraticCurveTo(this.x-s*0.8,dy+s*0.1,this.x-s*0.5,dy+s*0.7);ctx.closePath();ctx.fill();
-            ctx.beginPath();ctx.moveTo(this.x,dy+s*0.5);ctx.quadraticCurveTo(this.x+s*0.8,dy+s*0.1,this.x+s*0.5,dy+s*0.7);ctx.closePath();ctx.fill();
-            ctx.fillStyle='#331144'; ctx.beginPath(); ctx.arc(this.x,dy+s*0.45,s*0.22,0,Math.PI*2); ctx.fill();
-            ctx.fillStyle='#ff2255'; ctx.beginPath(); ctx.arc(this.x-s*0.08,dy+s*0.42,s*0.06,0,Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.arc(this.x+s*0.08,dy+s*0.42,s*0.06,0,Math.PI*2); ctx.fill();
+            let _tb = Date.now() / 130;
+            let _wUp = Math.sin(_tb) * 0.28; // махання крилами
+            // Ліве крило
+            ctx.fillStyle = '#4a2d5e';
+            ctx.beginPath();
+            ctx.moveTo(this.x - s*0.04, dy+s*0.5);
+            ctx.quadraticCurveTo(this.x - s*0.88, dy+s*(0.08 - _wUp), this.x - s*0.54, dy+s*(0.72 + _wUp*0.22));
+            ctx.lineTo(this.x - s*0.04, dy+s*0.61); ctx.closePath(); ctx.fill();
+            // Праве крило
+            ctx.beginPath();
+            ctx.moveTo(this.x + s*0.04, dy+s*0.5);
+            ctx.quadraticCurveTo(this.x + s*0.88, dy+s*(0.08 - _wUp), this.x + s*0.54, dy+s*(0.72 + _wUp*0.22));
+            ctx.lineTo(this.x + s*0.04, dy+s*0.61); ctx.closePath(); ctx.fill();
+            // Мембрана крил — жили
+            ctx.strokeStyle = 'rgba(70,15,100,0.4)'; ctx.lineWidth = 0.7;
+            for (let _wvi = 1; _wvi <= 3; _wvi++) {
+                let _vr = _wvi / 4;
+                ctx.beginPath(); ctx.moveTo(this.x, dy+s*0.54);
+                ctx.lineTo(this.x - s*(0.65*_vr+0.06), dy+s*(0.1 - _wUp*_vr)); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(this.x, dy+s*0.54);
+                ctx.lineTo(this.x + s*(0.65*_vr+0.06), dy+s*(0.1 - _wUp*_vr)); ctx.stroke();
+            }
+            // Тіло з градієнтом
+            let _batG = ctx.createRadialGradient(this.x - s*0.06, dy+s*0.33, 1, this.x, dy+s*0.43, s*0.24);
+            _batG.addColorStop(0, '#7755aa'); _batG.addColorStop(1, '#1e0d30');
+            ctx.fillStyle = _batG;
+            ctx.beginPath(); ctx.arc(this.x, dy+s*0.42, s*0.22, 0, Math.PI*2); ctx.fill();
+            // Вуха
+            ctx.fillStyle = '#3d1f55';
+            ctx.beginPath(); ctx.moveTo(this.x-s*0.09, dy+s*0.22); ctx.lineTo(this.x-s*0.2, dy-s*0.06); ctx.lineTo(this.x-s*0.03, dy+s*0.17); ctx.closePath(); ctx.fill();
+            ctx.beginPath(); ctx.moveTo(this.x+s*0.09, dy+s*0.22); ctx.lineTo(this.x+s*0.2, dy-s*0.06); ctx.lineTo(this.x+s*0.03, dy+s*0.17); ctx.closePath(); ctx.fill();
+            // Очі — червоне свіченн
+            ctx.shadowColor='#ff1133'; ctx.shadowBlur=8;
+            ctx.fillStyle='#ff2244';
+            ctx.beginPath(); ctx.arc(this.x-s*0.09, dy+s*0.37, s*0.065, 0, Math.PI*2); ctx.fill();
+            ctx.beginPath(); ctx.arc(this.x+s*0.09, dy+s*0.37, s*0.065, 0, Math.PI*2); ctx.fill();
+            ctx.shadowBlur = 0;
+            // Ікла
+            ctx.fillStyle = '#ddd8ee';
+            ctx.beginPath(); ctx.moveTo(this.x-s*0.07, dy+s*0.5); ctx.lineTo(this.x-s*0.04, dy+s*0.61); ctx.lineTo(this.x-s*0.01, dy+s*0.5); ctx.closePath(); ctx.fill();
+            ctx.beginPath(); ctx.moveTo(this.x+s*0.01, dy+s*0.5); ctx.lineTo(this.x+s*0.04, dy+s*0.61); ctx.lineTo(this.x+s*0.07, dy+s*0.5); ctx.closePath(); ctx.fill();
 
         } else if (this.type === 'monster' && this.monsterKind === 'golem') {
             let s = this.size;
-            ctx.fillStyle='#776655'; ctx.fillRect(dx+s*0.05,dy+s*0.35,s*0.9,s*0.6);
-            ctx.fillStyle='#998877'; ctx.fillRect(dx+s*0.15,dy+s*0.15,s*0.7,s*0.3);
-            ctx.strokeStyle='#554433'; ctx.lineWidth=2;
-            ctx.beginPath();ctx.moveTo(this.x,dy+s*0.2);ctx.lineTo(this.x-s*0.1,dy+s*0.4);ctx.stroke();
-            ctx.beginPath();ctx.moveTo(this.x+s*0.2,dy+s*0.5);ctx.lineTo(this.x+s*0.1,dy+s*0.7);ctx.stroke();
-            ctx.fillStyle='#ff8800'; ctx.beginPath(); ctx.arc(this.x-s*0.18,dy+s*0.25,s*0.1,0,Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.arc(this.x+s*0.18,dy+s*0.25,s*0.1,0,Math.PI*2); ctx.fill();
-            ctx.fillStyle='#665544'; ctx.fillRect(dx-s*0.1,dy+s*0.55,s*0.22,s*0.22); ctx.fillRect(dx+s*0.88,dy+s*0.55,s*0.22,s*0.22);
+            // Тіло — 3D градієнт (світліше ліво-верх, темніше право-низ)
+            let _golBG = ctx.createLinearGradient(dx+s*0.05, dy+s*0.35, dx+s*0.95, dy+s*0.95);
+            _golBG.addColorStop(0, '#b0a090'); _golBG.addColorStop(0.45, '#776655'); _golBG.addColorStop(1, '#3d2b1e');
+            ctx.fillStyle = _golBG; ctx.fillRect(dx+s*0.05, dy+s*0.35, s*0.9, s*0.6);
+            // Голова
+            let _golHG = ctx.createLinearGradient(dx+s*0.12, dy+s*0.12, dx+s*0.88, dy+s*0.46);
+            _golHG.addColorStop(0, '#c0b09a'); _golHG.addColorStop(1, '#5a4433');
+            ctx.fillStyle = _golHG; ctx.fillRect(dx+s*0.12, dy+s*0.12, s*0.76, s*0.3);
+            // Тріщини
+            ctx.strokeStyle = 'rgba(20,12,6,0.55)'; ctx.lineWidth = 1;
+            ctx.beginPath(); ctx.moveTo(dx+s*0.28, dy+s*0.38); ctx.lineTo(dx+s*0.37, dy+s*0.57); ctx.lineTo(dx+s*0.3, dy+s*0.72); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(dx+s*0.62, dy+s*0.43); ctx.lineTo(dx+s*0.7, dy+s*0.62); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(dx+s*0.22, dy+s*0.17); ctx.lineTo(dx+s*0.33, dy+s*0.33); ctx.stroke();
+            // Пульсуюча руна на грудях
+            let _runeG = 0.5 + 0.42 * Math.sin(Date.now() / 380);
+            ctx.shadowColor='#ff7700'; ctx.shadowBlur = 10 * _runeG;
+            ctx.fillStyle=`rgba(255,110,0,${_runeG})`;
+            ctx.beginPath(); ctx.arc(this.x, dy+s*0.6, s*0.07, 0, Math.PI*2); ctx.fill();
+            ctx.strokeStyle=`rgba(255,180,80,${_runeG*0.7})`; ctx.lineWidth=1;
+            ctx.beginPath(); ctx.moveTo(this.x-s*0.12, dy+s*0.6); ctx.lineTo(this.x+s*0.12, dy+s*0.6); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(this.x, dy+s*0.48); ctx.lineTo(this.x, dy+s*0.72); ctx.stroke();
+            // Очі — помаранчеве світіння
+            ctx.shadowColor='#ff7700'; ctx.shadowBlur=12;
+            ctx.fillStyle='#ff8800';
+            ctx.beginPath(); ctx.arc(this.x-s*0.2, dy+s*0.24, s*0.1, 0, Math.PI*2); ctx.fill();
+            ctx.beginPath(); ctx.arc(this.x+s*0.2, dy+s*0.24, s*0.1, 0, Math.PI*2); ctx.fill();
+            ctx.shadowBlur = 0;
+            // Руки
+            ctx.fillStyle='#5a4433'; ctx.fillRect(dx-s*0.14,dy+s*0.55,s*0.2,s*0.25); ctx.fillRect(dx+s*0.94,dy+s*0.55,s*0.2,s*0.25);
+            // Обводка
+            ctx.strokeStyle='rgba(20,12,6,0.3)'; ctx.lineWidth=1.2;
+            ctx.strokeRect(dx+s*0.05, dy+s*0.35, s*0.9, s*0.6);
+            ctx.strokeRect(dx+s*0.12, dy+s*0.12, s*0.76, s*0.3);
 
         } else if (this.type === 'monster' && this.monsterKind === 'minotaur') {
             let s = this.size;
@@ -2086,11 +2221,28 @@ class Unit {
         } else if (this.type === 'monster' && this.monsterKind === 'shadow') {
             let s = this.size, tp=Date.now()/250;
             let alf = this.invisActive ? 0.15 : (0.5+0.25*Math.sin(tp));
-            ctx.fillStyle='rgba(20,30,50,'+alf+')';
-            ctx.beginPath(); ctx.ellipse(this.x,dy+s*0.5,s*0.45,s*0.55,0,0,Math.PI*2); ctx.fill();
+            // Клуби диму (вгору)
+            if (!this.invisActive) {
+                for (let _si = 0; _si < 3; _si++) {
+                    let _wX = this.x + Math.sin(tp + _si * 2.09) * s * 0.28;
+                    let _wY = dy + s * (0.05 - _si * 0.12);
+                    ctx.fillStyle = `rgba(25,35,65,${0.11 * alf * (1 - _si*0.28)})`;
+                    ctx.beginPath(); ctx.arc(_wX, _wY, s*(0.22 - _si*0.04), 0, Math.PI*2); ctx.fill();
+                }
+            }
+            // Тіло — радіальний градієнт (щільне в центрі, тане по краях)
+            let _shadG = ctx.createRadialGradient(this.x, dy+s*0.4, s*0.04, this.x, dy+s*0.5, s*0.52);
+            _shadG.addColorStop(0, `rgba(38,48,85,${alf})`);
+            _shadG.addColorStop(0.55, `rgba(12,18,38,${alf*0.88})`);
+            _shadG.addColorStop(1, `rgba(0,0,15,0)`);
+            ctx.fillStyle = _shadG;
+            ctx.beginPath(); ctx.ellipse(this.x,dy+s*0.5,s*0.44,s*0.54,0,0,Math.PI*2); ctx.fill();
             if(!this.invisActive){
-                ctx.fillStyle='rgba(100,150,255,'+Math.min(1,alf*1.5)+')';
-                ctx.beginPath(); ctx.arc(this.x-s*0.12,dy+s*0.32,s*0.09,0,Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.arc(this.x+s*0.12,dy+s*0.32,s*0.09,0,Math.PI*2); ctx.fill();
+                ctx.shadowColor='#4488ff'; ctx.shadowBlur = 8 * alf;
+                ctx.fillStyle='rgba(100,155,255,'+Math.min(1,alf*1.8)+')';
+                ctx.beginPath(); ctx.arc(this.x-s*0.12,dy+s*0.32,s*0.09,0,Math.PI*2); ctx.fill();
+                ctx.beginPath(); ctx.arc(this.x+s*0.12,dy+s*0.32,s*0.09,0,Math.PI*2); ctx.fill();
+                ctx.shadowBlur = 0;
             }
 
         } else if (this.type === 'monster' && this.monsterKind === 'necromancer') {
@@ -2104,16 +2256,44 @@ class Unit {
             ctx.fillStyle='#cc44ff'; ctx.beginPath(); ctx.arc(this.x-s*0.1,dy+s*0.2,s*0.08,0,Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.arc(this.x+s*0.1,dy+s*0.2,s*0.08,0,Math.PI*2); ctx.fill();
 
         } else if (this.type === 'monster' && this.monsterKind === 'water_ele') {
-            let s = this.size;
-            ctx.fillStyle='rgba(30,100,255,0.7)'; ctx.beginPath(); ctx.arc(this.x,dy+s*0.5,s*0.44,0,Math.PI*2); ctx.fill();
-            ctx.strokeStyle='rgba(100,200,255,0.6)'; ctx.lineWidth=2;
-            for(let wi=0;wi<3;wi++){
+            let s = this.size, _tw = Date.now() / 420;
+            // Зовнішнє зарево
+            let _waterGlow = ctx.createRadialGradient(this.x, dy+s*0.45, s*0.08, this.x, dy+s*0.5, s*0.62);
+            _waterGlow.addColorStop(0, 'rgba(60,180,255,0.22)'); _waterGlow.addColorStop(1, 'rgba(0,80,200,0)');
+            ctx.fillStyle = _waterGlow; ctx.beginPath(); ctx.arc(this.x, dy+s*0.5, s*0.62, 0, Math.PI*2); ctx.fill();
+            // Тіло — хвилястий blob
+            let _waterG = ctx.createRadialGradient(this.x-s*0.1, dy+s*0.3, s*0.04, this.x, dy+s*0.5, s*0.46);
+            _waterG.addColorStop(0, 'rgba(130,225,255,0.92)');
+            _waterG.addColorStop(0.4, 'rgba(28,120,255,0.82)');
+            _waterG.addColorStop(1, 'rgba(0,55,180,0.7)');
+            ctx.fillStyle = _waterG;
+            ctx.beginPath();
+            for (let _a = 0; _a <= Math.PI * 2 + 0.1; _a += 0.18) {
+                let _w = 1 + 0.07 * Math.sin(_a * 3 + _tw);
+                let _rx = this.x + Math.cos(_a) * s * 0.43 * _w;
+                let _ry = dy + s*0.5 + Math.sin(_a) * s * 0.45 * _w;
+                _a < 0.01 ? ctx.moveTo(_rx, _ry) : ctx.lineTo(_rx, _ry);
+            }
+            ctx.closePath(); ctx.fill();
+            // Відблиск на поверхні (плями)
+            ctx.fillStyle = 'rgba(190,245,255,0.38)';
+            ctx.beginPath(); ctx.ellipse(this.x - s*0.1, dy+s*0.28, s*0.17, s*0.08, -0.5, 0, Math.PI*2); ctx.fill();
+            // Хвилі всередині
+            ctx.strokeStyle = 'rgba(140,230,255,0.45)'; ctx.lineWidth = 1.5;
+            for (let _wi = 0; _wi < 2; _wi++) {
                 ctx.beginPath();
-                let pts=[-0.3,-0.2,-0.1,0,0.1,0.2,0.3];
-                pts.forEach((wx,pi)=>{if(pi===0)ctx.moveTo(this.x+s*wx,dy+s*(0.3+wi*0.12));else ctx.lineTo(this.x+s*wx,dy+s*(0.3+wi*0.12+0.06*Math.sin(Date.now()/300+wx*8)));});
+                for (let _wx = -0.3; _wx <= 0.31; _wx += 0.06) {
+                    let _wy = dy + s*(0.38 + _wi*0.16) + s*0.05*Math.sin(_tw*1.4 + _wx*10 + _wi);
+                    _wx <= -0.29 ? ctx.moveTo(this.x+s*_wx, _wy) : ctx.lineTo(this.x+s*_wx, _wy);
+                }
                 ctx.stroke();
             }
-            ctx.fillStyle='#00ddff'; ctx.beginPath(); ctx.arc(this.x-s*0.12,dy+s*0.35,s*0.08,0,Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.arc(this.x+s*0.12,dy+s*0.35,s*0.08,0,Math.PI*2); ctx.fill();
+            // Очі — блакитне свічення
+            ctx.shadowColor='#00eeff'; ctx.shadowBlur=9;
+            ctx.fillStyle='#00eeff';
+            ctx.beginPath(); ctx.arc(this.x-s*0.13, dy+s*0.37, s*0.07, 0, Math.PI*2); ctx.fill();
+            ctx.beginPath(); ctx.arc(this.x+s*0.13, dy+s*0.37, s*0.07, 0, Math.PI*2); ctx.fill();
+            ctx.shadowBlur = 0;
 
         } else if (this.type === 'monster' && this.monsterKind === 'earth_ele') {
             let s = this.size;
@@ -2240,19 +2420,36 @@ class Unit {
             if (rank === 'elite_atk') { cloakCol='#883300'; bodyCol='#ee6600'; helmetCol='#ffaa44'; }
             if (rank === 'boss')      { cloakCol='#550066'; bodyCol='#aa00cc'; helmetCol='#cc88ff'; }
 
-            // Плащ
-            ctx.fillStyle = cloakCol;
-            ctx.beginPath(); ctx.moveTo(this.x, dy + s*0.3); ctx.lineTo(this.x - s*0.45, dy + s); ctx.lineTo(this.x + s*0.45, dy + s); ctx.closePath(); ctx.fill();
+            // Плащ (з градієнтом — темніший знизу)
+            let _cloakG = ctx.createLinearGradient(this.x, dy+s*0.3, this.x, dy+s);
+            _cloakG.addColorStop(0, cloakCol); _cloakG.addColorStop(1, 'rgba(0,0,0,0.55)');
+            ctx.fillStyle = _cloakG;
+            ctx.beginPath(); ctx.moveTo(this.x, dy+s*0.3); ctx.lineTo(this.x-s*0.46, dy+s); ctx.lineTo(this.x+s*0.46, dy+s); ctx.closePath(); ctx.fill();
+            // Складки плаща
+            ctx.strokeStyle = `rgba(0,0,0,0.18)`; ctx.lineWidth = 1;
+            ctx.beginPath(); ctx.moveTo(this.x-s*0.1, dy+s*0.35); ctx.lineTo(this.x-s*0.28, dy+s*0.95); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(this.x+s*0.08, dy+s*0.35); ctx.lineTo(this.x+s*0.22, dy+s*0.92); ctx.stroke();
 
-            // Тіло
-            ctx.fillStyle = bodyCol;
+            // Тіло з бічним тінюванням
+            let _bodyG = ctx.createLinearGradient(dx+s*0.22, dy+s*0.42, dx+s*0.78, dy+s*0.42);
+            _bodyG.addColorStop(0, 'rgba(0,0,0,0.25)'); _bodyG.addColorStop(0.35, bodyCol); _bodyG.addColorStop(1, 'rgba(0,0,0,0.3)');
+            ctx.fillStyle = _bodyG;
             ctx.fillRect(dx + s*0.22, dy + s*0.42, s*0.56, s*0.42);
+            // Нагрудна смуга (броня)
+            ctx.fillStyle = `rgba(255,255,255,0.1)`;
+            ctx.fillRect(dx + s*0.28, dy + s*0.44, s*0.44, s*0.06);
 
-            // Шолом
-            ctx.fillStyle = helmetCol;
+            // Шолом з градієнтом
+            let _helmG = ctx.createRadialGradient(this.x - s*0.08, dy+s*0.16, s*0.04, this.x, dy+s*0.27, s*0.27);
+            _helmG.addColorStop(0, 'rgba(255,255,255,0.4)'); _helmG.addColorStop(0.4, helmetCol); _helmG.addColorStop(1, 'rgba(0,0,0,0.3)');
+            ctx.fillStyle = _helmG;
             ctx.beginPath(); ctx.arc(this.x, dy + s*0.27, s*0.27, 0, Math.PI*2); ctx.fill();
-            ctx.fillStyle = '#333344';
-            ctx.fillRect(dx + s*0.08, dy + s*0.3, s*0.84, s*0.1);
+            // Забрало
+            ctx.fillStyle = 'rgba(10,10,25,0.82)';
+            ctx.beginPath(); ctx.roundRect(dx + s*0.1, dy + s*0.28, s*0.8, s*0.12, 2); ctx.fill();
+            // Відблиск на шоломі
+            ctx.fillStyle = 'rgba(255,255,255,0.2)';
+            ctx.beginPath(); ctx.ellipse(this.x - s*0.08, dy+s*0.17, s*0.1, s*0.05, -0.4, 0, Math.PI*2); ctx.fill();
 
             // Зброя по типу
             let wpn = this.heroWeapon || 'sword';
@@ -2286,10 +2483,13 @@ class Unit {
                 ctx.beginPath(); ctx.moveTo(dx + s*0.78, dy + s*0.45); ctx.lineTo(dx + s*1.05, dy + s*0.38); ctx.stroke();
             }
 
-            // Очі
-            ctx.fillStyle = '#ffeecc';
-            ctx.fillRect(this.x - s*0.12, dy + s*0.27, s*0.08, s*0.07);
-            ctx.fillRect(this.x + s*0.04, dy + s*0.27, s*0.08, s*0.07);
+            // Очі крізь забрало (вузькі прорізи)
+            let _eyeCol = rank==='boss' ? '#ff44ff' : rank==='elite_atk' ? '#ff8800' : rank==='elite_hp' ? '#44ff88' : '#ffdd88';
+            ctx.shadowColor = _eyeCol; ctx.shadowBlur = 5;
+            ctx.fillStyle = _eyeCol;
+            ctx.beginPath(); ctx.roundRect(this.x - s*0.14, dy + s*0.295, s*0.1, s*0.055, 1); ctx.fill();
+            ctx.beginPath(); ctx.roundRect(this.x + s*0.04, dy + s*0.295, s*0.1, s*0.055, 1); ctx.fill();
+            ctx.shadowBlur = 0;
 
             // Іконка пасиву (маленька, під HP баром)
             const PASSIVE_ICONS = {
