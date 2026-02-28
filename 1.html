@@ -673,7 +673,7 @@ const isMobile = window.innerWidth < 768;
 let CFG = {
     floorH: 80,
     floorW: Math.min(window.innerWidth - 60, 380),
-    surfaceY: 110,
+    surfaceY: 200,
 };
 
 // =================== GAME STATE ===================
@@ -734,7 +734,7 @@ let cameraReturnTimer = 0;
 class Floor {
     constructor(depth) {
         this.depth = depth;
-        this.y = 250 + depth * CFG.floorH;
+        this.y = 330 + depth * CFG.floorH;
         this.spawnTimer = 0;
         this.hasTrap = false;
         this.trapType = null; // 'spike','teleport'
@@ -2764,76 +2764,284 @@ function loop() {
         GAME.cameraY += (target - GAME.cameraY) * 0.1;
     }
     let maxCam = Math.max(0, floors[floors.length-1].y - gH + 150);
-    GAME.cameraY = Math.max(0, Math.min(GAME.cameraY, maxCam));
+    GAME.cameraY = Math.max(-70, Math.min(GAME.cameraY, maxCam));
 
     // ── Нічне небо ──────────────────────────────────────────────────────
-    let skyGrad = ctx.createLinearGradient(0, 0, 0, CFG.surfaceY - GAME.cameraY);
-    skyGrad.addColorStop(0,   '#03020a');
-    skyGrad.addColorStop(0.5, '#08041a');
-    skyGrad.addColorStop(1,   '#14082e');
+    let groundY = CFG.surfaceY - GAME.cameraY;
+    let _t = Date.now();
+    let skyGrad = ctx.createLinearGradient(0, -200 - GAME.cameraY, 0, groundY);
+    skyGrad.addColorStop(0,    '#010108');
+    skyGrad.addColorStop(0.25, '#030210');
+    skyGrad.addColorStop(0.6,  '#080420');
+    skyGrad.addColorStop(0.85, '#10063a');
+    skyGrad.addColorStop(1,    '#1e0d50');
     ctx.fillStyle = skyGrad;
-    ctx.fillRect(0, -500 - GAME.cameraY, gW, CFG.surfaceY + 500);
+    ctx.fillRect(0, -500 - GAME.cameraY, gW, CFG.surfaceY + 700);
+
+    // ── Туманність (небо — фіолетовий серпанок) ──────────────────────────
+    {
+        let nbx = gW * 0.38, nby = 40 - GAME.cameraY * 0.04;
+        let nbg = ctx.createRadialGradient(nbx, nby, 0, nbx, nby, 120);
+        nbg.addColorStop(0, 'rgba(80,20,140,0.13)');
+        nbg.addColorStop(0.5, 'rgba(40,10,100,0.07)');
+        nbg.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.fillStyle = nbg; ctx.beginPath(); ctx.arc(nbx, nby, 120, 0, Math.PI*2); ctx.fill();
+        let nbg2 = ctx.createRadialGradient(gW*0.65, nby*0.7, 0, gW*0.65, nby*0.7, 80);
+        nbg2.addColorStop(0, 'rgba(20,50,120,0.10)'); nbg2.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.fillStyle = nbg2; ctx.beginPath(); ctx.arc(gW*0.65, nby*0.7, 80, 0, Math.PI*2); ctx.fill();
+    }
+
+    // ── Зірки (3 шари: фонові дрібні, середні, великі з мерехтінням) ────
+    ctx.save();
+    ctx.beginPath(); ctx.rect(0, -500 - GAME.cameraY, gW, groundY + 500 + GAME.cameraY); ctx.clip();
+    // Фонові (багато, дрібні)
+    for (let i = 0; i < 130; i++) {
+        let sx = (i * 347 + 11) % gW;
+        let sy = (i * 193 + 7)  % Math.max(1, CFG.surfaceY - 15) - GAME.cameraY * (0.02 + i * 0.0003);
+        if (sy >= groundY - 5) continue;
+        let blink = 0.3 + 0.7 * Math.sin(_t / (700 + i * 17) + i * 1.9);
+        ctx.globalAlpha = blink * (i % 5 === 0 ? 0.5 : 0.25);
+        ctx.fillStyle = i % 19 === 0 ? '#ffeedd' : i % 11 === 0 ? '#c8ddff' : '#e8eeff';
+        ctx.beginPath(); ctx.arc(sx, sy, 0.6, 0, Math.PI*2); ctx.fill();
+    }
+    // Середні
+    for (let i = 0; i < 55; i++) {
+        let sx = (i * 523 + 44) % gW;
+        let sy = (i * 271 + 88) % Math.max(1, CFG.surfaceY - 20) - GAME.cameraY * 0.015;
+        if (sy >= groundY - 5) continue;
+        let blink = 0.45 + 0.55 * Math.sin(_t / (500 + i * 23) + i * 2.7);
+        ctx.globalAlpha = blink * 0.75;
+        ctx.fillStyle = i % 13 === 0 ? '#ffd8a0' : i % 7 === 0 ? '#aaccff' : '#ffffff';
+        ctx.beginPath(); ctx.arc(sx, sy, 1.1, 0, Math.PI*2); ctx.fill();
+    }
+    // Великі (сузір'я-якорі)
+    for (let i = 0; i < 18; i++) {
+        let sx = (i * 797 + 33) % gW;
+        let sy = (i * 431 + 55) % Math.max(1, CFG.surfaceY - 30) - GAME.cameraY * 0.01;
+        if (sy >= groundY - 8) continue;
+        let blink = 0.6 + 0.4 * Math.sin(_t / (900 + i * 40) + i);
+        ctx.globalAlpha = blink;
+        let sc = i % 5 === 0 ? '#ffeebb' : i % 3 === 0 ? '#bbddff' : '#ffffff';
+        ctx.fillStyle = sc;
+        ctx.beginPath(); ctx.arc(sx, sy, 1.9, 0, Math.PI*2); ctx.fill();
+        // Спалах зірки (хрест)
+        if (blink > 0.85) {
+            ctx.globalAlpha = (blink - 0.85) * 2.5 * 0.6;
+            ctx.strokeStyle = sc; ctx.lineWidth = 0.5;
+            ctx.beginPath(); ctx.moveTo(sx-6,sy); ctx.lineTo(sx+6,sy); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(sx,sy-6); ctx.lineTo(sx,sy+6); ctx.stroke();
+        }
+    }
+    ctx.globalAlpha = 1;
+    ctx.restore();
 
     // ── Місяць ──────────────────────────────────────────────────────────
     {
-        let mx = gW * 0.76, my = 55 - GAME.cameraY * 0.08;
-        let mr = 26;
-        // Ореол місяця
-        let mg = ctx.createRadialGradient(mx, my, mr * 0.6, mx, my, mr * 3.5);
-        mg.addColorStop(0, 'rgba(210,195,160,0.18)'); mg.addColorStop(1, 'rgba(210,195,160,0)');
-        ctx.fillStyle = mg; ctx.beginPath(); ctx.arc(mx, my, mr*3.5, 0, Math.PI*2); ctx.fill();
+        let mx = gW * 0.76, my = 52 - GAME.cameraY * 0.06;
+        let mr = 30;
+        // Широкий зовнішній ореол
+        let mg0 = ctx.createRadialGradient(mx, my, mr, mx, my, mr * 5.5);
+        mg0.addColorStop(0, 'rgba(200,185,140,0.10)'); mg0.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.fillStyle = mg0; ctx.beginPath(); ctx.arc(mx, my, mr*5.5, 0, Math.PI*2); ctx.fill();
+        // Внутрішній ореол
+        let mg = ctx.createRadialGradient(mx, my, mr*0.7, mx, my, mr*2.5);
+        mg.addColorStop(0, 'rgba(230,215,170,0.22)'); mg.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.fillStyle = mg; ctx.beginPath(); ctx.arc(mx, my, mr*2.5, 0, Math.PI*2); ctx.fill();
         // Тіло місяця
-        let mbg = ctx.createRadialGradient(mx-7, my-7, 2, mx, my, mr);
-        mbg.addColorStop(0, '#fffff2'); mbg.addColorStop(0.5, '#e8dfc0'); mbg.addColorStop(1, '#c0aa80');
+        let mbg = ctx.createRadialGradient(mx-9, my-9, 3, mx, my, mr);
+        mbg.addColorStop(0, '#fffff5'); mbg.addColorStop(0.4, '#eae0c8'); mbg.addColorStop(0.8, '#d0bc90'); mbg.addColorStop(1, '#a89060');
         ctx.fillStyle = mbg; ctx.beginPath(); ctx.arc(mx, my, mr, 0, Math.PI*2); ctx.fill();
         // Кратери
-        [[mx-8,my-6,5],[mx+7,my+8,3],[mx-4,my+11,4]].forEach(([cx,cy,cr])=>{
-            ctx.fillStyle='rgba(150,130,90,0.22)'; ctx.beginPath(); ctx.arc(cx,cy,cr,0,Math.PI*2); ctx.fill();
+        [[mx-10,my-8,6,0.18],[mx+9,my+10,4,0.15],[mx-5,my+13,5,0.14],[mx+5,my-12,3,0.12]].forEach(([cx,cy,cr,a])=>{
+            ctx.fillStyle=`rgba(140,118,75,${a})`; ctx.beginPath(); ctx.arc(cx,cy,cr,0,Math.PI*2); ctx.fill();
+        });
+        // Тінь (серп)
+        ctx.fillStyle = 'rgba(1,0,8,0.18)';
+        ctx.beginPath(); ctx.arc(mx+7, my+2, mr*0.95, 0, Math.PI*2); ctx.fill();
+    }
+
+    // ── Аврора (тонкі хвилясті смуги над горизонтом) ────────────────────
+    {
+        let ay = groundY - 120 - GAME.cameraY * 0;
+        for (let ai = 0; ai < 3; ai++) {
+            let aAlpha = (0.04 + ai * 0.015) * (0.7 + 0.3 * Math.sin(_t / 2400 + ai));
+            let aGrad = ctx.createLinearGradient(0, ay - 40 + ai*18, 0, ay + 5 + ai*18);
+            aGrad.addColorStop(0, `rgba(0,0,0,0)`);
+            aGrad.addColorStop(0.4, ai===0 ? `rgba(20,180,120,${aAlpha})` : ai===1 ? `rgba(60,100,200,${aAlpha})` : `rgba(120,40,180,${aAlpha})`);
+            aGrad.addColorStop(1, `rgba(0,0,0,0)`);
+            ctx.fillStyle = aGrad;
+            ctx.beginPath();
+            ctx.moveTo(0, ay + ai*18);
+            for (let ax = 0; ax <= gW; ax += 40) {
+                let wav = Math.sin(ax / (gW * 0.18) + _t / 3500 + ai * 1.4) * 14;
+                ctx.lineTo(ax, ay + ai*18 + wav);
+            }
+            ctx.lineTo(gW, ay - 40 + ai*18); ctx.lineTo(0, ay - 40 + ai*18); ctx.closePath();
+            ctx.fill();
+        }
+    }
+
+    // ── Далекі гори (3 паралакс-шари) ────────────────────────────────────
+    // Шар 1: найдальший, найтемніший, найвищий
+    {
+        let p1 = GAME.cameraY * 0.18;
+        ctx.fillStyle = '#06041a';
+        ctx.beginPath(); ctx.moveTo(0, groundY + 3);
+        let m1 = [[0,0],[.04,-40],[.09,-15],[.14,-65],[.19,-28],[.24,-88],[.29,-42],[.34,-110],
+                  [.39,-55],[.44,-80],[.48,-35],[.53,-95],[.58,-48],[.63,-70],[.68,-30],[.73,-105],
+                  [.78,-58],[.83,-38],[.88,-75],[.93,-22],[.97,-50],[1,0]];
+        m1.forEach(([rx,ry]) => ctx.lineTo(rx*gW, groundY + ry - p1));
+        ctx.lineTo(gW, groundY+3); ctx.closePath(); ctx.fill();
+    }
+    // Шар 2: середній, трохи світліший, менш зубчастий
+    {
+        let p2 = GAME.cameraY * 0.12;
+        ctx.fillStyle = '#0a0622';
+        ctx.beginPath(); ctx.moveTo(0, groundY + 3);
+        let m2 = [[0,0],[.06,-18],[.12,-7],[.18,-48],[.24,-20],[.30,-60],[.36,-28],[.42,-45],
+                  [.48,-18],[.54,-52],[.60,-22],[.66,-38],[.72,-12],[.78,-44],[.84,-20],[.90,-34],[.96,-10],[1,0]];
+        m2.forEach(([rx,ry]) => ctx.lineTo(rx*gW, groundY + ry - p2));
+        ctx.lineTo(gW, groundY+3); ctx.closePath(); ctx.fill();
+    }
+    // Шар 3: найближчий, найтемніший, округлі пагорби
+    {
+        let p3 = GAME.cameraY * 0.07;
+        ctx.fillStyle = '#0d0828';
+        ctx.beginPath(); ctx.moveTo(0, groundY + 3);
+        let m3 = [[0,0],[.08,-8],[.16,-22],[.22,-10],[.30,-34],[.38,-16],[.46,-26],
+                  [.54,-10],[.62,-20],[.70,-8],[.78,-28],[.86,-14],[.94,-18],[1,0]];
+        m3.forEach(([rx,ry]) => ctx.lineTo(rx*gW, groundY + ry - p3));
+        ctx.lineTo(gW, groundY+3); ctx.closePath(); ctx.fill();
+    }
+
+    // ── Мертві дерева (силуети) ─────────────────────────────────────────
+    {
+        let treeSeed = [
+            [gW*0.06,  groundY, 38, 0.9],
+            [gW*0.18,  groundY, 28, 0.7],
+            [gW*0.28,  groundY, 44, 1.0],
+            [gW*0.72,  groundY, 40, 1.0],
+            [gW*0.80,  groundY, 26, 0.65],
+            [gW*0.90,  groundY, 36, 0.85],
+            [gW*0.97,  groundY, 22, 0.55],
+        ];
+        ctx.fillStyle = '#080520';
+        ctx.strokeStyle = '#080520';
+        treeSeed.forEach(([tx, ty, th, sc]) => {
+            ctx.save(); ctx.translate(tx, ty); ctx.scale(sc, sc);
+            let tw2 = th * 0.06;
+            // Стовбур
+            ctx.fillRect(-tw2, -th, tw2*2, th);
+            // Основні гілки
+            [[-0.55, -th*0.62, -th*0.42, th*0.11],
+             [ 0.55, -th*0.55, -th*0.38, th*0.12],
+             [-0.45, -th*0.78, -th*0.28, th*0.08],
+             [ 0.45, -th*0.72, -th*0.25, th*0.07]].forEach(([dirX, rootY, len, offY]) => {
+                ctx.beginPath();
+                ctx.moveTo(0, rootY);
+                ctx.quadraticCurveTo(dirX * Math.abs(len) * 0.5, rootY + offY, dirX * len, rootY + offY * 2.5);
+                ctx.lineWidth = tw2 * 1.6; ctx.stroke();
+                // Дрібні гілочки
+                ctx.lineWidth = tw2 * 0.7;
+                ctx.beginPath();
+                ctx.moveTo(dirX * len * 0.6, rootY + offY * 1.5);
+                ctx.lineTo(dirX * len * 0.95, rootY + offY * 1.2);
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(dirX * len * 0.75, rootY + offY * 1.8);
+                ctx.lineTo(dirX * len * 1.1, rootY + offY * 2.8);
+                ctx.stroke();
+            });
+            ctx.restore();
         });
     }
 
-    // ── Зірки (різних розмірів, різного кольору) ────────────────────────
-    for (let i = 0; i < 90; i++) {
-        let sx = (i * 347 + 11) % gW;
-        let sy = (i * 193 + 7) % (CFG.surfaceY - 20) - GAME.cameraY;
-        if (sy > CFG.surfaceY - GAME.cameraY - 5) continue;
-        let blink = 0.25 + 0.75 * Math.sin(Date.now() / (600 + i * 20) + i * 2.3);
-        let sr = i % 14 === 0 ? 2.2 : i % 7 === 0 ? 1.5 : 0.9;
-        ctx.globalAlpha = blink * 0.85;
-        ctx.fillStyle = i % 17 === 0 ? '#ffeedd' : i % 11 === 0 ? '#cce0ff' : '#ffffff';
-        ctx.beginPath(); ctx.arc(sx, sy, sr, 0, Math.PI * 2); ctx.fill();
+    // ── Земля (детальна, з травою і каміннями) ────────────────────────────
+    {
+        // Основна смуга ґрунту
+        let groundGrad = ctx.createLinearGradient(0, groundY - 4, 0, groundY + 38);
+        groundGrad.addColorStop(0, '#2a1e40');
+        groundGrad.addColorStop(0.3, '#1e1430');
+        groundGrad.addColorStop(1, '#120c20');
+        ctx.fillStyle = groundGrad;
+        ctx.fillRect(0, groundY - 4, gW, 42);
+
+        // Лінія трави / верхній край ґрунту
+        ctx.strokeStyle = '#3a2858';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath(); ctx.moveTo(0, groundY - 4); ctx.lineTo(gW, groundY - 4); ctx.stroke();
+
+        // Травинки (рандомні, прив'язані до X)
+        ctx.strokeStyle = '#2e4030';
+        ctx.lineWidth = 1;
+        for (let gi = 0; gi < Math.ceil(gW / 8); gi++) {
+            let gx = gi * 8 + (gi * 3) % 5;
+            let gh = 3 + (gi * 7) % 7;
+            let lean = ((gi * 11) % 5) - 2;
+            ctx.beginPath();
+            ctx.moveTo(gx, groundY - 4);
+            ctx.quadraticCurveTo(gx + lean * 0.5, groundY - 4 - gh * 0.6, gx + lean, groundY - 4 - gh);
+            ctx.stroke();
+        }
+        // Рідкі яскравіші травинки
+        ctx.strokeStyle = '#3a5040';
+        ctx.lineWidth = 1.2;
+        for (let gi = 0; gi < Math.ceil(gW / 22); gi++) {
+            let gx = gi * 22 + (gi * 13) % 18;
+            let gh = 5 + (gi * 9) % 8;
+            let lean = ((gi * 17) % 7) - 3;
+            ctx.beginPath();
+            ctx.moveTo(gx, groundY - 3);
+            ctx.quadraticCurveTo(gx + lean * 0.5, groundY - 3 - gh * 0.5, gx + lean, groundY - 3 - gh);
+            ctx.stroke();
+        }
+
+        // Камінці на землі
+        let stoneData = [0.05,0.12,0.21,0.31,0.38,0.52,0.63,0.71,0.85,0.92].map((rx,i) => [rx*gW, i]);
+        stoneData.forEach(([sx, si]) => {
+            let sw = 4 + (si*7)%7, sht = 2 + (si*5)%4;
+            let stG = ctx.createRadialGradient(sx, groundY + sht, 0, sx, groundY + sht, sw * 1.5);
+            stG.addColorStop(0, '#4a3860');
+            stG.addColorStop(1, '#1e1430');
+            ctx.fillStyle = stG;
+            ctx.beginPath();
+            ctx.ellipse(sx, groundY + sht + 2, sw, sht + 1, (si * 0.3), 0, Math.PI*2);
+            ctx.fill();
+        });
     }
-    ctx.globalAlpha = 1;
 
-    // ── Силует гір на горизонті ─────────────────────────────────────────
-    let groundY = CFG.surfaceY - GAME.cameraY;
-    ctx.fillStyle = '#0a0618';
-    ctx.beginPath(); ctx.moveTo(0, groundY + 2);
-    [[0,0],[gW*.07,-48],[gW*.15,-18],[gW*.25,-75],[gW*.33,-35],
-     [gW*.42,-92],[gW*.5,-44],[gW*.58,-65],[gW*.67,-28],[gW*.76,-82],
-     [gW*.84,-40],[gW*.92,-60],[gW,0]].forEach(([mx,my])=>ctx.lineTo(mx, groundY+my));
-    ctx.lineTo(gW, groundY+2); ctx.closePath(); ctx.fill();
-
-    // Другий шар гір (ближчий, трохи світліший)
-    ctx.fillStyle = '#0f0820';
-    ctx.beginPath(); ctx.moveTo(0, groundY + 2);
-    [[0,0],[gW*.1,-22],[gW*.2,-8],[gW*.3,-38],[gW*.4,-14],
-     [gW*.5,-28],[gW*.62,-10],[gW*.72,-35],[gW*.82,-15],[gW*.9,-24],[gW,0]].forEach(([mx,my])=>ctx.lineTo(mx, groundY+my));
-    ctx.lineTo(gW, groundY+2); ctx.closePath(); ctx.fill();
-
-    // ── Земля ────────────────────────────────────────────────────────────
-    let groundGrad = ctx.createLinearGradient(0, groundY, 0, groundY + 32);
-    groundGrad.addColorStop(0, '#3a2850'); groundGrad.addColorStop(1, '#180e22');
-    ctx.fillStyle = groundGrad; ctx.fillRect(0, groundY, gW, 32);
-
-    // ── Туман на горизонті ────────────────────────────────────────────────
-    let fogG = ctx.createLinearGradient(0, groundY - 35, 0, groundY + 5);
-    fogG.addColorStop(0, 'rgba(50,20,90,0)'); fogG.addColorStop(1, 'rgba(30,12,60,0.5)');
-    ctx.fillStyle = fogG; ctx.fillRect(0, groundY - 35, gW, 40);
+    // ── Туман у 3 шари (низовий, середній, далекий) ─────────────────────
+    // Далекий (на лінії горизонту)
+    {
+        let fg3 = ctx.createLinearGradient(0, groundY - 80, 0, groundY + 8);
+        fg3.addColorStop(0, 'rgba(20,8,50,0)');
+        fg3.addColorStop(0.7, 'rgba(30,12,70,0.18)');
+        fg3.addColorStop(1, 'rgba(40,16,85,0.38)');
+        ctx.fillStyle = fg3; ctx.fillRect(0, groundY - 80, gW, 88);
+    }
+    // Хвилястий приземний туман
+    {
+        let fogAlpha = 0.22 + 0.06 * Math.sin(_t / 4000);
+        ctx.globalAlpha = fogAlpha;
+        let fg2 = ctx.createLinearGradient(0, groundY - 28, 0, groundY + 10);
+        fg2.addColorStop(0, 'rgba(60,20,120,0)');
+        fg2.addColorStop(0.5, 'rgba(60,20,120,1)');
+        fg2.addColorStop(1, 'rgba(40,14,90,1)');
+        ctx.fillStyle = fg2;
+        ctx.beginPath();
+        ctx.moveTo(0, groundY + 10);
+        for (let fx = 0; fx <= gW; fx += 35) {
+            let fy2 = groundY - 16 + Math.sin(fx / (gW * 0.13) + _t / 6000) * 8;
+            ctx.lineTo(fx, fy2);
+        }
+        ctx.lineTo(gW, groundY + 10); ctx.closePath();
+        ctx.fill();
+        ctx.globalAlpha = 1;
+    }
 
     // ── Підземна порода ───────────────────────────────────────────────────
     ctx.fillStyle = '#0c0814';
-    ctx.fillRect(0, groundY + 32, gW, 5000);
+    ctx.fillRect(0, groundY + 36, gW, 5000);
 
     // ── Печерний вхід ─────────────────────────────────────────────────────
     let caveX  = CAVE_X;  // зміщено праворуч від центру (глобальна змінна)
