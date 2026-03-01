@@ -823,6 +823,7 @@ let GAME = {
     monsterHpBonus: 0,
     monsterDmgBonus: 0,
     monsterArmorBonus: 0,    // броня монстрів від апгрейдів
+    monsterDmgPct: 0,        // % бонус дамагу (10% за апгрейд)
     monsterAtkSpeedBonus: 0, // бонус ША у стилі Dota2 (базова ША = 0.83 атк/сек)
     isWave: false,
     gameOver: false,
@@ -1382,7 +1383,8 @@ class Unit {
             let kind = MONSTER_KINDS[this.level] || MONSTER_KINDS[20];
             this.monsterKind  = kind.name;
             this.ability      = kind.ability || 'none';
-            this.armor        = (kind.armor || 0) + GAME.monsterArmorBonus;
+            this.hpMult       = kind.hpMult;
+            this.armor        = (kind.armor || 0) + GAME.monsterArmorBonus * kind.hpMult;
 
             // ── HP ────────────────────────────────────────────────────────
             this.hp = (80 + n * 20 + GAME.monsterHpBonus) * kind.hpMult;
@@ -1390,7 +1392,9 @@ class Unit {
             // ── DMG ───────────────────────────────────────────────────────
             let scaledAtk = kind.baseAtk + (n < 5 ? n * 1 : 4 + (n - 4) * 2);
             let dmgVariance = 0.9 + Math.random() * 0.2;
-            this.baseDmg = scaledAtk + GAME.monsterDmgBonus;
+            this.rawBaseDmg = scaledAtk;
+            this._dmgVariance = dmgVariance;
+            this.baseDmg = scaledAtk * (1 + (GAME.monsterDmgPct || 0));
             this.dmg = Math.round(this.baseDmg * dmgVariance);
 
             // ── ША ────────────────────────────────────────────────────────
@@ -4210,11 +4214,13 @@ function upgradeLordVit() {
 function upgradeMonsterAtk() {
     if (GAME.souls < GAME.mobAtkCost) return;
     GAME.souls -= GAME.mobAtkCost;
-    GAME.monsterDmgBonus += 0.6;
-    // +0.15 до ША (Dota2-стиль: кожен бонус зменшує cooldown нелінійно)
-    GAME.monsterAtkSpeedBonus += 0.15;
+    GAME.monsterDmgPct += 0.10;
+    // +0.1 до ША (Dota2-стиль: кожен бонус зменшує cooldown нелінійно)
+    GAME.monsterAtkSpeedBonus += 0.1;
     units.filter(u => u.type === 'monster').forEach(m => {
-        m.dmg += 0.6;
+        // +10% від базової атаки монстра
+        m.baseDmg += (m.rawBaseDmg || m.baseDmg) * 0.1;
+        m.dmg = Math.round(m.baseDmg * (m._dmgVariance || 1));
         m.atkSpeedBonus = GAME.monsterAtkSpeedBonus;
         // перераховуємо cooldown одразу для живих монстрів
         let atkSpd = (m.baseAtkSpeed || 0.83) + m.atkSpeedBonus;
@@ -4228,8 +4234,8 @@ function upgradeMonsterVit() {
     if (GAME.souls < GAME.mobVitCost) return;
     GAME.souls -= GAME.mobVitCost;
     GAME.monsterHpBonus += 25;
-    GAME.monsterArmorBonus += 1;
-    units.filter(u => u.type==='monster').forEach(m => { m.maxHp += 25; m.hp = Math.min(m.hp+25, m.maxHp); m.armor = (m.armor||0) + 1; });
+    GAME.monsterArmorBonus += 1.5;
+    units.filter(u => u.type==='monster').forEach(m => { m.maxHp += 25; m.hp = Math.min(m.hp+25, m.maxHp); m.armor = (m.armor||0) + 1.5 * (m.hpMult||1); });
     GAME.mobVitCost = r5(GAME.mobVitCost * 1.35);
     updateUI(); saveGame();
 }
