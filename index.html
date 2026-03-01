@@ -1308,7 +1308,7 @@ class Floor {
                 this._btnX = bxUpg; this._btnY = byBtn + camY; this._btnW = bw; this._btnH = bh;
                 let can = GAME.souls >= this.floorUpgradeCost;
                 ctx.fillStyle = can ? 'rgba(0,140,55,0.90)' : 'rgba(40,40,40,0.85)';
-                ctx.beginPath(); ctx.roundRect(bxUpg, byBtn, bw, bh, 5); ctx.fill();
+                ctxRoundRect(ctx, bxUpg, byBtn, bw, bh, 5); ctx.fill();
                 ctx.strokeStyle = can ? '#00ff66' : '#444'; ctx.lineWidth = 1; ctx.stroke();
                 ctx.fillStyle = can ? '#fff' : '#666';
                 ctx.textAlign = 'center';
@@ -1327,7 +1327,7 @@ class Floor {
             let canBuy  = GAME.souls >= buyCost && count < this.maxMonsters;
             this._buyBtnX = bxMon; this._buyBtnY = byBtn + camY; this._buyBtnW = bw; this._buyBtnH = bh;
             ctx.fillStyle = canBuy ? 'rgba(180,60,0,0.90)' : 'rgba(40,40,40,0.85)';
-            ctx.beginPath(); ctx.roundRect(bxMon, byBtn, bw, bh, 5); ctx.fill();
+            ctxRoundRect(ctx, bxMon, byBtn, bw, bh, 5); ctx.fill();
             ctx.strokeStyle = canBuy ? '#ff8844' : '#444'; ctx.lineWidth = 1; ctx.stroke();
             ctx.fillStyle = canBuy ? '#fff' : '#666';
             ctx.textAlign = 'center';
@@ -3940,7 +3940,7 @@ function loop(ts) {
                 let bdy = u.y - u.size - GAME.cameraY - 18;
                 let bdx = u.x;
                 ctx.fillStyle = 'rgba(20,10,40,0.82)';
-                ctx.beginPath(); ctx.roundRect(bdx - 13, bdy - 10, 26, 14, 5); ctx.fill();
+                ctxRoundRect(ctx, bdx-13, bdy-10, 26, 14, 5); ctx.fill();
                 ctx.fillStyle = '#ffcc00';
                 ctx.font = 'bold 11px Arial'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
                 ctx.fillText('×' + cluster.length, bdx, bdy - 3);
@@ -4440,6 +4440,19 @@ function updateUI() {
 }
 
 // =================== УТИЛІТИ ===================
+// Замість ctx.roundRect (не підтримується в старих браузерах)
+function ctxRoundRect(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x+r, y); ctx.lineTo(x+w-r, y);
+    ctx.arcTo(x+w, y, x+w, y+r, r);
+    ctx.lineTo(x+w, y+h-r);
+    ctx.arcTo(x+w, y+h, x+w-r, y+h, r);
+    ctx.lineTo(x+r, y+h);
+    ctx.arcTo(x, y+h, x, y+h-r, r);
+    ctx.lineTo(x, y+r);
+    ctx.arcTo(x, y, x+r, y, r);
+    ctx.closePath();
+}
 function spawnParticle(x, y, color, opts = {}) {
     particles.push({
         x, y, color,
