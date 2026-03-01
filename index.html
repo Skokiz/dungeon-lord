@@ -2854,7 +2854,18 @@ let _dt_lastTs = 0;   // мітка часу попереднього кадру
 
 function loop(ts) {
     if (GAME_PAUSED || GAME.gameOver) return;
-
+    try { _loopBody(ts); } catch(e) {
+        // Показуємо помилку прямо на canvas
+        ctx.setTransform(1,0,0,1,0,0);
+        ctx.fillStyle='#0d0820'; ctx.fillRect(0,0,gW,gH);
+        ctx.fillStyle='#ff4444'; ctx.font='bold 14px monospace';
+        ctx.textAlign='left'; ctx.textBaseline='top';
+        let lines = ('LOOP ERROR: '+e.message).match(/.{1,70}/g)||[];
+        lines.forEach((l,i)=>ctx.fillText(l,10,10+i*18));
+        requestAnimationFrame(loop);
+    }
+}
+function _loopBody(ts) {
     // ── Delta-time: нормалізуємо швидкість гри до 60fps ──────────────────
     let _dtElapsed = _dt_lastTs ? Math.min(ts - _dt_lastTs, 50) : 16.667;
     _dt_lastTs = ts;
@@ -4141,7 +4152,7 @@ function loop(ts) {
 
 
     requestAnimationFrame(loop);
-}
+} // end _loopBody
 
 // =================== МЕНЮ ===================
 let openMenu = null;
