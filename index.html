@@ -2846,12 +2846,8 @@ function spawnMinions() {
 // =================== ГОЛОВНИЙ ЦИКЛ ===================
 let heroScaleTimer = 0;
 
-function loop(ts) {
+function loop() {
     if (GAME_PAUSED || GAME.gameOver) return;
-
-    // ── 60fps кап: пропускаємо кадр на 90/120Hz щоб швидкість гри була однакова ──
-    if (ts - _loopLastTs < 14) { requestAnimationFrame(loop); return; }
-    _loopLastTs = ts;
 
     // Таймер складності
     heroScaleTimer++;
@@ -4629,7 +4625,6 @@ canvas.addEventListener('click', e => _handleCanvasTap(e.clientX, e.clientY));
 
 // =================== ПАУЗА ===================
 let GAME_PAUSED = false;
-let _loopLastTs = 0; // для кепу 60fps на 90/120Hz пристроях
 
 function togglePause() {
     GAME_PAUSED = !GAME_PAUSED;
