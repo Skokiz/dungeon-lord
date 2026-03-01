@@ -2854,18 +2854,6 @@ let _dt_lastTs = 0;   // мітка часу попереднього кадру
 
 function loop(ts) {
     if (GAME_PAUSED || GAME.gameOver) return;
-    try { _loopBody(ts); } catch(e) {
-        // Показуємо помилку прямо на canvas
-        ctx.setTransform(1,0,0,1,0,0);
-        ctx.fillStyle='#0d0820'; ctx.fillRect(0,0,gW,gH);
-        ctx.fillStyle='#ff4444'; ctx.font='bold 14px monospace';
-        ctx.textAlign='left'; ctx.textBaseline='top';
-        let lines = ('LOOP ERROR: '+e.message).match(/.{1,70}/g)||[];
-        lines.forEach((l,i)=>ctx.fillText(l,10,10+i*18));
-        requestAnimationFrame(loop);
-    }
-}
-function _loopBody(ts) {
     // ── Delta-time: нормалізуємо швидкість гри до 60fps ──────────────────
     let _dtElapsed = _dt_lastTs ? Math.min(ts - _dt_lastTs, 50) : 16.667;
     _dt_lastTs = ts;
@@ -3470,7 +3458,7 @@ function _loopBody(ts) {
     ctx.translate(cityX, groundY);
     ctx.scale(_cityScale, _cityScale);
     let _cy = -140;
-    let _dt = GAME.difficultyType || 1;
+    let _diffType = GAME.difficultyType || 1;
     let _fl = Date.now() / 300; // flame flicker time
 
     // ─── Допоміжні функції малювання ────────────────────────────────────────
@@ -3534,7 +3522,7 @@ function _loopBody(ts) {
         ctx.globalAlpha = 1;
     }
 
-    if (_dt === 1) {
+    if (_diffType === 1) {
         // ════════════════════════════════════════════════════════════════
         // ТИП 1: Маленька деревня
         // Дерев'яний паркан, соломʼяні дахи, дерев'яні ворота, криниця
@@ -3609,7 +3597,7 @@ function _loopBody(ts) {
         ctx.font = 'bold 11px Arial'; ctx.textAlign = 'center';
         ctx.fillText('🌿 ДЕРЕВНЯ', 100, _cy + 18);
 
-    } else if (_dt === 2) {
+    } else if (_diffType === 2) {
         // ════════════════════════════════════════════════════════════════
         // ТИП 2: Багата деревня
         // Фахверк (half-timber), кам'яна арка воріт, шпиль каплиці
@@ -3699,7 +3687,7 @@ function _loopBody(ts) {
         ctx.font = 'bold 11px Arial'; ctx.textAlign = 'center';
         ctx.fillText('⛪ БАГАТА ДЕРЕВНЯ', 100, _cy + 13);
 
-    } else if (_dt === 3) {
+    } else if (_diffType === 3) {
         // ════════════════════════════════════════════════════════════════
         // ТИП 3: Бідне місто
         // Стара цегляна стіна з вежами, іржаві ворота, натовп будівель
@@ -4152,7 +4140,7 @@ function _loopBody(ts) {
 
 
     requestAnimationFrame(loop);
-} // end _loopBody
+}
 
 // =================== МЕНЮ ===================
 let openMenu = null;
