@@ -1253,7 +1253,7 @@ class Floor {
                 ctx.font = 'bold ' + (isMobile ? '10px' : '12px') + ' Arial';
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'middle';
-                ctx.fillText(remaining, centerX, timerY);
+                ctx.fillText(Math.max(0, Math.ceil(remaining)), centerX, timerY);
                 ctx.textBaseline = 'alphabetic';
                 ctx.restore();
             } else {
@@ -2806,7 +2806,7 @@ function spawnMinions() {
         if (count < f.maxMonsters) {
             // 1-й поверх: 4 сек, кожен наступний +3 сек (в тіках по 1 сек)
             let spawnInterval = 4 + f.depth * 3;
-            f.spawnTimer += _dt;
+            f.spawnTimer += 1; // +1 за кожну секунду (setInterval 1000ms)
             if (f.spawnTimer >= spawnInterval) {
                 let spawnCount = f.isBatFloor ? 2 : 1;
                 for (let _sc = 0; _sc < spawnCount; _sc++) {
