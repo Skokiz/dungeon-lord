@@ -672,7 +672,7 @@ const isMobile = window.innerWidth < 768;
 // CFG — мутабельний, оновлюється в resize() під розмір екрану
 let CFG = {
     floorH: 80,
-    floorW: Math.min(window.innerWidth - 60, 380),
+    floorW: Math.min(window.innerWidth - 60, window.innerWidth < 768 ? 380 : 600),
     surfaceY: 200,
 };
 
@@ -4374,7 +4374,7 @@ function resize() {
     canvas.style.height = gH + 'px';
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     centerX = gW / 2;
-    CFG.floorW = Math.min(gW - 60, 380);
+    CFG.floorW = Math.min(gW - 60, isMobile ? 380 : 600);
     CAVE_X = centerX + CFG.floorW * 0.35;
 }
 
