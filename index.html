@@ -487,6 +487,72 @@
             .circle-sub-menu { bottom: 63px !important; }
             .rect-btn { padding-top: 6px !important; padding-bottom: 6px !important; }
         }
+
+        /* ═══════════════════════════════════════════════════
+           HELP MODAL — туторіал для нових гравців
+        ═══════════════════════════════════════════════════ */
+        #help-modal {
+            position: fixed; inset: 0;
+            background: rgba(0,0,0,0.82);
+            display: flex; align-items: center; justify-content: center;
+            z-index: 9999; padding: 12px;
+        }
+        #help-box {
+            background: linear-gradient(155deg, #1a0930 0%, #0e051e 100%);
+            border: 2px solid #8844cc;
+            border-radius: 18px;
+            padding: 22px 24px 18px;
+            max-width: 430px; width: 100%;
+            color: #e8d8ff;
+            box-shadow: 0 0 50px rgba(140,40,255,0.45);
+            animation: helpIn 0.3s ease;
+        }
+        @keyframes helpIn {
+            from { transform: scale(0.88); opacity: 0; }
+            to   { transform: scale(1);    opacity: 1; }
+        }
+        #help-box h2 {
+            margin: 0 0 6px; font-size: 20px;
+            color: #cc88ff; text-align: center;
+            text-shadow: 0 0 14px #aa00ff88;
+        }
+        #help-box .help-sub {
+            text-align: center; color: #8866aa; font-size: 12px; margin-bottom: 14px;
+        }
+        .help-row {
+            display: flex; align-items: flex-start; gap: 10px;
+            background: rgba(255,255,255,0.04);
+            border-radius: 10px; padding: 8px 10px; margin-bottom: 7px;
+            font-size: 13px; line-height: 1.4;
+        }
+        .help-row .hi { font-size: 22px; min-width: 28px; text-align: center; }
+        .help-row b { color: #ffcc66; }
+        .help-row .hd { color: #bbaacc; }
+        #help-close-btn {
+            display: block; width: 100%; margin-top: 14px;
+            background: linear-gradient(90deg, #7722cc, #aa44ff);
+            border: none; border-radius: 12px;
+            color: #fff; font-size: 15px; font-weight: bold;
+            padding: 11px 0; cursor: pointer;
+            box-shadow: 0 4px 18px rgba(140,40,255,0.5);
+            transition: transform 0.1s, box-shadow 0.1s;
+            touch-action: manipulation;
+        }
+        #help-close-btn:active { transform: scale(0.96); box-shadow: none; }
+
+        /* Кнопка "?" завжди видима */
+        #help-open-btn {
+            position: fixed; bottom: calc(var(--controls-h, 120px) + 8px); right: 10px;
+            width: 32px; height: 32px; border-radius: 50%;
+            background: rgba(80,20,160,0.85); border: 1.5px solid #8844cc;
+            color: #cc88ff; font-size: 16px; font-weight: bold;
+            cursor: pointer; z-index: 500;
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 0 10px rgba(140,40,255,0.4);
+            touch-action: manipulation;
+            transition: background 0.15s;
+        }
+        #help-open-btn:hover { background: rgba(120,40,220,0.95); }
     </style>
 </head>
 <body>
@@ -582,18 +648,21 @@
 
             <div class="circle-menu" id="menu-lord">
                 <div class="circle-sub-menu" id="sub-lord">
-                    <button class="sub-btn s-atk" id="btn-lord-atk" onclick="upgradeLordAttack()">
+                    <button class="sub-btn s-atk" id="btn-lord-atk" onclick="upgradeLordAttack()"
+                        title="Підвищити атаку Лорда Підземелля">
                         <span class="sicon">⚔️</span>
                         <span class="slabel">Атака</span>
                         <span class="scost" id="lord-atk-cost">80💀</span>
                     </button>
-                    <button class="sub-btn s-vit" id="btn-lord-vit" onclick="upgradeLordVit()">
+                    <button class="sub-btn s-vit" id="btn-lord-vit" onclick="upgradeLordVit()"
+                        title="Підвищити здоров'я і регенерацію Лорда">
                         <span class="sicon">💚</span>
                         <span class="slabel">HP+Реген</span>
                         <span class="scost" id="lord-vit-cost">70💀</span>
                     </button>
                 </div>
-                <button class="circle-main-btn cmain-lord" id="btn-menu-lord" onclick="toggleMenu('lord')">
+                <button class="circle-main-btn cmain-lord" id="btn-menu-lord" onclick="toggleMenu('lord')"
+                    title="Прокачати Лорда Підземелля — атаку і HP">
                     <span class="icon">👑</span>
                     <span>Володар</span>
                 </button>
@@ -601,18 +670,21 @@
 
             <div class="circle-menu" id="menu-monster">
                 <div class="circle-sub-menu" id="sub-monster">
-                    <button class="sub-btn s-atk" id="btn-mob-atk" onclick="upgradeMonsterAtk()">
+                    <button class="sub-btn s-atk" id="btn-mob-atk" onclick="upgradeMonsterAtk()"
+                        title="Підвищити атаку і швидкість атаки всіх монстрів">
                         <span class="sicon">🗡️</span>
-                        <span class="slabel">Атк+ША</span>
+                        <span class="slabel">Атк+Швид</span>
                         <span class="scost" id="mob-atk-cost">75💀</span>
                     </button>
-                    <button class="sub-btn s-vit" id="btn-mob-vit" onclick="upgradeMonsterVit()">
+                    <button class="sub-btn s-vit" id="btn-mob-vit" onclick="upgradeMonsterVit()"
+                        title="Підвищити здоров'я і регенерацію всіх монстрів">
                         <span class="sicon">🛡️</span>
                         <span class="slabel">HP+Реген</span>
                         <span class="scost" id="mob-vit-cost">60💀</span>
                     </button>
                 </div>
-                <button class="circle-main-btn cmain-monster" id="btn-menu-monster" onclick="toggleMenu('monster')">
+                <button class="circle-main-btn cmain-monster" id="btn-menu-monster" onclick="toggleMenu('monster')"
+                    title="Покращити всіх монстрів підземелля">
                     <span class="icon">🧟</span>
                     <span>Монстри</span>
                 </button>
@@ -620,28 +692,33 @@
 
             <div class="circle-menu" id="menu-trap">
                 <div class="circle-sub-menu" id="sub-trap">
-                    <button class="sub-btn s-spike" id="btn-trap-spike" onclick="buyTrap('spike')">
+                    <button class="sub-btn s-spike" id="btn-trap-spike" onclick="buyTrap('spike')"
+                        title="Шипи: завдають шкоди герою при вході на поверх. Натисни поверх щоб встановити.">
                         <span class="sicon">🗡️</span>
                         <span class="slabel">Шипи</span>
                         <span class="scost">70💀</span>
                     </button>
-                    <button class="sub-btn s-dart" id="btn-trap-dart" onclick="buyTrap('dart')">
+                    <button class="sub-btn s-dart" id="btn-trap-dart" onclick="buyTrap('dart')"
+                        title="Дротик: обстрілює героя що знаходиться на поверсі. Натисни поверх щоб встановити.">
                         <span class="sicon">🪃</span>
                         <span class="slabel">Дротик</span>
                         <span class="scost">80💀</span>
                     </button>
-                    <button class="sub-btn s-tele" id="btn-trap-tele" onclick="buyTrap('teleport')">
+                    <button class="sub-btn s-tele" id="btn-trap-tele" onclick="buyTrap('teleport')"
+                        title="Телепорт: повертає героя на початок підземелля. Натисни поверх щоб встановити.">
                         <span class="sicon">🌀</span>
                         <span class="slabel">Телепорт</span>
                         <span class="scost">100💀</span>
                     </button>
-                    <button class="sub-btn s-summon" id="btn-trap-summon" onclick="buyTrap('summon')">
+                    <button class="sub-btn s-summon" id="btn-trap-summon" onclick="buyTrap('summon')"
+                        title="Виклик: призиває монстра-захисника на поверсі. Натисни поверх щоб встановити.">
                         <span class="sicon">⭐</span>
                         <span class="slabel">Виклик</span>
                         <span class="scost">120💀</span>
                     </button>
                 </div>
-                <button class="circle-main-btn cmain-trap" id="btn-menu-trap" onclick="toggleMenu('trap')">
+                <button class="circle-main-btn cmain-trap" id="btn-menu-trap" onclick="toggleMenu('trap')"
+                    title="Купити пастку і встановити на поверсі">
                     <span class="icon">🪤</span>
                     <span>Пастки</span>
                 </button>
@@ -651,12 +728,58 @@
 
         <!-- Ряд 2: Поверх + Хвиля -->
         <div class="ctrl-rects">
-            <button class="rect-btn btn-floor" id="btn-floor" onclick="buyFloor()">
+            <button class="rect-btn btn-floor" id="btn-floor" onclick="buyFloor()"
+                title="Побудувати новий підземний поверх для монстрів і пасток">
                 🏗️ Поверх<br><small id="floor-cost-lbl">100💀</small>
             </button>
-            <button class="rect-btn btn-wave" id="btn-wave" onclick="triggerWave()">⚔️ ХВИЛЯ</button>
+            <button class="rect-btn btn-wave" id="btn-wave" onclick="triggerWave()"
+                title="Викликати наступну хвилю атакуючих героїв. Чим раніше — тим більше бонусних душ!">
+                ⚔️ ХВИЛЯ
+            </button>
         </div>
 
+    </div>
+</div>
+
+<!-- ── КНОПКА ДОПОМОГИ ── -->
+<button id="help-open-btn" onclick="showHelp()" title="Як грати?">?</button>
+
+<!-- ── МОДАЛКА ТУТОРІАЛУ ── -->
+<div id="help-modal" style="display:none" onclick="if(event.target===this)closeHelp()">
+    <div id="help-box">
+        <h2>👑 Dungeon Lord: Siege Defense</h2>
+        <div class="help-sub">Ти — Повелитель Підземелля. Не дай героям дістатись до міста!</div>
+
+        <div class="help-row">
+            <span class="hi">💀</span>
+            <span><b>Душі</b> — твоя валюта. Збираєш їх убиваючи героїв, витрачаєш на розвиток.</span>
+        </div>
+        <div class="help-row">
+            <span class="hi">⚔️</span>
+            <span><b>ХВИЛЯ</b> — запускає наступну групу героїв-атакерів. <span class="hd">Чим раніше натиснеш — тим більше бонусних душ отримаєш!</span></span>
+        </div>
+        <div class="help-row">
+            <span class="hi">🏗️</span>
+            <span><b>Поверх</b> — будує новий підземний поверх. <span class="hd">На поверхах стоять монстри і можна ставити пастки — чим глибше герой йде, тим важче йому вижити.</span></span>
+        </div>
+        <div class="help-row">
+            <span class="hi">🪤</span>
+            <span><b>Пастки</b> — купи пастку, потім <span class="hd">натисни на поверх</span> щоб встановити. Шипи — шкода, Дротик — обстріл, Телепорт — повертає героя назад, Виклик — призиває монстра.</span>
+        </div>
+        <div class="help-row">
+            <span class="hi">👑</span>
+            <span><b>Володар</b> — твій персонаж що атакує героїв на поверхні. Прокачуй атаку і HP.</span>
+        </div>
+        <div class="help-row">
+            <span class="hi">🧟</span>
+            <span><b>Монстри</b> — покращуй атаку і витривалість усіх монстрів підземелля одночасно.</span>
+        </div>
+        <div class="help-row">
+            <span class="hi">📷</span>
+            <span><span class="hd">Потягни камеру вгору/вниз</span> щоб побачити глибші поверхи.</span>
+        </div>
+
+        <button id="help-close-btn" onclick="closeHelp()">✅ Зрозуміло! Починаємо!</button>
     </div>
 </div>
 
@@ -4544,6 +4667,21 @@ document.addEventListener('keydown', e => {
 const _TAP_PAD = isMobile ? 12 : 0;
 
 init();
+
+// ── HELP MODAL ────────────────────────────────────────────────────────────────
+function showHelp() {
+    document.getElementById('help-modal').style.display = 'flex';
+}
+function closeHelp() {
+    document.getElementById('help-modal').style.display = 'none';
+    try { localStorage.setItem('DL_help_seen', '1'); } catch(e) {}
+}
+// Показати при першому відвідуванні (після короткої затримки щоб гра завантажилась)
+setTimeout(function() {
+    try {
+        if (!localStorage.getItem('DL_help_seen')) showHelp();
+    } catch(e) {}
+}, 800);
 </script>
 </body>
 </html>
