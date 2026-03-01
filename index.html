@@ -1883,10 +1883,10 @@ class Unit {
                 // Частинка зіткнення — тільки для ближнього бою
                 if (this.ability !== 'raise_dead') {
                     spawnParticle((this.x+enemy.x)/2, (this.y+enemy.y)/2, this.type==='lord'?'purple':'white');
-                    if (this.type !== 'lord') this.x += (Math.random()-.5)*4;
+                    if (this.type !== 'lord') this.x += (Math.random()-.5)*4*_dt;
                 }
             } else {
-                this.attackCooldown--;
+                this.attackCooldown -= _dt;
             }
             return;
         }
@@ -1899,9 +1899,9 @@ class Unit {
         if (this.floorIdx < 0) {
             // Герой іде до входу в печеру (CAVE_X)
             if (Math.abs(this.x - CAVE_X) > 5) {
-                this.x += (CAVE_X - this.x > 0 ? 1 : -1) * this.speed;
+                this.x += (CAVE_X - this.x > 0 ? 1 : -1) * this.speed * _dt;
             } else {
-                this.y += 2; this.x = CAVE_X;
+                this.y += 2 * _dt; this.x = CAVE_X;
                 if (floors[0] && this.y >= floors[0].y) {
                     this.y = floors[0].y; this.floorIdx = 0; this.isClimbing = false;
                 }
@@ -1934,18 +1934,18 @@ class Unit {
         if (next) {
             let ladX = cur.ladderX;
             if (this.isClimbing) {
-                this.y += 2;
+                this.y += 2 * _dt;
                 if (this.y >= next.y) { this.y = next.y; this.floorIdx++; this.isClimbing = false; this.trapDamaged = false; }
             } else {
-                if (Math.abs(this.x - ladX) > 5) this.x += (ladX - this.x > 0 ? 1 : -1) * this.speed;
+                if (Math.abs(this.x - ladX) > 5) this.x += (ladX - this.x > 0 ? 1 : -1) * this.speed * _dt;
                 else { this.x = ladX; this.isClimbing = true; }
             }
         } else {
             if (this.isClimbing) {
-                this.y += 2;
+                this.y += 2 * _dt;
                 if (this.y >= cur.y) { this.y = cur.y; this.isClimbing = false; }
             } else {
-                if (Math.abs(this.x - centerX) > 30) this.x += (centerX - this.x > 0 ? 1 : -1) * this.speed;
+                if (Math.abs(this.x - centerX) > 30) this.x += (centerX - this.x > 0 ? 1 : -1) * this.speed * _dt;
             }
         }
     }
@@ -1955,16 +1955,16 @@ class Unit {
         if (this.floorIdx < 0) {
             // На поверхні — зупиняється біля воріт, не атакує місто
             this.y = CFG.surfaceY;
-            if (this.x > CITY_GATE_X + 20) this.x -= this.speed;
+            if (this.x > CITY_GATE_X + 20) this.x -= this.speed * _dt;
             return;
         }
         if (this.floorIdx === 0) {
             // Поверх 0 → піднімається через CAVE_X на поверхню
             if (this.isClimbingUp) {
-                this.y -= this.speed * 2; this.x = CAVE_X;
+                this.y -= this.speed * 2 * _dt; this.x = CAVE_X;
                 if (this.y <= CFG.surfaceY) { this.y = CFG.surfaceY; this.floorIdx = -1; this.isClimbingUp = false; }
             } else {
-                if (Math.abs(this.x - CAVE_X) > 10) this.x += (CAVE_X - this.x > 0 ? 1 : -1) * this.speed;
+                if (Math.abs(this.x - CAVE_X) > 10) this.x += (CAVE_X - this.x > 0 ? 1 : -1) * this.speed * _dt;
                 else { this.x = CAVE_X; this.isClimbingUp = true; }
             }
             return;
@@ -1973,11 +1973,11 @@ class Unit {
         let prev = floors[this.floorIdx - 1];
         let ladX = prev ? prev.ladderX : CAVE_X;
         if (this.isClimbingUp) {
-            this.y -= this.speed * 2; this.x = ladX;
+            this.y -= this.speed * 2 * _dt; this.x = ladX;
             let tY = prev ? prev.y : CFG.surfaceY;
             if (this.y <= tY) { this.y = tY; this.floorIdx--; this.isClimbingUp = false; }
         } else {
-            if (Math.abs(this.x - ladX) > 10) this.x += (ladX - this.x > 0 ? 1 : -1) * this.speed;
+            if (Math.abs(this.x - ladX) > 10) this.x += (ladX - this.x > 0 ? 1 : -1) * this.speed * _dt;
             else { this.x = ladX; this.isClimbingUp = true; }
         }
     }
@@ -1987,17 +1987,17 @@ class Unit {
             // Поверхня — біжить до міста
             if (this.floorIdx < 0) {
                 this.y = CFG.surfaceY;
-                if (this.x > CITY_GATE_X) { this.x -= this.speed * 2; }
+                if (this.x > CITY_GATE_X) { this.x -= this.speed * 2 * _dt; }
                 else { GAME.cityHP -= this.dmg * 5; this.hp = 0; spawnParticle(this.x, this.y, 'red'); }
                 return;
             }
             // Поверх 0 — до виходу (CAVE_X)
             if (this.floorIdx === 0) {
                 if (this.isClimbingUp) {
-                    this.y -= this.speed * 2; this.x = CAVE_X;
+                    this.y -= this.speed * 2 * _dt; this.x = CAVE_X;
                     if (this.y <= CFG.surfaceY) { this.y = CFG.surfaceY; this.floorIdx = -1; this.isClimbingUp = false; }
                 } else {
-                    if (Math.abs(this.x - CAVE_X) > 10) this.x += (CAVE_X - this.x > 0 ? 1 : -1) * this.speed * 1.5;
+                    if (Math.abs(this.x - CAVE_X) > 10) this.x += (CAVE_X - this.x > 0 ? 1 : -1) * this.speed * 1.5 * _dt;
                     else { this.x = CAVE_X; this.isClimbingUp = true; }
                 }
                 return;
@@ -2006,11 +2006,11 @@ class Unit {
             let prev = floors[this.floorIdx - 1];
             let ladX = prev ? prev.ladderX : CAVE_X;
             if (this.isClimbingUp) {
-                this.y -= this.speed * 2; this.x = ladX;
+                this.y -= this.speed * 2 * _dt; this.x = ladX;
                 let tY = prev ? prev.y : CFG.surfaceY;
                 if (this.y <= tY) { this.y = tY; this.floorIdx--; this.isClimbingUp = false; }
             } else {
-                if (Math.abs(this.x - ladX) > 10) this.x += (ladX - this.x > 0 ? 1 : -1) * this.speed * 1.5;
+                if (Math.abs(this.x - ladX) > 10) this.x += (ladX - this.x > 0 ? 1 : -1) * this.speed * 1.5 * _dt;
                 else { this.x = ladX; this.isClimbingUp = true; }
             }
         } else {
@@ -2022,11 +2022,11 @@ class Unit {
             if (aggroTarget) {
                 // Біжимо до героя
                 let dir = aggroTarget.x > this.x ? 1 : -1;
-                this.x += dir * this.speed * 0.9;
+                this.x += dir * this.speed * 0.9 * _dt;
             } else {
                 // Патруль
                 if (!this.patrolDir) this.patrolDir = 1;
-                this.x += this.speed * 0.5 * this.patrolDir;
+                this.x += this.speed * 0.5 * this.patrolDir * _dt;
                 let fx = centerX - CFG.floorW/2 + 30;
                 let fw = CFG.floorW - 60;
                 if (this.x > fx + fw) this.patrolDir = -1;
@@ -2802,7 +2802,7 @@ function spawnMinions() {
         if (count < f.maxMonsters) {
             // 1-й поверх: 4 сек, кожен наступний +3 сек (в тіках по 1 сек)
             let spawnInterval = 4 + f.depth * 3;
-            f.spawnTimer++;
+            f.spawnTimer += _dt;
             if (f.spawnTimer >= spawnInterval) {
                 let spawnCount = f.isBatFloor ? 2 : 1;
                 for (let _sc = 0; _sc < spawnCount; _sc++) {
@@ -2845,12 +2845,19 @@ function spawnMinions() {
 
 // =================== ГОЛОВНИЙ ЦИКЛ ===================
 let heroScaleTimer = 0;
+let _dt = 1;          // delta-time: 1.0 = 60fps, 0.5 = 120fps, 2.0 = 30fps
+let _dt_lastTs = 0;   // мітка часу попереднього кадру
 
-function loop() {
+function loop(ts) {
     if (GAME_PAUSED || GAME.gameOver) return;
 
+    // ── Delta-time: нормалізуємо швидкість гри до 60fps ──────────────────
+    let _dtElapsed = _dt_lastTs ? Math.min(ts - _dt_lastTs, 50) : 16.667;
+    _dt_lastTs = ts;
+    _dt = _dtElapsed / 16.667; // 16.667ms = 1 кадр @ 60fps
+
     // Таймер складності
-    heroScaleTimer++;
+    heroScaleTimer += _dt;
     if (heroScaleTimer >= 60) {
         heroScaleTimer = 0;
         GAME.gameTime++;
@@ -2875,7 +2882,7 @@ function loop() {
 
     // Скидаємо трансформацію і перевстановлюємо dpr scale кожен кадр
     let _dpr = Math.min(window.devicePixelRatio || 1, 2);
-    if (screenShake > 0) screenShake--;
+    if (screenShake > 0) screenShake = Math.max(0, screenShake - _dt);
     let _sx = screenShake > 0 ? (Math.random() - 0.5) * screenShake * 2 : 0;
     let _sy = screenShake > 0 ? (Math.random() - 0.5) * screenShake * 2 : 0;
     ctx.setTransform(_dpr, 0, 0, _dpr, _sx * _dpr, _sy * _dpr);
@@ -2888,7 +2895,7 @@ function loop() {
         GAME.cameraY = manualCameraY;
     } else {
         let target = floors.length * CFG.floorH - gH/2;
-        GAME.cameraY += (target - GAME.cameraY) * 0.1;
+        GAME.cameraY += (target - GAME.cameraY) * Math.min(0.1 * _dt, 1);
     }
     let maxCam = Math.max(0, floors[floors.length-1].y - gH + 150);
     GAME.cameraY = Math.max(-70, Math.min(GAME.cameraY, maxCam));
@@ -4038,7 +4045,7 @@ function loop() {
                  green:'#44ee88',cyan:'#00ffff',red:'#ff3333',white:'#ffffff',yellow:'#ffff55'};
     for (let i = particles.length - 1; i >= 0; i--) {
         let p = particles[i];
-        p.life--; p.x += p.vx; p.y += p.vy; p.vy += 0.06;
+        p.life -= _dt; p.x += p.vx * _dt; p.y += p.vy * _dt; p.vy += 0.06 * _dt;
         let a = Math.pow(p.life / p.maxLife, 0.8);
         let col = _PC[p.color] || p.color;
         ctx.globalAlpha = a;
@@ -4051,7 +4058,7 @@ function loop() {
     // ── Числа пошкоджень ────────────────────────────────────────────────
     for (let i = dmgTexts.length - 1; i >= 0; i--) {
         let d = dmgTexts[i];
-        d.life--; d.x += d.vx; d.y += d.vy; d.vy *= 0.94;
+        d.life -= _dt; d.x += d.vx * _dt; d.y += d.vy * _dt; d.vy *= Math.pow(0.94, _dt);
         let a = Math.min(1, d.life / (d.maxLife * 0.4));
         ctx.globalAlpha = a;
         ctx.font = d.big ? 'bold 15px Arial' : 'bold 11px Arial';
@@ -4092,9 +4099,9 @@ function loop() {
             continue;
         }
         // Рухаємо
-        a.x += (dx2 / dist) * a.speed;
-        a.y += (dy2 / dist) * a.speed;
-        a.angle += 0.25;
+        a.x += (dx2 / dist) * a.speed * _dt;
+        a.y += (dy2 / dist) * a.speed * _dt;
+        a.angle += 0.25 * _dt;
         // Малюємо
         ctx.save();
         ctx.translate(a.x, a.y - GAME.cameraY);
@@ -4233,7 +4240,7 @@ function tickTeleports() {
         if (!f.hasTrap || f.trapType !== 'teleport') return;
 
         // Зменшуємо cooldown (10 сек = 600 кадрів)
-        if (f.teleportCooldown > 0) { f.teleportCooldown--; return; }
+        if (f.teleportCooldown > 0) { f.teleportCooldown -= _dt; return; }
 
         // Знаходимо одного героя на цьому поверсі
         let victims = units.filter(u => u.type === 'hero' && u.floorIdx === f.depth);
@@ -4274,8 +4281,8 @@ function tickDarts() {
 
         // Анімація завжди йде до кінця навіть якщо герої пішли
         if ((f._dartTimer || 0) > 0) {
-            f._dartTimer--;
-            if (f._dartTimer === 0) {
+            f._dartTimer -= _dt;
+            if (f._dartTimer <= 0) {
                 // Постріл: знаходимо ближнього героя
                 let wallX = f.ladderX < centerX
                     ? centerX - CFG.floorW / 2
