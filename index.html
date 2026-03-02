@@ -1692,6 +1692,13 @@ class Unit {
             return;
         }
 
+        // Монстри-хвиля на поверхні — біжать прямо до міста, не зупиняються бити героїв
+        if (this.type === 'monster' && this.waveActive && this.floorIdx < 0) {
+            this.state = 'move';
+            this.moveMonster();
+            return;
+        }
+
         let enemy = null;
         if (this.type === 'monster') {
             // Герої, що стоять на тому ж поверсі (не на сходинках)
@@ -1718,6 +1725,7 @@ class Unit {
         } else {
             enemy = units.find(u => enemyTypes.includes(u.type) && isTargetable(u)
                 && u.floorIdx === this.floorIdx
+                && !(u.waveActive && u.floorIdx < 0) // ігноруємо монстрів-хвилі на поверхні
                 && Math.abs(u.x - this.x) < range && Math.abs(u.y - this.y) < 40);
         }
 
