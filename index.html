@@ -1401,7 +1401,7 @@ class Unit {
             this.baseAtkSpeed = kind.baseSpd;
             this.atkSpeedBonus = GAME.monsterAtkSpeedBonus;
             let mSpeedMult = 0.9 + Math.random() * 0.2;
-            this.speed = 1 * mSpeedMult;
+            this.speed = 1.1 * mSpeedMult;
             this.color = kind.color;
             this.size  = 25;
 
@@ -1991,14 +1991,14 @@ class Unit {
             // Поверхня — біжить до міста
             if (this.floorIdx < 0) {
                 this.y = CFG.surfaceY;
-                if (this.x > CITY_GATE_X) { this.x -= this.speed * 2 * _dt; }
+                if (this.x > CITY_GATE_X) { this.x -= this.speed * 1.5 * _dt; }
                 else { GAME.cityHP -= this.dmg * 5; this.hp = 0; spawnParticle(this.x, this.y, 'red'); }
                 return;
             }
             // Поверх 0 — до виходу (CAVE_X)
             if (this.floorIdx === 0) {
                 if (this.isClimbingUp) {
-                    this.y -= this.speed * 2 * _dt; this.x = CAVE_X;
+                    this.y -= this.speed * 1.5 * _dt; this.x = CAVE_X;
                     if (this.y <= CFG.surfaceY) { this.y = CFG.surfaceY; this.floorIdx = -1; this.isClimbingUp = false; }
                 } else {
                     if (Math.abs(this.x - CAVE_X) > 10) this.x += (CAVE_X - this.x > 0 ? 1 : -1) * this.speed * 1.5 * _dt;
@@ -2010,7 +2010,7 @@ class Unit {
             let prev = floors[this.floorIdx - 1];
             let ladX = prev ? prev.ladderX : CAVE_X;
             if (this.isClimbingUp) {
-                this.y -= this.speed * 2 * _dt; this.x = ladX;
+                this.y -= this.speed * 1.5 * _dt; this.x = ladX;
                 let tY = prev ? prev.y : CFG.surfaceY;
                 if (this.y <= tY) { this.y = tY; this.floorIdx--; this.isClimbingUp = false; }
             } else {
