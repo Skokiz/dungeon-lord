@@ -1692,10 +1692,10 @@ class Unit {
             return;
         }
 
-        // Монстри-хвиля на поверхні — біжать прямо до міста, не зупиняються бити героїв
+        // Хвильові монстри на поверхні — б'ють на бігу, не зупиняються
         if (this.type === 'monster' && this.waveActive && this.floorIdx < 0) {
             this.state = 'move';
-            this.moveMonster();
+            this.moveMonster(); // всередині б'є героїв і рухається до міста
             return;
         }
 
@@ -1995,9 +1995,20 @@ class Unit {
 
     moveMonster() {
         if (this.waveActive) {
-            // Поверхня — біжить до міста
+            // Поверхня — біжить до міста, б'є героїв на бігу (не зупиняється)
             if (this.floorIdx < 0) {
                 this.y = CFG.surfaceY;
+                // Удар по героях на поверхні без зупинки
+                if ((this._waveHitCd || 0) <= 0) {
+                    let nearHero = units.find(h => h.type === 'hero' && h.floorIdx < 0
+                        && Math.abs(h.x - this.x) < 40 && h.hp > 0);
+                    if (nearHero) {
+                        let dmg = applyArmor(this.dmg, nearHero.armor || 0, false);
+                        nearHero.hp -= dmg;
+                        spawnParticle(nearHero.x, nearHero.y - nearHero.size, 'red');
+                        this._waveHitCd = Math.max(8, Math.round(60 / ((this.baseAtkSpeed||0.83) + (this.atkSpeedBonus||0))));
+                    }
+                } else { this._waveHitCd--; }
                 if (this.x > CITY_GATE_X) { this.x -= this.speed * 2 * _dt; }
                 else { GAME.cityHP -= this.dmg * 5; this.hp = 0; spawnParticle(this.x, this.y, 'red'); }
                 return;
