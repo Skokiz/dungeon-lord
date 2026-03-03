@@ -826,6 +826,7 @@ let GAME = {
     monsterDmgPct: 0,        // % бонус дамагу (10% за апгрейд)
     monsterAtkSpeedBonus: 0, // бонус ША у стилі Dota2 (базова ША = 0.83 атк/сек)
     isWave: false,
+    waveCooldownActive: false,
     gameOver: false,
     cameraY: 0,
     // Час і масштабування
@@ -1536,6 +1537,13 @@ class Unit {
         if (this.type === 'lord' && GAME.lordRegenPct > 0 && this.hp > 0 && this.hp < this.maxHp)
             this.hp = Math.min(this.hp + GAME.lordRegenPct * this.maxHp / 60, this.maxHp);
 
+        // Варіант А: герой з HP < 3 — добивання, якщо хвиля ще активна
+        if (this.type === 'hero' && this.hp > 0 && this.hp < 3 &&
+            units.some(u => u.type === 'monster' && u.waveActive)) {
+            this.hp = 0;
+            return;
+        }
+
         // ── Пасив WARCRY (Воєначальник): сусіди-герої +10% dmg ───────────
         if (this.type === 'hero' && this.heroPassive === 'warcry') {
             units.forEach(u => {
@@ -1689,13 +1697,6 @@ class Unit {
             this.state = 'move';
             if (this.type === 'hero') this.moveHero();
             else this.moveMonster();
-            return;
-        }
-
-        // Хвильові монстри на поверхні — б'ють на бігу, не зупиняються
-        if (this.type === 'monster' && this.waveActive && this.floorIdx < 0) {
-            this.state = 'move';
-            this.moveMonster(); // всередині б'є героїв і рухається до міста
             return;
         }
 
@@ -1995,20 +1996,9 @@ class Unit {
 
     moveMonster() {
         if (this.waveActive) {
-            // Поверхня — біжить до міста, б'є героїв на бігу (не зупиняється)
+            // Поверхня — біжить до міста
             if (this.floorIdx < 0) {
                 this.y = CFG.surfaceY;
-                // Удар по героях на поверхні без зупинки
-                if ((this._waveHitCd || 0) <= 0) {
-                    let nearHero = units.find(h => h.type === 'hero' && h.floorIdx < 0
-                        && Math.abs(h.x - this.x) < 40 && h.hp > 0);
-                    if (nearHero) {
-                        let dmg = applyArmor(this.dmg, nearHero.armor || 0, false);
-                        nearHero.hp -= dmg;
-                        spawnParticle(nearHero.x, nearHero.y - nearHero.size, 'red');
-                        this._waveHitCd = Math.max(8, Math.round(60 / ((this.baseAtkSpeed||0.83) + (this.atkSpeedBonus||0))));
-                    }
-                } else { this._waveHitCd--; }
                 if (this.x > CITY_GATE_X) { this.x -= this.speed * 2 * _dt; }
                 else { GAME.cityHP -= this.dmg * 5; this.hp = 0; spawnParticle(this.x, this.y, 'red'); }
                 return;
@@ -4405,11 +4395,27 @@ function buyFloor() {
 }
 
 function triggerWave() {
-    if (GAME.isWave) return;
+    if (GAME.isWave || GAME.waveCooldownActive) return;
     GAME.isWave = true;
+    GAME.waveCooldownActive = true;
     // Тільки поточні монстри отримують waveActive — нові спавн не отримають
     units.forEach(u => { if (u.type === 'monster') u.waveActive = true; });
     setTimeout(() => { GAME.isWave = false; }, 8000);
+
+    // КД 60 сек: блокуємо кнопку і показуємо зворотній відлік
+    let btn = document.getElementById('btn-wave');
+    let remaining = 60;
+    if (btn) { btn.disabled = true; btn.innerHTML = `⚔️ ХВИЛЯ (${remaining}с)`; }
+    let cdInterval = setInterval(() => {
+        if (GAME.gameOver) { clearInterval(cdInterval); return; }
+        remaining--;
+        if (btn) btn.innerHTML = `⚔️ ХВИЛЯ (${remaining}с)`;
+        if (remaining <= 0) {
+            clearInterval(cdInterval);
+            GAME.waveCooldownActive = false;
+            if (btn) { btn.disabled = false; btn.innerHTML = '⚔️ ХВИЛЯ'; }
+        }
+    }, 1000);
 }
 
 // =================== UI ===================
