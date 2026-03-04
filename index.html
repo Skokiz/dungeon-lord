@@ -4437,16 +4437,18 @@ function updateUI() {
     document.getElementById('btn-mob-atk').disabled = s < GAME.mobAtkCost;
     document.getElementById('btn-mob-vit').disabled = s < GAME.mobVitCost;
 
-    // Пастки
-    document.getElementById('btn-trap-spike').disabled  = s < TRAP_COSTS.spike;
-    document.getElementById('btn-trap-tele').disabled   = s < TRAP_COSTS.teleport;
-    document.getElementById('btn-trap-summon').disabled = s < TRAP_COSTS.summon;
-    document.getElementById('btn-trap-dart').disabled   = s < TRAP_COSTS.dart;
+    // Пастки — перевіряємо чи є вільний поверх для встановлення
+    const lordFloorIdx = floors.length - 1;
+    const hasFreeTrapFloor = floors.some(f => f.depth !== lordFloorIdx && !f.hasTrap);
+    document.getElementById('btn-trap-spike').disabled  = s < TRAP_COSTS.spike    || !hasFreeTrapFloor;
+    document.getElementById('btn-trap-tele').disabled   = s < TRAP_COSTS.teleport || !hasFreeTrapFloor;
+    document.getElementById('btn-trap-summon').disabled = s < TRAP_COSTS.summon   || !hasFreeTrapFloor;
+    document.getElementById('btn-trap-dart').disabled   = s < TRAP_COSTS.dart     || !hasFreeTrapFloor;
 
     // Анімація: підсвічуємо кола якщо є доступні апгрейди
     const lordAfford  = s >= GAME.lordAtkCost  || s >= GAME.lordVitCost;
     const mobAfford   = s >= GAME.mobAtkCost   || s >= GAME.mobVitCost;
-    const trapAfford  = s >= Math.min(...Object.values(TRAP_COSTS));
+    const trapAfford  = hasFreeTrapFloor && s >= Math.min(...Object.values(TRAP_COSTS));
     document.querySelectorAll('.cmain-lord').forEach(b => b.classList.toggle('can-afford', lordAfford));
     document.querySelectorAll('.cmain-monster').forEach(b => b.classList.toggle('can-afford', mobAfford));
     document.querySelectorAll('.cmain-trap').forEach(b => b.classList.toggle('can-afford', trapAfford));
