@@ -1530,19 +1530,12 @@ class Unit {
     update() {
         if (GAME.gameOver) return;
 
-        // Реген паладіна і лорда
-        if (this.regen > 0 && this.hp < this.maxHp)
+        // Реген паладіна і лорда (тільки живим — hp > 0)
+        if (this.regen > 0 && this.hp > 0 && this.hp < this.maxHp)
             this.hp = Math.min(this.hp + this.regen / 60, this.maxHp);
         // Реген лорда (% від макс HP)
         if (this.type === 'lord' && GAME.lordRegenPct > 0 && this.hp > 0 && this.hp < this.maxHp)
             this.hp = Math.min(this.hp + GAME.lordRegenPct * this.maxHp / 60, this.maxHp);
-
-        // Варіант А: герой з HP < 3 — добивання, якщо хвиля ще активна
-        if (this.type === 'hero' && this.hp > 0 && this.hp < 3 &&
-            units.some(u => u.type === 'monster' && u.waveActive)) {
-            this.hp = 0;
-            return;
-        }
 
         // ── Пасив WARCRY (Воєначальник): сусіди-герої +10% dmg ───────────
         if (this.type === 'hero' && this.heroPassive === 'warcry') {
