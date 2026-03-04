@@ -798,7 +798,7 @@ let gH = window.innerHeight;
 const isMobile = window.innerWidth < 768;
 // CFG — мутабельний, оновлюється в resize() під розмір екрану
 let CFG = {
-    floorH: 80,
+    floorH: 100,
     floorW: Math.min(window.innerWidth - 60, window.innerWidth < 768 ? 380 : 600),
     surfaceY: 200,
 };
@@ -1287,8 +1287,8 @@ class Floor {
         // ── 11 + 12. Дві кнопки горизонтально, чергують сторону по глибині ─
         // depth парний (0,2,4…) → ліворуч; непарний (1,3,5…) → праворуч
         if (!isLordFloor) {
-            let bh  = isMobile ? 26 : 30;
-            let bw  = isMobile ? 62 : 78;
+            let bh  = isMobile ? 36 : 42;
+            let bw  = isMobile ? 72 : 92;
             let gap = 4;
             let pad = 6;
             let byBtn = fty + pad; // верхній край — під стелею кімнати
@@ -1313,12 +1313,12 @@ class Floor {
                 ctx.strokeStyle = can ? '#00ff66' : '#444'; ctx.lineWidth = 1; ctx.stroke();
                 ctx.fillStyle = can ? '#fff' : '#666';
                 ctx.textAlign = 'center';
-                let _fs1 = isMobile ? '8px' : '9px';
+                let _fs1 = isMobile ? '10px' : '12px';
                 ctx.font = 'bold ' + _fs1 + ' Arial';
-                ctx.fillText('Покращити', bxUpg + bw/2, byBtn + bh/2 - (isMobile ? 7 : 7));
+                ctx.fillText('Покращити', bxUpg + bw/2, byBtn + bh/2 - (isMobile ? 10 : 12));
                 ctx.fillText('рівень', bxUpg + bw/2, byBtn + bh/2 + (isMobile ? 2 : 2));
                 ctx.font = _fs1 + ' Arial';
-                ctx.fillText(this.floorUpgradeCost + ' душ', bxUpg + bw/2, byBtn + bh/2 + (isMobile ? 12 : 13));
+                ctx.fillText(this.floorUpgradeCost + ' душ', bxUpg + bw/2, byBtn + bh/2 + (isMobile ? 14 : 16));
             } else {
                 this._btnX = null;
             }
@@ -1333,12 +1333,12 @@ class Floor {
             ctx.strokeStyle = canBuy ? '#ff8844' : '#444'; ctx.lineWidth = 1; ctx.stroke();
             ctx.fillStyle = canBuy ? '#fff' : '#666';
             ctx.textAlign = 'center';
-            let _fs2 = isMobile ? '8px' : '9px';
+            let _fs2 = isMobile ? '10px' : '12px';
             ctx.font = 'bold ' + _fs2 + ' Arial';
-            ctx.fillText('Призвати', bxMon + bw/2, byBtn + bh/2 - (isMobile ? 7 : 7));
+            ctx.fillText('Призвати', bxMon + bw/2, byBtn + bh/2 - (isMobile ? 10 : 12));
             ctx.fillText('монстра', bxMon + bw/2, byBtn + bh/2 + (isMobile ? 2 : 2));
             ctx.font = _fs2 + ' Arial';
-            ctx.fillText(buyCost + ' душ', bxMon + bw/2, byBtn + bh/2 + (isMobile ? 12 : 13));
+            ctx.fillText(buyCost + ' душ', bxMon + bw/2, byBtn + bh/2 + (isMobile ? 14 : 16));
         } else {
             this._btnX    = null;
             this._buyBtnX = null;
