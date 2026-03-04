@@ -4552,7 +4552,7 @@ canvas.addEventListener('mousedown',  e => { isDragging=true; lastDragY=e.client
 canvas.addEventListener('mousemove',  e => { if(!isDragging)return; let d=lastDragY-e.clientY; lastDragY=e.clientY; if(manualCameraY===null)manualCameraY=GAME.cameraY; manualCameraY+=d; cameraReturnTimer=0; });
 canvas.addEventListener('mouseup',    ()=> isDragging=false);
 canvas.addEventListener('mouseleave', ()=> isDragging=false);
-let _touchStartX=0, _touchStartY=0, _touchMoved=false;
+let _touchStartX=0, _touchStartY=0, _touchMoved=false, _skipNextClick=false;
 
 canvas.addEventListener('touchstart', e => {
     if (e.touches.length === 1) {
@@ -4584,6 +4584,7 @@ canvas.addEventListener('touchend', e => {
         // Викликаємо обробник кліку напряму — без dispatchEvent (iOS ігнорує)
         let t = e.changedTouches[0];
         _handleCanvasTap(t.clientX, t.clientY);
+        _skipNextClick = true; // блокуємо синтетичний click після touchend
     }
 }, { passive: true });
 
@@ -4662,8 +4663,11 @@ function _handleCanvasTap(clientX, clientY) {
     });
 }
 
-// Desktop click → той самий обробник
-canvas.addEventListener('click', e => _handleCanvasTap(e.clientX, e.clientY));
+// Desktop click → той самий обробник (пропускаємо якщо вже оброблено touchend)
+canvas.addEventListener('click', e => {
+    if (_skipNextClick) { _skipNextClick = false; return; }
+    _handleCanvasTap(e.clientX, e.clientY);
+});
 
 // =================== ПАУЗА ===================
 let GAME_PAUSED = false;
