@@ -668,7 +668,7 @@
                 <button class="circle-main-btn cmain-lord" id="btn-menu-lord" onclick="toggleMenu('lord')"
                     title="Прокачати Лорда Підземелля — атаку і HP">
                     <span class="icon">👑</span>
-                    <span>Володар</span>
+                    <span>Покращити Володаря</span>
                 </button>
             </div>
 
@@ -690,7 +690,7 @@
                 <button class="circle-main-btn cmain-monster" id="btn-menu-monster" onclick="toggleMenu('monster')"
                     title="Покращити всіх монстрів підземелля">
                     <span class="icon">🧟</span>
-                    <span>Монстри</span>
+                    <span>Покращити монстрів</span>
                 </button>
             </div>
 
@@ -724,7 +724,7 @@
                 <button class="circle-main-btn cmain-trap" id="btn-menu-trap" onclick="toggleMenu('trap')"
                     title="Купити пастку і встановити на поверсі">
                     <span class="icon">🪤</span>
-                    <span>Пастки</span>
+                    <span>Побудувати ловушку</span>
                 </button>
             </div>
 
@@ -734,7 +734,7 @@
         <div class="ctrl-rects">
             <button class="rect-btn btn-floor" id="btn-floor" onclick="buyFloor()"
                 title="Побудувати новий підземний поверх для монстрів і пасток">
-                🏗️ Поверх<br><small id="floor-cost-lbl">100💀</small>
+                🏗️ Побудувати поверх<br><small id="floor-cost-lbl">100💀</small>
             </button>
             <button class="rect-btn btn-wave" id="btn-wave" onclick="triggerWave()"
                 title="Викликати наступну хвилю атакуючих героїв. Чим раніше — тим більше бонусних душ!">
@@ -1315,9 +1315,10 @@ class Floor {
                 ctx.textAlign = 'center';
                 let _fs1 = isMobile ? '8px' : '9px';
                 ctx.font = 'bold ' + _fs1 + ' Arial';
-                ctx.fillText('Рівень', bxUpg + bw/2, byBtn + bh/2 - (isMobile ? 2 : 2));
+                ctx.fillText('Покращити', bxUpg + bw/2, byBtn + bh/2 - (isMobile ? 7 : 7));
+                ctx.fillText('рівень', bxUpg + bw/2, byBtn + bh/2 + (isMobile ? 2 : 2));
                 ctx.font = _fs1 + ' Arial';
-                ctx.fillText(this.floorUpgradeCost + ' душ', bxUpg + bw/2, byBtn + bh/2 + (isMobile ? 8 : 9));
+                ctx.fillText(this.floorUpgradeCost + ' душ', bxUpg + bw/2, byBtn + bh/2 + (isMobile ? 12 : 13));
             } else {
                 this._btnX = null;
             }
@@ -1334,9 +1335,10 @@ class Floor {
             ctx.textAlign = 'center';
             let _fs2 = isMobile ? '8px' : '9px';
             ctx.font = 'bold ' + _fs2 + ' Arial';
-            ctx.fillText('Монстр', bxMon + bw/2, byBtn + bh/2 - (isMobile ? 2 : 2));
+            ctx.fillText('Призвати', bxMon + bw/2, byBtn + bh/2 - (isMobile ? 7 : 7));
+            ctx.fillText('монстра', bxMon + bw/2, byBtn + bh/2 + (isMobile ? 2 : 2));
             ctx.font = _fs2 + ' Arial';
-            ctx.fillText(buyCost + ' душ', bxMon + bw/2, byBtn + bh/2 + (isMobile ? 8 : 9));
+            ctx.fillText(buyCost + ' душ', bxMon + bw/2, byBtn + bh/2 + (isMobile ? 12 : 13));
         } else {
             this._btnX    = null;
             this._buyBtnX = null;
