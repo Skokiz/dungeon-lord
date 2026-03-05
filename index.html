@@ -555,6 +555,94 @@
             transition: background 0.15s;
         }
         #help-open-btn:hover { background: rgba(120,40,220,0.95); }
+        /* ── Елітні душі у HUD ── */
+        #elite-souls-box { display:none; }
+        .elite-box { background:rgba(120,0,160,0.75); border:1px solid rgba(220,100,255,0.4);
+            font-weight:bold; color:#ff88ff; border-radius:10px;
+            text-shadow:0 0 8px #ff44ff88; white-space:nowrap; }
+
+        /* ── Стартовий екран — нові кнопки ── */
+        #start-elite-display { color:#ff88ff; font-size:15px; font-weight:bold;
+            background:rgba(120,0,160,0.4); border:1px solid rgba(200,100,255,0.3);
+            border-radius:8px; padding:4px 14px; letter-spacing:1px; }
+        #btn-soul-dungeon {
+            background:linear-gradient(145deg,#4a0080,#220040);
+            border:2px solid #9944cc; border-radius:14px;
+            color:#ee99ff; font-weight:bold; font-size:16px;
+            padding:12px 36px; cursor:pointer;
+            -webkit-appearance:none; touch-action:manipulation;
+            transition:transform 0.1s; letter-spacing:1px;
+            box-shadow:0 0 18px rgba(140,0,255,0.35); }
+        #btn-soul-dungeon:active { transform:scale(0.95); }
+        #btn-instructions {
+            background:transparent; border:2px solid #445566;
+            border-radius:12px; color:#88aacc; font-size:14px;
+            padding:9px 28px; cursor:pointer;
+            -webkit-appearance:none; touch-action:manipulation; }
+        #btn-instructions:active { opacity:0.7; }
+
+        /* ── Душа Підземелля ── */
+        #soul-dungeon-screen {
+            position:fixed; top:0; left:0; width:100%; height:100%;
+            background:radial-gradient(ellipse at 50% 30%, #1a0040 0%, #080018 50%, #030008 100%);
+            display:none; flex-direction:column; align-items:center;
+            justify-content:flex-start; overflow-y:auto;
+            padding:24px 16px 32px; gap:16px; z-index:350;
+        }
+        #soul-dungeon-screen h2 { color:#cc88ff; text-shadow:0 0 24px #8800ff;
+            text-align:center; margin:0; font-size:22px; }
+        #soul-dungeon-elite { color:#ff88ff; font-size:20px; font-weight:bold;
+            background:rgba(120,0,160,0.5); border:1px solid rgba(220,100,255,0.4);
+            border-radius:10px; padding:6px 20px; }
+        #soul-dungeon-hint { color:#886699; font-size:12px; text-align:center;
+            max-width:320px; line-height:1.5; }
+        #soul-dungeon-cards { display:flex; flex-wrap:wrap; gap:12px;
+            justify-content:center; width:100%; max-width:560px; }
+        .perma-card {
+            background:rgba(40,10,70,0.9); border:1px solid #5a2880;
+            border-radius:14px; padding:14px 12px; width:140px; min-width:130px;
+            display:flex; flex-direction:column; align-items:center; gap:6px;
+            box-shadow:0 0 14px rgba(100,0,200,0.25); }
+        .perma-card-icon { font-size:26px; }
+        .perma-card-name { color:#ddbbff; font-weight:bold; font-size:12px; text-align:center; }
+        .perma-card-lvl { color:#9977bb; font-size:11px; }
+        .perma-card-desc { color:#776699; font-size:10px; text-align:center; line-height:1.4; }
+        .perma-buy-btn {
+            margin-top:4px; width:100%;
+            background:rgba(80,20,130,0.9); border:1px solid #8844cc;
+            border-radius:8px; color:#ffddff; font-weight:bold; font-size:12px;
+            padding:7px 4px; cursor:pointer;
+            -webkit-appearance:none; touch-action:manipulation; }
+        .perma-buy-btn:active { transform:scale(0.95); }
+        .perma-buy-btn.can-afford { background:rgba(100,20,160,0.95);
+            border-color:#cc66ff; color:#fff;
+            box-shadow:0 0 10px rgba(180,60,255,0.4); }
+        .perma-buy-btn.cannot-afford { opacity:0.45; cursor:default; }
+        #btn-close-soul-dungeon {
+            background:rgba(40,10,70,0.95); border:2px solid #6633aa;
+            border-radius:12px; color:#bb88ff; padding:12px 36px;
+            font-size:15px; cursor:pointer;
+            -webkit-appearance:none; touch-action:manipulation; }
+
+        /* ── Інструкція ── */
+        #instructions-screen {
+            position:fixed; top:0; left:0; width:100%; height:100%;
+            background:rgba(5,3,15,0.97);
+            display:none; flex-direction:column; align-items:center;
+            justify-content:flex-start; overflow-y:auto;
+            padding:24px 18px 32px; gap:14px; z-index:350; }
+        #instructions-screen h2 { color:#ffdd66; text-align:center; margin:0; }
+        .instr-section { width:100%; max-width:420px; }
+        .instr-section h3 { color:#cc88ff; font-size:14px; margin:0 0 6px; }
+        .instr-section p  { color:#aaa; font-size:12px; line-height:1.6; margin:0; }
+        #btn-close-instructions {
+            background:rgba(40,30,20,0.95); border:2px solid #886644;
+            border-radius:12px; color:#ffdd88; padding:12px 36px;
+            font-size:15px; cursor:pointer;
+            -webkit-appearance:none; touch-action:manipulation; }
+
+        /* ── game-over ── */
+        #go-elite-earned { color:#ff88ff; font-size:14px; text-align:center; }
     </style>
 </head>
 <body>
@@ -564,8 +652,54 @@
     <h1>👑 Dungeon Lord</h1>
     <div class="subtitle">Siege Defense</div>
     <div id="lvl-progress-label">Рівень <span id="lvl-num">1</span> <span id="lvl-total">/ 50</span></div>
+    <div id="start-elite-display">💎 <span id="start-elite-num">0</span></div>
     <button id="btn-continue" onclick="continueGame()">▶ Почати гру</button>
+    <button id="btn-soul-dungeon" onclick="openSoulDungeon()">💜 Душа Підземелля</button>
+    <button id="btn-instructions" onclick="openInstructions()">📖 Інструкція</button>
     <button id="btn-reset-progress" onclick="confirmResetProgress()" style="display:none">↺ Почати заново</button>
+</div>
+
+<!-- ── ДУША ПІДЗЕМЕЛЛЯ ── -->
+<div id="soul-dungeon-screen">
+    <h2>💜 Душа Підземелля</h2>
+    <div id="soul-dungeon-elite">💎 <span id="soul-dungeon-elite-num">0</span></div>
+    <div id="soul-dungeon-hint">Витрачай Елітні Душі на назавжди-покращення.<br>Ефект застосовується з наступного рівня.</div>
+    <div id="soul-dungeon-cards"></div>
+    <button id="btn-close-soul-dungeon" onclick="closeSoulDungeon()">← Назад</button>
+</div>
+
+<!-- ── ІНСТРУКЦІЯ ── -->
+<div id="instructions-screen">
+    <h2>📖 Інструкція</h2>
+    <div class="instr-section">
+        <h3>🎯 Мета</h3>
+        <p>Захисти підземелля від героїв. Знищ місто ворогів (зменши ❤️ до 0), перш ніж герої вб'ють твого Лорда 💜.</p>
+    </div>
+    <div class="instr-section">
+        <h3>💀 Душі</h3>
+        <p>Вбивай героїв — отримуй Душі 💀. Купуй нові поверхи, монстрів, пастки, покращуй Лорда і монстрів.</p>
+    </div>
+    <div class="instr-section">
+        <h3>💎 Елітні Душі</h3>
+        <p>З елітних героїв випадає 1💎, з босів — 3💎. Вони зберігаються між рівнями якщо ти переміг або програв. Використовуй їх у Душі Підземелля для назавжди-покращень.</p>
+    </div>
+    <div class="instr-section">
+        <h3>🏗️ Поверхи</h3>
+        <p>Будуй нові поверхи кнопкою "Побудувати поверх". Кожен поверх може мати монстрів і пастки. Покращуй поверх щоб мати більше монстрів.</p>
+    </div>
+    <div class="instr-section">
+        <h3>⚔️ Монстри</h3>
+        <p>Виклик монстра коштує душі. Покращуй атаку і HP монстрів глобально через меню. Монстри захищають поверхи від героїв.</p>
+    </div>
+    <div class="instr-section">
+        <h3>🌀 Пастки</h3>
+        <p>Купи пастку → натисни на поверх щоб встановити. Шипи 🗡️ — миттєвий урон, Дротик 🪃 — постійний обстріл, Телепорт 🌀 — відправляє героя назад, Монстр 👾 — виклик збільшеного монстра.</p>
+    </div>
+    <div class="instr-section">
+        <h3>📈 Рівні 1–50</h3>
+        <p>Кожен рівень місто стає сильнішим, а герої потужнішими. Пройди всі 50 рівнів!</p>
+    </div>
+    <button id="btn-close-instructions" onclick="closeInstructions()">← Назад</button>
 </div>
 
 <!-- ── ПАУЗА ── -->
@@ -580,6 +714,7 @@
 <div id="game-over" class="overlay-base">
     <h1 id="go-title">ПОРАЗКА</h1>
     <p id="go-desc" style="color:#aaa;font-size:16px;margin-top:8px;">Володаря вбито...</p>
+    <div id="go-elite-earned"></div>
     <button id="btn-try-again" onclick="hardReset()">🔄 Спробувати знову</button>
 </div>
 
@@ -599,7 +734,10 @@
 
         <!-- HUD поверх canvas (тільки читання, pointer-events:none) -->
         <div id="hud">
-            <div class="resource-box">💀 <span id="souls-display">150</span></div>
+            <div style="display:flex;flex-direction:column;gap:4px">
+                <div class="resource-box">💀 <span id="souls-display">100</span></div>
+                <div class="resource-box elite-box" id="elite-souls-box">💎 <span id="elite-souls-display">0</span></div>
+            </div>
             <div class="hud-right">
                 <div class="hp-label">❤️ Місто</div>
                 <div class="hp-bar"><div id="city-hp" class="hp-fill" style="width:100%;background:#ff4444"></div><span class="hp-num" id="city-hp-num">2000 / 2000</span></div>
@@ -776,7 +914,8 @@ let CFG = {
 
 // =================== GAME STATE ===================
 let GAME = {
-    souls: 150,
+    souls: 100,
+    eliteSouls: 0,   // зароблено в поточному сеансі (зберігається при перемозі/поразці)
     floorCost: 100,
     cityHP: 2000, maxCityHP: 2000, difficultyType: 1,
     maxLordHP: 500, lordDmg: 20,
@@ -819,6 +958,12 @@ let GAME = {
     soulBonusCost: 100,  // ціна наступного апгрейду (назавжди)
 };
 
+// Постійні прокачки — завантажуються з localStorage при старті гри
+let _permaData = { lordAtkLvl:0, lordAtkCost:80,  lordVitLvl:0, lordVitCost:70,
+                   mobAtkLvl:0,  mobAtkCost:75,   mobVitLvl:0,  mobVitCost:60,
+                   floorLvl:0,   floorCost:60,
+                   startSoulsLvl:0, startSoulsCost:100 };
+
 let floors = [];
 let units = [];
 let particles = [];
@@ -845,9 +990,11 @@ class Floor {
         this.trapType = null; // 'spike','teleport'
         this.teleportCooldown = 0;
         this.isBatFloor  = (depth + 1 === 6); // глибина 5 → рівень 6 → кажан
-        this.maxMonsters = this.isBatFloor ? 4 : 2;
-        // Базова ціна залежить від глибини: поверх N+1 на 10% дорожче від поверху N
-        this.floorUpgradeCost = Math.round(60 * Math.pow(1.1, depth) / 5) * 5;
+        let _pfl = (_permaData && _permaData.floorLvl) || 0;
+        this.maxMonsters = (this.isBatFloor ? 4 : 2) + _pfl;
+        // Базова ціна залежить від глибини; якщо є perma апгрейди — ціна як після _pfl покупок
+        let _fBase = Math.round(60 * Math.pow(1.1, depth) / 5) * 5;
+        this.floorUpgradeCost = r5(_fBase * (1 + 0.5 * _pfl));
         this.ladderX = (depth % 2 === 0)
             ? centerX - CFG.floorW/2 + 50   // 50px від лівої стіни
             : centerX + CFG.floorW/2 - 50;  // 50px від правої стіни
@@ -2614,6 +2761,11 @@ function init() {
     if (_contBtn) _contBtn.textContent = _savedLvl === 1 ? '▶ Почати гру' : `▶ Рівень ${_savedLvl}`;
     const _resetBtn = document.getElementById('btn-reset-progress');
     if (_resetBtn) _resetBtn.style.display = _savedLvl > 1 ? '' : 'none';
+    // Показуємо баланс елітних душ
+    const _eNum = document.getElementById('start-elite-num');
+    if (_eNum) _eNum.innerText = getStoredEliteSouls();
+    // Завантажуємо perma-дані глобально
+    _permaData = _loadPerma();
 }
 
 function startGame(level) {
@@ -2627,9 +2779,35 @@ function startGame(level) {
     GAME.maxThreatLevel   = d.maxThreat;
     GAME.difficultyType = level;
     GAME.currentLevel = level;
+    GAME.eliteSouls = 0; // скидаємо сесійні елітні душі
+
+    // ── Завантаження постійних прокачок ────────────────────────────────────
+    _permaData = _loadPerma();
+
+    // Душі на старт (базові 100 + бонус)
+    GAME.souls = 100 + _permaData.startSoulsLvl * 10;
+
+    // Лорд: бонуси від perma
+    GAME.maxLordHP  = 500  + _permaData.lordVitLvl * 100;
+    GAME.lordDmg    = 20   + _permaData.lordAtkLvl * 5;
+    GAME.lordArmor  = 5    + _permaData.lordVitLvl * 2;
+    GAME.lordRegenPct = _permaData.lordVitLvl * 0.001;
+    GAME.lordAtkSpeedBonus = _permaData.lordAtkLvl * 0.1;
+    // В грі починаємо з наступного ціноутворення (як після perma.level покупок)
+    GAME.lordAtkCost = r5(80 * Math.pow(1.45, _permaData.lordAtkLvl));
+    GAME.lordVitCost = r5(70 * Math.pow(1.35, _permaData.lordVitLvl));
+
+    // Монстри: бонуси від perma
+    GAME.monsterHpBonus       = _permaData.mobVitLvl * 25;
+    GAME.monsterArmorBonus    = _permaData.mobVitLvl * 1.5;
+    GAME.monsterDmgPct        = _permaData.mobAtkLvl * 0.10;
+    GAME.monsterAtkSpeedBonus = _permaData.mobAtkLvl * 0.1;
+    GAME.mobAtkCost = r5(75 * Math.pow(1.40, _permaData.mobAtkLvl));
+    GAME.mobVitCost = r5(60 * Math.pow(1.35, _permaData.mobVitLvl));
+    // ───────────────────────────────────────────────────────────────────────
+
     floors.push(new Floor(0));
     floors.push(new Floor(1));
-    GAME.souls = 150;
 
     let ss = document.getElementById('start-screen');
     if (ss) ss.parentNode.removeChild(ss);
@@ -4065,6 +4243,14 @@ function loop(ts) {
                 }
                 let reward = (u.soulReward || (u.heroRank === 'boss' ? 80 : u.heroRank.startsWith('elite') ? 25 : 15)) + (GAME.soulBonus || 0);
                 GAME.souls += reward;
+                // ── Елітні душі 💎 ──────────────────────────────────────
+                if (u.heroRank === 'boss') {
+                    GAME.eliteSouls += 3;
+                    spawnDmgText(u.x, u.y - u.size - 18, '+3 💎', '#ff66ff', true);
+                } else if (u.heroRank && u.heroRank.startsWith('elite')) {
+                    GAME.eliteSouls += 1;
+                    spawnDmgText(u.x, u.y - u.size - 18, '+1 💎', '#dd88ff', false);
+                }
                 let pcol = u.heroRank === 'boss' ? 'purple' : u.heroRank.startsWith('elite') ? 'orange' : 'gold';
                 let pcount = u.heroRank === 'boss' ? 16 : u.heroRank.startsWith('elite') ? 9 : 5;
                 for (let p = 0; p < pcount; p++) {
@@ -4184,10 +4370,13 @@ function loop(ts) {
         const _lvl = GAME.currentLevel || 1;
         const _nextLvl = Math.min(_lvl + 1, 50);
         saveProgress(_nextLvl);
+        commitEliteSouls(); // зберігаємо зароблені елітні душі
         const _isLast = _lvl >= 50;
         document.getElementById('go-title').innerText = _isLast ? '🏆 ГРУ ПРОЙДЕНО!' : `Рівень ${_lvl} пройдено!`;
         document.getElementById('go-title').style.color = 'lime';
         document.getElementById('go-desc').innerText = _isLast ? 'Всі 50 рівнів пройдено! 🎉' : `Далі: Рівень ${_nextLvl} / 50`;
+        const _eEl = document.getElementById('go-elite-earned');
+        if (_eEl) _eEl.innerText = GAME.eliteSouls > 0 ? `+${GAME.eliteSouls} 💎 зароблено (всього: ${getStoredEliteSouls()})` : '';
         const _tryBtn = document.getElementById('btn-try-again');
         _tryBtn.textContent = _isLast ? '🔄 Грати заново' : `→ Рівень ${_nextLvl}`;
         _tryBtn.onclick = () => hardReset();
@@ -4471,6 +4660,12 @@ function triggerWave() {
 function updateUI() {
     let s = GAME.souls;
     document.getElementById('souls-display').innerText = Math.floor(s);
+    // Елітні душі в HUD (показуємо тільки якщо > 0)
+    const _eBox = document.getElementById('elite-souls-box');
+    if (_eBox) {
+        _eBox.style.display = GAME.eliteSouls > 0 ? '' : 'none';
+        document.getElementById('elite-souls-display').innerText = GAME.eliteSouls;
+    }
     document.getElementById('floor-cost-lbl').innerText = GAME.floorCost + '💀';
     document.getElementById('difficulty-level').innerText = GAME.difficultyLevel;
     document.getElementById('max-threat').innerText = GAME.maxThreatLevel;
@@ -4589,7 +4784,13 @@ function saveGame() {
 }
 
 function hardReset() { _store.del('DLSiege_v3'); location.reload(); }
-function gameOver() { GAME.gameOver = true; document.getElementById('game-over').style.display = 'flex'; }
+function gameOver() {
+    GAME.gameOver = true;
+    commitEliteSouls(); // зберігаємо зароблені елітні душі навіть при поразці
+    const _eEl = document.getElementById('go-elite-earned');
+    if (_eEl) _eEl.innerText = GAME.eliteSouls > 0 ? `+${GAME.eliteSouls} 💎 зароблено (всього: ${getStoredEliteSouls()})` : '';
+    document.getElementById('game-over').style.display = 'flex';
+}
 
 // ── Прогрес рівнів (зберігається окремо від ігрового стану) ──
 function loadProgress() { return Math.max(1, Math.min(50, parseInt(_store.get('DLSiege_lvl') || '1'))); }
@@ -4599,6 +4800,108 @@ function resetProgress() { _store.del('DLSiege_lvl'); }
 // ── Назавжди-прокачки (не скидаються при рестарті) ──
 function loadPermaUpgrades() { try { return JSON.parse(_store.get('DLSiege_perma') || '{}'); } catch(e) { return {}; } }
 function savePermaUpgrades(data) { _store.set('DLSiege_perma', JSON.stringify(data)); }
+
+// ── Елітні душі (зберігаються тільки при перемозі/поразці) ────────────────
+function getStoredEliteSouls() { return parseInt(_store.get('DLSiege_elite') || '0'); }
+function commitEliteSouls() {
+    if (GAME.eliteSouls > 0) {
+        _store.set('DLSiege_elite', String(getStoredEliteSouls() + GAME.eliteSouls));
+    }
+}
+
+// ── Постійні прокачки (Душа Підземелля) ─────────────────────────────────
+const _PERMA_DEFAULTS = () => ({
+    lordAtkLvl:0, lordAtkCost:80,
+    lordVitLvl:0, lordVitCost:70,
+    mobAtkLvl:0,  mobAtkCost:75,
+    mobVitLvl:0,  mobVitCost:60,
+    floorLvl:0,   floorCost:60,
+    startSoulsLvl:0, startSoulsCost:100,
+});
+function _loadPerma() {
+    try {
+        let d = JSON.parse(_store.get('DLSiege_perma2') || '{}');
+        return Object.assign(_PERMA_DEFAULTS(), d);
+    } catch(e) { return _PERMA_DEFAULTS(); }
+}
+function _savePerma(p) { _store.set('DLSiege_perma2', JSON.stringify(p)); }
+
+function buyPerma(type) {
+    let p = _loadPerma();
+    let avail = getStoredEliteSouls();
+    let cost = 0;
+    if      (type === 'lordAtk')    { cost = p.lordAtkCost;    if (avail < cost) return; p.lordAtkLvl++;    p.lordAtkCost    = r5(p.lordAtkCost    * 1.45); }
+    else if (type === 'lordVit')    { cost = p.lordVitCost;    if (avail < cost) return; p.lordVitLvl++;    p.lordVitCost    = r5(p.lordVitCost    * 1.35); }
+    else if (type === 'mobAtk')     { cost = p.mobAtkCost;     if (avail < cost) return; p.mobAtkLvl++;     p.mobAtkCost     = r5(p.mobAtkCost     * 1.40); }
+    else if (type === 'mobVit')     { cost = p.mobVitCost;     if (avail < cost) return; p.mobVitLvl++;     p.mobVitCost     = r5(p.mobVitCost     * 1.35); }
+    else if (type === 'floor')      { cost = p.floorCost;      if (avail < cost) return; p.floorLvl++;      p.floorCost      = r5(p.floorCost      * 1.50); }
+    else if (type === 'startSouls') { cost = p.startSoulsCost; if (avail < cost) return; p.startSoulsLvl++; p.startSoulsCost = r5(p.startSoulsCost * 1.50); }
+    else return;
+    _store.set('DLSiege_elite', String(avail - cost));
+    _savePerma(p);
+    _permaData = p; // оновлюємо глобал
+    updateSoulDungeonUI();
+}
+
+// ── Інтерфейс Душі Підземелля ──────────────────────────────────────────────
+const _SD_CARDS = [
+    { type:'lordAtk',    icon:'⚔️', name:'Сила Лорда',          desc:'+5 атаки за рівень',              lvlKey:'lordAtkLvl', costKey:'lordAtkCost' },
+    { type:'lordVit',    icon:'💜', name:'Витривалість Лорда',   desc:'+100 HP, +2 броні, +0.1% реген', lvlKey:'lordVitLvl', costKey:'lordVitCost' },
+    { type:'mobAtk',     icon:'🗡️', name:'Сила Монстрів',        desc:'+10% дмг, +0.1 шв.атаки',       lvlKey:'mobAtkLvl',  costKey:'mobAtkCost'  },
+    { type:'mobVit',     icon:'🛡️', name:'Витривалість Монстрів',desc:'+25 HP, +1.5 броні',              lvlKey:'mobVitLvl',  costKey:'mobVitCost'  },
+    { type:'floor',      icon:'🏗️', name:'Слоти Поверхів',       desc:'+1 монстр на кожному поверсі',   lvlKey:'floorLvl',   costKey:'floorCost'   },
+    { type:'startSouls', icon:'💀', name:'Початкові Душі',       desc:'+10 душ на старті рівня',        lvlKey:'startSoulsLvl', costKey:'startSoulsCost' },
+];
+
+function updateSoulDungeonUI() {
+    let p = _loadPerma();
+    let avail = getStoredEliteSouls();
+    document.getElementById('soul-dungeon-elite-num').innerText = avail;
+    let cont = document.getElementById('soul-dungeon-cards');
+    cont.innerHTML = '';
+    _SD_CARDS.forEach(c => {
+        let lvl  = p[c.lvlKey];
+        let cost = p[c.costKey];
+        let can  = avail >= cost;
+        let card = document.createElement('div');
+        card.className = 'perma-card';
+        card.innerHTML = `
+            <div class="perma-card-icon">${c.icon}</div>
+            <div class="perma-card-name">${c.name}</div>
+            <div class="perma-card-lvl">Рівень: <b>${lvl}</b></div>
+            <div class="perma-card-desc">${c.desc}</div>
+            <button class="perma-buy-btn ${can?'can-afford':'cannot-afford'}"
+                onclick="buyPerma('${c.type}')" ${can?'':'disabled'}>
+                ${cost} 💎
+            </button>`;
+        cont.appendChild(card);
+    });
+}
+
+function openSoulDungeon() {
+    let ss = document.getElementById('start-screen');
+    if (ss) ss.style.display = 'none';
+    updateSoulDungeonUI();
+    document.getElementById('soul-dungeon-screen').style.display = 'flex';
+}
+function closeSoulDungeon() {
+    document.getElementById('soul-dungeon-screen').style.display = 'none';
+    let ss = document.getElementById('start-screen');
+    if (ss) ss.style.display = 'flex';
+    // Оновлюємо баланс на стартовому екрані
+    document.getElementById('start-elite-num').innerText = getStoredEliteSouls();
+}
+
+function openInstructions() {
+    let ss = document.getElementById('start-screen');
+    if (ss) ss.style.display = 'none';
+    document.getElementById('instructions-screen').style.display = 'flex';
+}
+function closeInstructions() {
+    document.getElementById('instructions-screen').style.display = 'none';
+    let ss = document.getElementById('start-screen');
+    if (ss) ss.style.display = 'flex';
+}
 
 function upgradeSoulBonus() {
     if (GAME.souls < GAME.soulBonusCost) return;
