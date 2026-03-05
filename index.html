@@ -2841,6 +2841,8 @@ function startGame(level) {
 
     // Душі на старт (базові 100 + бонус)
     GAME.souls = 100 + _permaData.startSoulsLvl * 10;
+    // Камінь Душ: базовий бонус до soulBonus (стакується з in-game Збирачем душ)
+    GAME.soulBonus = (_permaData.soulStoneLvl || 0);
 
     // Лорд: бонуси від perma
     GAME.maxLordHP  = 500  + _permaData.lordVitLvl * 100;
@@ -4300,13 +4302,11 @@ function loop(ts) {
                 GAME.souls += reward;
                 // ── Елітні душі 💎 ──────────────────────────────────────
                 if (u.heroRank === 'boss') {
-                    let _ssB = 3 + (_permaData.soulStoneLvl || 0);
-                    GAME.eliteSouls += _ssB;
-                    spawnDmgText(u.x, u.y - u.size - 18, `+${_ssB} 💎`, '#ff66ff', true);
+                    GAME.eliteSouls += 3;
+                    spawnDmgText(u.x, u.y - u.size - 18, '+3 💎', '#ff66ff', true);
                 } else if (u.heroRank && u.heroRank.startsWith('elite')) {
-                    let _ssE = 1 + (_permaData.soulStoneLvl || 0);
-                    GAME.eliteSouls += _ssE;
-                    spawnDmgText(u.x, u.y - u.size - 18, `+${_ssE} 💎`, '#dd88ff', false);
+                    GAME.eliteSouls += 1;
+                    spawnDmgText(u.x, u.y - u.size - 18, '+1 💎', '#dd88ff', false);
                 }
                 let pcol = u.heroRank === 'boss' ? 'purple' : u.heroRank.startsWith('elite') ? 'orange' : 'gold';
                 let pcount = u.heroRank === 'boss' ? 16 : u.heroRank.startsWith('elite') ? 9 : 5;
@@ -4932,7 +4932,7 @@ const _SD_CARDS = [
     { type:'mobAtk',     icon:'🗡️', name:'Сила Монстрів',         desc:'+10% дмг, +0.1 шв.атаки',       lvlKey:'mobAtkLvl',  costKey:'mobAtkCost'  },
     { type:'mobVit',     icon:'🛡️', name:'Витривалість Монстрів', desc:'+25 HP, +1.5 броні',              lvlKey:'mobVitLvl',  costKey:'mobVitCost'  },
     { type:'startSouls', icon:'💀', name:'Початкові Душі',        desc:'+10 душ на старті рівня',        lvlKey:'startSoulsLvl', costKey:'startSoulsCost' },
-    { type:'soulStone',  icon:'🔮', name:'Камінь Душ',            desc:'+1 💎 з кожного вбивства',       lvlKey:'soulStoneLvl',  costKey:'soulStoneCost'  },
+    { type:'soulStone',  icon:'🔮', name:'Камінь Душ',            desc:'+1 💀 за кожне вбивство',        lvlKey:'soulStoneLvl',  costKey:'soulStoneCost'  },
 ];
 
 let _selectedFloor = 0;
