@@ -290,30 +290,30 @@
             text-transform: uppercase; letter-spacing: 3px; text-align: center;
         }
         #start-screen .subtitle { color: #886699; letter-spacing: 2px; }
-        #start-screen .diff-label { color: #cc99ff; font-size: 13px; letter-spacing: 1px; }
-        .diff-grid {
-            display: grid; grid-template-columns: 1fr 1fr;
-            gap: 10px; width: 90%; max-width: 340px;
+        #lvl-progress-label {
+            color: #bb99ee; font-size: 16px; letter-spacing: 1px; text-align: center;
         }
-        .diff-btn {
-            display: flex; flex-direction: column; align-items: center;
-            gap: 4px; padding: 10px 6px;
-            background: rgba(40,10,70,0.93); border: 2px solid #5522aa;
-            border-radius: 14px; color: #fff; cursor: pointer;
+        #lvl-progress-label #lvl-num {
+            color: #ffdd66; font-weight: bold; font-size: 28px;
+        }
+        #lvl-progress-label #lvl-total { color: #886699; }
+        #btn-continue {
+            background: linear-gradient(145deg,#006622,#003311);
+            border: 2px solid #00cc44; border-radius: 14px;
+            color: #fff; font-weight: bold; font-size: 18px;
+            padding: 14px 44px; cursor: pointer;
             -webkit-appearance: none; touch-action: manipulation;
-            transition: border-color 0.15s, transform 0.1s;
+            transition: transform 0.1s; letter-spacing: 1px;
+            box-shadow: 0 0 18px rgba(0,200,60,0.35);
         }
-        .diff-btn:active { transform: scale(0.95); }
-        .diff-btn .d-name { font-weight: bold; font-size: 13px; }
-        .diff-btn .d-stat { font-size: 10px; color: #bb99dd; line-height: 1.4; }
-        .diff-btn.d1 { border-color: #44aa44; }
-        .diff-btn.d1 .d-name { color: #66ff66; }
-        .diff-btn.d2 { border-color: #88aa00; }
-        .diff-btn.d2 .d-name { color: #ccee44; }
-        .diff-btn.d3 { border-color: #cc6600; }
-        .diff-btn.d3 .d-name { color: #ff9944; }
-        .diff-btn.d4 { border-color: #cc0000; }
-        .diff-btn.d4 .d-name { color: #ff4444; }
+        #btn-continue:active { transform: scale(0.95); }
+        #btn-reset-progress {
+            background: transparent; border: 1px solid #553344;
+            border-radius: 8px; color: #886677; font-size: 12px;
+            padding: 6px 16px; cursor: pointer;
+            -webkit-appearance: none; touch-action: manipulation;
+        }
+        #btn-reset-progress:active { opacity: 0.7; }
 
         /* ═══════════════════════════════════════════════════
            МЕДІАЗАПИТИ — розміри під кожен екран
@@ -344,10 +344,6 @@
 
             #start-screen h1 { font-size: 26px; letter-spacing: 2px; }
             #start-screen .subtitle { font-size: 10px; margin-top: -8px; }
-            .diff-grid { gap: 8px; max-width: 300px; }
-            .diff-btn { padding: 8px 5px; }
-            .diff-btn .d-name { font-size: 12px; }
-            .diff-btn .d-stat { font-size: 9px; }
 
             #pause-overlay h2 { font-size: 24px; }
             .pause-btn { font-size: 14px; padding: 10px 22px; }
@@ -384,10 +380,6 @@
             #start-screen h1 { font-size: 30px; letter-spacing: 2px; margin-bottom: 4px; }
             #start-screen .subtitle { font-size: 11px; margin-top: -10px; }
             #start-screen { gap: 14px; }
-            .diff-grid { gap: 9px; max-width: 310px; }
-            .diff-btn { padding: 9px 5px; }
-            .diff-btn .d-name { font-size: 12px; }
-            .diff-btn .d-stat { font-size: 10px; }
 
             #pause-overlay h2 { font-size: 26px; }
             .pause-btn { font-size: 15px; padding: 11px 26px; }
@@ -424,10 +416,6 @@
             #start-screen h1 { font-size: 34px; letter-spacing: 3px; }
             #start-screen .subtitle { font-size: 12px; margin-top: -12px; }
             #start-screen { gap: 16px; }
-            .diff-grid { gap: 10px; max-width: 320px; }
-            .diff-btn { padding: 10px 6px; }
-            .diff-btn .d-name { font-size: 13px; }
-            .diff-btn .d-stat { font-size: 10px; }
 
             #pause-overlay h2 { font-size: 28px; }
             .pause-btn { font-size: 16px; padding: 12px 28px; }
@@ -464,10 +452,6 @@
             #start-screen h1 { font-size: 44px; letter-spacing: 4px; }
             #start-screen .subtitle { font-size: 15px; margin-top: -14px; }
             #start-screen { gap: 22px; }
-            .diff-grid { gap: 12px; max-width: 380px; }
-            .diff-btn { padding: 14px 8px; border-radius: 16px; }
-            .diff-btn .d-name { font-size: 15px; }
-            .diff-btn .d-stat { font-size: 12px; }
 
             #pause-overlay h2 { font-size: 34px; }
             .pause-btn { font-size: 18px; padding: 14px 34px; }
@@ -565,33 +549,9 @@
 <div id="start-screen">
     <h1>👑 Dungeon Lord</h1>
     <div class="subtitle">Siege Defense</div>
-    <div class="diff-label">Оберіть складність</div>
-    <div class="diff-grid">
-        <button class="diff-btn d1" onclick="startGame(1)">
-            <div class="d-name">⚔️ Легкий</div>
-            <div class="d-stat">🏰 2000 HP міста</div>
-            <div class="d-stat">👤 Стандарт</div>
-            <div class="d-stat">💀 Загроза до 20</div>
-        </button>
-        <button class="diff-btn d2" onclick="startGame(2)">
-            <div class="d-name">🗡️ Нормальний</div>
-            <div class="d-stat">🏰 4000 HP міста</div>
-            <div class="d-stat">👤 +10% герої</div>
-            <div class="d-stat">💀 Загроза до 40</div>
-        </button>
-        <button class="diff-btn d3" onclick="startGame(3)">
-            <div class="d-name">🔥 Важкий</div>
-            <div class="d-stat">🏰 8000 HP міста</div>
-            <div class="d-stat">👤 +20% герої</div>
-            <div class="d-stat">💀 Загроза до 60</div>
-        </button>
-        <button class="diff-btn d4" onclick="startGame(4)">
-            <div class="d-name">💀 Пекло</div>
-            <div class="d-stat">🏰 15000 HP міста</div>
-            <div class="d-stat">👤 +30% герої</div>
-            <div class="d-stat">💀 Загроза до 80</div>
-        </button>
-    </div>
+    <div id="lvl-progress-label">Рівень <span id="lvl-num">1</span> <span id="lvl-total">/ 50</span></div>
+    <button id="btn-continue" onclick="continueGame()">▶ Почати гру</button>
+    <button id="btn-reset-progress" onclick="confirmResetProgress()" style="display:none">↺ Почати заново</button>
 </div>
 
 <!-- ── ПАУЗА ── -->
@@ -841,6 +801,7 @@ let GAME = {
     bossSent50: false,
     bossSent20: false,
     maxThreatLevel: 999,
+    currentLevel: 1,
 };
 
 let floors = [];
@@ -2643,21 +2604,25 @@ function init() {
         } catch(e) { hardReset(); return; }
     }
     // Якщо немає збереження — стартовий екран вже видимий, чекаємо натискання
+    // Оновлюємо відображення поточного рівня
+    const _savedLvl = loadProgress();
+    const _lvlEl = document.getElementById('lvl-num');
+    if (_lvlEl) _lvlEl.textContent = _savedLvl;
+    const _contBtn = document.getElementById('btn-continue');
+    if (_contBtn) _contBtn.textContent = _savedLvl === 1 ? '▶ Почати гру' : `▶ Рівень ${_savedLvl}`;
+    const _resetBtn = document.getElementById('btn-reset-progress');
+    if (_resetBtn) _resetBtn.style.display = _savedLvl > 1 ? '' : 'none';
 }
 
-function startGame(diff) {
-    const DIFFS = {
-        1: { cityHP: 2000,  heroScale: 0,  maxThreat: 20 },
-        2: { cityHP: 4000,  heroScale: 10, maxThreat: 40 },
-        3: { cityHP: 8000,  heroScale: 20, maxThreat: 60 },
-        4: { cityHP: 15000, heroScale: 30, maxThreat: 80 },
-    };
-    let d = DIFFS[diff] || DIFFS[1];
+function startGame(level) {
+    level = Math.max(1, Math.min(50, level || 1));
+    let d = getLevelConfig(level);
     GAME.cityHP = d.cityHP;
     GAME.maxCityHP = d.cityHP;
     GAME.heroScalePercent = d.heroScale;
     GAME.maxThreatLevel = d.maxThreat;
-    GAME.difficultyType = diff;
+    GAME.difficultyType = level;
+    GAME.currentLevel = level;
     document.getElementById('threat-cap-input').value = d.maxThreat;
 
     floors.push(new Floor(0));
@@ -4133,11 +4098,18 @@ function loop(ts) {
     updateUI();
 
     if (GAME.cityHP <= 0 && !GAME.gameOver) {
-        document.getElementById('go-title').innerText = 'ПЕРЕМОГА!';
-        document.getElementById('go-title').style.color = 'lime';
-        document.getElementById('go-desc').innerText = 'Місто знищено!';
-        document.getElementById('game-over').style.display = 'flex';
         GAME.gameOver = true;
+        const _lvl = GAME.currentLevel || 1;
+        const _nextLvl = Math.min(_lvl + 1, 50);
+        saveProgress(_nextLvl);
+        const _isLast = _lvl >= 50;
+        document.getElementById('go-title').innerText = _isLast ? '🏆 ГРУ ПРОЙДЕНО!' : `Рівень ${_lvl} пройдено!`;
+        document.getElementById('go-title').style.color = 'lime';
+        document.getElementById('go-desc').innerText = _isLast ? 'Всі 50 рівнів пройдено! 🎉' : `Далі: Рівень ${_nextLvl} / 50`;
+        const _tryBtn = document.getElementById('btn-try-again');
+        _tryBtn.textContent = _isLast ? '🔄 Грати заново' : `→ Рівень ${_nextLvl}`;
+        _tryBtn.onclick = () => hardReset();
+        document.getElementById('game-over').style.display = 'flex';
         return;
     }
 
@@ -4530,6 +4502,31 @@ function saveGame() {
 
 function hardReset() { _store.del('DLSiege_v3'); location.reload(); }
 function gameOver() { GAME.gameOver = true; document.getElementById('game-over').style.display = 'flex'; }
+
+// ── Прогрес рівнів (зберігається окремо від ігрового стану) ──
+function loadProgress() { return Math.max(1, Math.min(50, parseInt(_store.get('DLSiege_lvl') || '1'))); }
+function saveProgress(lvl) { _store.set('DLSiege_lvl', String(Math.min(50, Math.max(1, lvl)))); }
+function resetProgress() { _store.del('DLSiege_lvl'); }
+
+function getLevelConfig(lvl) {
+    const t = (lvl - 1) / 49; // 0..1 (рівень 1 → 0, рівень 50 → 1)
+    return {
+        cityHP:    Math.round(1200 + t * 13800), // 1200 → 15000
+        heroScale: Math.round(t * 35),            // 0% → 35%
+        maxThreat: Math.round(10 + t * 70),       // 10 → 80
+    };
+}
+
+function continueGame() {
+    startGame(loadProgress());
+}
+
+function confirmResetProgress() {
+    if (confirm('Скинути весь прогрес? Ви повернетесь до Рівня 1.')) {
+        resetProgress();
+        hardReset();
+    }
+}
 
 function resize() {
     let dpr = Math.min(window.devicePixelRatio || 1, 2);
