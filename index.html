@@ -4512,39 +4512,34 @@ function saveProgress(lvl) { _store.set('DLSiege_lvl', String(Math.min(50, Math.
 function resetProgress() { _store.del('DLSiege_lvl'); }
 
 function getLevelConfig(lvl) {
-    // Явна таблиця для рівнів 1–12
-    const T = [
-        null,
-        { heroBase: -30, maxThreat:  5, threatPct: 1 }, // 1: 70%
-        { heroBase: -25, maxThreat:  5, threatPct: 1 }, // 2: 75%
-        { heroBase: -20, maxThreat:  5, threatPct: 1 }, // 3: 80%
-        { heroBase: -20, maxThreat: 10, threatPct: 1 }, // 4: 80%
-        { heroBase: -20, maxThreat: 10, threatPct: 2 }, // 5: 80%
-        { heroBase: -15, maxThreat: 10, threatPct: 2 }, // 6: 85%
-        { heroBase: -10, maxThreat: 10, threatPct: 2 }, // 7: 90%
-        { heroBase:  -5, maxThreat: 10, threatPct: 2 }, // 8: 95%
-        { heroBase:  -5, maxThreat: 15, threatPct: 2 }, // 9: 95%
-        { heroBase:  -5, maxThreat: 15, threatPct: 3 }, // 10: 95%
-        { heroBase:   0, maxThreat: 15, threatPct: 3 }, // 11: 100%
-        { heroBase:   3, maxThreat: 15, threatPct: 3 }, // 12: 103%
-    ];
-    let cfg;
-    if (lvl <= 12) {
-        cfg = T[lvl];
-    } else {
-        // Рівні 13–50: heroBase +3% за рівень, maxThreat +5 кожні 4 рівні, threatPct +1 кожні 5
-        cfg = {
-            heroBase:  3 + (lvl - 12) * 3,
-            maxThreat: Math.min(80, 20 + Math.floor((lvl - 13) / 4) * 5),
-            threatPct: Math.min(10, 3 + Math.floor((lvl - 10) / 5)),
-        };
-    }
+    // Початковий % сили героїв (heroScalePercent):
+    //   Рівні 1–11: зростає від 70% до 100%
+    //   Рівні 12+:  100 + (lvl - 11)% → тобто heroBase = lvl - 11
+    let heroBase;
+    if      (lvl === 1)  heroBase = -30; // 70%
+    else if (lvl === 2)  heroBase = -25; // 75%
+    else if (lvl <= 5)   heroBase = -20; // 80%
+    else if (lvl === 6)  heroBase = -15; // 85%
+    else if (lvl === 7)  heroBase = -10; // 90%
+    else if (lvl <= 10)  heroBase =  -5; // 95%
+    else if (lvl === 11) heroBase =   0; // 100%
+    else                 heroBase = lvl - 11; // 12→1%, 13→2%, ..., 50→39%
+
+    // maxThreat: +5 на рівнях 4,9,14,19,24,29,34,39,44,49
+    const maxThreat = 5 + Math.floor((lvl + 1) / 5) * 5;
+
+    // threatPct: % приросту сили героїв за кожен рівень загрози
+    const threatPct = lvl <=  4 ? 1
+                    : lvl <=  9 ? 2
+                    : lvl <= 14 ? 3
+                    : Math.min(10, 3 + Math.floor((lvl - 10) / 5));
+
     const t = (lvl - 1) / 49;
     return {
         cityHP:    Math.round(1500 + t * 13500), // 1500 → 15000
-        heroBase:  cfg.heroBase,
-        maxThreat: cfg.maxThreat,
-        threatPct: cfg.threatPct,
+        heroBase,
+        maxThreat,
+        threatPct,
     };
 }
 
