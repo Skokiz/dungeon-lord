@@ -595,7 +595,7 @@
                 <div class="hp-bar"><div id="city-hp" class="hp-fill" style="width:100%;background:#ff4444"></div></div>
                 <div class="hp-label-lord">💜 Володар</div>
                 <div class="hp-bar"><div id="lord-hp" class="hp-fill" style="width:100%;background:#aa00ff"></div></div>
-                <div class="threat-line">⚔️ <span id="difficulty-level">0</span> | +<span id="hero-scale">0</span>%</div>
+                <div class="threat-line">⚔️ <span id="difficulty-level">0</span> | <span id="hero-scale">100</span>%</div>
             </div>
         </div>
 
@@ -4394,7 +4394,7 @@ function updateUI() {
     document.getElementById('souls-display').innerText = Math.floor(s);
     document.getElementById('floor-cost-lbl').innerText = GAME.floorCost + '💀';
     document.getElementById('difficulty-level').innerText = GAME.difficultyLevel;
-    document.getElementById('hero-scale').innerText = GAME.heroScalePercent;
+    document.getElementById('hero-scale').innerText = 100 + GAME.heroScalePercent;
 
     // Поверх кнопка
     let btnFloor = document.getElementById('btn-floor');
