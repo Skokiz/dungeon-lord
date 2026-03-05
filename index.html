@@ -620,11 +620,15 @@
         .perma-buy-btn.cannot-afford { opacity:0.45; cursor:default; }
         .perma-buy-btn.maxed { background:rgba(20,60,20,0.85); border-color:#336633;
             color:#55cc55; opacity:0.75; cursor:default; }
-        .perma-section-title {
-            width:100%; text-align:center; color:#aa77ee; font-size:13px;
-            font-weight:bold; padding:8px 0 2px; letter-spacing:0.5px;
-            border-top:1px solid rgba(100,50,160,0.35); margin-top:4px; }
-        .perma-card-floor { width:120px; min-width:110px; }
+        .perma-card-floor-picker { width:180px; min-width:170px; }
+        .floor-picker-row { display:flex; align-items:center; gap:8px; width:100%; justify-content:center; }
+        .floor-picker-label { color:#ddbbff; font-weight:bold; font-size:13px;
+            min-width:90px; text-align:center; }
+        .floor-arrow { background:rgba(80,20,130,0.8); border:1px solid #7744bb;
+            border-radius:6px; color:#cc88ff; font-size:15px; width:28px; height:28px;
+            cursor:pointer; display:flex; align-items:center; justify-content:center;
+            -webkit-appearance:none; touch-action:manipulation; }
+        .floor-arrow:active { transform:scale(0.9); background:rgba(120,40,180,0.9); }
         #btn-close-soul-dungeon {
             background:rgba(40,10,70,0.95); border:2px solid #6633aa;
             border-radius:12px; color:#bb88ff; padding:12px 36px;
@@ -4884,6 +4888,11 @@ const _SD_CARDS = [
     { type:'startSouls', icon:'💀', name:'Початкові Душі',        desc:'+10 душ на старті рівня',        lvlKey:'startSoulsLvl', costKey:'startSoulsCost' },
 ];
 
+let _selectedFloor = 0;
+function changeFloorSel(delta) {
+    _selectedFloor = (_selectedFloor + delta + _MAX_FLOORS) % _MAX_FLOORS;
+    updateSoulDungeonUI();
+}
 function updateSoulDungeonUI() {
     let p = _loadPerma();
     let avail = getStoredEliteSouls();
@@ -4910,35 +4919,34 @@ function updateSoulDungeonUI() {
         cont.appendChild(card);
     });
 
-    // ── Per-floor monster slot upgrades ────────────────────────────────────
-    let sep = document.createElement('div');
-    sep.className = 'perma-section-title';
-    sep.innerText = '🏰 Слоти Монстрів — Кожний Поверх Окремо';
-    cont.appendChild(sep);
-
-    for (let di = 0; di < _MAX_FLOORS; di++) {
-        let isBat    = (di + 1 === 6);
-        let maxPerma = 3; // bat: +2 each (4→10), regular: +1 each (2→5)
-        let baseSlot = isBat ? 4 : 2;
-        let step     = isBat ? 2 : 1;
-        let lvl      = p.floorLvls[di];
-        let cost     = p.floorCosts[di];
-        let maxed    = lvl >= maxPerma;
-        let can      = !maxed && avail >= cost;
-        let floorLabel = isBat ? `Поверх ${di+1} 🦇` : `Поверх ${di+1}`;
-        let card = document.createElement('div');
-        card.className = 'perma-card perma-card-floor';
-        card.innerHTML = `
-            <div class="perma-card-icon">🏗️</div>
-            <div class="perma-card-name">${floorLabel}</div>
-            <div class="perma-card-lvl">Монстрів: <b>${baseSlot + lvl * step}</b> / ${baseSlot + maxPerma * step}</div>
-            <div class="perma-card-desc">${isBat ? '+2 кажани назавжди' : '+1 монстр назавжди'}</div>
-            <button class="perma-buy-btn ${maxed ? 'maxed' : can ? 'can-afford' : 'cannot-afford'}"
-                onclick="buyPerma('floor_${di}')" ${(can && !maxed) ? '' : 'disabled'}>
-                ${maxed ? 'МАКС.' : cost + ' 💎'}
-            </button>`;
-        cont.appendChild(card);
-    }
+    // ── Floor picker card ──────────────────────────────────────────────────
+    let di       = _selectedFloor;
+    let isBat    = (di + 1 === 6);
+    let maxPerma = 3;
+    let baseSlot = isBat ? 4 : 2;
+    let step     = isBat ? 2 : 1;
+    let lvl      = p.floorLvls[di];
+    let cost     = p.floorCosts[di];
+    let maxed    = lvl >= maxPerma;
+    let can      = !maxed && avail >= cost;
+    let floorLabel = isBat ? `Поверх ${di+1} 🦇` : `Поверх ${di+1}`;
+    let floorCard = document.createElement('div');
+    floorCard.className = 'perma-card perma-card-floor-picker';
+    floorCard.innerHTML = `
+        <div class="perma-card-icon">🏰</div>
+        <div class="perma-card-name">Слоти Монстрів</div>
+        <div class="floor-picker-row">
+            <button class="floor-arrow" onclick="changeFloorSel(-1)">◀</button>
+            <span class="floor-picker-label">${floorLabel}</span>
+            <button class="floor-arrow" onclick="changeFloorSel(1)">▶</button>
+        </div>
+        <div class="perma-card-lvl">Монстрів: <b>${baseSlot + lvl * step}</b> / ${baseSlot + maxPerma * step}</div>
+        <div class="perma-card-desc">${isBat ? '+2 кажани назавжди' : '+1 монстр назавжди'}</div>
+        <button class="perma-buy-btn ${maxed ? 'maxed' : can ? 'can-afford' : 'cannot-afford'}"
+            onclick="buyPerma('floor_${di}')" ${(can && !maxed) ? '' : 'disabled'}>
+            ${maxed ? 'МАКС.' : cost + ' 💎'}
+        </button>`;
+    cont.appendChild(floorCard);
 }
 
 function openSoulDungeon() {
