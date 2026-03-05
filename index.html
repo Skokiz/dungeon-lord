@@ -1000,7 +1000,7 @@ class Floor {
         let _pfl = (_permaData && Array.isArray(_permaData.floorLvls))
             ? (_permaData.floorLvls[depth] || 0)
             : 0;
-        this.maxMonsters = (this.isBatFloor ? 4 : 2) + _pfl;
+        this.maxMonsters = (this.isBatFloor ? 4 : 2) + _pfl * (this.isBatFloor ? 2 : 1);
         // Базова ціна залежить від глибини; якщо є perma апгрейди — ціна як після _pfl покупок
         let _fBase = Math.round(60 * Math.pow(1.1, depth) / 5) * 5;
         this.floorUpgradeCost = r5(_fBase * (1 + 0.5 * _pfl));
@@ -4860,7 +4860,7 @@ function buyPerma(type) {
         let di = parseInt(type.slice(6));
         if (isNaN(di) || di < 0 || di >= _MAX_FLOORS) return;
         let isBat = (di + 1 === 6);
-        let maxPerma = isBat ? 6 : 3; // bat: 4→10, regular: 2→5
+        let maxPerma = 3; // bat: 4→10 (+2 each), regular: 2→5 (+1 each)
         if (p.floorLvls[di] >= maxPerma) return;
         cost = p.floorCosts[di];
         if (avail < cost) return;
@@ -4918,8 +4918,9 @@ function updateSoulDungeonUI() {
 
     for (let di = 0; di < _MAX_FLOORS; di++) {
         let isBat    = (di + 1 === 6);
-        let maxPerma = isBat ? 6 : 3;        // bat: 4→10, regular: 2→5
+        let maxPerma = 3; // bat: +2 each (4→10), regular: +1 each (2→5)
         let baseSlot = isBat ? 4 : 2;
+        let step     = isBat ? 2 : 1;
         let lvl      = p.floorLvls[di];
         let cost     = p.floorCosts[di];
         let maxed    = lvl >= maxPerma;
@@ -4930,8 +4931,8 @@ function updateSoulDungeonUI() {
         card.innerHTML = `
             <div class="perma-card-icon">🏗️</div>
             <div class="perma-card-name">${floorLabel}</div>
-            <div class="perma-card-lvl">Монстрів: <b>${baseSlot + lvl}</b> / ${baseSlot + maxPerma}</div>
-            <div class="perma-card-desc">+1 монстр на цьому поверсі назавжди</div>
+            <div class="perma-card-lvl">Монстрів: <b>${baseSlot + lvl * step}</b> / ${baseSlot + maxPerma * step}</div>
+            <div class="perma-card-desc">${isBat ? '+2 кажани назавжди' : '+1 монстр назавжди'}</div>
             <button class="perma-buy-btn ${maxed ? 'maxed' : can ? 'can-afford' : 'cannot-afford'}"
                 onclick="buyPerma('floor_${di}')" ${(can && !maxed) ? '' : 'disabled'}>
                 ${maxed ? 'МАКС.' : cost + ' 💎'}
