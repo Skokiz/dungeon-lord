@@ -2774,13 +2774,9 @@ function startGame(level) {
     GAME.cityHP = d.cityHP;
     GAME.maxCityHP = d.cityHP;
     GAME.heroScaleBase    = d.heroBase;
+    GAME.heroScalePercent = d.heroBase;
     GAME.heroThreatPct    = d.threatPct;
     GAME.maxThreatLevel   = d.maxThreat;
-    GAME.difficultyLevel  = d.maxThreat; // перфекціоніст: одразу на максимумі
-    GAME.heroScalePercent = d.heroBase + d.maxThreat * d.threatPct;
-    GAME.eliteChance      = d.maxThreat;
-    GAME.captainChance    = d.maxThreat;
-    GAME.extraHeroChance  = Math.min(100, d.maxThreat * 4);
     GAME.difficultyType = level;
     GAME.currentLevel = level;
     GAME.eliteSouls = 0; // скидаємо сесійні елітні душі
