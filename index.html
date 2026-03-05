@@ -792,6 +792,8 @@ let GAME = {
     // Час і масштабування
     gameTime: 0,
     heroScalePercent: 0,
+    heroScaleBase: 0,    // початковий % сили героїв для поточного рівня
+    heroThreatPct: 4,    // % приросту сили героїв за рівень загрози
     waveCount: 0,
     eliteChance: 0,    // +1% кожні 60с, макс 100%
     captainChance: 0,  // +1% кожні 60с, макс 100%
@@ -2619,8 +2621,10 @@ function startGame(level) {
     let d = getLevelConfig(level);
     GAME.cityHP = d.cityHP;
     GAME.maxCityHP = d.cityHP;
-    GAME.heroScalePercent = d.heroScale;
-    GAME.maxThreatLevel = d.maxThreat;
+    GAME.heroScaleBase    = d.heroBase;
+    GAME.heroScalePercent = d.heroBase;
+    GAME.heroThreatPct    = d.threatPct;
+    GAME.maxThreatLevel   = d.maxThreat;
     GAME.difficultyType = level;
     GAME.currentLevel = level;
     document.getElementById('threat-cap-input').value = d.maxThreat;
@@ -2840,9 +2844,8 @@ function loop(ts) {
                 GAME.captainChance = Math.min(100, GAME.captainChance + 1);
             }
             // extraHeroChance і heroScalePercent теж обмежені рівнем складності
-            GAME.extraHeroChance = Math.min(100, GAME.difficultyLevel * 4);
-            let maxScalePercent  = GAME.maxThreatLevel * 4;
-            if (GAME.heroScalePercent < maxScalePercent) GAME.heroScalePercent += 4;
+            GAME.extraHeroChance  = Math.min(100, GAME.difficultyLevel * 4);
+            GAME.heroScalePercent = GAME.heroScaleBase + GAME.difficultyLevel * GAME.heroThreatPct;
         }
     }
 
@@ -4509,11 +4512,39 @@ function saveProgress(lvl) { _store.set('DLSiege_lvl', String(Math.min(50, Math.
 function resetProgress() { _store.del('DLSiege_lvl'); }
 
 function getLevelConfig(lvl) {
-    const t = (lvl - 1) / 49; // 0..1 (рівень 1 → 0, рівень 50 → 1)
+    // Явна таблиця для рівнів 1–12
+    const T = [
+        null,
+        { heroBase: -30, maxThreat:  5, threatPct: 1 }, // 1: 70%
+        { heroBase: -25, maxThreat:  5, threatPct: 1 }, // 2: 75%
+        { heroBase: -20, maxThreat:  5, threatPct: 1 }, // 3: 80%
+        { heroBase: -20, maxThreat: 10, threatPct: 1 }, // 4: 80%
+        { heroBase: -20, maxThreat: 10, threatPct: 2 }, // 5: 80%
+        { heroBase: -15, maxThreat: 10, threatPct: 2 }, // 6: 85%
+        { heroBase: -10, maxThreat: 10, threatPct: 2 }, // 7: 90%
+        { heroBase:  -5, maxThreat: 10, threatPct: 2 }, // 8: 95%
+        { heroBase:  -5, maxThreat: 15, threatPct: 2 }, // 9: 95%
+        { heroBase:  -5, maxThreat: 15, threatPct: 3 }, // 10: 95%
+        { heroBase:   0, maxThreat: 15, threatPct: 3 }, // 11: 100%
+        { heroBase:   3, maxThreat: 15, threatPct: 3 }, // 12: 103%
+    ];
+    let cfg;
+    if (lvl <= 12) {
+        cfg = T[lvl];
+    } else {
+        // Рівні 13–50: heroBase +3% за рівень, maxThreat +5 кожні 4 рівні, threatPct +1 кожні 5
+        cfg = {
+            heroBase:  3 + (lvl - 12) * 3,
+            maxThreat: Math.min(80, 20 + Math.floor((lvl - 13) / 4) * 5),
+            threatPct: Math.min(10, 3 + Math.floor((lvl - 10) / 5)),
+        };
+    }
+    const t = (lvl - 1) / 49;
     return {
-        cityHP:    Math.round(1200 + t * 13800), // 1200 → 15000
-        heroScale: Math.round(t * 35),            // 0% → 35%
-        maxThreat: Math.round(10 + t * 70),       // 10 → 80
+        cityHP:    Math.round(1500 + t * 13500), // 1500 → 15000
+        heroBase:  cfg.heroBase,
+        maxThreat: cfg.maxThreat,
+        threatPct: cfg.threatPct,
     };
 }
 
