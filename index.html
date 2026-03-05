@@ -968,7 +968,7 @@ let GAME = {
 // Постійні прокачки — завантажуються з localStorage при старті гри
 let _permaData = { lordAtkLvl:0, lordAtkCost:80,  lordVitLvl:0, lordVitCost:70,
                    mobAtkLvl:0,  mobAtkCost:75,   mobVitLvl:0,  mobVitCost:60,
-                   floorLvl:0,   floorCost:60,
+                   floorLvls: Array(20).fill(0), floorCosts: [60,65,70,75,80,85,90,95,100,105,110,115,120,125,130,135,140,145,150,155],
                    startSoulsLvl:0, startSoulsCost:100 };
 
 let floors = [];
