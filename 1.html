@@ -143,6 +143,8 @@
         .ctrl-rects {
             display: flex;
             justify-content: center;
+            width: 100%;
+            box-sizing: border-box;
         }
 
         /* ── Кругла кнопка-меню ── */
@@ -203,6 +205,7 @@
 
         /* Прямокутні кнопки */
         .rect-btn {
+            flex: 1;
             border-radius: 10px; border: none; color: white;
             font-weight: bold; cursor: pointer;
             box-shadow: 0 3px 0 #000;
@@ -333,14 +336,14 @@
         @media (max-width: 360px) {
             #hud { padding: 5px 6px; }
             .resource-box { font-size: 13px; padding: 4px 8px; border-radius: 8px; }
-            .hud-right { font-size: 9px; padding: 4px 7px; border-radius: 8px; }
-            .hp-bar { width: 85px; height: 14px; }
-            .hp-num { font-size: 7px; }
-            .threat-line { font-size: 8px; }
+            .hud-right { font-size: 10px; padding: 4px 7px; border-radius: 8px; }
+            .hp-bar { width: 90px; height: 15px; }
+            .hp-num { font-size: 8px; }
+            .threat-line { font-size: 9px; }
             #pause-toggle-btn { font-size: 11px; padding: 4px 10px; }
             #btn-hard-reset { font-size: 8px; padding: 2px 5px; }
 
-            #controls { padding: 5px 4px; gap: 5px; }
+            #controls { padding: 5px 6px; gap: 5px; }
             .ctrl-circles { gap: 7px; }
             .circle-main-btn { width: 66px; height: 66px; font-size: 9px; }
             .circle-main-btn .icon { font-size: 15px; }
@@ -349,8 +352,8 @@
             .sub-btn .sicon { font-size: 17px; }
             .sub-btn .scost { font-size: 9px; }
             .sub-btn .slabel { font-size: 8px; }
-            .ctrl-rects { gap: 6px; }
-            .rect-btn { padding: 7px 14px; font-size: 12px; border-radius: 8px; }
+            .ctrl-rects { gap: 6px; padding: 0 6px; }
+            .rect-btn { padding: 7px 10px; font-size: 12px; border-radius: 8px; }
             .rect-btn small { font-size: 9px; }
 
             #start-screen h1 { font-size: 26px; letter-spacing: 2px; }
@@ -369,14 +372,14 @@
         @media (min-width: 361px) and (max-width: 414px) {
             #hud { padding: 7px 8px; }
             .resource-box { font-size: 15px; padding: 5px 10px; border-radius: 9px; }
-            .hud-right { font-size: 10px; padding: 5px 9px; border-radius: 9px; }
-            .hp-bar { width: 100px; height: 16px; }
-            .hp-num { font-size: 8px; }
-            .threat-line { font-size: 9px; }
+            .hud-right { font-size: 11px; padding: 5px 9px; border-radius: 9px; }
+            .hp-bar { width: 108px; height: 17px; }
+            .hp-num { font-size: 9px; }
+            .threat-line { font-size: 10px; }
             #pause-toggle-btn { font-size: 12px; padding: 5px 13px; }
             #btn-hard-reset { font-size: 9px; padding: 3px 6px; }
 
-            #controls { padding: 7px 5px; gap: 6px; }
+            #controls { padding: 7px 8px; gap: 6px; }
             .ctrl-circles { gap: 9px; }
             .circle-main-btn { width: 72px; height: 72px; font-size: 10px; }
             .circle-main-btn .icon { font-size: 16px; }
@@ -385,8 +388,8 @@
             .sub-btn .sicon { font-size: 19px; }
             .sub-btn .scost { font-size: 10px; }
             .sub-btn .slabel { font-size: 9px; }
-            .ctrl-rects { gap: 7px; }
-            .rect-btn { padding: 9px 18px; font-size: 13px; }
+            .ctrl-rects { gap: 8px; padding: 0 8px; }
+            .rect-btn { padding: 9px 10px; font-size: 13px; }
             .rect-btn small { font-size: 10px; }
 
             #start-screen h1 { font-size: 30px; letter-spacing: 2px; margin-bottom: 4px; }
@@ -422,8 +425,8 @@
             .sub-btn .sicon { font-size: 21px; }
             .sub-btn .scost { font-size: 11px; }
             .sub-btn .slabel { font-size: 10px; }
-            .ctrl-rects { gap: 8px; }
-            .rect-btn { padding: 10px 22px; font-size: 15px; }
+            .ctrl-rects { gap: 8px; padding: 0 8px; }
+            .rect-btn { padding: 10px 10px; font-size: 15px; }
             .rect-btn small { font-size: 11px; }
 
             #start-screen h1 { font-size: 34px; letter-spacing: 3px; }
@@ -459,8 +462,8 @@
             .sub-btn .sicon { font-size: 24px; }
             .sub-btn .scost { font-size: 13px; }
             .sub-btn .slabel { font-size: 12px; }
-            .ctrl-rects { gap: 12px; }
-            .rect-btn { padding: 13px 30px; font-size: 17px; }
+            .ctrl-rects { gap: 12px; padding: 0 12px; }
+            .rect-btn { padding: 13px 10px; font-size: 17px; }
             .rect-btn small { font-size: 13px; }
 
             #start-screen h1 { font-size: 44px; letter-spacing: 4px; }
@@ -2774,13 +2777,9 @@ function startGame(level) {
     GAME.cityHP = d.cityHP;
     GAME.maxCityHP = d.cityHP;
     GAME.heroScaleBase    = d.heroBase;
+    GAME.heroScalePercent = d.heroBase;
     GAME.heroThreatPct    = d.threatPct;
     GAME.maxThreatLevel   = d.maxThreat;
-    GAME.difficultyLevel  = d.maxThreat; // перфекціоніст: одразу на максимумі
-    GAME.heroScalePercent = d.heroBase + d.maxThreat * d.threatPct;
-    GAME.eliteChance      = d.maxThreat;
-    GAME.captainChance    = d.maxThreat;
-    GAME.extraHeroChance  = Math.min(100, d.maxThreat * 4);
     GAME.difficultyType = level;
     GAME.currentLevel = level;
     GAME.eliteSouls = 0; // скидаємо сесійні елітні душі
