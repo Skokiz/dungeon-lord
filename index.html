@@ -618,6 +618,13 @@
             border-color:#cc66ff; color:#fff;
             box-shadow:0 0 10px rgba(180,60,255,0.4); }
         .perma-buy-btn.cannot-afford { opacity:0.45; cursor:default; }
+        .perma-buy-btn.maxed { background:rgba(20,60,20,0.85); border-color:#336633;
+            color:#55cc55; opacity:0.75; cursor:default; }
+        .perma-section-title {
+            width:100%; text-align:center; color:#aa77ee; font-size:13px;
+            font-weight:bold; padding:8px 0 2px; letter-spacing:0.5px;
+            border-top:1px solid rgba(100,50,160,0.35); margin-top:4px; }
+        .perma-card-floor { width:120px; min-width:110px; }
         #btn-close-soul-dungeon {
             background:rgba(40,10,70,0.95); border:2px solid #6633aa;
             border-radius:12px; color:#bb88ff; padding:12px 36px;
@@ -990,7 +997,9 @@ class Floor {
         this.trapType = null; // 'spike','teleport'
         this.teleportCooldown = 0;
         this.isBatFloor  = (depth + 1 === 6); // глибина 5 → рівень 6 → кажан
-        let _pfl = (_permaData && _permaData.floorLvl) || 0;
+        let _pfl = (_permaData && Array.isArray(_permaData.floorLvls))
+            ? (_permaData.floorLvls[depth] || 0)
+            : 0;
         this.maxMonsters = (this.isBatFloor ? 4 : 2) + _pfl;
         // Базова ціна залежить від глибини; якщо є perma апгрейди — ціна як після _pfl покупок
         let _fBase = Math.round(60 * Math.pow(1.1, depth) / 5) * 5;
@@ -4810,18 +4819,29 @@ function commitEliteSouls() {
 }
 
 // ── Постійні прокачки (Душа Підземелля) ─────────────────────────────────
+const _FLOOR_BASE_COSTS = [60, 65, 70, 75, 80, 90, 95, 100]; // per-depth starting costs
 const _PERMA_DEFAULTS = () => ({
     lordAtkLvl:0, lordAtkCost:80,
     lordVitLvl:0, lordVitCost:70,
     mobAtkLvl:0,  mobAtkCost:75,
     mobVitLvl:0,  mobVitCost:60,
-    floorLvl:0,   floorCost:60,
+    floorLvls:[0,0,0,0,0,0,0,0], floorCosts:[60,65,70,75,80,90,95,100],
     startSoulsLvl:0, startSoulsCost:100,
 });
 function _loadPerma() {
     try {
         let d = JSON.parse(_store.get('DLSiege_perma2') || '{}');
-        return Object.assign(_PERMA_DEFAULTS(), d);
+        let out = Object.assign(_PERMA_DEFAULTS(), d);
+        // Migration: old scalar floorLvl → per-floor arrays
+        if (!Array.isArray(out.floorLvls)) {
+            let oldLvl = (typeof d.floorLvl === 'number') ? d.floorLvl : 0;
+            out.floorLvls = Array(8).fill(oldLvl);
+            out.floorCosts = _FLOOR_BASE_COSTS.map(c => r5(c * Math.pow(1.50, oldLvl)));
+        }
+        // Ensure arrays are exactly length 8
+        while (out.floorLvls.length < 8) out.floorLvls.push(0);
+        while (out.floorCosts.length < 8) out.floorCosts.push(_FLOOR_BASE_COSTS[out.floorCosts.length] || 100);
+        return out;
     } catch(e) { return _PERMA_DEFAULTS(); }
 }
 function _savePerma(p) { _store.set('DLSiege_perma2', JSON.stringify(p)); }
@@ -4834,7 +4854,17 @@ function buyPerma(type) {
     else if (type === 'lordVit')    { cost = p.lordVitCost;    if (avail < cost) return; p.lordVitLvl++;    p.lordVitCost    = r5(p.lordVitCost    * 1.35); }
     else if (type === 'mobAtk')     { cost = p.mobAtkCost;     if (avail < cost) return; p.mobAtkLvl++;     p.mobAtkCost     = r5(p.mobAtkCost     * 1.40); }
     else if (type === 'mobVit')     { cost = p.mobVitCost;     if (avail < cost) return; p.mobVitLvl++;     p.mobVitCost     = r5(p.mobVitCost     * 1.35); }
-    else if (type === 'floor')      { cost = p.floorCost;      if (avail < cost) return; p.floorLvl++;      p.floorCost      = r5(p.floorCost      * 1.50); }
+    else if (type.startsWith('floor_')) {
+        let di = parseInt(type.slice(6));
+        if (isNaN(di) || di < 0 || di > 7) return;
+        let isBat = (di + 1 === 6);
+        let maxPerma = isBat ? 6 : 3; // bat: 4→10, regular: 2→5
+        if (p.floorLvls[di] >= maxPerma) return;
+        cost = p.floorCosts[di];
+        if (avail < cost) return;
+        p.floorLvls[di]++;
+        p.floorCosts[di] = r5(p.floorCosts[di] * 1.50);
+    }
     else if (type === 'startSouls') { cost = p.startSoulsCost; if (avail < cost) return; p.startSoulsLvl++; p.startSoulsCost = r5(p.startSoulsCost * 1.50); }
     else return;
     _store.set('DLSiege_elite', String(avail - cost));
@@ -4845,12 +4875,11 @@ function buyPerma(type) {
 
 // ── Інтерфейс Душі Підземелля ──────────────────────────────────────────────
 const _SD_CARDS = [
-    { type:'lordAtk',    icon:'⚔️', name:'Сила Лорда',          desc:'+5 атаки за рівень',              lvlKey:'lordAtkLvl', costKey:'lordAtkCost' },
-    { type:'lordVit',    icon:'💜', name:'Витривалість Лорда',   desc:'+100 HP, +2 броні, +0.1% реген', lvlKey:'lordVitLvl', costKey:'lordVitCost' },
-    { type:'mobAtk',     icon:'🗡️', name:'Сила Монстрів',        desc:'+10% дмг, +0.1 шв.атаки',       lvlKey:'mobAtkLvl',  costKey:'mobAtkCost'  },
-    { type:'mobVit',     icon:'🛡️', name:'Витривалість Монстрів',desc:'+25 HP, +1.5 броні',              lvlKey:'mobVitLvl',  costKey:'mobVitCost'  },
-    { type:'floor',      icon:'🏗️', name:'Слоти Поверхів',       desc:'+1 монстр на кожному поверсі',   lvlKey:'floorLvl',   costKey:'floorCost'   },
-    { type:'startSouls', icon:'💀', name:'Початкові Душі',       desc:'+10 душ на старті рівня',        lvlKey:'startSoulsLvl', costKey:'startSoulsCost' },
+    { type:'lordAtk',    icon:'⚔️', name:'Сила Лорда',           desc:'+5 атаки за рівень',              lvlKey:'lordAtkLvl', costKey:'lordAtkCost' },
+    { type:'lordVit',    icon:'💜', name:'Витривалість Лорда',    desc:'+100 HP, +2 броні, +0.1% реген', lvlKey:'lordVitLvl', costKey:'lordVitCost' },
+    { type:'mobAtk',     icon:'🗡️', name:'Сила Монстрів',         desc:'+10% дмг, +0.1 шв.атаки',       lvlKey:'mobAtkLvl',  costKey:'mobAtkCost'  },
+    { type:'mobVit',     icon:'🛡️', name:'Витривалість Монстрів', desc:'+25 HP, +1.5 броні',              lvlKey:'mobVitLvl',  costKey:'mobVitCost'  },
+    { type:'startSouls', icon:'💀', name:'Початкові Душі',        desc:'+10 душ на старті рівня',        lvlKey:'startSoulsLvl', costKey:'startSoulsCost' },
 ];
 
 function updateSoulDungeonUI() {
@@ -4859,6 +4888,8 @@ function updateSoulDungeonUI() {
     document.getElementById('soul-dungeon-elite-num').innerText = avail;
     let cont = document.getElementById('soul-dungeon-cards');
     cont.innerHTML = '';
+
+    // ── General upgrade cards ──────────────────────────────────────────────
     _SD_CARDS.forEach(c => {
         let lvl  = p[c.lvlKey];
         let cost = p[c.costKey];
@@ -4876,6 +4907,35 @@ function updateSoulDungeonUI() {
             </button>`;
         cont.appendChild(card);
     });
+
+    // ── Per-floor monster slot upgrades ────────────────────────────────────
+    let sep = document.createElement('div');
+    sep.className = 'perma-section-title';
+    sep.innerText = '🏰 Слоти Монстрів — Кожний Поверх Окремо';
+    cont.appendChild(sep);
+
+    for (let di = 0; di < 8; di++) {
+        let isBat    = (di + 1 === 6);
+        let maxPerma = isBat ? 6 : 3;        // bat: 4→10, regular: 2→5
+        let baseSlot = isBat ? 4 : 2;
+        let lvl      = p.floorLvls[di];
+        let cost     = p.floorCosts[di];
+        let maxed    = lvl >= maxPerma;
+        let can      = !maxed && avail >= cost;
+        let floorLabel = isBat ? `Поверх ${di+1} 🦇` : `Поверх ${di+1}`;
+        let card = document.createElement('div');
+        card.className = 'perma-card perma-card-floor';
+        card.innerHTML = `
+            <div class="perma-card-icon">🏗️</div>
+            <div class="perma-card-name">${floorLabel}</div>
+            <div class="perma-card-lvl">Монстрів: <b>${baseSlot + lvl}</b> / ${baseSlot + maxPerma}</div>
+            <div class="perma-card-desc">+1 монстр на цьому поверсі назавжди</div>
+            <button class="perma-buy-btn ${maxed ? 'maxed' : can ? 'can-afford' : 'cannot-afford'}"
+                onclick="buyPerma('floor_${di}')" ${(can && !maxed) ? '' : 'disabled'}>
+                ${maxed ? 'МАКС.' : cost + ' 💎'}
+            </button>`;
+        cont.appendChild(card);
+    }
 }
 
 function openSoulDungeon() {
