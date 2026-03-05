@@ -87,8 +87,11 @@
         }
         .hp-label       { color: #ff6666; display: block; }
         .hp-label-lord  { color: #cc66ff; display: block; margin-top: 3px; }
-        .hp-bar         { background: #333; border-radius: 3px; overflow: hidden; margin-top: 2px; }
+        .hp-bar         { background: #333; border-radius: 3px; overflow: hidden; margin-top: 2px; position: relative; }
         .hp-fill        { height: 100%; transition: width 0.2s; }
+        .hp-num         { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+                          font-size: 8px; font-weight: bold; color: rgba(255,255,255,0.92);
+                          text-shadow: 0 0 3px #000, 0 0 2px #000; pointer-events: none; white-space: nowrap; }
         .threat-line    { color: #ff8844; display: block; }
         .hud-max        { color: #886655; font-size: 0.85em; }
 
@@ -331,7 +334,8 @@
             #hud { padding: 5px 6px; }
             .resource-box { font-size: 13px; padding: 4px 8px; border-radius: 8px; }
             .hud-right { font-size: 9px; padding: 4px 7px; border-radius: 8px; }
-            .hp-bar { width: 85px; height: 6px; }
+            .hp-bar { width: 85px; height: 14px; }
+            .hp-num { font-size: 7px; }
             .threat-line { font-size: 8px; }
             #pause-toggle-btn { font-size: 11px; padding: 4px 10px; }
             #btn-hard-reset { font-size: 8px; padding: 2px 5px; }
@@ -366,7 +370,8 @@
             #hud { padding: 7px 8px; }
             .resource-box { font-size: 15px; padding: 5px 10px; border-radius: 9px; }
             .hud-right { font-size: 10px; padding: 5px 9px; border-radius: 9px; }
-            .hp-bar { width: 100px; height: 7px; }
+            .hp-bar { width: 100px; height: 16px; }
+            .hp-num { font-size: 8px; }
             .threat-line { font-size: 9px; }
             #pause-toggle-btn { font-size: 12px; padding: 5px 13px; }
             #btn-hard-reset { font-size: 9px; padding: 3px 6px; }
@@ -402,7 +407,8 @@
             #hud { padding: 8px 10px; }
             .resource-box { font-size: 17px; padding: 6px 12px; border-radius: 10px; }
             .hud-right { font-size: 11px; padding: 6px 10px; border-radius: 10px; }
-            .hp-bar { width: 115px; height: 8px; }
+            .hp-bar { width: 115px; height: 18px; }
+            .hp-num { font-size: 9px; }
             .threat-line { font-size: 10px; }
             #pause-toggle-btn { font-size: 13px; padding: 5px 15px; }
             #btn-hard-reset { font-size: 9px; padding: 3px 7px; }
@@ -438,7 +444,8 @@
             #hud { padding: 10px 14px; }
             .resource-box { font-size: 20px; padding: 7px 16px; border-radius: 12px; }
             .hud-right { font-size: 18px; padding: 12px 18px; border-radius: 18px; }
-            .hp-bar { width: 210px; height: 13px; }
+            .hp-bar { width: 210px; height: 22px; }
+            .hp-num { font-size: 12px; }
             .threat-line { font-size: 16px; }
             #pause-toggle-btn { font-size: 15px; padding: 7px 20px; }
             #btn-hard-reset { font-size: 10px; padding: 4px 8px; }
@@ -595,9 +602,9 @@
             <div class="resource-box">💀 <span id="souls-display">150</span></div>
             <div class="hud-right">
                 <div class="hp-label">❤️ Місто</div>
-                <div class="hp-bar"><div id="city-hp" class="hp-fill" style="width:100%;background:#ff4444"></div></div>
+                <div class="hp-bar"><div id="city-hp" class="hp-fill" style="width:100%;background:#ff4444"></div><span class="hp-num" id="city-hp-num">2000 / 2000</span></div>
                 <div class="hp-label-lord">💜 Володар</div>
-                <div class="hp-bar"><div id="lord-hp" class="hp-fill" style="width:100%;background:#aa00ff"></div></div>
+                <div class="hp-bar"><div id="lord-hp" class="hp-fill" style="width:100%;background:#aa00ff"></div><span class="hp-num" id="lord-hp-num">500 / 500</span></div>
                 <div class="threat-line">Рівень загрози — <span id="difficulty-level">0</span><span class="hud-max">/<span id="max-threat">5</span></span></div>
                 <div class="threat-line">Сила героїв — <span id="hero-scale">100</span>%<span class="hud-max">/<span id="max-hero-scale">100</span>%</span></div>
             </div>
@@ -2508,10 +2515,11 @@ class Unit {
         ctx.shadowBlur = 0;
         let pct = Math.max(0, this.hp / this.maxHp);
         let _isLord = this.type === 'lord';
-        let _bw = _isLord ? 44 : 30, _bh = _isLord ? 6 : 4;
+        let _bw = _isLord ? 54 : 40, _bh = _isLord ? 10 : 7;
         let _bx = this.x - _bw / 2;
+        let _barTop = dy - 13;
         // Фон
-        ctx.fillStyle = '#220000'; ctx.fillRect(_bx, dy - 11, _bw, _bh + 1);
+        ctx.fillStyle = '#220000'; ctx.fillRect(_bx, _barTop, _bw, _bh);
         // Заповнення з градієнтом (зелений→жовтий→червоний)
         if (pct > 0) {
             let _hg = ctx.createLinearGradient(_bx, 0, _bx + _bw, 0);
@@ -2520,21 +2528,33 @@ class Unit {
             else { _hg.addColorStop(0,'#bb1100'); _hg.addColorStop(1,'#ff3300'); }
             if (_isLord) { _hg = ctx.createLinearGradient(_bx,0,_bx+_bw,0); _hg.addColorStop(0,'#7700bb'); _hg.addColorStop(1,pct>0.5?'#cc44ff':'#ff44cc'); }
             ctx.fillStyle = _hg;
-            ctx.fillRect(_bx, dy - 11, _bw * pct, _bh + 1);
+            ctx.fillRect(_bx, _barTop, _bw * pct, _bh);
         }
         // Відблиск зверху
-        ctx.fillStyle = 'rgba(255,255,255,0.18)'; ctx.fillRect(_bx, dy - 11, _bw * pct, 2);
+        ctx.fillStyle = 'rgba(255,255,255,0.18)'; ctx.fillRect(_bx, _barTop, _bw * pct, 2);
+        // HP числа по центру бара
+        ctx.save();
+        ctx.font = `bold ${_isLord ? 8 : 7}px Arial`;
+        ctx.textAlign = 'center';
+        ctx.fillStyle = 'rgba(255,255,255,0.92)';
+        ctx.shadowColor = '#000'; ctx.shadowBlur = 3;
+        let _hpText = _isLord
+            ? Math.round(this.hp) + '/' + Math.round(this.maxHp)
+            : String(Math.round(this.hp));
+        ctx.fillText(_hpText, this.x, _barTop + Math.round(_bh * 0.75));
+        ctx.shadowBlur = 0;
+        ctx.restore();
 
-        // Іконка рангу (герої)
+        // Іконка рангу (герої) — над баром
         ctx.font = '10px Arial'; ctx.textAlign = 'center';
-        if (this.heroRank === 'elite_hp')       ctx.fillText('💚', this.x, dy - 12);
-        else if (this.heroRank === 'elite_atk') ctx.fillText('🔥', this.x, dy - 12);
-        else if (this.heroRank === 'boss')      ctx.fillText('☠️', this.x, dy - 14);
+        if (this.heroRank === 'elite_hp')       ctx.fillText('💚', this.x, dy - 15);
+        else if (this.heroRank === 'elite_atk') ctx.fillText('🔥', this.x, dy - 15);
+        else if (this.heroRank === 'boss')      ctx.fillText('☠️', this.x, dy - 16);
 
         // Емодзі виду монстра над головою
         if (this.type === 'monster' && this.monsterEmoji) {
             ctx.font = '11px Arial';
-            ctx.fillText(this.monsterEmoji, this.x, dy - 12);
+            ctx.fillText(this.monsterEmoji, this.x, dy - 15);
         }
 
         // СТАН (Golem): іконка ⚡ над заглушеним героєм
@@ -4503,8 +4523,12 @@ function updateUI() {
 
     // HP bars
     document.getElementById('city-hp').style.width = Math.max(0, GAME.cityHP/GAME.maxCityHP*100) + '%';
+    document.getElementById('city-hp-num').innerText = Math.ceil(Math.max(0, GAME.cityHP)) + ' / ' + GAME.maxCityHP;
     let lord = units.find(u => u.type==='lord');
-    if (lord) document.getElementById('lord-hp').style.width = Math.max(0, lord.hp/GAME.maxLordHP*100) + '%';
+    if (lord) {
+        document.getElementById('lord-hp').style.width = Math.max(0, lord.hp/GAME.maxLordHP*100) + '%';
+        document.getElementById('lord-hp-num').innerText = Math.ceil(lord.hp) + ' / ' + GAME.maxLordHP;
+    }
 }
 
 // =================== УТИЛІТИ ===================
