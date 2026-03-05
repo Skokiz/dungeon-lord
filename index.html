@@ -707,7 +707,7 @@
     <h1>👑 Dungeon Lord</h1>
     <div class="subtitle">Siege Defense</div>
     <div id="lvl-progress-label">Рівень <span id="lvl-num">1</span> <span id="lvl-total">/ 50</span></div>
-    <div id="start-elite-display">💎 <span id="start-elite-num">0</span></div>
+    <div id="start-elite-display"><span class="esoul-icon">💀</span> <span id="start-elite-num">0</span></div>
     <button id="btn-continue" onclick="continueGame()">▶ Почати гру</button>
     <button id="btn-soul-dungeon" onclick="openSoulDungeon()">💜 Душа Підземелля</button>
     <button id="btn-instructions" onclick="openInstructions()">📖 Інструкція</button>
@@ -717,7 +717,7 @@
 <!-- ── ДУША ПІДЗЕМЕЛЛЯ ── -->
 <div id="soul-dungeon-screen">
     <h2>💜 Душа Підземелля</h2>
-    <div id="soul-dungeon-elite">💎 <span id="soul-dungeon-elite-num">0</span></div>
+    <div id="soul-dungeon-elite"><span class="esoul-icon">💀</span> <span id="soul-dungeon-elite-num">0</span></div>
     <div id="soul-dungeon-hint">Витрачай Елітні Душі на назавжди-покращення.<br>Ефект застосовується з наступного рівня.</div>
     <div id="soul-dungeon-cards"></div>
     <button id="btn-close-soul-dungeon" onclick="closeSoulDungeon()">← Назад</button>
@@ -735,8 +735,8 @@
         <p>Вбивай героїв — отримуй Душі 💀. Купуй нові поверхи, монстрів, пастки, покращуй Лорда і монстрів.</p>
     </div>
     <div class="instr-section">
-        <h3>💎 Елітні Душі</h3>
-        <p>З елітних героїв випадає 1💎, з босів — 3💎. Вони зберігаються між рівнями якщо ти переміг або програв. Використовуй їх у Душі Підземелля для назавжди-покращень.</p>
+        <h3><span class="esoul-icon">💀</span> Елітні Душі</h3>
+        <p>З елітних героїв випадає 1<span class="esoul-icon">💀</span>, з босів — 3<span class="esoul-icon">💀</span>. Вони зберігаються між рівнями якщо ти переміг або програв. Використовуй їх у Душі Підземелля для назавжди-покращень.</p>
     </div>
     <div class="instr-section">
         <h3>🏗️ Поверхи</h3>
@@ -4306,10 +4306,10 @@ function loop(ts) {
                 // ── Елітні душі 💎 ──────────────────────────────────────
                 if (u.heroRank === 'boss') {
                     GAME.eliteSouls += 3;
-                    spawnDmgText(u.x, u.y - u.size - 18, '+3 💎', '#ff66ff', true);
+                    spawnDmgText(u.x, u.y - u.size - 18, '+3 💀', '#ffd700', true);
                 } else if (u.heroRank && u.heroRank.startsWith('elite')) {
                     GAME.eliteSouls += 1;
-                    spawnDmgText(u.x, u.y - u.size - 18, '+1 💎', '#dd88ff', false);
+                    spawnDmgText(u.x, u.y - u.size - 18, '+1 💀', '#ffd700', false);
                 }
                 let pcol = u.heroRank === 'boss' ? 'purple' : u.heroRank.startsWith('elite') ? 'orange' : 'gold';
                 let pcount = u.heroRank === 'boss' ? 16 : u.heroRank.startsWith('elite') ? 9 : 5;
@@ -4436,7 +4436,7 @@ function loop(ts) {
         document.getElementById('go-title').style.color = 'lime';
         document.getElementById('go-desc').innerText = _isLast ? 'Всі 50 рівнів пройдено! 🎉' : `Далі: Рівень ${_nextLvl} / 50`;
         const _eEl = document.getElementById('go-elite-earned');
-        if (_eEl) _eEl.innerText = GAME.eliteSouls > 0 ? `+${GAME.eliteSouls} 💎 зароблено (всього: ${getStoredEliteSouls()})` : '';
+        if (_eEl) _eEl.innerText = GAME.eliteSouls > 0 ? `+${GAME.eliteSouls} 💀 зароблено (всього: ${getStoredEliteSouls()})` : '';
         const _tryBtn = document.getElementById('btn-try-again');
         _tryBtn.textContent = _isLast ? '🔄 Грати заново' : `→ Рівень ${_nextLvl}`;
         _tryBtn.onclick = () => hardReset();
@@ -4848,7 +4848,7 @@ function gameOver() {
     GAME.gameOver = true;
     commitEliteSouls(); // зберігаємо зароблені елітні душі навіть при поразці
     const _eEl = document.getElementById('go-elite-earned');
-    if (_eEl) _eEl.innerText = GAME.eliteSouls > 0 ? `+${GAME.eliteSouls} 💎 зароблено (всього: ${getStoredEliteSouls()})` : '';
+    if (_eEl) _eEl.innerText = GAME.eliteSouls > 0 ? `+${GAME.eliteSouls} 💀 зароблено (всього: ${getStoredEliteSouls()})` : '';
     document.getElementById('game-over').style.display = 'flex';
 }
 
@@ -4966,7 +4966,7 @@ function updateSoulDungeonUI() {
             <div class="perma-card-desc">${c.desc}</div>
             <button class="perma-buy-btn ${can?'can-afford':'cannot-afford'}"
                 onclick="buyPerma('${c.type}')" ${can?'':'disabled'}>
-                ${cost} 💎
+                ${cost} <span class="esoul-icon">💀</span>
             </button>`;
         cont.appendChild(card);
     });
@@ -4998,7 +4998,7 @@ function updateSoulDungeonUI() {
         <div class="perma-card-desc">${isBat ? '+2 кажани назавжди' : '+1 монстр назавжди'}</div>
         <button class="perma-buy-btn ${maxed ? 'maxed' : can ? 'can-afford' : 'cannot-afford'}"
             onclick="buyPerma('floor_${di}')" ${(can && !maxed) ? '' : 'disabled'}>
-            ${maxed ? 'МАКС.' : cost + ' 💎'}
+            ${maxed ? 'МАКС.' : cost + ' <span class="esoul-icon">💀</span>'}
         </button>`;
     cont.appendChild(floorCard);
 }
