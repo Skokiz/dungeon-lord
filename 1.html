@@ -2541,7 +2541,9 @@ class Unit {
         let _hpText = _isLord
             ? Math.round(this.hp) + '/' + Math.round(this.maxHp)
             : String(Math.round(this.hp));
-        ctx.fillText(_hpText, this.x, _barTop + Math.round(_bh * 0.75));
+        ctx.textBaseline = 'middle';
+        ctx.fillText(_hpText, this.x, _barTop + _bh / 2);
+        ctx.textBaseline = 'alphabetic';
         ctx.shadowBlur = 0;
         ctx.restore();
 
