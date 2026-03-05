@@ -4819,13 +4819,15 @@ function commitEliteSouls() {
 }
 
 // ── Постійні прокачки (Душа Підземелля) ─────────────────────────────────
-const _FLOOR_BASE_COSTS = [60, 65, 70, 75, 80, 90, 95, 100]; // per-depth starting costs
+const _MAX_FLOORS = 20;
+const _FLOOR_BASE_COSTS = [60,65,70,75,80,85,90,95,100,105,110,115,120,125,130,135,140,145,150,155];
 const _PERMA_DEFAULTS = () => ({
     lordAtkLvl:0, lordAtkCost:80,
     lordVitLvl:0, lordVitCost:70,
     mobAtkLvl:0,  mobAtkCost:75,
     mobVitLvl:0,  mobVitCost:60,
-    floorLvls:[0,0,0,0,0,0,0,0], floorCosts:[60,65,70,75,80,90,95,100],
+    floorLvls: Array(_MAX_FLOORS).fill(0),
+    floorCosts: _FLOOR_BASE_COSTS.slice(),
     startSoulsLvl:0, startSoulsCost:100,
 });
 function _loadPerma() {
@@ -4835,12 +4837,12 @@ function _loadPerma() {
         // Migration: old scalar floorLvl → per-floor arrays
         if (!Array.isArray(out.floorLvls)) {
             let oldLvl = (typeof d.floorLvl === 'number') ? d.floorLvl : 0;
-            out.floorLvls = Array(8).fill(oldLvl);
+            out.floorLvls = Array(_MAX_FLOORS).fill(oldLvl);
             out.floorCosts = _FLOOR_BASE_COSTS.map(c => r5(c * Math.pow(1.50, oldLvl)));
         }
-        // Ensure arrays are exactly length 8
-        while (out.floorLvls.length < 8) out.floorLvls.push(0);
-        while (out.floorCosts.length < 8) out.floorCosts.push(_FLOOR_BASE_COSTS[out.floorCosts.length] || 100);
+        // Ensure arrays are exactly _MAX_FLOORS length
+        while (out.floorLvls.length < _MAX_FLOORS) out.floorLvls.push(0);
+        while (out.floorCosts.length < _MAX_FLOORS) out.floorCosts.push(_FLOOR_BASE_COSTS[out.floorCosts.length] || 155);
         return out;
     } catch(e) { return _PERMA_DEFAULTS(); }
 }
@@ -4856,7 +4858,7 @@ function buyPerma(type) {
     else if (type === 'mobVit')     { cost = p.mobVitCost;     if (avail < cost) return; p.mobVitLvl++;     p.mobVitCost     = r5(p.mobVitCost     * 1.35); }
     else if (type.startsWith('floor_')) {
         let di = parseInt(type.slice(6));
-        if (isNaN(di) || di < 0 || di > 7) return;
+        if (isNaN(di) || di < 0 || di >= _MAX_FLOORS) return;
         let isBat = (di + 1 === 6);
         let maxPerma = isBat ? 6 : 3; // bat: 4→10, regular: 2→5
         if (p.floorLvls[di] >= maxPerma) return;
@@ -4914,7 +4916,7 @@ function updateSoulDungeonUI() {
     sep.innerText = '🏰 Слоти Монстрів — Кожний Поверх Окремо';
     cont.appendChild(sep);
 
-    for (let di = 0; di < 8; di++) {
+    for (let di = 0; di < _MAX_FLOORS; di++) {
         let isBat    = (di + 1 === 6);
         let maxPerma = isBat ? 6 : 3;        // bat: 4→10, regular: 2→5
         let baseSlot = isBat ? 4 : 2;
