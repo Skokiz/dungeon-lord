@@ -808,6 +808,8 @@ let GAME = {
     bossSent20: false,
     maxThreatLevel: 999,
     currentLevel: 1,
+    soulBonus: 0,        // +X душ за кожного вбитого героя (назавжди)
+    soulBonusCost: 100,  // ціна наступного апгрейду (назавжди)
 };
 
 let floors = [];
@@ -2607,6 +2609,11 @@ function startGame(level) {
     floors.push(new Floor(1));
     GAME.souls = 150;
 
+    // Завантажуємо назавжди-прокачки (не скидаються між рівнями)
+    let _perma = loadPermaUpgrades();
+    GAME.soulBonus     = _perma.soulBonus     || 0;
+    GAME.soulBonusCost = _perma.soulBonusCost || 100;
+
     let ss = document.getElementById('start-screen');
     if (ss) ss.parentNode.removeChild(ss);
     beginGame();
@@ -3839,6 +3846,96 @@ function loop(ts) {
 
     ctx.restore();
 
+    // ── Збирач Душ (назавжди-апгрейд: +1 душа за героя) ────────────────────
+    {
+        let _ax = CITY_GATE_X + (CAVE_X - CITY_GATE_X) * 0.52;
+        let _ay = groundY; // рівень землі (screen Y)
+        let _t3 = Date.now();
+        let _pulse = 0.5 + 0.5 * Math.sin(_t3 / 600);
+        let _canAfford = GAME.souls >= GAME.soulBonusCost;
+
+        ctx.save();
+
+        // Підставка (камінь)
+        let _pedGrad = ctx.createLinearGradient(_ax - 10, 0, _ax + 10, 0);
+        _pedGrad.addColorStop(0, '#1e1430'); _pedGrad.addColorStop(0.5, '#3a2858'); _pedGrad.addColorStop(1, '#1a1028');
+        ctx.fillStyle = _pedGrad;
+        ctx.beginPath();
+        ctx.roundRect(_ax - 11, _ay - 22, 22, 22, 3);
+        ctx.fill();
+        ctx.strokeStyle = '#5a3a80'; ctx.lineWidth = 0.8;
+        ctx.stroke();
+        // Блиск підставки
+        ctx.fillStyle = 'rgba(140,80,220,0.12)';
+        ctx.fillRect(_ax - 11, _ay - 22, 5, 22);
+        // База-еліпс на землі
+        ctx.fillStyle = '#150e22';
+        ctx.beginPath(); ctx.ellipse(_ax, _ay, 16, 4, 0, 0, Math.PI * 2); ctx.fill();
+
+        // Ореол кристала
+        let _glowA = 0.18 + _pulse * 0.22;
+        let _glowColor = _canAfford ? `rgba(60,200,255,${_glowA})` : `rgba(100,100,180,${_glowA * 0.5})`;
+        let _grd = ctx.createRadialGradient(_ax, _ay - 36, 0, _ax, _ay - 36, 28);
+        _grd.addColorStop(0, _glowColor);
+        _grd.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.fillStyle = _grd;
+        ctx.beginPath(); ctx.arc(_ax, _ay - 36, 28, 0, Math.PI * 2); ctx.fill();
+
+        // Кристал (шестигранник)
+        ctx.globalAlpha = 0.85 + _pulse * 0.12;
+        let _cr = _canAfford ? `rgba(60,200,255,0.9)` : 'rgba(100,120,180,0.7)';
+        ctx.fillStyle = _cr;
+        ctx.beginPath();
+        ctx.moveTo(_ax,      _ay - 50); // верхівка
+        ctx.lineTo(_ax + 10, _ay - 38);
+        ctx.lineTo(_ax + 9,  _ay - 26);
+        ctx.lineTo(_ax,      _ay - 23);
+        ctx.lineTo(_ax - 9,  _ay - 26);
+        ctx.lineTo(_ax - 10, _ay - 38);
+        ctx.closePath();
+        ctx.fill();
+        ctx.strokeStyle = _canAfford ? 'rgba(180,240,255,0.6)' : 'rgba(140,160,220,0.4)';
+        ctx.lineWidth = 0.8;
+        ctx.stroke();
+        // Блиск кристала (верхній ліво-правий рефлекс)
+        ctx.fillStyle = `rgba(220,245,255,${0.4 + _pulse * 0.15})`;
+        ctx.beginPath();
+        ctx.moveTo(_ax - 2,  _ay - 49);
+        ctx.lineTo(_ax + 5,  _ay - 40);
+        ctx.lineTo(_ax - 1,  _ay - 33);
+        ctx.lineTo(_ax - 6,  _ay - 40);
+        ctx.closePath();
+        ctx.fill();
+        ctx.globalAlpha = 1;
+
+        // Текст "+N" над кристалом (якщо вже є апгрейди)
+        if (GAME.soulBonus > 0) {
+            ctx.fillStyle = '#aaeeff';
+            ctx.font = 'bold 10px Arial'; ctx.textAlign = 'center';
+            ctx.fillText('+' + GAME.soulBonus + ' 💀', _ax, _ay - 54);
+        }
+
+        // Назва
+        ctx.globalAlpha = 0.7 + _pulse * 0.2;
+        ctx.fillStyle = GAME.soulBonus > 0 ? '#88ddff' : '#8899cc';
+        ctx.font = isMobile ? '7px Arial' : '8px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText('Збирач душ', _ax, _ay - (GAME.soulBonus > 0 ? 58 : 54));
+        ctx.globalAlpha = 1;
+
+        // Ціна
+        ctx.font = isMobile ? '8px Arial' : '9px Arial';
+        ctx.fillStyle = _canAfford ? '#ffee88' : '#887755';
+        ctx.fillText(GAME.soulBonusCost + ' \uD83D\uDC80', _ax, _ay - 9);
+
+        // Зберігаємо hitbox (world-координати Y; X — canvas-пікселі як у click-обробнику)
+        GAME._soulAltarX      = _ax;
+        GAME._soulAltarWorldY = CFG.surfaceY - 36; // center of crystal in world Y
+        GAME._soulAltarR      = isMobile ? 30 : 22;
+
+        ctx.restore();
+    }
+
     floors.forEach(f => f.draw(GAME.cameraY));
 
     // Реген Лорда (завжди активний, базово 1 HP/сек)
@@ -3958,7 +4055,7 @@ function loop(ts) {
                     units.splice(i, 1);
                     continue; // без нагороди душами
                 }
-                let reward = u.soulReward || (u.heroRank === 'boss' ? 80 : u.heroRank.startsWith('elite') ? 25 : 15);
+                let reward = (u.soulReward || (u.heroRank === 'boss' ? 80 : u.heroRank.startsWith('elite') ? 25 : 15)) + (GAME.soulBonus || 0);
                 GAME.souls += reward;
                 let pcol = u.heroRank === 'boss' ? 'purple' : u.heroRank.startsWith('elite') ? 'orange' : 'gold';
                 let pcount = u.heroRank === 'boss' ? 16 : u.heroRank.startsWith('elite') ? 9 : 5;
@@ -4487,6 +4584,21 @@ function loadProgress() { return Math.max(1, Math.min(50, parseInt(_store.get('D
 function saveProgress(lvl) { _store.set('DLSiege_lvl', String(Math.min(50, Math.max(1, lvl)))); }
 function resetProgress() { _store.del('DLSiege_lvl'); }
 
+// ── Назавжди-прокачки (не скидаються при рестарті) ──
+function loadPermaUpgrades() { try { return JSON.parse(_store.get('DLSiege_perma') || '{}'); } catch(e) { return {}; } }
+function savePermaUpgrades(data) { _store.set('DLSiege_perma', JSON.stringify(data)); }
+
+function upgradeSoulBonus() {
+    if (GAME.souls < GAME.soulBonusCost) return;
+    GAME.souls -= GAME.soulBonusCost;
+    GAME.soulBonus += 1;
+    // Ціна наступного рівня: ×1.55 заокруглена до 5
+    GAME.soulBonusCost = Math.round(GAME.soulBonusCost * 1.55 / 5) * 5;
+    savePermaUpgrades({ soulBonus: GAME.soulBonus, soulBonusCost: GAME.soulBonusCost });
+    saveGame();
+    updateUI();
+}
+
 function getLevelConfig(lvl) {
     // Початковий % сили героїв (heroScalePercent):
     //   Рівні 1–11: зростає від 70% до 100%
@@ -4628,6 +4740,17 @@ function _handleCanvasTap(clientX, clientY) {
             hideTrapPlacementHint();
         }
         return;
+    }
+
+    // Збирач душ (клік по кристалу на поверхні)
+    if (GAME._soulAltarX != null) {
+        let _dx = cx - GAME._soulAltarX;
+        let _dy = cy - GAME._soulAltarWorldY;
+        let _r  = GAME._soulAltarR || 22;
+        if (_dx * _dx + _dy * _dy <= _r * _r) {
+            upgradeSoulBonus();
+            return;
+        }
     }
 
     // Кнопки апгрейду поверху (права сторона)

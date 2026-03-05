@@ -90,6 +90,7 @@
         .hp-bar         { background: #333; border-radius: 3px; overflow: hidden; margin-top: 2px; }
         .hp-fill        { height: 100%; transition: width 0.2s; }
         .threat-line    { color: #ff8844; display: block; }
+        .hud-max        { color: #886655; font-size: 0.85em; }
 
         /* Кнопка паузи — абсолютно над canvas */
         #pause-toggle-btn {
@@ -255,6 +256,12 @@
             gap: 14px; z-index: 190;
         }
         #pause-overlay h2 { color: #cc88ff; }
+        #pause-quote {
+            color: #ddccff; font-style: italic; font-size: 14px;
+            text-align: center; max-width: 320px; line-height: 1.5;
+            padding: 10px 14px; border-left: 3px solid #8844cc;
+            background: rgba(80,0,140,0.18); border-radius: 4px;
+        }
         .pause-btn {
             background: rgba(80,40,120,0.95); border: 2px solid #cc88ff;
             color: #fff; border-radius: 10px;
@@ -290,30 +297,30 @@
             text-transform: uppercase; letter-spacing: 3px; text-align: center;
         }
         #start-screen .subtitle { color: #886699; letter-spacing: 2px; }
-        #start-screen .diff-label { color: #cc99ff; font-size: 13px; letter-spacing: 1px; }
-        .diff-grid {
-            display: grid; grid-template-columns: 1fr 1fr;
-            gap: 10px; width: 90%; max-width: 340px;
+        #lvl-progress-label {
+            color: #bb99ee; font-size: 16px; letter-spacing: 1px; text-align: center;
         }
-        .diff-btn {
-            display: flex; flex-direction: column; align-items: center;
-            gap: 4px; padding: 10px 6px;
-            background: rgba(40,10,70,0.93); border: 2px solid #5522aa;
-            border-radius: 14px; color: #fff; cursor: pointer;
+        #lvl-progress-label #lvl-num {
+            color: #ffdd66; font-weight: bold; font-size: 28px;
+        }
+        #lvl-progress-label #lvl-total { color: #886699; }
+        #btn-continue {
+            background: linear-gradient(145deg,#006622,#003311);
+            border: 2px solid #00cc44; border-radius: 14px;
+            color: #fff; font-weight: bold; font-size: 18px;
+            padding: 14px 44px; cursor: pointer;
             -webkit-appearance: none; touch-action: manipulation;
-            transition: border-color 0.15s, transform 0.1s;
+            transition: transform 0.1s; letter-spacing: 1px;
+            box-shadow: 0 0 18px rgba(0,200,60,0.35);
         }
-        .diff-btn:active { transform: scale(0.95); }
-        .diff-btn .d-name { font-weight: bold; font-size: 13px; }
-        .diff-btn .d-stat { font-size: 10px; color: #bb99dd; line-height: 1.4; }
-        .diff-btn.d1 { border-color: #44aa44; }
-        .diff-btn.d1 .d-name { color: #66ff66; }
-        .diff-btn.d2 { border-color: #88aa00; }
-        .diff-btn.d2 .d-name { color: #ccee44; }
-        .diff-btn.d3 { border-color: #cc6600; }
-        .diff-btn.d3 .d-name { color: #ff9944; }
-        .diff-btn.d4 { border-color: #cc0000; }
-        .diff-btn.d4 .d-name { color: #ff4444; }
+        #btn-continue:active { transform: scale(0.95); }
+        #btn-reset-progress {
+            background: transparent; border: 1px solid #553344;
+            border-radius: 8px; color: #886677; font-size: 12px;
+            padding: 6px 16px; cursor: pointer;
+            -webkit-appearance: none; touch-action: manipulation;
+        }
+        #btn-reset-progress:active { opacity: 0.7; }
 
         /* ═══════════════════════════════════════════════════
            МЕДІАЗАПИТИ — розміри під кожен екран
@@ -331,9 +338,9 @@
 
             #controls { padding: 5px 4px; gap: 5px; }
             .ctrl-circles { gap: 7px; }
-            .circle-main-btn { width: 58px; height: 58px; font-size: 9px; }
-            .circle-main-btn .icon { font-size: 20px; }
-            .circle-sub-menu { bottom: 65px; gap: 6px; padding: 7px 5px; min-width: 64px; }
+            .circle-main-btn { width: 66px; height: 66px; font-size: 9px; }
+            .circle-main-btn .icon { font-size: 15px; }
+            .circle-sub-menu { bottom: 73px; gap: 6px; padding: 7px 5px; min-width: 64px; }
             .sub-btn { width: 56px; height: 56px; font-size: 9px; }
             .sub-btn .sicon { font-size: 17px; }
             .sub-btn .scost { font-size: 9px; }
@@ -344,10 +351,6 @@
 
             #start-screen h1 { font-size: 26px; letter-spacing: 2px; }
             #start-screen .subtitle { font-size: 10px; margin-top: -8px; }
-            .diff-grid { gap: 8px; max-width: 300px; }
-            .diff-btn { padding: 8px 5px; }
-            .diff-btn .d-name { font-size: 12px; }
-            .diff-btn .d-stat { font-size: 9px; }
 
             #pause-overlay h2 { font-size: 24px; }
             .pause-btn { font-size: 14px; padding: 10px 22px; }
@@ -370,9 +373,9 @@
 
             #controls { padding: 7px 5px; gap: 6px; }
             .ctrl-circles { gap: 9px; }
-            .circle-main-btn { width: 64px; height: 64px; font-size: 10px; }
-            .circle-main-btn .icon { font-size: 22px; }
-            .circle-sub-menu { bottom: 72px; gap: 7px; padding: 8px 6px; min-width: 70px; }
+            .circle-main-btn { width: 72px; height: 72px; font-size: 10px; }
+            .circle-main-btn .icon { font-size: 16px; }
+            .circle-sub-menu { bottom: 80px; gap: 7px; padding: 8px 6px; min-width: 70px; }
             .sub-btn { width: 62px; height: 62px; font-size: 10px; }
             .sub-btn .sicon { font-size: 19px; }
             .sub-btn .scost { font-size: 10px; }
@@ -384,10 +387,6 @@
             #start-screen h1 { font-size: 30px; letter-spacing: 2px; margin-bottom: 4px; }
             #start-screen .subtitle { font-size: 11px; margin-top: -10px; }
             #start-screen { gap: 14px; }
-            .diff-grid { gap: 9px; max-width: 310px; }
-            .diff-btn { padding: 9px 5px; }
-            .diff-btn .d-name { font-size: 12px; }
-            .diff-btn .d-stat { font-size: 10px; }
 
             #pause-overlay h2 { font-size: 26px; }
             .pause-btn { font-size: 15px; padding: 11px 26px; }
@@ -410,9 +409,9 @@
 
             #controls { padding: 8px 6px; gap: 7px; }
             .ctrl-circles { gap: 11px; }
-            .circle-main-btn { width: 70px; height: 70px; font-size: 11px; }
-            .circle-main-btn .icon { font-size: 25px; }
-            .circle-sub-menu { bottom: 78px; gap: 8px; padding: 9px 7px; min-width: 76px; }
+            .circle-main-btn { width: 78px; height: 78px; font-size: 11px; }
+            .circle-main-btn .icon { font-size: 18px; }
+            .circle-sub-menu { bottom: 86px; gap: 8px; padding: 9px 7px; min-width: 76px; }
             .sub-btn { width: 68px; height: 68px; font-size: 11px; }
             .sub-btn .sicon { font-size: 21px; }
             .sub-btn .scost { font-size: 11px; }
@@ -424,10 +423,6 @@
             #start-screen h1 { font-size: 34px; letter-spacing: 3px; }
             #start-screen .subtitle { font-size: 12px; margin-top: -12px; }
             #start-screen { gap: 16px; }
-            .diff-grid { gap: 10px; max-width: 320px; }
-            .diff-btn { padding: 10px 6px; }
-            .diff-btn .d-name { font-size: 13px; }
-            .diff-btn .d-stat { font-size: 10px; }
 
             #pause-overlay h2 { font-size: 28px; }
             .pause-btn { font-size: 16px; padding: 12px 28px; }
@@ -442,17 +437,17 @@
         @media (min-width: 481px) {
             #hud { padding: 10px 14px; }
             .resource-box { font-size: 20px; padding: 7px 16px; border-radius: 12px; }
-            .hud-right { font-size: 12px; padding: 8px 12px; border-radius: 12px; }
-            .hp-bar { width: 140px; height: 9px; }
-            .threat-line { font-size: 11px; }
+            .hud-right { font-size: 18px; padding: 12px 18px; border-radius: 18px; }
+            .hp-bar { width: 210px; height: 13px; }
+            .threat-line { font-size: 16px; }
             #pause-toggle-btn { font-size: 15px; padding: 7px 20px; }
             #btn-hard-reset { font-size: 10px; padding: 4px 8px; }
 
             #controls { padding: 10px 8px; gap: 8px; }
             .ctrl-circles { gap: 16px; }
-            .circle-main-btn { width: 82px; height: 82px; font-size: 13px; }
-            .circle-main-btn .icon { font-size: 30px; }
-            .circle-sub-menu { bottom: 90px; gap: 10px; padding: 12px 9px; min-width: 88px; }
+            .circle-main-btn { width: 90px; height: 90px; font-size: 13px; }
+            .circle-main-btn .icon { font-size: 22px; }
+            .circle-sub-menu { bottom: 98px; gap: 10px; padding: 12px 9px; min-width: 88px; }
             .sub-btn { width: 78px; height: 78px; font-size: 13px; }
             .sub-btn .sicon { font-size: 24px; }
             .sub-btn .scost { font-size: 13px; }
@@ -464,10 +459,6 @@
             #start-screen h1 { font-size: 44px; letter-spacing: 4px; }
             #start-screen .subtitle { font-size: 15px; margin-top: -14px; }
             #start-screen { gap: 22px; }
-            .diff-grid { gap: 12px; max-width: 380px; }
-            .diff-btn { padding: 14px 8px; border-radius: 16px; }
-            .diff-btn .d-name { font-size: 15px; }
-            .diff-btn .d-stat { font-size: 12px; }
 
             #pause-overlay h2 { font-size: 34px; }
             .pause-btn { font-size: 18px; padding: 14px 34px; }
@@ -481,10 +472,10 @@
         /* ── Висота екрану: компенсуємо дуже низькі екрани ── */
         @media (max-height: 650px) {
             #controls { padding-top: 4px; padding-bottom: 4px; gap: 4px; }
-            .circle-main-btn { width: 56px !important; height: 56px !important; }
-            .circle-main-btn .icon { font-size: 19px !important; }
+            .circle-main-btn { width: 62px !important; height: 62px !important; }
+            .circle-main-btn .icon { font-size: 14px !important; }
             .sub-btn { width: 54px !important; height: 54px !important; }
-            .circle-sub-menu { bottom: 63px !important; }
+            .circle-sub-menu { bottom: 69px !important; }
             .rect-btn { padding-top: 6px !important; padding-bottom: 6px !important; }
         }
 
@@ -565,43 +556,15 @@
 <div id="start-screen">
     <h1>👑 Dungeon Lord</h1>
     <div class="subtitle">Siege Defense</div>
-    <div class="diff-label">Оберіть складність</div>
-    <div class="diff-grid">
-        <button class="diff-btn d1" onclick="startGame(1)">
-            <div class="d-name">⚔️ Легкий</div>
-            <div class="d-stat">🏰 2000 HP міста</div>
-            <div class="d-stat">👤 Стандарт</div>
-            <div class="d-stat">💀 Загроза до 20</div>
-        </button>
-        <button class="diff-btn d2" onclick="startGame(2)">
-            <div class="d-name">🗡️ Нормальний</div>
-            <div class="d-stat">🏰 4000 HP міста</div>
-            <div class="d-stat">👤 +10% герої</div>
-            <div class="d-stat">💀 Загроза до 40</div>
-        </button>
-        <button class="diff-btn d3" onclick="startGame(3)">
-            <div class="d-name">🔥 Важкий</div>
-            <div class="d-stat">🏰 8000 HP міста</div>
-            <div class="d-stat">👤 +20% герої</div>
-            <div class="d-stat">💀 Загроза до 60</div>
-        </button>
-        <button class="diff-btn d4" onclick="startGame(4)">
-            <div class="d-name">💀 Пекло</div>
-            <div class="d-stat">🏰 15000 HP міста</div>
-            <div class="d-stat">👤 +30% герої</div>
-            <div class="d-stat">💀 Загроза до 80</div>
-        </button>
-    </div>
+    <div id="lvl-progress-label">Рівень <span id="lvl-num">1</span> <span id="lvl-total">/ 50</span></div>
+    <button id="btn-continue" onclick="continueGame()">▶ Почати гру</button>
+    <button id="btn-reset-progress" onclick="confirmResetProgress()" style="display:none">↺ Почати заново</button>
 </div>
 
 <!-- ── ПАУЗА ── -->
 <div id="pause-overlay" class="overlay-base">
     <h2>⏸ ПАУЗА</h2>
-    <div class="threat-cap-row">
-        <span>Макс загроза:</span>
-        <input type="number" id="threat-cap-input" min="1" max="100" value="100">
-        <button class="pause-btn" id="pause-set-threat-btn" onclick="setThreatCap()">✔</button>
-    </div>
+    <div id="pause-quote"></div>
     <button class="pause-btn" id="pause-resume-btn" onclick="togglePause()">▶ Продовжити</button>
     <button class="pause-btn" id="pause-restart-btn" onclick="hardReset()" style="margin-top:8px;background:rgba(180,30,30,0.85);border-color:#ff4444;">🔄 Рестарт</button>
 </div>
@@ -635,7 +598,8 @@
                 <div class="hp-bar"><div id="city-hp" class="hp-fill" style="width:100%;background:#ff4444"></div></div>
                 <div class="hp-label-lord">💜 Володар</div>
                 <div class="hp-bar"><div id="lord-hp" class="hp-fill" style="width:100%;background:#aa00ff"></div></div>
-                <div class="threat-line">⚔️ <span id="difficulty-level">0</span> | +<span id="hero-scale">0</span>%</div>
+                <div class="threat-line">Рівень загрози — <span id="difficulty-level">0</span><span class="hud-max">/<span id="max-threat">5</span></span></div>
+                <div class="threat-line">Сила героїв — <span id="hero-scale">100</span>%<span class="hud-max">/<span id="max-hero-scale">100</span>%</span></div>
             </div>
         </div>
 
@@ -668,7 +632,7 @@
                 <button class="circle-main-btn cmain-lord" id="btn-menu-lord" onclick="toggleMenu('lord')"
                     title="Прокачати Лорда Підземелля — атаку і HP">
                     <span class="icon">👑</span>
-                    <span>Володар</span>
+                    <span>Покращити Володаря</span>
                 </button>
             </div>
 
@@ -690,7 +654,7 @@
                 <button class="circle-main-btn cmain-monster" id="btn-menu-monster" onclick="toggleMenu('monster')"
                     title="Покращити всіх монстрів підземелля">
                     <span class="icon">🧟</span>
-                    <span>Монстри</span>
+                    <span>Покращити монстрів</span>
                 </button>
             </div>
 
@@ -724,7 +688,7 @@
                 <button class="circle-main-btn cmain-trap" id="btn-menu-trap" onclick="toggleMenu('trap')"
                     title="Купити пастку і встановити на поверсі">
                     <span class="icon">🪤</span>
-                    <span>Пастки</span>
+                    <span>Побудувати ловушку</span>
                 </button>
             </div>
 
@@ -734,7 +698,7 @@
         <div class="ctrl-rects">
             <button class="rect-btn btn-floor" id="btn-floor" onclick="buyFloor()"
                 title="Побудувати новий підземний поверх для монстрів і пасток">
-                🏗️ Поверх<br><small id="floor-cost-lbl">100💀</small>
+                Побудувати поверх<br><small id="floor-cost-lbl">100💀</small>
             </button>
             <button class="rect-btn btn-wave" id="btn-wave" onclick="triggerWave()"
                 title="Викликати наступну хвилю атакуючих героїв. Чим раніше — тим більше бонусних душ!">
@@ -798,7 +762,7 @@ let gH = window.innerHeight;
 const isMobile = window.innerWidth < 768;
 // CFG — мутабельний, оновлюється в resize() під розмір екрану
 let CFG = {
-    floorH: 80,
+    floorH: 120,
     floorW: Math.min(window.innerWidth - 60, window.innerWidth < 768 ? 380 : 600),
     surfaceY: 200,
 };
@@ -823,13 +787,17 @@ let GAME = {
     monsterHpBonus: 0,
     monsterDmgBonus: 0,
     monsterArmorBonus: 0,    // броня монстрів від апгрейдів
+    monsterDmgPct: 0,        // % бонус дамагу (10% за апгрейд)
     monsterAtkSpeedBonus: 0, // бонус ША у стилі Dota2 (базова ША = 0.83 атк/сек)
     isWave: false,
+    waveCooldownActive: false,
     gameOver: false,
     cameraY: 0,
     // Час і масштабування
     gameTime: 0,
     heroScalePercent: 0,
+    heroScaleBase: 0,    // початковий % сили героїв для поточного рівня
+    heroThreatPct: 4,    // % приросту сили героїв за рівень загрози
     waveCount: 0,
     eliteChance: 0,    // +1% кожні 60с, макс 100%
     captainChance: 0,  // +1% кожні 60с, макс 100%
@@ -839,6 +807,9 @@ let GAME = {
     bossSent50: false,
     bossSent20: false,
     maxThreatLevel: 999,
+    currentLevel: 1,
+    soulBonus: 0,        // +X душ за кожного вбитого героя (назавжди)
+    soulBonusCost: 100,  // ціна наступного апгрейду (назавжди)
 };
 
 let floors = [];
@@ -1252,7 +1223,7 @@ class Floor {
                 ctx.font = 'bold ' + (isMobile ? '10px' : '12px') + ' Arial';
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'middle';
-                ctx.fillText(remaining, centerX, timerY);
+                ctx.fillText(Math.max(0, Math.ceil(remaining)), centerX, timerY);
                 ctx.textBaseline = 'alphabetic';
                 ctx.restore();
             } else {
@@ -1285,8 +1256,8 @@ class Floor {
         // ── 11 + 12. Дві кнопки горизонтально, чергують сторону по глибині ─
         // depth парний (0,2,4…) → ліворуч; непарний (1,3,5…) → праворуч
         if (!isLordFloor) {
-            let bh  = isMobile ? 26 : 30;
-            let bw  = isMobile ? 62 : 78;
+            let bh  = isMobile ? 36 : 42;
+            let bw  = isMobile ? 72 : 92;
             let gap = 4;
             let pad = 6;
             let byBtn = fty + pad; // верхній край — під стелею кімнати
@@ -1307,15 +1278,16 @@ class Floor {
                 this._btnX = bxUpg; this._btnY = byBtn + camY; this._btnW = bw; this._btnH = bh;
                 let can = GAME.souls >= this.floorUpgradeCost;
                 ctx.fillStyle = can ? 'rgba(0,140,55,0.90)' : 'rgba(40,40,40,0.85)';
-                ctx.beginPath(); ctx.roundRect(bxUpg, byBtn, bw, bh, 5); ctx.fill();
+                ctxRoundRect(ctx, bxUpg, byBtn, bw, bh, 5); ctx.fill();
                 ctx.strokeStyle = can ? '#00ff66' : '#444'; ctx.lineWidth = 1; ctx.stroke();
                 ctx.fillStyle = can ? '#fff' : '#666';
                 ctx.textAlign = 'center';
-                let _fs1 = isMobile ? '8px' : '9px';
+                let _fs1 = isMobile ? '9px' : '11px';
                 ctx.font = 'bold ' + _fs1 + ' Arial';
-                ctx.fillText('Рівень', bxUpg + bw/2, byBtn + bh/2 - (isMobile ? 2 : 2));
+                ctx.fillText('Покращити', bxUpg + bw/2, byBtn + bh/2 - (isMobile ? 10 : 12));
+                ctx.fillText('рівень', bxUpg + bw/2, byBtn + bh/2 + (isMobile ? 2 : 2));
                 ctx.font = _fs1 + ' Arial';
-                ctx.fillText(this.floorUpgradeCost + ' душ', bxUpg + bw/2, byBtn + bh/2 + (isMobile ? 8 : 9));
+                ctx.fillText(this.floorUpgradeCost + ' душ', bxUpg + bw/2, byBtn + bh/2 + (isMobile ? 14 : 16));
             } else {
                 this._btnX = null;
             }
@@ -1326,15 +1298,16 @@ class Floor {
             let canBuy  = GAME.souls >= buyCost && count < this.maxMonsters;
             this._buyBtnX = bxMon; this._buyBtnY = byBtn + camY; this._buyBtnW = bw; this._buyBtnH = bh;
             ctx.fillStyle = canBuy ? 'rgba(180,60,0,0.90)' : 'rgba(40,40,40,0.85)';
-            ctx.beginPath(); ctx.roundRect(bxMon, byBtn, bw, bh, 5); ctx.fill();
+            ctxRoundRect(ctx, bxMon, byBtn, bw, bh, 5); ctx.fill();
             ctx.strokeStyle = canBuy ? '#ff8844' : '#444'; ctx.lineWidth = 1; ctx.stroke();
             ctx.fillStyle = canBuy ? '#fff' : '#666';
             ctx.textAlign = 'center';
-            let _fs2 = isMobile ? '8px' : '9px';
+            let _fs2 = isMobile ? '9px' : '11px';
             ctx.font = 'bold ' + _fs2 + ' Arial';
-            ctx.fillText('Монстр', bxMon + bw/2, byBtn + bh/2 - (isMobile ? 2 : 2));
+            ctx.fillText('Призвати', bxMon + bw/2, byBtn + bh/2 - (isMobile ? 10 : 12));
+            ctx.fillText('монстра', bxMon + bw/2, byBtn + bh/2 + (isMobile ? 2 : 2));
             ctx.font = _fs2 + ' Arial';
-            ctx.fillText(buyCost + ' душ', bxMon + bw/2, byBtn + bh/2 + (isMobile ? 8 : 9));
+            ctx.fillText(buyCost + ' душ', bxMon + bw/2, byBtn + bh/2 + (isMobile ? 14 : 16));
         } else {
             this._btnX    = null;
             this._buyBtnX = null;
@@ -1382,7 +1355,8 @@ class Unit {
             let kind = MONSTER_KINDS[this.level] || MONSTER_KINDS[20];
             this.monsterKind  = kind.name;
             this.ability      = kind.ability || 'none';
-            this.armor        = (kind.armor || 0) + GAME.monsterArmorBonus;
+            this.hpMult       = kind.hpMult;
+            this.armor        = (kind.armor || 0) + GAME.monsterArmorBonus * kind.hpMult;
 
             // ── HP ────────────────────────────────────────────────────────
             this.hp = (80 + n * 20 + GAME.monsterHpBonus) * kind.hpMult;
@@ -1390,14 +1364,16 @@ class Unit {
             // ── DMG ───────────────────────────────────────────────────────
             let scaledAtk = kind.baseAtk + (n < 5 ? n * 1 : 4 + (n - 4) * 2);
             let dmgVariance = 0.9 + Math.random() * 0.2;
-            this.baseDmg = scaledAtk + GAME.monsterDmgBonus;
+            this.rawBaseDmg = scaledAtk;
+            this._dmgVariance = dmgVariance;
+            this.baseDmg = scaledAtk * (1 + (GAME.monsterDmgPct || 0));
             this.dmg = Math.round(this.baseDmg * dmgVariance);
 
             // ── ША ────────────────────────────────────────────────────────
             this.baseAtkSpeed = kind.baseSpd;
             this.atkSpeedBonus = GAME.monsterAtkSpeedBonus;
             let mSpeedMult = 0.9 + Math.random() * 0.2;
-            this.speed = 1 * mSpeedMult;
+            this.speed = 1.1 * mSpeedMult;
             this.color = kind.color;
             this.size  = 25;
 
@@ -1525,8 +1501,8 @@ class Unit {
     update() {
         if (GAME.gameOver) return;
 
-        // Реген паладіна і лорда
-        if (this.regen > 0 && this.hp < this.maxHp)
+        // Реген паладіна і лорда (тільки живим — hp > 0)
+        if (this.regen > 0 && this.hp > 0 && this.hp < this.maxHp)
             this.hp = Math.min(this.hp + this.regen / 60, this.maxHp);
         // Реген лорда (% від макс HP)
         if (this.type === 'lord' && GAME.lordRegenPct > 0 && this.hp > 0 && this.hp < this.maxHp)
@@ -2022,7 +1998,7 @@ class Unit {
             if (aggroTarget) {
                 // Біжимо до героя
                 let dir = aggroTarget.x > this.x ? 1 : -1;
-                this.x += dir * this.speed * 0.9 * _dt;
+                this.x += dir * this.speed * 1.5 * _dt;
             } else {
                 // Патруль
                 if (!this.patrolDir) this.patrolDir = 1;
@@ -2607,55 +2583,36 @@ function init() {
     setTimeout(resize, 1500);
     window.addEventListener('resize', resize);
 
-    let saved = _store.get('DLSiege_v3');
-    if (saved) {
-        try {
-            let d = JSON.parse(saved);
-            GAME = Object.assign(GAME, d.game);
-            GAME.eliteChance     = Math.min(GAME.eliteChance, 100);
-            GAME.captainChance   = Math.min(GAME.captainChance, 100);
-            GAME.extraHeroChance = Math.min(GAME.extraHeroChance, 100);
-            floors = [];
-            d.floors.forEach(fd => {
-                let f = new Floor(fd.depth);
-                f.hasTrap = fd.hasTrap || false;
-                f.trapType = fd.trapType || null;
-                f.maxMonsters = fd.maxMonsters || (f.isBatFloor ? 4 : 2);
-                // Мінімум для кажанів — 4 (міграція старих збережень)
-                if (f.isBatFloor && f.maxMonsters < 4) f.maxMonsters = 4;
-                // Перераховуємо ціну з depth + скількох апгрейдів куплено
-                { let _b = Math.round(60 * Math.pow(1.1, f.depth) / 5) * 5;
-                  let _upg = f.isBatFloor ? (f.maxMonsters - 4) / 2 : (f.maxMonsters - 2);
-                  f.floorUpgradeCost = Math.round(_b * (1 + 0.5 * _upg) / 5) * 5; }
-                floors.push(f);
-            });
-            // Є збереження — повністю прибираємо стартовий екран з DOM
-            let ss = document.getElementById('start-screen');
-            if (ss) ss.parentNode.removeChild(ss);
-            beginGame();
-        } catch(e) { hardReset(); return; }
-    }
-    // Якщо немає збереження — стартовий екран вже видимий, чекаємо натискання
+    // Стартовий екран завжди показується при перезавантаженні сторінки
+    // Оновлюємо відображення поточного рівня
+    const _savedLvl = loadProgress();
+    const _lvlEl = document.getElementById('lvl-num');
+    if (_lvlEl) _lvlEl.textContent = _savedLvl;
+    const _contBtn = document.getElementById('btn-continue');
+    if (_contBtn) _contBtn.textContent = _savedLvl === 1 ? '▶ Почати гру' : `▶ Рівень ${_savedLvl}`;
+    const _resetBtn = document.getElementById('btn-reset-progress');
+    if (_resetBtn) _resetBtn.style.display = _savedLvl > 1 ? '' : 'none';
 }
 
-function startGame(diff) {
-    const DIFFS = {
-        1: { cityHP: 2000,  heroScale: 0,  maxThreat: 20 },
-        2: { cityHP: 4000,  heroScale: 10, maxThreat: 40 },
-        3: { cityHP: 8000,  heroScale: 20, maxThreat: 60 },
-        4: { cityHP: 15000, heroScale: 30, maxThreat: 80 },
-    };
-    let d = DIFFS[diff] || DIFFS[1];
+function startGame(level) {
+    level = Math.max(1, Math.min(50, level || 1));
+    let d = getLevelConfig(level);
     GAME.cityHP = d.cityHP;
     GAME.maxCityHP = d.cityHP;
-    GAME.heroScalePercent = d.heroScale;
-    GAME.maxThreatLevel = d.maxThreat;
-    GAME.difficultyType = diff;
-    document.getElementById('threat-cap-input').value = d.maxThreat;
-
+    GAME.heroScaleBase    = d.heroBase;
+    GAME.heroScalePercent = d.heroBase;
+    GAME.heroThreatPct    = d.threatPct;
+    GAME.maxThreatLevel   = d.maxThreat;
+    GAME.difficultyType = level;
+    GAME.currentLevel = level;
     floors.push(new Floor(0));
     floors.push(new Floor(1));
     GAME.souls = 150;
+
+    // Завантажуємо назавжди-прокачки (не скидаються між рівнями)
+    let _perma = loadPermaUpgrades();
+    GAME.soulBonus     = _perma.soulBonus     || 0;
+    GAME.soulBonusCost = _perma.soulBonusCost || 100;
 
     let ss = document.getElementById('start-screen');
     if (ss) ss.parentNode.removeChild(ss);
@@ -2802,7 +2759,7 @@ function spawnMinions() {
         if (count < f.maxMonsters) {
             // 1-й поверх: 4 сек, кожен наступний +3 сек (в тіках по 1 сек)
             let spawnInterval = 4 + f.depth * 3;
-            f.spawnTimer += _dt;
+            f.spawnTimer += 1; // +1 за кожну секунду (setInterval 1000ms)
             if (f.spawnTimer >= spawnInterval) {
                 let spawnCount = f.isBatFloor ? 2 : 1;
                 for (let _sc = 0; _sc < spawnCount; _sc++) {
@@ -2850,7 +2807,6 @@ let _dt_lastTs = 0;   // мітка часу попереднього кадру
 
 function loop(ts) {
     if (GAME_PAUSED || GAME.gameOver) return;
-
     // ── Delta-time: нормалізуємо швидкість гри до 60fps ──────────────────
     let _dtElapsed = _dt_lastTs ? Math.min(ts - _dt_lastTs, 50) : 16.667;
     _dt_lastTs = ts;
@@ -2869,9 +2825,8 @@ function loop(ts) {
                 GAME.captainChance = Math.min(100, GAME.captainChance + 1);
             }
             // extraHeroChance і heroScalePercent теж обмежені рівнем складності
-            GAME.extraHeroChance = Math.min(100, GAME.difficultyLevel * 4);
-            let maxScalePercent  = GAME.maxThreatLevel * 4;
-            if (GAME.heroScalePercent < maxScalePercent) GAME.heroScalePercent += 4;
+            GAME.extraHeroChance  = Math.min(100, GAME.difficultyLevel * 4);
+            GAME.heroScalePercent = GAME.heroScaleBase + GAME.difficultyLevel * GAME.heroThreatPct;
         }
     }
 
@@ -3455,7 +3410,7 @@ function loop(ts) {
     ctx.translate(cityX, groundY);
     ctx.scale(_cityScale, _cityScale);
     let _cy = -140;
-    let _dt = GAME.difficultyType || 1;
+    let _diffType = GAME.difficultyType || 1;
     let _fl = Date.now() / 300; // flame flicker time
 
     // ─── Допоміжні функції малювання ────────────────────────────────────────
@@ -3519,7 +3474,7 @@ function loop(ts) {
         ctx.globalAlpha = 1;
     }
 
-    if (_dt === 1) {
+    if (_diffType === 1) {
         // ════════════════════════════════════════════════════════════════
         // ТИП 1: Маленька деревня
         // Дерев'яний паркан, соломʼяні дахи, дерев'яні ворота, криниця
@@ -3594,7 +3549,7 @@ function loop(ts) {
         ctx.font = 'bold 11px Arial'; ctx.textAlign = 'center';
         ctx.fillText('🌿 ДЕРЕВНЯ', 100, _cy + 18);
 
-    } else if (_dt === 2) {
+    } else if (_diffType === 2) {
         // ════════════════════════════════════════════════════════════════
         // ТИП 2: Багата деревня
         // Фахверк (half-timber), кам'яна арка воріт, шпиль каплиці
@@ -3684,7 +3639,7 @@ function loop(ts) {
         ctx.font = 'bold 11px Arial'; ctx.textAlign = 'center';
         ctx.fillText('⛪ БАГАТА ДЕРЕВНЯ', 100, _cy + 13);
 
-    } else if (_dt === 3) {
+    } else if (_diffType === 3) {
         // ════════════════════════════════════════════════════════════════
         // ТИП 3: Бідне місто
         // Стара цегляна стіна з вежами, іржаві ворота, натовп будівель
@@ -3891,6 +3846,96 @@ function loop(ts) {
 
     ctx.restore();
 
+    // ── Збирач Душ (назавжди-апгрейд: +1 душа за героя) ────────────────────
+    {
+        let _ax = CITY_GATE_X + (CAVE_X - CITY_GATE_X) * 0.52;
+        let _ay = groundY; // рівень землі (screen Y)
+        let _t3 = Date.now();
+        let _pulse = 0.5 + 0.5 * Math.sin(_t3 / 600);
+        let _canAfford = GAME.souls >= GAME.soulBonusCost;
+
+        ctx.save();
+
+        // Підставка (камінь)
+        let _pedGrad = ctx.createLinearGradient(_ax - 10, 0, _ax + 10, 0);
+        _pedGrad.addColorStop(0, '#1e1430'); _pedGrad.addColorStop(0.5, '#3a2858'); _pedGrad.addColorStop(1, '#1a1028');
+        ctx.fillStyle = _pedGrad;
+        ctx.beginPath();
+        ctx.roundRect(_ax - 11, _ay - 22, 22, 22, 3);
+        ctx.fill();
+        ctx.strokeStyle = '#5a3a80'; ctx.lineWidth = 0.8;
+        ctx.stroke();
+        // Блиск підставки
+        ctx.fillStyle = 'rgba(140,80,220,0.12)';
+        ctx.fillRect(_ax - 11, _ay - 22, 5, 22);
+        // База-еліпс на землі
+        ctx.fillStyle = '#150e22';
+        ctx.beginPath(); ctx.ellipse(_ax, _ay, 16, 4, 0, 0, Math.PI * 2); ctx.fill();
+
+        // Ореол кристала
+        let _glowA = 0.18 + _pulse * 0.22;
+        let _glowColor = _canAfford ? `rgba(60,200,255,${_glowA})` : `rgba(100,100,180,${_glowA * 0.5})`;
+        let _grd = ctx.createRadialGradient(_ax, _ay - 36, 0, _ax, _ay - 36, 28);
+        _grd.addColorStop(0, _glowColor);
+        _grd.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.fillStyle = _grd;
+        ctx.beginPath(); ctx.arc(_ax, _ay - 36, 28, 0, Math.PI * 2); ctx.fill();
+
+        // Кристал (шестигранник)
+        ctx.globalAlpha = 0.85 + _pulse * 0.12;
+        let _cr = _canAfford ? `rgba(60,200,255,0.9)` : 'rgba(100,120,180,0.7)';
+        ctx.fillStyle = _cr;
+        ctx.beginPath();
+        ctx.moveTo(_ax,      _ay - 50); // верхівка
+        ctx.lineTo(_ax + 10, _ay - 38);
+        ctx.lineTo(_ax + 9,  _ay - 26);
+        ctx.lineTo(_ax,      _ay - 23);
+        ctx.lineTo(_ax - 9,  _ay - 26);
+        ctx.lineTo(_ax - 10, _ay - 38);
+        ctx.closePath();
+        ctx.fill();
+        ctx.strokeStyle = _canAfford ? 'rgba(180,240,255,0.6)' : 'rgba(140,160,220,0.4)';
+        ctx.lineWidth = 0.8;
+        ctx.stroke();
+        // Блиск кристала (верхній ліво-правий рефлекс)
+        ctx.fillStyle = `rgba(220,245,255,${0.4 + _pulse * 0.15})`;
+        ctx.beginPath();
+        ctx.moveTo(_ax - 2,  _ay - 49);
+        ctx.lineTo(_ax + 5,  _ay - 40);
+        ctx.lineTo(_ax - 1,  _ay - 33);
+        ctx.lineTo(_ax - 6,  _ay - 40);
+        ctx.closePath();
+        ctx.fill();
+        ctx.globalAlpha = 1;
+
+        // Текст "+N" над кристалом (якщо вже є апгрейди)
+        if (GAME.soulBonus > 0) {
+            ctx.fillStyle = '#aaeeff';
+            ctx.font = 'bold 10px Arial'; ctx.textAlign = 'center';
+            ctx.fillText('+' + GAME.soulBonus + ' 💀', _ax, _ay - 54);
+        }
+
+        // Назва
+        ctx.globalAlpha = 0.7 + _pulse * 0.2;
+        ctx.fillStyle = GAME.soulBonus > 0 ? '#88ddff' : '#8899cc';
+        ctx.font = isMobile ? '7px Arial' : '8px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText('Збирач душ', _ax, _ay - (GAME.soulBonus > 0 ? 58 : 54));
+        ctx.globalAlpha = 1;
+
+        // Ціна
+        ctx.font = isMobile ? '8px Arial' : '9px Arial';
+        ctx.fillStyle = _canAfford ? '#ffee88' : '#887755';
+        ctx.fillText(GAME.soulBonusCost + ' \uD83D\uDC80', _ax, _ay - 9);
+
+        // Зберігаємо hitbox (world-координати Y; X — canvas-пікселі як у click-обробнику)
+        GAME._soulAltarX      = _ax;
+        GAME._soulAltarWorldY = CFG.surfaceY - 36; // center of crystal in world Y
+        GAME._soulAltarR      = isMobile ? 30 : 22;
+
+        ctx.restore();
+    }
+
     floors.forEach(f => f.draw(GAME.cameraY));
 
     // Реген Лорда (завжди активний, базово 1 HP/сек)
@@ -3936,7 +3981,7 @@ function loop(ts) {
                 let bdy = u.y - u.size - GAME.cameraY - 18;
                 let bdx = u.x;
                 ctx.fillStyle = 'rgba(20,10,40,0.82)';
-                ctx.beginPath(); ctx.roundRect(bdx - 13, bdy - 10, 26, 14, 5); ctx.fill();
+                ctxRoundRect(ctx, bdx-13, bdy-10, 26, 14, 5); ctx.fill();
                 ctx.fillStyle = '#ffcc00';
                 ctx.font = 'bold 11px Arial'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
                 ctx.fillText('×' + cluster.length, bdx, bdy - 3);
@@ -4010,7 +4055,7 @@ function loop(ts) {
                     units.splice(i, 1);
                     continue; // без нагороди душами
                 }
-                let reward = u.soulReward || (u.heroRank === 'boss' ? 80 : u.heroRank.startsWith('elite') ? 25 : 15);
+                let reward = (u.soulReward || (u.heroRank === 'boss' ? 80 : u.heroRank.startsWith('elite') ? 25 : 15)) + (GAME.soulBonus || 0);
                 GAME.souls += reward;
                 let pcol = u.heroRank === 'boss' ? 'purple' : u.heroRank.startsWith('elite') ? 'orange' : 'gold';
                 let pcount = u.heroRank === 'boss' ? 16 : u.heroRank.startsWith('elite') ? 9 : 5;
@@ -4127,11 +4172,18 @@ function loop(ts) {
     updateUI();
 
     if (GAME.cityHP <= 0 && !GAME.gameOver) {
-        document.getElementById('go-title').innerText = 'ПЕРЕМОГА!';
-        document.getElementById('go-title').style.color = 'lime';
-        document.getElementById('go-desc').innerText = 'Місто знищено!';
-        document.getElementById('game-over').style.display = 'flex';
         GAME.gameOver = true;
+        const _lvl = GAME.currentLevel || 1;
+        const _nextLvl = Math.min(_lvl + 1, 50);
+        saveProgress(_nextLvl);
+        const _isLast = _lvl >= 50;
+        document.getElementById('go-title').innerText = _isLast ? '🏆 ГРУ ПРОЙДЕНО!' : `Рівень ${_lvl} пройдено!`;
+        document.getElementById('go-title').style.color = 'lime';
+        document.getElementById('go-desc').innerText = _isLast ? 'Всі 50 рівнів пройдено! 🎉' : `Далі: Рівень ${_nextLvl} / 50`;
+        const _tryBtn = document.getElementById('btn-try-again');
+        _tryBtn.textContent = _isLast ? '🔄 Грати заново' : `→ Рівень ${_nextLvl}`;
+        _tryBtn.onclick = () => hardReset();
+        document.getElementById('game-over').style.display = 'flex';
         return;
     }
 
@@ -4210,11 +4262,13 @@ function upgradeLordVit() {
 function upgradeMonsterAtk() {
     if (GAME.souls < GAME.mobAtkCost) return;
     GAME.souls -= GAME.mobAtkCost;
-    GAME.monsterDmgBonus += 0.6;
-    // +0.15 до ША (Dota2-стиль: кожен бонус зменшує cooldown нелінійно)
-    GAME.monsterAtkSpeedBonus += 0.15;
+    GAME.monsterDmgPct += 0.10;
+    // +0.1 до ША (Dota2-стиль: кожен бонус зменшує cooldown нелінійно)
+    GAME.monsterAtkSpeedBonus += 0.1;
     units.filter(u => u.type === 'monster').forEach(m => {
-        m.dmg += 0.6;
+        // +10% від базової атаки монстра
+        m.baseDmg += (m.rawBaseDmg || m.baseDmg) * 0.1;
+        m.dmg = Math.round(m.baseDmg * (m._dmgVariance || 1));
         m.atkSpeedBonus = GAME.monsterAtkSpeedBonus;
         // перераховуємо cooldown одразу для живих монстрів
         let atkSpd = (m.baseAtkSpeed || 0.83) + m.atkSpeedBonus;
@@ -4228,8 +4282,8 @@ function upgradeMonsterVit() {
     if (GAME.souls < GAME.mobVitCost) return;
     GAME.souls -= GAME.mobVitCost;
     GAME.monsterHpBonus += 25;
-    GAME.monsterArmorBonus += 1;
-    units.filter(u => u.type==='monster').forEach(m => { m.maxHp += 25; m.hp = Math.min(m.hp+25, m.maxHp); m.armor = (m.armor||0) + 1; });
+    GAME.monsterArmorBonus += 1.5;
+    units.filter(u => u.type==='monster').forEach(m => { m.maxHp += 25; m.hp = Math.min(m.hp+25, m.maxHp); m.armor = (m.armor||0) + 1.5 * (m.hpMult||1); });
     GAME.mobVitCost = r5(GAME.mobVitCost * 1.35);
     updateUI(); saveGame();
 }
@@ -4382,11 +4436,27 @@ function buyFloor() {
 }
 
 function triggerWave() {
-    if (GAME.isWave) return;
+    if (GAME.isWave || GAME.waveCooldownActive) return;
     GAME.isWave = true;
+    GAME.waveCooldownActive = true;
     // Тільки поточні монстри отримують waveActive — нові спавн не отримають
     units.forEach(u => { if (u.type === 'monster') u.waveActive = true; });
     setTimeout(() => { GAME.isWave = false; }, 8000);
+
+    // КД 60 сек: блокуємо кнопку і показуємо зворотній відлік
+    let btn = document.getElementById('btn-wave');
+    let remaining = 60;
+    if (btn) { btn.disabled = true; btn.innerHTML = `⚔️ ХВИЛЯ (${remaining}с)`; }
+    let cdInterval = setInterval(() => {
+        if (GAME.gameOver) { clearInterval(cdInterval); return; }
+        remaining--;
+        if (btn) btn.innerHTML = `⚔️ ХВИЛЯ (${remaining}с)`;
+        if (remaining <= 0) {
+            clearInterval(cdInterval);
+            GAME.waveCooldownActive = false;
+            if (btn) { btn.disabled = false; btn.innerHTML = '⚔️ ХВИЛЯ'; }
+        }
+    }, 1000);
 }
 
 // =================== UI ===================
@@ -4395,7 +4465,9 @@ function updateUI() {
     document.getElementById('souls-display').innerText = Math.floor(s);
     document.getElementById('floor-cost-lbl').innerText = GAME.floorCost + '💀';
     document.getElementById('difficulty-level').innerText = GAME.difficultyLevel;
-    document.getElementById('hero-scale').innerText = GAME.heroScalePercent;
+    document.getElementById('max-threat').innerText = GAME.maxThreatLevel;
+    document.getElementById('hero-scale').innerText = 100 + GAME.heroScalePercent;
+    document.getElementById('max-hero-scale').innerText = 100 + GAME.heroScaleBase + GAME.maxThreatLevel * GAME.heroThreatPct;
 
     // Поверх кнопка
     let btnFloor = document.getElementById('btn-floor');
@@ -4413,16 +4485,18 @@ function updateUI() {
     document.getElementById('btn-mob-atk').disabled = s < GAME.mobAtkCost;
     document.getElementById('btn-mob-vit').disabled = s < GAME.mobVitCost;
 
-    // Пастки
-    document.getElementById('btn-trap-spike').disabled  = s < TRAP_COSTS.spike;
-    document.getElementById('btn-trap-tele').disabled   = s < TRAP_COSTS.teleport;
-    document.getElementById('btn-trap-summon').disabled = s < TRAP_COSTS.summon;
-    document.getElementById('btn-trap-dart').disabled   = s < TRAP_COSTS.dart;
+    // Пастки — перевіряємо чи є вільний поверх для встановлення
+    const lordFloorIdx = floors.length - 1;
+    const hasFreeTrapFloor = floors.some(f => f.depth !== lordFloorIdx && !f.hasTrap);
+    document.getElementById('btn-trap-spike').disabled  = s < TRAP_COSTS.spike    || !hasFreeTrapFloor;
+    document.getElementById('btn-trap-tele').disabled   = s < TRAP_COSTS.teleport || !hasFreeTrapFloor;
+    document.getElementById('btn-trap-summon').disabled = s < TRAP_COSTS.summon   || !hasFreeTrapFloor;
+    document.getElementById('btn-trap-dart').disabled   = s < TRAP_COSTS.dart     || !hasFreeTrapFloor;
 
     // Анімація: підсвічуємо кола якщо є доступні апгрейди
     const lordAfford  = s >= GAME.lordAtkCost  || s >= GAME.lordVitCost;
     const mobAfford   = s >= GAME.mobAtkCost   || s >= GAME.mobVitCost;
-    const trapAfford  = s >= Math.min(...Object.values(TRAP_COSTS));
+    const trapAfford  = hasFreeTrapFloor && s >= Math.min(...Object.values(TRAP_COSTS));
     document.querySelectorAll('.cmain-lord').forEach(b => b.classList.toggle('can-afford', lordAfford));
     document.querySelectorAll('.cmain-monster').forEach(b => b.classList.toggle('can-afford', mobAfford));
     document.querySelectorAll('.cmain-trap').forEach(b => b.classList.toggle('can-afford', trapAfford));
@@ -4434,6 +4508,19 @@ function updateUI() {
 }
 
 // =================== УТИЛІТИ ===================
+// Замість ctx.roundRect (не підтримується в старих браузерах)
+function ctxRoundRect(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x+r, y); ctx.lineTo(x+w-r, y);
+    ctx.arcTo(x+w, y, x+w, y+r, r);
+    ctx.lineTo(x+w, y+h-r);
+    ctx.arcTo(x+w, y+h, x+w-r, y+h, r);
+    ctx.lineTo(x+r, y+h);
+    ctx.arcTo(x, y+h, x, y+h-r, r);
+    ctx.lineTo(x, y+r);
+    ctx.arcTo(x, y, x+r, y, r);
+    ctx.closePath();
+}
 function spawnParticle(x, y, color, opts = {}) {
     particles.push({
         x, y, color,
@@ -4492,6 +4579,69 @@ function saveGame() {
 function hardReset() { _store.del('DLSiege_v3'); location.reload(); }
 function gameOver() { GAME.gameOver = true; document.getElementById('game-over').style.display = 'flex'; }
 
+// ── Прогрес рівнів (зберігається окремо від ігрового стану) ──
+function loadProgress() { return Math.max(1, Math.min(50, parseInt(_store.get('DLSiege_lvl') || '1'))); }
+function saveProgress(lvl) { _store.set('DLSiege_lvl', String(Math.min(50, Math.max(1, lvl)))); }
+function resetProgress() { _store.del('DLSiege_lvl'); }
+
+// ── Назавжди-прокачки (не скидаються при рестарті) ──
+function loadPermaUpgrades() { try { return JSON.parse(_store.get('DLSiege_perma') || '{}'); } catch(e) { return {}; } }
+function savePermaUpgrades(data) { _store.set('DLSiege_perma', JSON.stringify(data)); }
+
+function upgradeSoulBonus() {
+    if (GAME.souls < GAME.soulBonusCost) return;
+    GAME.souls -= GAME.soulBonusCost;
+    GAME.soulBonus += 1;
+    // Ціна наступного рівня: ×1.55 заокруглена до 5
+    GAME.soulBonusCost = Math.round(GAME.soulBonusCost * 1.55 / 5) * 5;
+    savePermaUpgrades({ soulBonus: GAME.soulBonus, soulBonusCost: GAME.soulBonusCost });
+    saveGame();
+    updateUI();
+}
+
+function getLevelConfig(lvl) {
+    // Початковий % сили героїв (heroScalePercent):
+    //   Рівні 1–11: зростає від 70% до 100%
+    //   Рівні 12+:  100 + (lvl - 11)% → тобто heroBase = lvl - 11
+    let heroBase;
+    if      (lvl === 1)  heroBase = -30; // 70%
+    else if (lvl === 2)  heroBase = -25; // 75%
+    else if (lvl <= 5)   heroBase = -20; // 80%
+    else if (lvl === 6)  heroBase = -15; // 85%
+    else if (lvl === 7)  heroBase = -10; // 90%
+    else if (lvl <= 10)  heroBase =  -5; // 95%
+    else if (lvl === 11) heroBase =   0; // 100%
+    else                 heroBase = lvl - 11; // 12→1%, 13→2%, ..., 50→39%
+
+    // maxThreat: +5 на рівнях 4,9,14,19,24,29,34,39,44,49
+    const maxThreat = 5 + Math.floor((lvl + 1) / 5) * 5;
+
+    // threatPct: % приросту сили героїв за кожен рівень загрози
+    const threatPct = lvl <=  4 ? 1
+                    : lvl <=  9 ? 2
+                    : lvl <= 14 ? 3
+                    : Math.min(10, 3 + Math.floor((lvl - 10) / 5));
+
+    const t = (lvl - 1) / 49;
+    return {
+        cityHP:    Math.round(1500 + t * 13500), // 1500 → 15000
+        heroBase,
+        maxThreat,
+        threatPct,
+    };
+}
+
+function continueGame() {
+    startGame(loadProgress());
+}
+
+function confirmResetProgress() {
+    if (confirm('Скинути весь прогрес? Ви повернетесь до Рівня 1.')) {
+        resetProgress();
+        hardReset();
+    }
+}
+
 function resize() {
     let dpr = Math.min(window.devicePixelRatio || 1, 2);
     let controls = document.getElementById('controls');
@@ -4517,7 +4667,7 @@ canvas.addEventListener('mousedown',  e => { isDragging=true; lastDragY=e.client
 canvas.addEventListener('mousemove',  e => { if(!isDragging)return; let d=lastDragY-e.clientY; lastDragY=e.clientY; if(manualCameraY===null)manualCameraY=GAME.cameraY; manualCameraY+=d; cameraReturnTimer=0; });
 canvas.addEventListener('mouseup',    ()=> isDragging=false);
 canvas.addEventListener('mouseleave', ()=> isDragging=false);
-let _touchStartX=0, _touchStartY=0, _touchMoved=false;
+let _touchStartX=0, _touchStartY=0, _touchMoved=false, _skipNextClick=false;
 
 canvas.addEventListener('touchstart', e => {
     if (e.touches.length === 1) {
@@ -4549,6 +4699,7 @@ canvas.addEventListener('touchend', e => {
         // Викликаємо обробник кліку напряму — без dispatchEvent (iOS ігнорує)
         let t = e.changedTouches[0];
         _handleCanvasTap(t.clientX, t.clientY);
+        _skipNextClick = true; // блокуємо синтетичний click після touchend
     }
 }, { passive: true });
 
@@ -4591,6 +4742,17 @@ function _handleCanvasTap(clientX, clientY) {
         return;
     }
 
+    // Збирач душ (клік по кристалу на поверхні)
+    if (GAME._soulAltarX != null) {
+        let _dx = cx - GAME._soulAltarX;
+        let _dy = cy - GAME._soulAltarWorldY;
+        let _r  = GAME._soulAltarR || 22;
+        if (_dx * _dx + _dy * _dy <= _r * _r) {
+            upgradeSoulBonus();
+            return;
+        }
+    }
+
     // Кнопки апгрейду поверху (права сторона)
     floors.forEach(f => {
         let _maxMon = f.isBatFloor ? 10 : 5;
@@ -4627,18 +4789,121 @@ function _handleCanvasTap(clientX, clientY) {
     });
 }
 
-// Desktop click → той самий обробник
-canvas.addEventListener('click', e => _handleCanvasTap(e.clientX, e.clientY));
+// Desktop click → той самий обробник (пропускаємо якщо вже оброблено touchend)
+canvas.addEventListener('click', e => {
+    if (_skipNextClick) { _skipNextClick = false; return; }
+    _handleCanvasTap(e.clientX, e.clientY);
+});
 
 // =================== ПАУЗА ===================
 let GAME_PAUSED = false;
 
+const PAUSE_QUOTES = [
+    "Переможець — той, хто ніколи не здається.",
+    "Кожна битва виграється до її початку. — Сун Цзи",
+    "Хоробрість — не відсутність страху, а рішення, що є щось важливіше за страх.",
+    "Я не зазнав поразки. Я просто знайшов 10 000 способів, які не працюють. — Едісон",
+    "Той, хто стоїть за щось, може витримати будь-що.",
+    "Сила не в тому, щоб ніколи не падати, а в тому, щоб підніматися щоразу.",
+    "Не бійся повільно рухатися — бійся стояти на місці.",
+    "Найтемніша ніч — перед світанком.",
+    "Відступати — не означає здаватися. Здаватися — означає не повернутися.",
+    "Дисципліна — це міст між цілями та досягненнями.",
+    "Якщо ти думаєш, що зможеш — ти маєш рацію. Якщо думаєш, що не зможеш — теж.",
+    "Справжній воїн б'ється не тому що ненавидить тих, хто перед ним, а тому що любить тих, хто за ним.",
+    "Наступ — найкраща оборона.",
+    "Важко в навчанні — легко в бою. — Суворов",
+    "Хто контролює себе — той контролює все.",
+    "Великі перемоги народжуються з маленьких рішень.",
+    "Битва виграна тим, хто твердо вирішив її виграти. — Наполеон",
+    "Один в полі не воїн — але починає завжди один.",
+    "Страх б'є гостріше за меч.",
+    "Не чекай моменту. Створюй його.",
+    "Розум — найгостріша зброя.",
+    "Якщо ворог не здається — його знищують.",
+    "Мета без плану — лише мрія.",
+    "Кожен воїн починав з першого кроку.",
+    "Терпіння та час сильніші за силу та пристрасть. — Толстой",
+    "Підготовка до бою — половина перемоги.",
+    "Стратегія без тактики — найповільніший шлях до перемоги. Тактика без стратегії — шум перед поразкою. — Сун Цзи",
+    "Той, хто хоче — шукає спосіб. Той, хто не хоче — шукає причину.",
+    "У битві виживає не найсильніший, а найрозумніший.",
+    "Трудність — ціна перемоги.",
+    "Ворога знищують не зброєю, а розумом.",
+    "Найвища форма перемоги — перемога без бою. — Сун Цзи",
+    "Воля до перемоги нічого не варта без волі підготуватися до неї.",
+    "Якщо хочеш миру — готуйся до війни.",
+    "Тримай ворогів близько, а союзників ще ближче.",
+    "Ніколи не переривай ворога, коли він робить помилку. — Наполеон",
+    "Перемога любить підготовку.",
+    "Армія баранів, очолювана левом, переможе армію левів, очолювану бараном.",
+    "Знай свого ворога і знай себе — і в ста битвах ти не зазнаєш поразки. — Сун Цзи",
+    "Важкий тренінг, легкий бій. Легкий тренінг, важкий бій.",
+    "Той, хто ставить запитання, може виглядати дурнем хвилину. Той, хто не ставить — дурень усе життя.",
+    "Не розмір собаки у бою важливий, а розмір бою в собаці.",
+    "Честь — найкраща броня.",
+    "Краще вмерти стоячи, ніж жити на колінах.",
+    "Один воїн з вірою переможе тисячу без неї.",
+    "Спочатку вони тебе не помічають. Потім сміються. Потім борються. Потім ти перемагаєш.",
+    "Геній — це 1% натхнення і 99% поту. — Едісон",
+    "Перед перемогою завжди стоїть важкий вибір.",
+    "Відвага — це не те, що ти маєш. Це те, що ти робиш.",
+    "Стіна завжди здається непереборною до першого пролому.",
+    "Неможливе — це лише те, що ніхто ще не зробив.",
+    "Залізо кує залізо. — прислів'я",
+    "Справжня сила — знати, коли зупинитися і перегрупуватися.",
+    "Кращий захист — постійна готовність.",
+    "Втоми немає — є брак мотивації.",
+    "Твій найгірший ворог — твоя власна слабкість.",
+    "Перемога — звичка. На жаль, поразка — теж.",
+    "Бій не завершено, доки є бійці.",
+    "Той, хто контролює інформацію — контролює битву.",
+    "Ніколи не залишай поранених позаду.",
+    "Командир думає про армію, а не про себе.",
+    "Дрібниці вирішують битви.",
+    "Швидкість — сестра перемоги.",
+    "Ворога не недооцінюй — але й не бійся.",
+    "Ефект несподіванки — сильніше за чисельну перевагу.",
+    "Терпіння — це зброя.",
+    "Де є воля — там є шлях.",
+    "Сила полягає у знанні своїх меж і їх подоланні.",
+    "Не дай вогню згаснути.",
+    "Справжній лідер іде першим у бій.",
+    "Кров, піт та сльози — ціна величі.",
+    "Якщо ти стомився — пам'ятай, навіщо ти почав.",
+    "Підземелля не підкориться само — веди свою армію.",
+    "Кожен монстр — твій солдат. Кожен поверх — твій редут.",
+    "Захищай те, що побудував — або втратиш усе.",
+    "Тактика без жертв — ознака справжнього майстра.",
+    "Вороги — найкращі вчителі.",
+    "Сьогоднішня поразка — завтрашня мудрість.",
+    "Не той сильний, хто не падає, а той, хто встає.",
+    "Стіни підземелля тримаються на твердості духу.",
+    "Кожна хвиля — це шанс довести свою силу.",
+    "Монстри сильні стільки, скільки їх повелитель.",
+    "Підземелля — відображення свого господаря.",
+    "Чим глибше — тим небезпечніше. Чим небезпечніше — тим славетніше.",
+    "Герої приходять. Герої йдуть. Підземелля стоїть вічно.",
+    "Місто ще дихає — значить є робота.",
+    "Кожна душа ворога — ресурс для нового рівня.",
+    "Не бійся кількості ворогів — бійся власної непідготовленості.",
+    "Пастка, встановлена вчасно, варта цілого загону монстрів.",
+    "Лорд не відступає — лорд перегруповується.",
+    "Той, хто будує глибше — той живе довше.",
+    "Перша хвиля — лише розминка.",
+    "Поспіх у бою — союзник ворога.",
+    "Холодний розрахунок б'є гарячу голову.",
+    "Знай кожен коридор свого підземелля — це твоя зброя.",
+    "Вороги стають сильнішими — ставай мудрішим.",
+    "Успіх — результат правильних рішень у правильний момент.",
+    "Підземелля Лорда не здається. Ніколи.",
+];
 function togglePause() {
     GAME_PAUSED = !GAME_PAUSED;
     document.getElementById('pause-overlay').style.display = GAME_PAUSED ? 'flex' : 'none';
-    // Оновлюємо значення інпута при відкритті
     if (GAME_PAUSED) {
-        document.getElementById('threat-cap-input').value = GAME.maxThreatLevel >= 999 ? 999 : GAME.maxThreatLevel;
+        const q = PAUSE_QUOTES[Math.floor(Math.random() * PAUSE_QUOTES.length)];
+        document.getElementById('pause-quote').textContent = '«' + q + '»';
     } else {
         requestAnimationFrame(loop);
     }
