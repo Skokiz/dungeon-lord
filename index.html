@@ -90,6 +90,7 @@
         .hp-bar         { background: #333; border-radius: 3px; overflow: hidden; margin-top: 2px; }
         .hp-fill        { height: 100%; transition: width 0.2s; }
         .threat-line    { color: #ff8844; display: block; }
+        .hud-max        { color: #886655; font-size: 0.85em; }
 
         /* Кнопка паузи — абсолютно над canvas */
         #pause-toggle-btn {
@@ -597,8 +598,8 @@
                 <div class="hp-bar"><div id="city-hp" class="hp-fill" style="width:100%;background:#ff4444"></div></div>
                 <div class="hp-label-lord">💜 Володар</div>
                 <div class="hp-bar"><div id="lord-hp" class="hp-fill" style="width:100%;background:#aa00ff"></div></div>
-                <div class="threat-line">Рівень загрози — <span id="difficulty-level">0</span></div>
-                <div class="threat-line">Сила героїв — <span id="hero-scale">100</span>%</div>
+                <div class="threat-line">Рівень загрози — <span id="difficulty-level">0</span><span class="hud-max">/<span id="max-threat">5</span></span></div>
+                <div class="threat-line">Сила героїв — <span id="hero-scale">100</span>%<span class="hud-max">/<span id="max-hero-scale">100</span>%</span></div>
             </div>
         </div>
 
@@ -4367,7 +4368,9 @@ function updateUI() {
     document.getElementById('souls-display').innerText = Math.floor(s);
     document.getElementById('floor-cost-lbl').innerText = GAME.floorCost + '💀';
     document.getElementById('difficulty-level').innerText = GAME.difficultyLevel;
+    document.getElementById('max-threat').innerText = GAME.maxThreatLevel;
     document.getElementById('hero-scale').innerText = 100 + GAME.heroScalePercent;
+    document.getElementById('max-hero-scale').innerText = 100 + GAME.heroScaleBase + GAME.maxThreatLevel * GAME.heroThreatPct;
 
     // Поверх кнопка
     let btnFloor = document.getElementById('btn-floor');
