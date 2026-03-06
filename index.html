@@ -2535,7 +2535,7 @@ class Unit {
             ctx.shadowBlur = 0;
             let _t = Date.now() / 1000;
             let _dir = (this.patrolDir || -1);
-            ctx.fillStyle = 'yellow'; ctx.fillRect(this.x - 20, this.y - camY - 40, 40, 40);
+
             drawSlug(ctx, this.x, this.y - camY, _t, _dir, {phase:0, t:0}, 0.72);
 
         } else if (this.type === 'monster' && this.monsterKind === 'skeleton') {
@@ -3295,8 +3295,6 @@ let _dt_lastTs = 0;   // мітка часу попереднього кадру
 
 function loop(ts) {
     if (GAME_PAUSED || GAME.gameOver) return;
-    // DEBUG: велика зелена пляма у верхньому лівому куті
-    ctx.fillStyle = 'lime'; ctx.fillRect(10, 10, 80, 80);
     // ── Delta-time: нормалізуємо швидкість гри до 60fps ──────────────────
     let _dtElapsed = _dt_lastTs ? Math.min(ts - _dt_lastTs, 50) : 16.667;
     _dt_lastTs = ts;
