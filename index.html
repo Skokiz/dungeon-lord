@@ -1067,13 +1067,51 @@ class Floor {
         let lordFloorIdx = floors.length - 1;
         let isLordFloor  = this.depth === lordFloorIdx;
 
-        // ── 1. Заповнення кімнати (кам'яна порода) ──────────────────────
+        // ── 1. Заповнення кімнати — кам'яна кладка ──────────────────────
         let roomGrad = ctx.createLinearGradient(fx, fty, fx, fy);
         roomGrad.addColorStop(0,   '#1a1218');
         roomGrad.addColorStop(0.5, '#231828');
         roomGrad.addColorStop(1,   '#1a1218');
         ctx.fillStyle = roomGrad;
         ctx.fillRect(fx, fty, fw, fh);
+
+        // Текстура кам'яної кладки на задній стіні
+        {
+            const BW = 44, BH = 18; // розмір блоку
+            let bseed = this.depth * 317 + 91;
+            let bpseudo = () => { bseed = (bseed * 1664525 + 1013904223) & 0xffffffff; return (bseed >>> 0) / 0xffffffff; };
+            ctx.save();
+            ctx.beginPath(); ctx.rect(fx, fty, fw, fh); ctx.clip();
+            for (let row = 0; row * BH < fh + BH; row++) {
+                let offsetX = (row % 2 === 0) ? 0 : BW / 2;
+                for (let col = -1; col * BW < fw + BW; col++) {
+                    let bx = fx + col * BW + offsetX;
+                    let by = fty + row * BH;
+                    let lightVar = bpseudo() * 0.06;
+                    ctx.fillStyle = `rgba(${40 + lightVar*80|0},${28 + lightVar*50|0},${50 + lightVar*60|0},0.55)`;
+                    ctx.fillRect(bx + 1, by + 1, BW - 2, BH - 2);
+                    // тінь-грань знизу і праворуч
+                    ctx.fillStyle = 'rgba(0,0,0,0.18)';
+                    ctx.fillRect(bx + 1, by + BH - 3, BW - 2, 2);
+                    ctx.fillRect(bx + BW - 3, by + 1, 2, BH - 2);
+                    // відблиск зверху
+                    ctx.fillStyle = 'rgba(160,120,220,0.07)';
+                    ctx.fillRect(bx + 1, by + 1, BW - 2, 2);
+                    // випадкова тріщина
+                    if (bpseudo() < 0.15) {
+                        ctx.strokeStyle = 'rgba(0,0,0,0.3)';
+                        ctx.lineWidth = 0.7;
+                        let cx1 = bx + 6 + bpseudo() * (BW - 12);
+                        let cy1 = by + 4;
+                        ctx.beginPath();
+                        ctx.moveTo(cx1, cy1);
+                        ctx.lineTo(cx1 + (bpseudo()-0.5)*10, cy1 + BH - 8);
+                        ctx.stroke();
+                    }
+                }
+            }
+            ctx.restore();
+        }
 
         // ── 2. Кам'яні стіни (ліва і права) ────────────────────────────
         let wallW = 22;
@@ -1102,19 +1140,32 @@ class Floor {
         }
 
         // ── 3. Підлога — кам'яні плити ──────────────────────────────────
-        let floorGrad = ctx.createLinearGradient(0, fy, 0, fy + 14);
-        floorGrad.addColorStop(0, '#4a3060'); floorGrad.addColorStop(1, '#2a1840');
-        ctx.fillStyle = floorGrad;
-        ctx.fillRect(fx, fy, fw, 14);
-        // плиткові лінії на підлозі
-        ctx.strokeStyle = 'rgba(0,0,0,0.5)'; ctx.lineWidth = 1;
-        let tileW = 40;
-        for (let tx = fx; tx < fx + fw; tx += tileW) {
-            ctx.beginPath(); ctx.moveTo(tx, fy); ctx.lineTo(tx, fy + 14); ctx.stroke();
+        {
+            const PW = 52, PH = 14;
+            let pseed = this.depth * 211 + 33;
+            let ppseudo = () => { pseed = (pseed * 1664525 + 1013904223) & 0xffffffff; return (pseed >>> 0) / 0xffffffff; };
+            ctx.save();
+            ctx.beginPath(); ctx.rect(fx, fy, fw, PH); ctx.clip();
+            for (let col = -1; col * PW < fw + PW; col++) {
+                let px = fx + col * PW;
+                let lightV = ppseudo() * 0.08;
+                ctx.fillStyle = `rgba(${70+lightV*60|0},${44+lightV*40|0},${90+lightV*60|0},1)`;
+                ctx.fillRect(px + 1, fy + 1, PW - 2, PH - 2);
+                // тінь знизу плити
+                ctx.fillStyle = 'rgba(0,0,0,0.3)';
+                ctx.fillRect(px + 1, fy + PH - 3, PW - 2, 2);
+                // відблиск зверху
+                ctx.fillStyle = 'rgba(200,160,255,0.1)';
+                ctx.fillRect(px + 1, fy + 1, PW - 2, 3);
+                // щілина між плитами
+                ctx.fillStyle = 'rgba(0,0,0,0.6)';
+                ctx.fillRect(px, fy, 1, PH);
+            }
+            ctx.restore();
+            // Відблиск зверху підлоги
+            ctx.fillStyle = 'rgba(180,140,255,0.06)';
+            ctx.fillRect(fx, fy, fw, 3);
         }
-        // Відблиск зверху підлоги
-        ctx.fillStyle = 'rgba(180,140,255,0.08)';
-        ctx.fillRect(fx, fy, fw, 3);
 
         // ── 4. Стеля — сталактити ────────────────────────────────────────
         ctx.fillStyle = '#120e1a';
