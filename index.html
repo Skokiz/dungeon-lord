@@ -3295,6 +3295,8 @@ let _dt_lastTs = 0;   // мітка часу попереднього кадру
 
 function loop(ts) {
     if (GAME_PAUSED || GAME.gameOver) return;
+    // DEBUG: велика зелена пляма у верхньому лівому куті
+    ctx.fillStyle = 'lime'; ctx.fillRect(10, 10, 80, 80);
     // ── Delta-time: нормалізуємо швидкість гри до 60fps ──────────────────
     let _dtElapsed = _dt_lastTs ? Math.min(ts - _dt_lastTs, 50) : 16.667;
     _dt_lastTs = ts;
