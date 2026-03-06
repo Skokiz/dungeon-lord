@@ -999,7 +999,7 @@ function _skSkull(x,y,tilt,jawOpen){
   ctx.fillStyle=_SK.boneHL; ctx.fill(); ctx.restore();
   for(let i=0;i<4;i++){
     const tx=(i-1.5)*4.6;
-    ctx.beginPath(); ctx.roundRect(tx-1.8,4.5,3.4,5,0.8);
+    ctx.beginPath(); ctxRoundRect(ctx, tx-1.8,4.5,3.4,5,0.8);
     ctx.strokeStyle=_SK.outline; ctx.lineWidth=1; ctx.stroke(); ctx.fillStyle=_SK.tooth; ctx.fill();
   }
   ctx.restore();
