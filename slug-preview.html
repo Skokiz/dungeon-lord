@@ -278,8 +278,12 @@ function drawSlug(ctx_, x, y, t, dir = 1, atk = { phase: 0, t: 0 }) {
 //  Attack state machine
 // ═══════════════════════════════════════════════════════════
 
+// ША (attack speed): total animation cycle = windup+strike+recover
+// Changing ATK_SPEED scales all phases proportionally.
+// At 1.0 → 1.1s cycle; at 2.0 → 0.55s cycle (sub-1s works fine).
+const ATK_SPEED = 2.0;
 const ATK = { phase: 0, t: 0 };
-const ATK_DUR = [0, 0.38, 0.22, 0.50]; // duration per phase (sec)
+const ATK_DUR = [0, 0.38 / ATK_SPEED, 0.22 / ATK_SPEED, 0.50 / ATK_SPEED];
 
 function triggerAttack() {
   if (ATK.phase === 0) { ATK.phase = 1; ATK.t = 0; }
@@ -436,10 +440,10 @@ function drawHero(x, t, dir) {
 // Matches index.html logic: state='idle'/'move'/'fight',
 // attackCooldown-based, aggro range ~210px, no auto-timer.
 
-const PATROL_SPEED = 38;  // px/s  (slow crawl)
-const AGGRO_RANGE  = 185; // px    (same order as game's ~210px)
-const ATK_RANGE    = 82;  // px    (melee reach)
-const ATK_COOLDOWN = 1.75;// sec   (≈ game's Math.round(60/atkSpd)/60)
+const PATROL_SPEED = 72;  // px/s
+const AGGRO_RANGE  = 185; // px
+const ATK_RANGE    = 82;  // px
+const ATK_COOLDOWN = 0.7; // sec  (scales with ATK_SPEED)
 
 let slugState = 'patrol'; // 'patrol' | 'fight'
 let slugDir   = 1;
