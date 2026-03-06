@@ -2240,6 +2240,8 @@ class Unit {
                     // Лорд отримав удар — мале тремтіння
                     if (enemy.type === 'lord') triggerScreenShake(3);
                 }
+                // Slug attack animation trigger
+                if (this.monsterKind === 'slime') this._atkAnimStart = Date.now();
 
                 // ── On-hit здібності атакуючого ───────────────────────────
 
@@ -2535,8 +2537,16 @@ class Unit {
             ctx.shadowBlur = 0;
             let _t = Date.now() / 1000;
             let _dir = (this.patrolDir || -1);
-
-            drawSlug(ctx, this.x, this.y - camY, _t, _dir, {phase:0, t:0}, 0.72);
+            // Attack animation: phase1=0-200ms windup, phase2=200-400ms strike, phase3=400-600ms recover
+            let _atk = {phase:0, t:0};
+            if (this._atkAnimStart) {
+                let _el = Date.now() - this._atkAnimStart;
+                if      (_el < 200) { _atk = {phase:1, t:_el/200}; }
+                else if (_el < 400) { _atk = {phase:2, t:(_el-200)/200}; }
+                else if (_el < 600) { _atk = {phase:3, t:(_el-400)/200}; }
+                else                { this._atkAnimStart = null; }
+            }
+            drawSlug(ctx, this.x, this.y - camY, _t, _dir, _atk, 0.72);
 
         } else if (this.type === 'monster' && this.monsterKind === 'skeleton') {
             // Скелет — Don't Starve style
