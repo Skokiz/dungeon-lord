@@ -16,13 +16,13 @@ body {
   font-family: monospace;
   color: #5544aa;
 }
-canvas { background: #120d22; border-radius: 14px; cursor: pointer; }
+canvas { background: #120d22; border-radius: 14px; }
 p { font-size: 11px; letter-spacing: 1px; }
 </style>
 </head>
 <body>
 <canvas id="c" width="380" height="220"></canvas>
-<p>tap to attack · slug.js · Don't Starve style</p>
+<p>patrol → aggro → fight · slug.js · Don't Starve style</p>
 
 <script>
 // ═══════════════════════════════════════════════════════════
@@ -285,16 +285,13 @@ function triggerAttack() {
   if (ATK.phase === 0) { ATK.phase = 1; ATK.t = 0; }
 }
 
-let lastAtkSpawn = false; // to avoid multi-spawn
-
 function updateAttack(dt) {
   if (ATK.phase === 0) return;
   ATK.t += dt / ATK_DUR[ATK.phase];
   if (ATK.t >= 1) {
-    // spawn slime blob when transitioning 1→2
+    // spawn slime blob at moment of strike (1→2)
     if (ATK.phase === 1) {
-      spawnBlob(slugX + 55, GROUND_Y - 18);
-      lastAtkSpawn = true;
+      spawnBlob(slugX + slugDir * 55, GROUND_Y - 18, slugDir * (115 + Math.random() * 45));
     }
     ATK.t = 0;
     ATK.phase = ATK.phase < 3 ? ATK.phase + 1 : 0;
@@ -307,10 +304,9 @@ function updateAttack(dt) {
 
 const blobs = [];
 
-function spawnBlob(x, y) {
+function spawnBlob(x, y, vx) {
   blobs.push({
-    x, y,
-    vx: 110 + Math.random() * 50,
+    x, y, vx,
     vy: -105 - Math.random() * 25,
     r: 6 + Math.random() * 3,
     wobble: Math.random() * Math.PI * 2,
@@ -401,12 +397,114 @@ function drawGround() {
   }
 }
 
-// click/tap → attack
-cvs.addEventListener('pointerdown', () => triggerAttack());
+// ── Hero (simple Don't Starve silhouette) ──────────────────
+
+function drawHero(x, t, dir) {
+  const y    = GROUND_Y;
+  const walk = Math.abs(Math.sin(t * 3.8)) * 3;
+  const leg  = Math.sin(t * 3.8) * 6;
+  ctx.save();
+  ctx.translate(x, y - walk);
+  ctx.scale(dir, 1);
+
+  // shadow
+  ctx.beginPath(); ctx.ellipse(0, 1, 10, 3.5, 0, 0, Math.PI*2);
+  ctx.fillStyle = 'rgba(0,0,0,0.22)'; ctx.fill();
+
+  // legs
+  ctx.beginPath();
+  ctx.moveTo(-3, -8); ctx.lineTo(-4 + leg, 1);
+  ctx.moveTo( 3, -8); ctx.lineTo( 4 - leg, 1);
+  ctx.strokeStyle = '#1a0e04'; ctx.lineWidth = 3.5; ctx.lineCap = 'round'; ctx.stroke();
+
+  // body
+  ctx.beginPath(); ctx.roundRect(-6, -22, 12, 14, [2,2,3,3]);
+  ctx.fillStyle = '#2e1e0c'; ctx.strokeStyle = '#1a0e04'; ctx.lineWidth = 2.2; ctx.stroke(); ctx.fill();
+
+  // head
+  ctx.beginPath(); ctx.arc(0, -30, 8, 0, Math.PI*2);
+  ctx.fillStyle = '#c09050'; ctx.strokeStyle = '#1a0e04'; ctx.lineWidth = 2.5; ctx.stroke(); ctx.fill();
+
+  // eye
+  ctx.beginPath(); ctx.arc(3.5, -31, 1.5, 0, Math.PI*2);
+  ctx.fillStyle = '#0a0400'; ctx.fill();
+
+  ctx.restore();
+}
+
+// ── Slug AI (mirrors game: patrol → fight) ─────────────────
+// Matches index.html logic: state='idle'/'move'/'fight',
+// attackCooldown-based, aggro range ~210px, no auto-timer.
+
+const PATROL_SPEED = 38;  // px/s  (slow crawl)
+const AGGRO_RANGE  = 185; // px    (same order as game's ~210px)
+const ATK_RANGE    = 82;  // px    (melee reach)
+const ATK_COOLDOWN = 1.75;// sec   (≈ game's Math.round(60/atkSpd)/60)
+
+let slugState = 'patrol'; // 'patrol' | 'fight'
+let slugDir   = 1;
+let slugX     = 120;
+let atkCd     = 0;
+let aggroAlpha= 0;        // '!' mark fade
+
+// hero walks back and forth across the canvas
+let heroX  = 340;
+let heroMoveDir = -1; // starts walking left toward slug
+
+function updateAI(dt) {
+  atkCd      = Math.max(0, atkCd - dt);
+  aggroAlpha = Math.max(0, aggroAlpha - dt * 1.2);
+
+  const dx   = heroX - slugX;
+  const dist = Math.abs(dx);
+
+  // freeze AI mid-attack (game also doesn't re-evaluate during swing)
+  if (ATK.phase > 0) return;
+
+  if (slugState === 'patrol') {
+    slugX += slugDir * PATROL_SPEED * dt;
+    if (slugX >= 270) { slugDir = -1; slugX = 270; }
+    if (slugX <=  80) { slugDir =  1; slugX =  80; }
+
+    if (dist < AGGRO_RANGE) {
+      slugState  = 'fight';
+      aggroAlpha = 1;
+    }
+  } else { // 'fight'
+    // face the target
+    slugDir = dx > 0 ? 1 : -1;
+
+    if (dist <= ATK_RANGE && atkCd <= 0) {
+      triggerAttack();
+      atkCd = ATK_COOLDOWN;
+    }
+
+    // de-aggro (game resets to move/idle when no target found)
+    if (dist > AGGRO_RANGE * 1.35) {
+      slugState = 'patrol';
+    }
+  }
+}
+
+function drawAggroMark(x, alpha) {
+  if (alpha < 0.01) return;
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  const y = GROUND_Y - 62;
+  // bubble
+  ctx.beginPath(); ctx.arc(x, y, 10, 0, Math.PI*2);
+  ctx.fillStyle = '#ff6600'; ctx.fill();
+  ctx.strokeStyle = '#1a0600'; ctx.lineWidth = 2; ctx.stroke();
+  // !
+  ctx.font = 'bold 14px monospace';
+  ctx.fillStyle = '#fff8e0';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('!', x, y + 1);
+  ctx.restore();
+}
 
 let t0 = null, lastTs = null;
-let slugX = 90;
-let autoAtkTimer = 3.5; // first auto-attack after 3.5s
 
 function loop(ts) {
   if (!t0) { t0 = ts; lastTs = ts; }
@@ -414,15 +512,13 @@ function loop(ts) {
   const dt = Math.min((ts - lastTs) / 1000, 0.05);
   lastTs = ts;
 
-  // auto-attack
-  autoAtkTimer -= dt;
-  if (autoAtkTimer <= 0) { triggerAttack(); autoAtkTimer = 4.0; }
+  // hero walks back and forth
+  heroX += heroMoveDir * 50 * dt;
+  if (heroX > 355) { heroX = 355; heroMoveDir = -1; }
+  if (heroX <  25) { heroX =  25; heroMoveDir =  1; }
+  const heroFaceDir = heroMoveDir;
 
-  // move slug (slow/stop during windup+strike)
-  const moveSpeed = ATK.phase === 0 ? 0.22 : ATK.phase === 3 ? 0.1 : 0;
-  slugX += moveSpeed;
-  if (slugX > 310) { slugX = 70; puddles.forEach(p => { p.x = 20 + Math.random() * 300; }); }
-
+  updateAI(dt);
   updateAttack(dt);
   updateBlobs(dt);
 
@@ -434,15 +530,18 @@ function loop(ts) {
   ctx.fillStyle = fog; ctx.fillRect(0, 0, 380, 220);
 
   drawGround();
+  drawHero(heroX, t, heroFaceDir);
   drawBlobs();
 
-  // shadow (squishes during windup/strike)
-  const shadowW = 38 + Math.sin(t*1.1)*4 + (ATK.phase===1 ? -8*ease(ATK.t) : ATK.phase===2 ? 12*ease(ATK.t) : 0);
+  // slug shadow (squishes on windup, stretches on strike)
+  const shadowW = 38 + Math.sin(t*1.1)*4
+    + (ATK.phase===1 ? -8*ease(ATK.t) : ATK.phase===2 ? 12*ease(ATK.t) : 0);
   ctx.beginPath();
-  ctx.ellipse(slugX + 5, GROUND_Y, shadowW, 7, 0, 0, Math.PI*2);
+  ctx.ellipse(slugX, GROUND_Y, shadowW, 7, 0, 0, Math.PI*2);
   ctx.fillStyle = 'rgba(0,0,0,0.28)'; ctx.fill();
 
-  drawSlug(ctx, slugX, GROUND_Y - 16, t, 1, ATK);
+  drawSlug(ctx, slugX, GROUND_Y - 16, t, slugDir, ATK);
+  drawAggroMark(slugX, aggroAlpha);
 
   requestAnimationFrame(loop);
 }
