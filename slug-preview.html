@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Slug — Don't Starve style</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  background: #0e0818;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  gap: 12px;
+  font-family: monospace;
+  color: #5544aa;
+}
+canvas { background: #120d22; border-radius: 14px; }
+p { font-size: 11px; letter-spacing: 1px; }
+</style>
+</head>
+<body>
+<canvas id="c" width="380" height="220"></canvas>
+<p>slug.js · Don't Starve style</p>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+//  slug.js  —  Don't Starve style animated slug
+//  API:  drawSlug(ctx, x, y, timeSec, direction=1)
+//        x,y = center of body
+// ═══════════════════════════════════════════════════════════
+
+const S = {
+  outline  : '#180600',
+  body     : '#8a8456',   // main body — olive-brown
+  bodyHL   : '#b0aa76',   // highlight
+  mantle   : '#5e5230',   // darker saddle on top
+  mantleHL : '#7a6c44',
+  belly    : '#c0b882',   // lighter underside
+  slime    : '#7ab822',   // slime trail
+  slimeA   : 'rgba(120,190,30,0.35)',
+  eye      : '#0e0400',
+  eyeHL    : 'rgba(255,255,220,0.8)',
+  stalk    : '#6e6840',
+};
+
+// ── helpers ────────────────────────────────────────────────
+
+function setLine(color, w) {
+  ctx.strokeStyle = color;
+  ctx.lineWidth   = w;
+  ctx.lineCap     = 'round';
+  ctx.lineJoin    = 'round';
+}
+
+// filled shape with outline
+function shape(pathFn, fill, outlineW = 2.6) {
+  ctx.beginPath(); pathFn();
+  ctx.strokeStyle = S.outline;
+  ctx.lineWidth   = outlineW;
+  ctx.lineJoin    = 'round';
+  ctx.stroke();
+  ctx.fillStyle   = fill;
+  ctx.fill();
+}
+
+// highlight gloss on a shape (drawn after fill, no outline)
+function gloss(pathFn, alpha = 0.38) {
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  ctx.beginPath(); pathFn();
+  ctx.fillStyle = S.bodyHL;
+  ctx.fill();
+  ctx.restore();
+}
+
+// ── slime trail ────────────────────────────────────────────
+
+function drawTrail(len) {
+  // multi-layer: wide faded outer, narrow bright inner
+  const grad = ctx.createLinearGradient(-len, 0, 0, 0);
+  grad.addColorStop(0,   'rgba(120,190,30,0)');
+  grad.addColorStop(0.4, 'rgba(120,190,30,0.18)');
+  grad.addColorStop(1,   'rgba(120,190,30,0.45)');
+
+  ctx.beginPath();
+  ctx.moveTo(0, 5);
+  ctx.quadraticCurveTo(-len * 0.5, 8, -len, 5);
+  ctx.quadraticCurveTo(-len * 0.5, 2, 0, 5);
+  ctx.fillStyle = grad;
+  ctx.fill();
+
+  // bright inner streak
+  ctx.beginPath();
+  ctx.moveTo(-4, 5);
+  ctx.quadraticCurveTo(-len * 0.5, 5.5, -len + 4, 5);
+  ctx.lineWidth   = 1.5;
+  ctx.strokeStyle = 'rgba(180,240,60,0.5)';
+  ctx.stroke();
+}
+
+// ── eyestalk ───────────────────────────────────────────────
+
+function drawEyestalk(bx, by, angle, len, eyeR) {
+  const tx = bx + Math.sin(angle) * len;
+  const ty = by - Math.cos(angle) * len;
+
+  // stalk
+  ctx.beginPath();
+  ctx.moveTo(bx, by);
+  ctx.quadraticCurveTo(
+    bx + Math.sin(angle) * len * 0.5,
+    by - Math.cos(angle) * len * 0.5 + 2,
+    tx, ty
+  );
+  setLine(S.outline, 3.2);
+  ctx.stroke();
+  setLine(S.stalk, 1.8);
+  ctx.stroke();
+
+  // eyeball
+  ctx.beginPath();
+  ctx.arc(tx, ty, eyeR, 0, Math.PI * 2);
+  ctx.strokeStyle = S.outline;
+  ctx.lineWidth   = 2.2;
+  ctx.stroke();
+  ctx.fillStyle = S.body;
+  ctx.fill();
+
+  // pupil
+  ctx.beginPath();
+  ctx.arc(tx + eyeR * 0.1, ty + eyeR * 0.1, eyeR * 0.55, 0, Math.PI * 2);
+  ctx.fillStyle = S.eye;
+  ctx.fill();
+
+  // highlight dot
+  ctx.save();
+  ctx.globalAlpha = 0.85;
+  ctx.beginPath();
+  ctx.arc(tx - eyeR * 0.28, ty - eyeR * 0.3, eyeR * 0.28, 0, Math.PI * 2);
+  ctx.fillStyle = S.eyeHL;
+  ctx.fill();
+  ctx.restore();
+}
+
+// ── main slug body ─────────────────────────────────────────
+
+function drawSlug(ctx_, x, y, t, dir = 1) {
+  const spd   = 1.1;
+  const wc    = Math.sin(t * spd);         // crawl cycle -1..1
+  const wc2   = Math.sin(t * spd * 2);    // faster wobble for underbelly
+
+  // body pulsing: stretches then contracts (peristaltic motion)
+  const bL    = 48 + wc * 7;    // body half-length
+  const bH    = 16 - wc * 2;    // body half-height
+  const bWave = wc * 2.5;       // vertical wave offset of the tail
+
+  ctx_.save();
+  ctx_.translate(x, y);
+  ctx_.scale(dir, 1);
+
+  // ── slime trail ──────────────────────────────────────
+  drawTrail(bL + 30);
+
+  // ── underbelly / foot ────────────────────────────────
+  shape(() => {
+    ctx.moveTo(-bL * 0.85, bH * 0.35);
+    ctx.bezierCurveTo(
+      -bL * 0.3,  bH * 0.65,
+       bL * 0.3,  bH * 0.65,
+       bL * 0.75, bH * 0.25 + bWave * 0.3
+    );
+    ctx.bezierCurveTo(
+       bL * 0.5,  bH * 0.5,
+      -bL * 0.3,  bH * 0.55,
+      -bL * 0.85, bH * 0.35
+    );
+    ctx.closePath();
+  }, S.belly, 0);
+
+  // ── main body ────────────────────────────────────────
+  shape(() => {
+    // head (front, right when dir=1)
+    ctx.moveTo(bL * 0.82, bH * 0.1 + bWave * 0.05);
+    ctx.bezierCurveTo(
+       bL * 0.88,  -bH * 0.6,
+       bL * 0.3,   -bH,
+       0,          -bH * 1.05
+    );
+    // top to tail
+    ctx.bezierCurveTo(
+      -bL * 0.35, -bH,
+      -bL * 0.8,  -bH * 0.4 + bWave,
+      -bL * 0.9,   bWave * 0.6
+    );
+    // tail point
+    ctx.bezierCurveTo(
+      -bL * 0.95, bH * 0.1 + bWave * 0.5,
+      -bL * 0.88, bH * 0.3,
+      -bL * 0.7,  bH * 0.38
+    );
+    // bottom back to head
+    ctx.bezierCurveTo(
+      -bL * 0.3,  bH * 0.5,
+       bL * 0.3,  bH * 0.45,
+       bL * 0.82, bH * 0.1 + bWave * 0.05
+    );
+    ctx.closePath();
+  }, S.body);
+
+  // body gloss (top-left highlight)
+  gloss(() => {
+    ctx.ellipse(bL * 0.1, -bH * 0.6, bL * 0.28, bH * 0.28, -0.2, 0, Math.PI * 2);
+  }, 0.32);
+
+  // ── mantle (saddle hump on upper-front) ──────────────
+  shape(() => {
+    ctx.moveTo(bL * 0.55, -bH * 0.3);
+    ctx.bezierCurveTo(
+       bL * 0.6,  -bH * 0.85,
+       bL * 0.05, -bH * 1.05,
+      -bL * 0.1,  -bH * 0.95
+    );
+    ctx.bezierCurveTo(
+      -bL * 0.35, -bH * 0.75,
+      -bL * 0.2,  -bH * 0.35,
+       bL * 0.1,  -bH * 0.28
+    );
+    ctx.bezierCurveTo(
+       bL * 0.3,  -bH * 0.2,
+       bL * 0.5,  -bH * 0.22,
+       bL * 0.55, -bH * 0.3
+    );
+    ctx.closePath();
+  }, S.mantle, 2.2);
+
+  // mantle highlight
+  gloss(() => {
+    ctx.ellipse(bL * 0.22, -bH * 0.72, bL * 0.14, bH * 0.18, -0.3, 0, Math.PI * 2);
+  }, 0.28);
+
+  // ── underbelly ripple lines ───────────────────────────
+  for (let i = 0; i < 4; i++) {
+    const px = bL * 0.55 - i * bL * 0.32;
+    const ripple = Math.sin(t * spd * 2 + i * 1.1) * 1.5;
+    ctx.save();
+    ctx.globalAlpha = 0.22;
+    ctx.beginPath();
+    ctx.moveTo(px, bH * 0.28 + ripple);
+    ctx.quadraticCurveTo(px - bL * 0.08, bH * 0.45 + ripple, px - bL * 0.16, bH * 0.28 + ripple);
+    setLine(S.outline, 1.2);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  // ── eyestalks ────────────────────────────────────────
+  const stalkBase = { x: bL * 0.6, y: -bH * 0.55 };
+  const sway = Math.sin(t * 0.9) * 0.14;
+  const sway2 = Math.sin(t * 0.9 + 0.8) * 0.14;
+
+  drawEyestalk(stalkBase.x - 5, stalkBase.y,  sway,  18, 5.5);   // left eye
+  drawEyestalk(stalkBase.x + 5, stalkBase.y,  sway2, 20, 5.5);   // right eye (slightly taller)
+
+  // ── mouth / lip crease ───────────────────────────────
+  ctx.save();
+  ctx.globalAlpha = 0.6;
+  ctx.beginPath();
+  ctx.moveTo(bL * 0.76, bH * 0.05);
+  ctx.quadraticCurveTo(bL * 0.82, -bH * 0.08, bL * 0.76, -bH * 0.2);
+  setLine(S.outline, 1.4);
+  ctx.stroke();
+  ctx.restore();
+
+  ctx_.restore();
+}
+
+// ═══════════════════════════════════════════════════════════
+//  Preview loop
+// ═══════════════════════════════════════════════════════════
+
+const cvs = document.getElementById('c');
+const ctx  = cvs.getContext('2d');
+
+// slime puddle particles [x, y, r, alpha, drift]
+const puddles = Array.from({length: 18}, (_, i) => ({
+  x: 20 + i * 18 + Math.random() * 10,
+  y: 148 + Math.random() * 4,
+  r: 2 + Math.random() * 4,
+  a: 0.1 + Math.random() * 0.25,
+}));
+
+function drawGround() {
+  // ground line
+  ctx.beginPath();
+  ctx.moveTo(10, 152); ctx.lineTo(370, 152);
+  ctx.strokeStyle = '#221640'; ctx.lineWidth = 1.2; ctx.stroke();
+
+  // slime puddle blobs on ground
+  for (const p of puddles) {
+    ctx.save();
+    ctx.globalAlpha = p.a;
+    ctx.beginPath();
+    ctx.ellipse(p.x, p.y, p.r * 2, p.r * 0.6, 0, 0, Math.PI * 2);
+    ctx.fillStyle = S.slime;
+    ctx.fill();
+    ctx.restore();
+  }
+}
+
+let t0 = null;
+// slug x moves slowly to the right, loops
+let slugX = 80;
+
+function loop(ts) {
+  if (!t0) t0 = ts;
+  const t = (ts - t0) / 1000;
+
+  // slow horizontal crawl
+  slugX += 0.22;
+  if (slugX > 320) { slugX = 60; puddles.forEach(p => { p.x = 20 + Math.random() * 300; }); }
+
+  ctx.clearRect(0, 0, cvs.width, cvs.height);
+
+  // background fog
+  const fog = ctx.createRadialGradient(190, 130, 10, 190, 130, 180);
+  fog.addColorStop(0, 'rgba(30,15,60,0.25)');
+  fog.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = fog; ctx.fillRect(0, 0, 380, 220);
+
+  drawGround();
+
+  // ground shadow
+  ctx.beginPath();
+  ctx.ellipse(slugX + 5, 152, 38 + Math.sin(t * 1.1) * 4, 7, 0, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(0,0,0,0.28)'; ctx.fill();
+
+  drawSlug(ctx, slugX, 136, t, 1);
+
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
