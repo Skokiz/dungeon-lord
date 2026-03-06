@@ -6,56 +6,83 @@
 <style>
 * { margin:0; padding:0; box-sizing:border-box; }
 body {
-  background: #12091e;
+  background: #0e0818;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   min-height: 100vh;
-  gap: 14px;
+  gap: 12px;
   font-family: monospace;
-  color: #6655aa;
+  color: #5544aa;
 }
-canvas { background: #1a1030; border-radius: 12px; }
-p { font-size: 12px; }
+canvas { background: #120d22; border-radius: 14px; }
+p { font-size: 11px; letter-spacing: 1px; }
 </style>
 </head>
 <body>
-<canvas id="c" width="320" height="220"></canvas>
-<p>skeleton.js · Don't Starve style · walking animation</p>
+<canvas id="c" width="340" height="310"></canvas>
+<p>skeleton.js · Don't Starve style · v2</p>
 
 <script>
-// ═══════════════════════════════════════════════════════
-//  skeleton.js  —  Don't Starve style animated skeleton
-//  Use: drawSkeleton(ctx, x, y, time_seconds, direction)
-// ═══════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════
+//  skeleton.js  v2  —  Don't Starve animated skeleton
+//  API:  drawSkeleton(ctx, x, y, timeSec, direction=1)
+//        x,y = hip center position
+// ═══════════════════════════════════════════════════════════
 
 const C = {
-  outline : '#1a0800',
-  bone    : '#ddd3a8',
-  dim     : '#9e9474',   // back limbs
-  joint   : '#c8be98',
-  eye     : '#0e0400',
-  tooth   : '#c4b478',
-  glow    : 'rgba(80,255,120,0.18)',
+  outline  : '#180600',
+  bone     : '#ddd3a2',   // main bone fill
+  boneHL   : '#f4eccc',   // highlight (bright stripe)
+  dim      : '#96906a',   // back/shadowed limbs
+  dimHL    : '#b8b28a',
+  joint    : '#c6bc8c',
+  eye      : '#0b0300',
+  eyeGlow  : 'rgba(50,255,90,0.30)',
+  tooth    : '#c2b46e',
+  crack    : '#180600',
 };
 
-// ── primitives ──────────────────────────────────────────
+// ── core bone primitive — capsule + highlight stripe ────────
 
-function capsule(x1, y1, x2, y2, r, fill) {
-  const a = Math.atan2(y2 - y1, x2 - x1);
+function bone(x1, y1, x2, y2, r, dim = false) {
+  const fill = dim ? C.dim : C.bone;
+  const hl   = dim ? C.dimHL : C.boneHL;
+  const a  = Math.atan2(y2 - y1, x2 - x1);
+  // perpendicular unit vector (for highlight offset)
+  const px = -Math.sin(a);
+  const py =  Math.cos(a);
+
+  // outline + fill
   ctx.beginPath();
-  ctx.arc(x1, y1, r, a + Math.PI / 2, a - Math.PI / 2);
-  ctx.arc(x2, y2, r, a - Math.PI / 2, a + Math.PI / 2);
+  ctx.arc(x1, y1, r, a + Math.PI/2, a - Math.PI/2);
+  ctx.arc(x2, y2, r, a - Math.PI/2, a + Math.PI/2);
   ctx.closePath();
   ctx.strokeStyle = C.outline;
-  ctx.lineWidth   = 2.4;
+  ctx.lineWidth   = 2.8;
   ctx.stroke();
   ctx.fillStyle = fill;
   ctx.fill();
+
+  // highlight stripe (upper-left of bone)
+  const hr = r * 0.28;
+  const ox = px * r * 0.42 - 1;
+  const oy = py * r * 0.42 - 1;
+  ctx.save();
+  ctx.globalAlpha = 0.52;
+  ctx.beginPath();
+  ctx.arc(x1 + ox, y1 + oy, hr, a + Math.PI/2, a - Math.PI/2);
+  ctx.arc(x2 + ox, y2 + oy, hr, a - Math.PI/2, a + Math.PI/2);
+  ctx.closePath();
+  ctx.fillStyle = hl;
+  ctx.fill();
+  ctx.restore();
 }
 
-function dot(x, y, r, fill) {
+// joint sphere with reflection dot
+function jnt(x, y, r, dim = false) {
+  const fill = dim ? C.dim : C.joint;
   ctx.beginPath();
   ctx.arc(x, y, r, 0, Math.PI * 2);
   ctx.strokeStyle = C.outline;
@@ -63,215 +90,323 @@ function dot(x, y, r, fill) {
   ctx.stroke();
   ctx.fillStyle = fill;
   ctx.fill();
+  // reflection
+  ctx.save();
+  ctx.globalAlpha = 0.5;
+  ctx.beginPath();
+  ctx.arc(x - r * 0.3, y - r * 0.35, r * 0.32, 0, Math.PI * 2);
+  ctx.fillStyle = dim ? C.dimHL : C.boneHL;
+  ctx.fill();
+  ctx.restore();
 }
 
-// ── skull ────────────────────────────────────────────────
+// ── skull ───────────────────────────────────────────────────
 
-function drawSkull(x, y, tilt) {
+function drawSkull(x, y, tilt, jawOpen) {
   ctx.save();
   ctx.translate(x, y);
   ctx.rotate(tilt);
 
   // cranium
   ctx.beginPath();
-  ctx.ellipse(0, -4, 11, 13, 0, 0, Math.PI * 2);
+  ctx.ellipse(0, -5, 14, 16, 0, 0, Math.PI * 2);
+  ctx.strokeStyle = C.outline;
+  ctx.lineWidth   = 2.8;
+  ctx.stroke();
+  ctx.fillStyle = C.bone;
+  ctx.fill();
+
+  // cranium highlight (top-left glow)
+  ctx.save();
+  ctx.globalAlpha = 0.38;
+  ctx.beginPath();
+  ctx.ellipse(-4, -10, 8, 9, -0.3, 0, Math.PI * 2);
+  ctx.fillStyle = C.boneHL;
+  ctx.fill();
+  ctx.restore();
+
+  // temporal line (subtle ridge)
+  ctx.save();
+  ctx.globalAlpha = 0.25;
+  ctx.strokeStyle = C.outline;
+  ctx.lineWidth = 1.2;
+  ctx.beginPath();
+  ctx.ellipse(0, -5, 12, 14, 0, Math.PI * 1.15, Math.PI * 1.6);
+  ctx.stroke();
+  ctx.restore();
+
+  // jaw (rotates slightly when walking)
+  const jy = jawOpen * 2.5;
+  ctx.save();
+  ctx.translate(0, jy);
+  ctx.beginPath();
+  ctx.ellipse(0, 8, 10, 6.5, 0, 0.08, Math.PI - 0.08);
   ctx.strokeStyle = C.outline;
   ctx.lineWidth   = 2.4;
   ctx.stroke();
   ctx.fillStyle = C.bone;
   ctx.fill();
 
-  // jaw
+  // jaw highlight
+  ctx.save();
+  ctx.globalAlpha = 0.35;
   ctx.beginPath();
-  ctx.ellipse(0, 7, 8.5, 5.5, 0, 0.05, Math.PI - 0.05);
-  ctx.strokeStyle = C.outline;
-  ctx.lineWidth   = 2;
-  ctx.stroke();
-  ctx.fillStyle = C.bone;
+  ctx.ellipse(-3, 7, 5, 3, -0.2, 0, Math.PI * 2);
+  ctx.fillStyle = C.boneHL;
   ctx.fill();
+  ctx.restore();
 
-  // eye sockets
-  ctx.fillStyle = C.eye;
-  ctx.beginPath(); ctx.ellipse(-4, -5, 3.6, 3.0, -0.1, 0, Math.PI * 2); ctx.fill();
-  ctx.beginPath(); ctx.ellipse( 4, -5, 3.6, 3.0,  0.1, 0, Math.PI * 2); ctx.fill();
-
-  // eye glow (green undead)
-  ctx.fillStyle = C.glow;
-  ctx.beginPath(); ctx.ellipse(-4, -5, 2, 1.8, -0.1, 0, Math.PI * 2); ctx.fill();
-  ctx.beginPath(); ctx.ellipse( 4, -5, 2, 1.8,  0.1, 0, Math.PI * 2); ctx.fill();
-
-  // nose
-  ctx.fillStyle = C.eye;
-  ctx.beginPath();
-  ctx.moveTo(0, -0.5); ctx.lineTo(-2, 3); ctx.lineTo(2, 3);
-  ctx.closePath(); ctx.fill();
-
-  // teeth
-  for (let i = -1; i <= 1; i++) {
-    const tx = i * 4.8;
+  // teeth (4 upper, bottom of cranium)
+  for (let i = 0; i < 4; i++) {
+    const tx = (i - 1.5) * 4.6;
     ctx.beginPath();
-    ctx.roundRect(tx - 2, 5.5, 3.6, 4.5, 0.8);
+    ctx.roundRect(tx - 1.8, 4.5, 3.4, 5, 0.8);
     ctx.strokeStyle = C.outline;
     ctx.lineWidth   = 1;
     ctx.stroke();
     ctx.fillStyle = C.tooth;
     ctx.fill();
   }
+  ctx.restore(); // jaw
+
+  // eye sockets
+  for (const sx of [-5, 5]) {
+    ctx.beginPath();
+    ctx.ellipse(sx, -7, 4.5, 3.8, sx < 0 ? -0.12 : 0.12, 0, Math.PI * 2);
+    ctx.fillStyle = C.eye;
+    ctx.fill();
+
+    // green glow
+    ctx.save();
+    ctx.globalAlpha = 0.55;
+    ctx.beginPath();
+    ctx.ellipse(sx, -7.5, 2.6, 2.0, sx < 0 ? -0.12 : 0.12, 0, Math.PI * 2);
+    ctx.fillStyle = C.eyeGlow;
+    ctx.fill();
+    ctx.restore();
+
+    // bright eye core
+    ctx.save();
+    ctx.globalAlpha = 0.7;
+    ctx.beginPath();
+    ctx.arc(sx, -7.5, 0.9, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(160,255,180,0.9)';
+    ctx.fill();
+    ctx.restore();
+  }
+
+  // nose cavity
+  ctx.beginPath();
+  ctx.moveTo(0, -0.5); ctx.lineTo(-2.8, 3.5); ctx.lineTo(2.8, 3.5);
+  ctx.closePath();
+  ctx.fillStyle = C.eye;
+  ctx.fill();
+
+  // forehead crack
+  ctx.save();
+  ctx.strokeStyle = C.crack;
+  ctx.lineWidth   = 1.1;
+  ctx.globalAlpha = 0.7;
+  ctx.beginPath();
+  ctx.moveTo(2, -18); ctx.lineTo(1, -13); ctx.lineTo(3, -9); ctx.lineTo(1, -5);
+  ctx.stroke();
+  ctx.restore();
 
   ctx.restore();
 }
 
-// ── ribcage ──────────────────────────────────────────────
+// ── ribcage ─────────────────────────────────────────────────
 
 function drawRibcage(x, y) {
   // sternum
-  capsule(x, y, x, y + 17, 2.2, C.bone);
+  bone(x, y, x, y + 20, 2.5);
 
   // clavicles
-  capsule(x, y - 1, x - 10, y - 6, 1.8, C.bone);
-  capsule(x, y - 1, x + 10, y - 6, 1.8, C.bone);
+  bone(x, y, x - 12, y - 8, 2);
+  bone(x, y, x + 12, y - 8, 2);
 
-  // 3 rib pairs
+  // 4 rib pairs (outer stroke trick: draw dark then bone-colored thinner)
   const ribs = [
-    { ry: y + 2,  w: 11, h: 5 },
-    { ry: y + 7,  w: 10, h: 4 },
-    { ry: y + 12, w:  8, h: 3 },
+    { ry: y + 2,  w: 14, h: 7  },
+    { ry: y + 7,  w: 13, h: 6  },
+    { ry: y + 12, w: 11, h: 5  },
+    { ry: y + 17, w:  8, h: 3  },  // floating ribs
   ];
+
   for (const { ry, w, h } of ribs) {
-    for (const side of [-1, 1]) {
+    for (const s of [-1, 1]) {
       ctx.beginPath();
       ctx.moveTo(x, ry);
-      ctx.quadraticCurveTo(x + side * w * 0.6, ry - 1, x + side * w, ry + h);
-      ctx.lineWidth   = 2.4;
+      ctx.bezierCurveTo(
+        x + s * w * 0.4, ry - 2,
+        x + s * w,       ry + h * 0.5,
+        x + s * w,       ry + h
+      );
+      ctx.lineWidth   = 3;
       ctx.strokeStyle = C.outline;
+      ctx.lineCap     = 'round';
       ctx.stroke();
-      ctx.lineWidth   = 1.2;
+      ctx.lineWidth   = 1.5;
       ctx.strokeStyle = C.bone;
       ctx.stroke();
     }
   }
 }
 
-// ── limbs ────────────────────────────────────────────────
+// ── limbs ────────────────────────────────────────────────────
 
 function drawLeg(hx, hy, thighA, dim) {
-  const fill = dim ? C.dim : C.bone;
-  const THIGH = 21, SHIN = 20;
+  const THIGH = 26, SHIN = 24;
 
+  // knee position
   const kx = hx + Math.sin(thighA) * THIGH;
   const ky = hy + Math.cos(thighA) * THIGH;
 
-  // shin bends slightly back when leg swings forward (natural walk)
-  const shinA = thighA + 0.3 + Math.max(0, thighA) * 0.35;
+  // shin bends back when leg swings forward (natural gait)
+  const shinA = thighA + 0.28 + Math.max(0, thighA) * 0.4;
   const ax = kx + Math.sin(shinA) * SHIN;
   const ay = ky + Math.cos(shinA) * SHIN;
 
-  capsule(hx, hy, kx, ky, 4,   fill);
-  dot    (kx, ky, 3.2,          fill);
-  capsule(kx, ky, ax, ay, 3.2, fill);
-  dot    (ax, ay, 2.6,          fill);
+  bone(hx, hy, kx, ky, 5,   dim);
+  jnt (kx, ky, 4,            dim);
+  bone(kx, ky, ax, ay, 4,   dim);
+  jnt (ax, ay, 3.2,          dim);
 
-  // foot — mostly horizontal, slight downward toe
-  capsule(ax, ay, ax + 9, ay + 2, 2.5, fill);
+  // foot (metatarsal + toe)
+  bone(ax, ay, ax + 11, ay + 2, 3, dim);
+  bone(ax + 11, ay + 2, ax + 15, ay + 3, 2, dim);
 }
 
 function drawArm(sx, sy, upperA, dim) {
-  const fill = dim ? C.dim : C.bone;
-  const UA = 15, FA = 13;
+  const UA = 19, FA = 16;
 
   const ex = sx + Math.sin(upperA) * UA;
   const ey = sy + Math.cos(upperA) * UA;
-  const elbA = upperA + 0.35;
+  const elbA = upperA + 0.38;
   const wx = ex + Math.sin(elbA) * FA;
   const wy = ey + Math.cos(elbA) * FA;
 
-  capsule(sx, sy, ex, ey, 3,   fill);
-  dot    (ex, ey, 2.4,          fill);
-  capsule(ex, ey, wx, wy, 2.2, fill);
+  bone(sx, sy, ex, ey, 3.5, dim);
+  jnt (ex, ey, 2.8,          dim);
+  bone(ex, ey, wx, wy, 2.8, dim);
 
-  // 3 fingers
-  for (const da of [-0.32, 0, 0.32]) {
+  // 3 bony fingers
+  for (const [da, len] of [[-0.35, 6], [0, 7], [0.35, 6]]) {
     const fa = elbA + da;
-    capsule(wx, wy, wx + Math.sin(fa) * 5, wy + Math.cos(fa) * 5, 1.3, fill);
+    bone(wx, wy, wx + Math.sin(fa)*len, wy + Math.cos(fa)*len, 1.4, dim);
   }
 }
 
-// ── full skeleton ────────────────────────────────────────
+// ── full skeleton ────────────────────────────────────────────
 
 function drawSkeleton(ctx_, x, y, t, dir = 1) {
-  const wc    = Math.sin(t * 2.4);          // walk cycle  –1..1
-  const bob   = (1 - Math.abs(wc)) * 2.8;  // dips at mid-stride
-  const tilt  = wc * 0.04 * dir;
+  const spd   = 2.2;
+  const wc    = Math.sin(t * spd);               // -1 .. 1  walk cycle
+  const bob   = (1 - Math.abs(wc)) * 3.5;       // dips at mid-stride
+  const hipT  = Math.cos(t * spd) * 0.08;       // hip side-tilt
+  const spineLean = 0.07;                        // constant slight forward lean
+  const jawOpen = Math.abs(Math.sin(t * spd * 0.7)) * 0.3; // jaw chatter
 
-  const legA  = wc * 0.44 * dir;
-  const armA  = -wc * 0.32 * dir;
+  const legA  = wc * 0.48 * dir;
+  const armA  = -wc * 0.36 * dir;
 
+  // Anatomy landmarks (local, unscaled)
   const HX = 0, HY = 0;
-  const SPINE_TOP = -32;
-  const NECK_Y    = -40;
-  const HEAD_Y    = -54;
-  const SHL_Y     = -28;
-  const SHL_X     = 8;
+  const SPINE_LEN  = 40;
+  const SPINE_TOP  = -SPINE_LEN;            // -40
+  const RIB_Y      = SPINE_TOP - 2;        // -42
+  const SHL_Y      = SPINE_TOP + 4;        // -36  (near top of ribcage)
+  const SHL_X      = 12;
+  const NECK_LEN   = 10;
+  const NECK_Y     = SPINE_TOP - NECK_LEN; // -50
+  const HEAD_Y     = NECK_Y - 18;          // -68  (skull center)
 
   ctx_.save();
   ctx_.translate(x, y - bob);
-  ctx_.rotate(tilt);
-  ctx_.scale(dir, 1);  // flip for direction
+  ctx_.rotate(spineLean * dir + hipT * dir);  // lean + hip rock
+  ctx_.scale(1.45, 1.45);                     // global scale
 
-  // back limbs first (behind body)
-  drawLeg(-3, HY,     -legA, true);
+  // ── back limbs (behind body) ──────────────────────────
+  drawLeg( 4, HY,        -legA, true);
   drawArm(-SHL_X, SHL_Y, -armA, true);
 
-  // pelvis
-  capsule(-8, HY - 2, 8, HY - 2, 4.5, C.bone);
+  // ── pelvis ────────────────────────────────────────────
+  bone(-10, HY - 2, 10, HY - 2, 5.5);
 
-  // spine
-  capsule(HX, HY - 3, HX, SPINE_TOP, 2.8, C.bone);
+  // ── spine ─────────────────────────────────────────────
+  // slight S-curve: draw as two segments with small offset
+  const smid = SPINE_TOP * 0.5;
+  bone(HX,    HY - 3,   HX + 1, smid,      3.2);
+  bone(HX + 1, smid,    HX,     SPINE_TOP, 3.0);
 
-  // ribcage
-  drawRibcage(HX, SPINE_TOP - 2);
+  // ── ribcage ───────────────────────────────────────────
+  drawRibcage(HX, RIB_Y);
 
-  // front arm
+  // ── front arm ─────────────────────────────────────────
   drawArm(SHL_X, SHL_Y, armA, false);
 
-  // front leg
-  drawLeg(3, HY, legA, false);
+  // ── front leg ─────────────────────────────────────────
+  drawLeg(-4, HY, legA, false);
 
-  // neck
-  capsule(HX, SPINE_TOP, HX, NECK_Y, 2.2, C.bone);
+  // ── neck ──────────────────────────────────────────────
+  bone(HX, SPINE_TOP, HX, NECK_Y, 2.8);
 
-  // skull
-  drawSkull(HX, HEAD_Y, wc * 0.05);
+  // ── skull ─────────────────────────────────────────────
+  drawSkull(HX, HEAD_Y, wc * 0.06 * dir, jawOpen);
 
   ctx_.restore();
 }
 
-// ═══════════════════════════════════════════════════════
-//  Preview loop
-// ═══════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════
+//  Preview — background + animation loop
+// ═══════════════════════════════════════════════════════════
 
 const cvs = document.getElementById('c');
 const ctx  = cvs.getContext('2d');
+
+// pre-draw ground texture once
+function drawBg() {
+  // distant fog
+  const fog = ctx.createRadialGradient(170, 200, 10, 170, 200, 160);
+  fog.addColorStop(0, 'rgba(40,15,80,0.35)');
+  fog.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = fog;
+  ctx.fillRect(0, 0, 340, 310);
+
+  // ground line + subtle dirt
+  ctx.strokeStyle = '#221640';
+  ctx.lineWidth   = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(20, 238); ctx.lineTo(320, 238);
+  ctx.stroke();
+
+  // ground surface gradient
+  const gr = ctx.createLinearGradient(0, 235, 0, 260);
+  gr.addColorStop(0, 'rgba(30,18,50,0.5)');
+  gr.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = gr;
+  ctx.fillRect(0, 235, 340, 30);
+}
+
 let t0 = null;
 
 function loop(ts) {
   if (!t0) t0 = ts;
   const t = (ts - t0) / 1000;
 
-  ctx.clearRect(0, 0, cvs.width, cvs.height);
+  ctx.clearRect(0, 0, 340, 310);
+  drawBg();
 
-  // ground
+  // ground shadow (stretches with walk cycle)
+  const sw  = 28 + Math.abs(Math.sin(t * 2.2)) * 6;
+  const sox = 170 + Math.sin(t * 2.2) * 8;
   ctx.beginPath();
-  ctx.moveTo(0, 193); ctx.lineTo(320, 193);
-  ctx.strokeStyle = '#2a1d42'; ctx.lineWidth = 1; ctx.stroke();
+  ctx.ellipse(sox, 238, sw, 6, 0, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(0,0,0,0.4)';
+  ctx.fill();
 
-  // shadow
-  const sx = 160 + Math.sin(t * 2.4) * 6;
-  ctx.beginPath();
-  ctx.ellipse(sx, 193, 24, 5, 0, 0, Math.PI * 2);
-  ctx.fillStyle = 'rgba(0,0,0,0.3)'; ctx.fill();
-
-  drawSkeleton(ctx, 160, 183, t, 1);
+  // HIP is at y=222 (feet reach ground at ~238)
+  drawSkeleton(ctx, 170, 222, t, 1);
 
   requestAnimationFrame(loop);
 }
