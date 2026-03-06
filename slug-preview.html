@@ -12,92 +12,78 @@ body {
   align-items: center;
   justify-content: center;
   min-height: 100vh;
-  gap: 12px;
+  gap: 10px;
   font-family: monospace;
   color: #5544aa;
 }
-canvas { background: #120d22; border-radius: 14px; }
+canvas { background: #120d22; border-radius: 14px; cursor: pointer; }
 p { font-size: 11px; letter-spacing: 1px; }
 </style>
 </head>
 <body>
 <canvas id="c" width="380" height="220"></canvas>
-<p>slug.js · Don't Starve style</p>
+<p>tap to attack · slug.js · Don't Starve style</p>
 
 <script>
 // ═══════════════════════════════════════════════════════════
 //  slug.js  —  Don't Starve style animated slug
-//  API:  drawSlug(ctx, x, y, timeSec, direction=1)
-//        x,y = center of body
+//  API:  drawSlug(ctx, x, y, timeSec, direction, atk)
 // ═══════════════════════════════════════════════════════════
 
 const S = {
   outline  : '#180600',
-  body     : '#8a8456',   // main body — olive-brown
-  bodyHL   : '#b0aa76',   // highlight
-  mantle   : '#5e5230',   // darker saddle on top
-  mantleHL : '#7a6c44',
-  belly    : '#c0b882',   // lighter underside
-  slime    : '#7ab822',   // slime trail
-  slimeA   : 'rgba(120,190,30,0.35)',
+  body     : '#8a8456',
+  bodyHL   : '#b0aa76',
+  mantle   : '#5e5230',
+  belly    : '#c0b882',
+  slime    : '#7ab822',
+  slimeDark: '#4a8800',
   eye      : '#0e0400',
-  eyeHL    : 'rgba(255,255,220,0.8)',
+  eyeHL    : 'rgba(255,255,220,0.85)',
   stalk    : '#6e6840',
+  mouthIn  : '#0a0200',
 };
+
+// smoothstep easing
+const ease = p => p * p * (3 - 2 * p);
 
 // ── helpers ────────────────────────────────────────────────
 
 function setLine(color, w) {
-  ctx.strokeStyle = color;
-  ctx.lineWidth   = w;
-  ctx.lineCap     = 'round';
-  ctx.lineJoin    = 'round';
+  ctx.strokeStyle = color; ctx.lineWidth = w;
+  ctx.lineCap = 'round';   ctx.lineJoin = 'round';
 }
-
-// filled shape with outline
-function shape(pathFn, fill, outlineW = 2.6) {
+function shape(pathFn, fill, ow = 2.6) {
   ctx.beginPath(); pathFn();
-  ctx.strokeStyle = S.outline;
-  ctx.lineWidth   = outlineW;
-  ctx.lineJoin    = 'round';
-  ctx.stroke();
-  ctx.fillStyle   = fill;
-  ctx.fill();
+  ctx.strokeStyle = S.outline; ctx.lineWidth = ow;
+  ctx.lineJoin = 'round'; ctx.stroke();
+  ctx.fillStyle = fill;   ctx.fill();
 }
-
-// highlight gloss on a shape (drawn after fill, no outline)
 function gloss(pathFn, alpha = 0.38) {
-  ctx.save();
-  ctx.globalAlpha = alpha;
+  ctx.save(); ctx.globalAlpha = alpha;
   ctx.beginPath(); pathFn();
-  ctx.fillStyle = S.bodyHL;
-  ctx.fill();
+  ctx.fillStyle = S.bodyHL; ctx.fill();
   ctx.restore();
 }
 
 // ── slime trail ────────────────────────────────────────────
 
-function drawTrail(len) {
-  // multi-layer: wide faded outer, narrow bright inner
+function drawTrail(x, y, len) {
+  ctx.save(); ctx.translate(x, y);
   const grad = ctx.createLinearGradient(-len, 0, 0, 0);
   grad.addColorStop(0,   'rgba(120,190,30,0)');
-  grad.addColorStop(0.4, 'rgba(120,190,30,0.18)');
-  grad.addColorStop(1,   'rgba(120,190,30,0.45)');
-
+  grad.addColorStop(0.4, 'rgba(120,190,30,0.15)');
+  grad.addColorStop(1,   'rgba(120,190,30,0.4)');
   ctx.beginPath();
   ctx.moveTo(0, 5);
   ctx.quadraticCurveTo(-len * 0.5, 8, -len, 5);
   ctx.quadraticCurveTo(-len * 0.5, 2, 0, 5);
-  ctx.fillStyle = grad;
-  ctx.fill();
-
-  // bright inner streak
+  ctx.fillStyle = grad; ctx.fill();
   ctx.beginPath();
   ctx.moveTo(-4, 5);
   ctx.quadraticCurveTo(-len * 0.5, 5.5, -len + 4, 5);
-  ctx.lineWidth   = 1.5;
-  ctx.strokeStyle = 'rgba(180,240,60,0.5)';
-  ctx.stroke();
+  setLine('rgba(180,240,60,0.45)', 1.5); ctx.stroke();
+  ctx.restore();
 }
 
 // ── eyestalk ───────────────────────────────────────────────
@@ -105,237 +91,358 @@ function drawTrail(len) {
 function drawEyestalk(bx, by, angle, len, eyeR) {
   const tx = bx + Math.sin(angle) * len;
   const ty = by - Math.cos(angle) * len;
-
-  // stalk
   ctx.beginPath();
   ctx.moveTo(bx, by);
-  ctx.quadraticCurveTo(
-    bx + Math.sin(angle) * len * 0.5,
-    by - Math.cos(angle) * len * 0.5 + 2,
-    tx, ty
-  );
-  setLine(S.outline, 3.2);
-  ctx.stroke();
-  setLine(S.stalk, 1.8);
-  ctx.stroke();
+  ctx.quadraticCurveTo(bx + Math.sin(angle)*len*0.5, by - Math.cos(angle)*len*0.5 + 2, tx, ty);
+  setLine(S.outline, 3.2); ctx.stroke();
+  setLine(S.stalk,   1.8); ctx.stroke();
 
-  // eyeball
-  ctx.beginPath();
-  ctx.arc(tx, ty, eyeR, 0, Math.PI * 2);
-  ctx.strokeStyle = S.outline;
-  ctx.lineWidth   = 2.2;
-  ctx.stroke();
-  ctx.fillStyle = S.body;
-  ctx.fill();
+  ctx.beginPath(); ctx.arc(tx, ty, eyeR, 0, Math.PI*2);
+  ctx.strokeStyle = S.outline; ctx.lineWidth = 2.2; ctx.stroke();
+  ctx.fillStyle = S.body; ctx.fill();
 
-  // pupil
-  ctx.beginPath();
-  ctx.arc(tx + eyeR * 0.1, ty + eyeR * 0.1, eyeR * 0.55, 0, Math.PI * 2);
-  ctx.fillStyle = S.eye;
-  ctx.fill();
+  ctx.beginPath(); ctx.arc(tx + eyeR*0.1, ty + eyeR*0.1, eyeR*0.55, 0, Math.PI*2);
+  ctx.fillStyle = S.eye; ctx.fill();
 
-  // highlight dot
-  ctx.save();
-  ctx.globalAlpha = 0.85;
-  ctx.beginPath();
-  ctx.arc(tx - eyeR * 0.28, ty - eyeR * 0.3, eyeR * 0.28, 0, Math.PI * 2);
-  ctx.fillStyle = S.eyeHL;
-  ctx.fill();
+  ctx.save(); ctx.globalAlpha = 0.85;
+  ctx.beginPath(); ctx.arc(tx - eyeR*0.28, ty - eyeR*0.3, eyeR*0.28, 0, Math.PI*2);
+  ctx.fillStyle = S.eyeHL; ctx.fill();
   ctx.restore();
 }
 
-// ── main slug body ─────────────────────────────────────────
+// ── MAIN SLUG ──────────────────────────────────────────────
+// atk = { phase:0..3, t:0..1 }
+// phase 0=idle, 1=windup, 2=strike, 3=recover
 
-function drawSlug(ctx_, x, y, t, dir = 1) {
-  const spd   = 1.1;
-  const wc    = Math.sin(t * spd);         // crawl cycle -1..1
-  const wc2   = Math.sin(t * spd * 2);    // faster wobble for underbelly
+function drawSlug(ctx_, x, y, t, dir = 1, atk = { phase: 0, t: 0 }) {
+  const spd = 1.1;
+  // dampen crawl animation during attack
+  const crawlDamp = atk.phase > 0 ? 0.15 : 1;
+  const wc   = Math.sin(t * spd) * crawlDamp;
+  const wc2  = Math.sin(t * spd * 2) * crawlDamp;
 
-  // body pulsing: stretches then contracts (peristaltic motion)
-  const bL    = 48 + wc * 7;    // body half-length
-  const bH    = 16 - wc * 2;    // body half-height
-  const bWave = wc * 2.5;       // vertical wave offset of the tail
+  // ── compute attack offsets ─────────────────────────────
+  let atkLen   = 0;   // body stretch (fraction)
+  let headFwd  = 0;   // head lunge forward (px)
+  let headUp   = 0;   // head vertical offset (px, negative=up)
+  let mouthOpen= 0;   // 0–1
+  let stalkRet = 0;   // eyestalk retraction 0–1
+  let flash    = 0;   // body flash brightness 0–1
+
+  const p = atk.t;
+  if (atk.phase === 1) {           // WINDUP: coil back
+    const e = ease(p);
+    atkLen    = -e * 0.28;
+    headUp    = -e * 9;
+    headFwd   = -e * 4;
+    mouthOpen =  e * 0.25;
+    stalkRet  =  e * 0.6;
+  } else if (atk.phase === 2) {   // STRIKE: snap forward
+    const e = ease(p);
+    atkLen    = 0.45 * (1 - e);   // snap then settle
+    headFwd   = 22 * (1 - e);     // lunge then pull back
+    headUp    = -9 + 18 * ease(Math.min(p * 2, 1)); // up → crash down
+    mouthOpen = 1.0 - e * 0.4;   // gape → slightly close
+    stalkRet  = 1.0;              // fully retracted
+    flash     = Math.max(0, 1 - p * 3); // brief flash
+  } else if (atk.phase === 3) {   // RECOVER
+    const e = ease(p);
+    stalkRet  = 1 - e;
+    mouthOpen = (1 - e) * 0.3;
+  }
+
+  const bL   = (48 + wc * 7) * (1 + atkLen);
+  const bH   = 16 - wc * 2;
+  const bWave= wc * 2.5;
 
   ctx_.save();
   ctx_.translate(x, y);
   ctx_.scale(dir, 1);
 
-  // ── slime trail ──────────────────────────────────────
-  drawTrail(bL + 30);
+  // trail
+  drawTrail(0, 0, bL + 30);
 
-  // ── underbelly / foot ────────────────────────────────
+  // ── underbelly ──────────────────────────────────────
   shape(() => {
-    ctx.moveTo(-bL * 0.85, bH * 0.35);
-    ctx.bezierCurveTo(
-      -bL * 0.3,  bH * 0.65,
-       bL * 0.3,  bH * 0.65,
-       bL * 0.75, bH * 0.25 + bWave * 0.3
-    );
-    ctx.bezierCurveTo(
-       bL * 0.5,  bH * 0.5,
-      -bL * 0.3,  bH * 0.55,
-      -bL * 0.85, bH * 0.35
-    );
+    ctx.moveTo(-bL*0.85, bH*0.35);
+    ctx.bezierCurveTo(-bL*0.3, bH*0.65, bL*0.3, bH*0.65, bL*0.75, bH*0.25+bWave*0.3);
+    ctx.bezierCurveTo( bL*0.5, bH*0.5, -bL*0.3, bH*0.55, -bL*0.85, bH*0.35);
     ctx.closePath();
   }, S.belly, 0);
 
-  // ── main body ────────────────────────────────────────
+  // ── body ────────────────────────────────────────────
+  // headFwd applied to front control points
+  const hfx = headFwd;
+  const hfy = headUp;
   shape(() => {
-    // head (front, right when dir=1)
-    ctx.moveTo(bL * 0.82, bH * 0.1 + bWave * 0.05);
-    ctx.bezierCurveTo(
-       bL * 0.88,  -bH * 0.6,
-       bL * 0.3,   -bH,
-       0,          -bH * 1.05
-    );
-    // top to tail
-    ctx.bezierCurveTo(
-      -bL * 0.35, -bH,
-      -bL * 0.8,  -bH * 0.4 + bWave,
-      -bL * 0.9,   bWave * 0.6
-    );
-    // tail point
-    ctx.bezierCurveTo(
-      -bL * 0.95, bH * 0.1 + bWave * 0.5,
-      -bL * 0.88, bH * 0.3,
-      -bL * 0.7,  bH * 0.38
-    );
-    // bottom back to head
-    ctx.bezierCurveTo(
-      -bL * 0.3,  bH * 0.5,
-       bL * 0.3,  bH * 0.45,
-       bL * 0.82, bH * 0.1 + bWave * 0.05
-    );
+    ctx.moveTo(bL*0.82 + hfx, bH*0.1 + bWave*0.05 + hfy);
+    ctx.bezierCurveTo(bL*0.88+hfx, -bH*0.6+hfy, bL*0.3+hfx*0.5, -bH+hfy*0.5, 0, -bH*1.05);
+    ctx.bezierCurveTo(-bL*0.35, -bH, -bL*0.8, -bH*0.4+bWave, -bL*0.9, bWave*0.6);
+    ctx.bezierCurveTo(-bL*0.95, bH*0.1+bWave*0.5, -bL*0.88, bH*0.3, -bL*0.7, bH*0.38);
+    ctx.bezierCurveTo(-bL*0.3, bH*0.5, bL*0.3, bH*0.45, bL*0.82+hfx, bH*0.1+bWave*0.05+hfy);
     ctx.closePath();
   }, S.body);
 
-  // body gloss (top-left highlight)
-  gloss(() => {
-    ctx.ellipse(bL * 0.1, -bH * 0.6, bL * 0.28, bH * 0.28, -0.2, 0, Math.PI * 2);
-  }, 0.32);
+  // body gloss
+  gloss(() => { ctx.ellipse(bL*0.1, -bH*0.6, bL*0.28, bH*0.28, -0.2, 0, Math.PI*2); }, 0.32);
 
-  // ── mantle (saddle hump on upper-front) ──────────────
+  // flash overlay during strike
+  if (flash > 0.02) {
+    ctx.save(); ctx.globalAlpha = flash * 0.45;
+    ctx.beginPath();
+    ctx.moveTo(bL*0.82+hfx, bH*0.1+hfy);
+    ctx.bezierCurveTo(bL*0.88+hfx, -bH*0.6+hfy, bL*0.3+hfx*0.5, -bH+hfy*0.5, 0, -bH*1.05);
+    ctx.bezierCurveTo(-bL*0.35, -bH, -bL*0.8, -bH*0.4+bWave, -bL*0.9, bWave*0.6);
+    ctx.bezierCurveTo(-bL*0.95, bH*0.1, -bL*0.88, bH*0.3, -bL*0.7, bH*0.38);
+    ctx.bezierCurveTo(-bL*0.3, bH*0.5, bL*0.3, bH*0.45, bL*0.82+hfx, bH*0.1+hfy);
+    ctx.closePath();
+    ctx.fillStyle = '#e0dc90'; ctx.fill();
+    ctx.restore();
+  }
+
+  // ── mantle ──────────────────────────────────────────
   shape(() => {
-    ctx.moveTo(bL * 0.55, -bH * 0.3);
-    ctx.bezierCurveTo(
-       bL * 0.6,  -bH * 0.85,
-       bL * 0.05, -bH * 1.05,
-      -bL * 0.1,  -bH * 0.95
-    );
-    ctx.bezierCurveTo(
-      -bL * 0.35, -bH * 0.75,
-      -bL * 0.2,  -bH * 0.35,
-       bL * 0.1,  -bH * 0.28
-    );
-    ctx.bezierCurveTo(
-       bL * 0.3,  -bH * 0.2,
-       bL * 0.5,  -bH * 0.22,
-       bL * 0.55, -bH * 0.3
-    );
+    ctx.moveTo(bL*0.55, -bH*0.3);
+    ctx.bezierCurveTo( bL*0.6,  -bH*0.85, bL*0.05, -bH*1.05, -bL*0.1, -bH*0.95);
+    ctx.bezierCurveTo(-bL*0.35, -bH*0.75, -bL*0.2, -bH*0.35,  bL*0.1, -bH*0.28);
+    ctx.bezierCurveTo( bL*0.3,  -bH*0.2,  bL*0.5,  -bH*0.22,  bL*0.55,-bH*0.3);
     ctx.closePath();
   }, S.mantle, 2.2);
+  gloss(() => { ctx.ellipse(bL*0.22, -bH*0.72, bL*0.14, bH*0.18, -0.3, 0, Math.PI*2); }, 0.28);
 
-  // mantle highlight
-  gloss(() => {
-    ctx.ellipse(bL * 0.22, -bH * 0.72, bL * 0.14, bH * 0.18, -0.3, 0, Math.PI * 2);
-  }, 0.28);
-
-  // ── underbelly ripple lines ───────────────────────────
+  // ── belly ripple lines ───────────────────────────────
   for (let i = 0; i < 4; i++) {
-    const px = bL * 0.55 - i * bL * 0.32;
-    const ripple = Math.sin(t * spd * 2 + i * 1.1) * 1.5;
-    ctx.save();
-    ctx.globalAlpha = 0.22;
+    const px = bL*0.55 - i*bL*0.32;
+    const rp = Math.sin(t*spd*2 + i*1.1) * 1.5 * crawlDamp;
+    ctx.save(); ctx.globalAlpha = 0.22;
     ctx.beginPath();
-    ctx.moveTo(px, bH * 0.28 + ripple);
-    ctx.quadraticCurveTo(px - bL * 0.08, bH * 0.45 + ripple, px - bL * 0.16, bH * 0.28 + ripple);
-    setLine(S.outline, 1.2);
-    ctx.stroke();
+    ctx.moveTo(px, bH*0.28+rp);
+    ctx.quadraticCurveTo(px - bL*0.08, bH*0.45+rp, px - bL*0.16, bH*0.28+rp);
+    setLine(S.outline, 1.2); ctx.stroke();
     ctx.restore();
   }
 
   // ── eyestalks ────────────────────────────────────────
-  const stalkBase = { x: bL * 0.6, y: -bH * 0.55 };
-  const sway = Math.sin(t * 0.9) * 0.14;
-  const sway2 = Math.sin(t * 0.9 + 0.8) * 0.14;
+  const sbx = bL*0.6 + hfx;
+  const sby = -bH*0.55 + hfy;
+  const stalkLen = 1 - stalkRet * 0.82; // retract to 18% of length
+  const sway  = Math.sin(t * 0.9) * 0.14 * (1 - stalkRet);
+  const sway2 = Math.sin(t * 0.9 + 0.8) * 0.14 * (1 - stalkRet);
 
-  drawEyestalk(stalkBase.x - 5, stalkBase.y,  sway,  18, 5.5);   // left eye
-  drawEyestalk(stalkBase.x + 5, stalkBase.y,  sway2, 20, 5.5);   // right eye (slightly taller)
+  drawEyestalk(sbx - 5, sby,  sway,  18 * stalkLen, 5.5 * (0.4 + 0.6 * stalkLen));
+  drawEyestalk(sbx + 5, sby,  sway2, 20 * stalkLen, 5.5 * (0.4 + 0.6 * stalkLen));
 
-  // ── mouth / lip crease ───────────────────────────────
-  ctx.save();
-  ctx.globalAlpha = 0.6;
-  ctx.beginPath();
-  ctx.moveTo(bL * 0.76, bH * 0.05);
-  ctx.quadraticCurveTo(bL * 0.82, -bH * 0.08, bL * 0.76, -bH * 0.2);
-  setLine(S.outline, 1.4);
-  ctx.stroke();
-  ctx.restore();
+  // ── mouth ────────────────────────────────────────────
+  const mx = bL*0.79 + hfx;
+  const my = -bH*0.08 + hfy;
+
+  if (mouthOpen > 0.08) {
+    // open mouth — dark interior with slime
+    const mw = 7 * mouthOpen;
+    const mh = 10 * mouthOpen;
+    ctx.beginPath(); ctx.ellipse(mx, my, mw, mh, 0.15, 0, Math.PI*2);
+    ctx.strokeStyle = S.outline; ctx.lineWidth = 2.2; ctx.stroke();
+    ctx.fillStyle = S.mouthIn; ctx.fill();
+
+    // slime drip from lower mouth
+    if (mouthOpen > 0.4) {
+      const dripLen = mh + 4 * (mouthOpen - 0.4);
+      ctx.beginPath();
+      ctx.moveTo(mx - 1, my + mh - 1);
+      ctx.quadraticCurveTo(mx, my + mh + dripLen * 0.6, mx + 1, my + mh + dripLen);
+      ctx.lineWidth = 2.5; ctx.strokeStyle = S.slime; ctx.stroke();
+      // drip blob at bottom
+      ctx.beginPath(); ctx.arc(mx + 1, my + mh + dripLen, 2 * mouthOpen, 0, Math.PI*2);
+      ctx.fillStyle = S.slime; ctx.fill();
+    }
+
+    // inner slime sheen
+    ctx.save(); ctx.globalAlpha = 0.5;
+    ctx.beginPath(); ctx.ellipse(mx - mw*0.2, my - mh*0.15, mw*0.5, mh*0.35, 0.15, 0, Math.PI*2);
+    ctx.fillStyle = S.slime; ctx.fill();
+    ctx.restore();
+  } else {
+    // normal lip crease
+    ctx.save(); ctx.globalAlpha = 0.6;
+    ctx.beginPath();
+    ctx.moveTo(mx - 3, my + 2);
+    ctx.quadraticCurveTo(mx + 3, my - 4, mx - 2, my - 8);
+    setLine(S.outline, 1.4); ctx.stroke();
+    ctx.restore();
+  }
 
   ctx_.restore();
+}
+
+// ═══════════════════════════════════════════════════════════
+//  Attack state machine
+// ═══════════════════════════════════════════════════════════
+
+const ATK = { phase: 0, t: 0 };
+const ATK_DUR = [0, 0.38, 0.22, 0.50]; // duration per phase (sec)
+
+function triggerAttack() {
+  if (ATK.phase === 0) { ATK.phase = 1; ATK.t = 0; }
+}
+
+let lastAtkSpawn = false; // to avoid multi-spawn
+
+function updateAttack(dt) {
+  if (ATK.phase === 0) return;
+  ATK.t += dt / ATK_DUR[ATK.phase];
+  if (ATK.t >= 1) {
+    // spawn slime blob when transitioning 1→2
+    if (ATK.phase === 1) {
+      spawnBlob(slugX + 55, GROUND_Y - 18);
+      lastAtkSpawn = true;
+    }
+    ATK.t = 0;
+    ATK.phase = ATK.phase < 3 ? ATK.phase + 1 : 0;
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+//  Slime projectile
+// ═══════════════════════════════════════════════════════════
+
+const blobs = [];
+
+function spawnBlob(x, y) {
+  blobs.push({
+    x, y,
+    vx: 110 + Math.random() * 50,
+    vy: -105 - Math.random() * 25,
+    r: 6 + Math.random() * 3,
+    wobble: Math.random() * Math.PI * 2,
+    splat: false, splatT: 0, active: true,
+  });
+}
+
+function updateBlobs(dt) {
+  for (const b of blobs) {
+    if (!b.active) continue;
+    if (b.splat) {
+      b.splatT += dt * 2.2;
+      if (b.splatT >= 1) b.active = false;
+    } else {
+      b.x  += b.vx * dt;
+      b.y  += b.vy * dt;
+      b.vy += 300 * dt; // gravity
+      b.wobble += dt * 12;
+      if (b.y >= GROUND_Y) {
+        b.y = GROUND_Y;
+        b.splat = true;
+        puddles.push({ x: b.x, y: GROUND_Y + 1, r: b.r * 1.6, a: 0.35 });
+      }
+    }
+  }
+  for (let i = blobs.length - 1; i >= 0; i--) {
+    if (!blobs[i].active) blobs.splice(i, 1);
+  }
+}
+
+function drawBlobs() {
+  for (const b of blobs) {
+    if (!b.active) continue;
+    if (b.splat) {
+      const sr = b.r * (1 + b.splatT * 2.5);
+      ctx.save(); ctx.globalAlpha = (1 - b.splatT) * 0.75;
+      ctx.beginPath(); ctx.ellipse(b.x, b.y, sr * 1.8, sr * 0.55, 0, 0, Math.PI*2);
+      ctx.strokeStyle = S.outline; ctx.lineWidth = 1.8; ctx.stroke();
+      ctx.fillStyle = S.slime; ctx.fill();
+      ctx.restore();
+    } else {
+      // wobbly flying blob
+      const w = Math.sin(b.wobble) * 0.22;
+      ctx.beginPath();
+      ctx.ellipse(b.x, b.y, b.r*(1+w), b.r*(1-w), b.wobble*0.3, 0, Math.PI*2);
+      ctx.strokeStyle = S.outline; ctx.lineWidth = 2.2; ctx.stroke();
+      ctx.fillStyle = S.slime; ctx.fill();
+      // highlight
+      ctx.save(); ctx.globalAlpha = 0.6;
+      ctx.beginPath(); ctx.arc(b.x - b.r*0.3, b.y - b.r*0.35, b.r*0.3, 0, Math.PI*2);
+      ctx.fillStyle = '#c8f040'; ctx.fill();
+      ctx.restore();
+      // motion trail
+      ctx.save(); ctx.globalAlpha = 0.3;
+      ctx.beginPath();
+      ctx.moveTo(b.x, b.y);
+      ctx.lineTo(b.x - b.vx*0.04, b.y - b.vy*0.04);
+      ctx.lineWidth = b.r * 1.5; ctx.strokeStyle = S.slime;
+      ctx.lineCap = 'round'; ctx.stroke();
+      ctx.restore();
+    }
+  }
 }
 
 // ═══════════════════════════════════════════════════════════
 //  Preview loop
 // ═══════════════════════════════════════════════════════════
 
-const cvs = document.getElementById('c');
-const ctx  = cvs.getContext('2d');
+const cvs   = document.getElementById('c');
+const ctx   = cvs.getContext('2d');
+const GROUND_Y = 152;
 
-// slime puddle particles [x, y, r, alpha, drift]
-const puddles = Array.from({length: 18}, (_, i) => ({
-  x: 20 + i * 18 + Math.random() * 10,
-  y: 148 + Math.random() * 4,
+const puddles = Array.from({length: 16}, (_, i) => ({
+  x: 20 + i * 22 + Math.random() * 10,
+  y: GROUND_Y + 1 + Math.random() * 3,
   r: 2 + Math.random() * 4,
-  a: 0.1 + Math.random() * 0.25,
+  a: 0.1 + Math.random() * 0.22,
 }));
 
 function drawGround() {
-  // ground line
-  ctx.beginPath();
-  ctx.moveTo(10, 152); ctx.lineTo(370, 152);
+  ctx.beginPath(); ctx.moveTo(10, GROUND_Y); ctx.lineTo(370, GROUND_Y);
   ctx.strokeStyle = '#221640'; ctx.lineWidth = 1.2; ctx.stroke();
-
-  // slime puddle blobs on ground
   for (const p of puddles) {
-    ctx.save();
-    ctx.globalAlpha = p.a;
-    ctx.beginPath();
-    ctx.ellipse(p.x, p.y, p.r * 2, p.r * 0.6, 0, 0, Math.PI * 2);
-    ctx.fillStyle = S.slime;
-    ctx.fill();
+    ctx.save(); ctx.globalAlpha = p.a;
+    ctx.beginPath(); ctx.ellipse(p.x, p.y, p.r*2, p.r*0.55, 0, 0, Math.PI*2);
+    ctx.fillStyle = S.slime; ctx.fill();
     ctx.restore();
   }
 }
 
-let t0 = null;
-// slug x moves slowly to the right, loops
-let slugX = 80;
+// click/tap → attack
+cvs.addEventListener('pointerdown', () => triggerAttack());
+
+let t0 = null, lastTs = null;
+let slugX = 90;
+let autoAtkTimer = 3.5; // first auto-attack after 3.5s
 
 function loop(ts) {
-  if (!t0) t0 = ts;
-  const t = (ts - t0) / 1000;
+  if (!t0) { t0 = ts; lastTs = ts; }
+  const t  = (ts - t0) / 1000;
+  const dt = Math.min((ts - lastTs) / 1000, 0.05);
+  lastTs = ts;
 
-  // slow horizontal crawl
-  slugX += 0.22;
-  if (slugX > 320) { slugX = 60; puddles.forEach(p => { p.x = 20 + Math.random() * 300; }); }
+  // auto-attack
+  autoAtkTimer -= dt;
+  if (autoAtkTimer <= 0) { triggerAttack(); autoAtkTimer = 4.0; }
 
-  ctx.clearRect(0, 0, cvs.width, cvs.height);
+  // move slug (slow/stop during windup+strike)
+  const moveSpeed = ATK.phase === 0 ? 0.22 : ATK.phase === 3 ? 0.1 : 0;
+  slugX += moveSpeed;
+  if (slugX > 310) { slugX = 70; puddles.forEach(p => { p.x = 20 + Math.random() * 300; }); }
 
-  // background fog
+  updateAttack(dt);
+  updateBlobs(dt);
+
+  ctx.clearRect(0, 0, 380, 220);
+
+  // bg fog
   const fog = ctx.createRadialGradient(190, 130, 10, 190, 130, 180);
-  fog.addColorStop(0, 'rgba(30,15,60,0.25)');
-  fog.addColorStop(1, 'rgba(0,0,0,0)');
+  fog.addColorStop(0, 'rgba(30,15,60,0.22)'); fog.addColorStop(1, 'rgba(0,0,0,0)');
   ctx.fillStyle = fog; ctx.fillRect(0, 0, 380, 220);
 
   drawGround();
+  drawBlobs();
 
-  // ground shadow
+  // shadow (squishes during windup/strike)
+  const shadowW = 38 + Math.sin(t*1.1)*4 + (ATK.phase===1 ? -8*ease(ATK.t) : ATK.phase===2 ? 12*ease(ATK.t) : 0);
   ctx.beginPath();
-  ctx.ellipse(slugX + 5, 152, 38 + Math.sin(t * 1.1) * 4, 7, 0, 0, Math.PI * 2);
+  ctx.ellipse(slugX + 5, GROUND_Y, shadowW, 7, 0, 0, Math.PI*2);
   ctx.fillStyle = 'rgba(0,0,0,0.28)'; ctx.fill();
 
-  drawSlug(ctx, slugX, 136, t, 1);
+  drawSlug(ctx, slugX, GROUND_Y - 16, t, 1, ATK);
 
   requestAnimationFrame(loop);
 }
