@@ -955,6 +955,226 @@
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 
+// ═══════════════════════════════════════════════════════════
+//  drawSkeleton — Don't Starve style animated skeleton
+//  drawSkeleton(ctx_, x, y, t, dir=1, sc=0.38)
+//  x,y = hip center; sc = scale factor
+// ═══════════════════════════════════════════════════════════
+const _SK = {
+  outline:'#180600', bone:'#ddd3a2', boneHL:'#f4eccc',
+  dim:'#96906a', dimHL:'#b8b28a', joint:'#c6bc8c',
+  eye:'#0b0300', eyeGlow:'rgba(50,255,90,0.30)',
+  tooth:'#c2b46e', crack:'#180600',
+};
+function _skBone(x1,y1,x2,y2,r,dim=false){
+  const fill=dim?_SK.dim:_SK.bone, hl=dim?_SK.dimHL:_SK.boneHL;
+  const a=Math.atan2(y2-y1,x2-x1), px=-Math.sin(a), py=Math.cos(a);
+  ctx.beginPath(); ctx.arc(x1,y1,r,a+Math.PI/2,a-Math.PI/2); ctx.arc(x2,y2,r,a-Math.PI/2,a+Math.PI/2); ctx.closePath();
+  ctx.strokeStyle=_SK.outline; ctx.lineWidth=2.8; ctx.stroke(); ctx.fillStyle=fill; ctx.fill();
+  const hr=r*0.28, ox=px*r*0.42-1, oy=py*r*0.42-1;
+  ctx.save(); ctx.globalAlpha=0.52;
+  ctx.beginPath(); ctx.arc(x1+ox,y1+oy,hr,a+Math.PI/2,a-Math.PI/2); ctx.arc(x2+ox,y2+oy,hr,a-Math.PI/2,a+Math.PI/2); ctx.closePath();
+  ctx.fillStyle=hl; ctx.fill(); ctx.restore();
+}
+function _skJnt(x,y,r,dim=false){
+  ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2);
+  ctx.strokeStyle=_SK.outline; ctx.lineWidth=1.8; ctx.stroke(); ctx.fillStyle=dim?_SK.dim:_SK.joint; ctx.fill();
+  ctx.save(); ctx.globalAlpha=0.5;
+  ctx.beginPath(); ctx.arc(x-r*0.3,y-r*0.35,r*0.32,0,Math.PI*2);
+  ctx.fillStyle=dim?_SK.dimHL:_SK.boneHL; ctx.fill(); ctx.restore();
+}
+function _skSkull(x,y,tilt,jawOpen){
+  ctx.save(); ctx.translate(x,y); ctx.rotate(tilt);
+  ctx.beginPath(); ctx.ellipse(0,-5,14,16,0,0,Math.PI*2);
+  ctx.strokeStyle=_SK.outline; ctx.lineWidth=2.8; ctx.stroke(); ctx.fillStyle=_SK.bone; ctx.fill();
+  ctx.save(); ctx.globalAlpha=0.38; ctx.beginPath(); ctx.ellipse(-4,-10,8,9,-0.3,0,Math.PI*2);
+  ctx.fillStyle=_SK.boneHL; ctx.fill(); ctx.restore();
+  ctx.save(); ctx.globalAlpha=0.25; ctx.strokeStyle=_SK.outline; ctx.lineWidth=1.2;
+  ctx.beginPath(); ctx.ellipse(0,-5,12,14,0,Math.PI*1.15,Math.PI*1.6); ctx.stroke(); ctx.restore();
+  const jy=jawOpen*2.5;
+  ctx.save(); ctx.translate(0,jy);
+  ctx.beginPath(); ctx.ellipse(0,8,10,6.5,0,0.08,Math.PI-0.08);
+  ctx.strokeStyle=_SK.outline; ctx.lineWidth=2.4; ctx.stroke(); ctx.fillStyle=_SK.bone; ctx.fill();
+  ctx.save(); ctx.globalAlpha=0.35; ctx.beginPath(); ctx.ellipse(-3,7,5,3,-0.2,0,Math.PI*2);
+  ctx.fillStyle=_SK.boneHL; ctx.fill(); ctx.restore();
+  for(let i=0;i<4;i++){
+    const tx=(i-1.5)*4.6;
+    ctx.beginPath(); ctx.roundRect(tx-1.8,4.5,3.4,5,0.8);
+    ctx.strokeStyle=_SK.outline; ctx.lineWidth=1; ctx.stroke(); ctx.fillStyle=_SK.tooth; ctx.fill();
+  }
+  ctx.restore();
+  for(const sx of[-5,5]){
+    ctx.beginPath(); ctx.ellipse(sx,-7,4.5,3.8,sx<0?-0.12:0.12,0,Math.PI*2); ctx.fillStyle=_SK.eye; ctx.fill();
+    ctx.save(); ctx.globalAlpha=0.55; ctx.beginPath(); ctx.ellipse(sx,-7.5,2.6,2.0,sx<0?-0.12:0.12,0,Math.PI*2);
+    ctx.fillStyle=_SK.eyeGlow; ctx.fill(); ctx.restore();
+    ctx.save(); ctx.globalAlpha=0.7; ctx.beginPath(); ctx.arc(sx,-7.5,0.9,0,Math.PI*2);
+    ctx.fillStyle='rgba(160,255,180,0.9)'; ctx.fill(); ctx.restore();
+  }
+  ctx.beginPath(); ctx.moveTo(0,-0.5); ctx.lineTo(-2.8,3.5); ctx.lineTo(2.8,3.5);
+  ctx.closePath(); ctx.fillStyle=_SK.eye; ctx.fill();
+  ctx.save(); ctx.strokeStyle=_SK.crack; ctx.lineWidth=1.1; ctx.globalAlpha=0.7;
+  ctx.beginPath(); ctx.moveTo(2,-18); ctx.lineTo(1,-13); ctx.lineTo(3,-9); ctx.lineTo(1,-5); ctx.stroke(); ctx.restore();
+  ctx.restore();
+}
+function _skRibcage(x,y){
+  _skBone(x,y,x,y+20,2.5); _skBone(x,y,x-12,y-8,2); _skBone(x,y,x+12,y-8,2);
+  for(const{ry,w,h} of [{ry:y+2,w:14,h:7},{ry:y+7,w:13,h:6},{ry:y+12,w:11,h:5},{ry:y+17,w:8,h:3}]){
+    for(const s of[-1,1]){
+      ctx.beginPath(); ctx.moveTo(x,ry);
+      ctx.bezierCurveTo(x+s*w*0.4,ry-2,x+s*w,ry+h*0.5,x+s*w,ry+h);
+      ctx.lineWidth=3; ctx.strokeStyle=_SK.outline; ctx.lineCap='round'; ctx.stroke();
+      ctx.lineWidth=1.5; ctx.strokeStyle=_SK.bone; ctx.stroke();
+    }
+  }
+}
+function _skLeg(hx,hy,thighA,kneeBend,dim){
+  const THIGH=26,SHIN=24;
+  const kx=hx+Math.sin(thighA)*THIGH, ky=hy+Math.cos(thighA)*THIGH;
+  const shinA=thighA-kneeBend, ax=kx+Math.sin(shinA)*SHIN, ay=ky+Math.cos(shinA)*SHIN;
+  _skBone(hx,hy,kx,ky,5,dim); _skJnt(kx,ky,4,dim); _skBone(kx,ky,ax,ay,4,dim); _skJnt(ax,ay,3.2,dim);
+  const footA=shinA*0.4, fx=ax+Math.cos(footA)*11, fy=ay+Math.abs(Math.sin(footA))*2+2;
+  _skBone(ax,ay,fx,fy,3,dim); _skBone(fx,fy,fx+4,fy+1,1.8,dim);
+}
+function _skArm(sx,sy,upperA,elbowBend,dim){
+  const UA=19,FA=16;
+  const ex=sx+Math.sin(upperA)*UA, ey=sy+Math.cos(upperA)*UA;
+  const elbA=upperA+elbowBend, wx=ex+Math.sin(elbA)*FA, wy=ey+Math.cos(elbA)*FA;
+  _skBone(sx,sy,ex,ey,3.5,dim); _skJnt(ex,ey,2.8,dim); _skBone(ex,ey,wx,wy,2.8,dim);
+  for(const[da,len] of[[-0.32,6],[0,7],[0.32,6]]){
+    const fa=elbA+da; _skBone(wx,wy,wx+Math.sin(fa)*len,wy+Math.cos(fa)*len,1.4,dim);
+  }
+}
+function drawSkeleton(ctx_,x,y,t,dir=1,sc=0.38){
+  const spd=2.2, wc=Math.sin(t*spd), wc_c=Math.cos(t*spd);
+  const bob=(1-Math.abs(wc))*3.5, hipT=wc_c*0.035*dir;
+  const jawOpen=Math.abs(Math.sin(t*1.1))*0.28;
+  const legA_F=wc*0.52*dir, legA_B=-legA_F;
+  const knee_F=0.08+Math.max(0,wc_c)*0.85, knee_B=0.08+Math.max(0,-wc_c)*0.85;
+  const armA_F=-wc*0.40*dir, armA_B=-armA_F;
+  const elbow_F=0.20+Math.max(0,-wc_c)*0.40, elbow_B=0.20+Math.max(0,wc_c)*0.40;
+  const HX=0,HY=0,SPINE_TOP=-40,RIB_Y=SPINE_TOP-2,SHL_Y=SPINE_TOP+4,SHL_X=12,NECK_Y=SPINE_TOP-10,HEAD_Y=NECK_Y-18;
+  ctx_.save(); ctx_.translate(x,y-bob*sc); ctx_.rotate(0.05*dir+hipT); ctx_.scale(sc,sc);
+  _skLeg(4,HY,legA_B,knee_B,true); _skArm(-SHL_X,SHL_Y,armA_B,elbow_B,true);
+  _skBone(-10,HY-2,10,HY-2,5.5);
+  const smid=SPINE_TOP*0.5; _skBone(HX,HY-3,HX+1,smid,3.2); _skBone(HX+1,smid,HX,SPINE_TOP,3.0);
+  _skRibcage(HX,RIB_Y);
+  _skArm(SHL_X,SHL_Y,armA_F,elbow_F,false); _skLeg(-4,HY,legA_F,knee_F,false);
+  _skBone(HX,SPINE_TOP,HX,NECK_Y,2.8);
+  _skSkull(HX,HEAD_Y,wc*0.06*dir,jawOpen);
+  ctx_.restore();
+}
+
+// ═══════════════════════════════════════════════════════════
+//  drawSlug — Don't Starve style animated slug
+//  drawSlug(ctx_, x, y, t, dir=1, atk={phase,t}, sc=1.0)
+//  x,y = ground position (bottom-center)
+// ═══════════════════════════════════════════════════════════
+const _SL = {
+  outline:'#180600', body:'#8a8456', bodyHL:'#b0aa76', mantle:'#5e5230',
+  belly:'#c0b882', slime:'#7ab822', slimeDark:'#4a8800',
+  eye:'#0e0400', eyeHL:'rgba(255,255,220,0.85)', stalk:'#6e6840', mouthIn:'#0a0200',
+};
+const _slEase = p => p*p*(3-2*p);
+function _slLine(color,w){ ctx.strokeStyle=color; ctx.lineWidth=w; ctx.lineCap='round'; ctx.lineJoin='round'; }
+function _slShape(pathFn,fill,ow=2.6){
+  ctx.beginPath(); pathFn();
+  ctx.strokeStyle=_SL.outline; ctx.lineWidth=ow; ctx.lineJoin='round'; ctx.stroke();
+  ctx.fillStyle=fill; ctx.fill();
+}
+function _slGloss(pathFn,alpha=0.38){
+  ctx.save(); ctx.globalAlpha=alpha; ctx.beginPath(); pathFn();
+  ctx.fillStyle=_SL.bodyHL; ctx.fill(); ctx.restore();
+}
+function _slTrail(x,y,len){
+  ctx.save(); ctx.translate(x,y);
+  const grad=ctx.createLinearGradient(-len,0,0,0);
+  grad.addColorStop(0,'rgba(120,190,30,0)'); grad.addColorStop(0.4,'rgba(120,190,30,0.15)'); grad.addColorStop(1,'rgba(120,190,30,0.4)');
+  ctx.beginPath(); ctx.moveTo(0,5); ctx.quadraticCurveTo(-len*0.5,8,-len,5); ctx.quadraticCurveTo(-len*0.5,2,0,5);
+  ctx.fillStyle=grad; ctx.fill();
+  ctx.beginPath(); ctx.moveTo(-4,5); ctx.quadraticCurveTo(-len*0.5,5.5,-len+4,5);
+  _slLine('rgba(180,240,60,0.45)',1.5); ctx.stroke(); ctx.restore();
+}
+function _slEyestalk(bx,by,angle,len,eyeR){
+  const tx=bx+Math.sin(angle)*len, ty=by-Math.cos(angle)*len;
+  ctx.beginPath(); ctx.moveTo(bx,by); ctx.quadraticCurveTo(bx+Math.sin(angle)*len*0.5,by-Math.cos(angle)*len*0.5+2,tx,ty);
+  _slLine(_SL.outline,3.2); ctx.stroke(); _slLine(_SL.stalk,1.8); ctx.stroke();
+  ctx.beginPath(); ctx.arc(tx,ty,eyeR,0,Math.PI*2);
+  ctx.strokeStyle=_SL.outline; ctx.lineWidth=2.2; ctx.stroke(); ctx.fillStyle=_SL.body; ctx.fill();
+  ctx.beginPath(); ctx.arc(tx+eyeR*0.1,ty+eyeR*0.1,eyeR*0.55,0,Math.PI*2); ctx.fillStyle=_SL.eye; ctx.fill();
+  ctx.save(); ctx.globalAlpha=0.85; ctx.beginPath(); ctx.arc(tx-eyeR*0.28,ty-eyeR*0.3,eyeR*0.28,0,Math.PI*2);
+  ctx.fillStyle=_SL.eyeHL; ctx.fill(); ctx.restore();
+}
+function drawSlug(ctx_,x,y,t,dir=1,atk={phase:0,t:0},sc=1.0){
+  const spd=1.1, crawlDamp=atk.phase>0?0.15:1;
+  const wc=Math.sin(t*spd)*crawlDamp, wc2=Math.sin(t*spd*2)*crawlDamp;
+  let atkLen=0,headFwd=0,headUp=0,mouthOpen=0,stalkRet=0,flash=0;
+  const p=atk.t;
+  if(atk.phase===1){const e=_slEase(p);atkLen=-e*0.28;headUp=-e*9;headFwd=-e*4;mouthOpen=e*0.25;stalkRet=e*0.6;}
+  else if(atk.phase===2){const e=_slEase(p);atkLen=0.45*(1-e);headFwd=22*(1-e);headUp=-9+18*_slEase(Math.min(p*2,1));mouthOpen=1.0-e*0.4;stalkRet=1.0;flash=Math.max(0,1-p*3);}
+  else if(atk.phase===3){const e=_slEase(p);stalkRet=1-e;mouthOpen=(1-e)*0.3;}
+  const bL=(48+wc*7)*(1+atkLen)*sc, bH=(16-wc*2)*sc, bWave=wc*2.5*sc;
+  const hfx=headFwd*sc, hfy=headUp*sc;
+  ctx_.save(); ctx_.translate(x,y); ctx_.scale(dir,1);
+  _slTrail(0,0,bL+30*sc);
+  _slShape(()=>{
+    ctx.moveTo(-bL*0.85,bH*0.35); ctx.bezierCurveTo(-bL*0.3,bH*0.65,bL*0.3,bH*0.65,bL*0.75,bH*0.25+bWave*0.3);
+    ctx.bezierCurveTo(bL*0.5,bH*0.5,-bL*0.3,bH*0.55,-bL*0.85,bH*0.35); ctx.closePath();
+  },_SL.belly,0);
+  _slShape(()=>{
+    ctx.moveTo(bL*0.82+hfx,bH*0.1+bWave*0.05+hfy);
+    ctx.bezierCurveTo(bL*0.88+hfx,-bH*0.6+hfy,bL*0.3+hfx*0.5,-bH+hfy*0.5,0,-bH*1.05);
+    ctx.bezierCurveTo(-bL*0.35,-bH,-bL*0.8,-bH*0.4+bWave,-bL*0.9,bWave*0.6);
+    ctx.bezierCurveTo(-bL*0.95,bH*0.1+bWave*0.5,-bL*0.88,bH*0.3,-bL*0.7,bH*0.38);
+    ctx.bezierCurveTo(-bL*0.3,bH*0.5,bL*0.3,bH*0.45,bL*0.82+hfx,bH*0.1+bWave*0.05+hfy); ctx.closePath();
+  },_SL.body);
+  _slGloss(()=>{ctx.ellipse(bL*0.1,-bH*0.6,bL*0.28,bH*0.28,-0.2,0,Math.PI*2);},0.32);
+  if(flash>0.02){
+    ctx.save(); ctx.globalAlpha=flash*0.45;
+    ctx.beginPath();
+    ctx.moveTo(bL*0.82+hfx,bH*0.1+hfy); ctx.bezierCurveTo(bL*0.88+hfx,-bH*0.6+hfy,bL*0.3+hfx*0.5,-bH+hfy*0.5,0,-bH*1.05);
+    ctx.bezierCurveTo(-bL*0.35,-bH,-bL*0.8,-bH*0.4+bWave,-bL*0.9,bWave*0.6);
+    ctx.bezierCurveTo(-bL*0.95,bH*0.1,-bL*0.88,bH*0.3,-bL*0.7,bH*0.38);
+    ctx.bezierCurveTo(-bL*0.3,bH*0.5,bL*0.3,bH*0.45,bL*0.82+hfx,bH*0.1+hfy); ctx.closePath();
+    ctx.fillStyle='#e0dc90'; ctx.fill(); ctx.restore();
+  }
+  _slShape(()=>{
+    ctx.moveTo(bL*0.55,-bH*0.3); ctx.bezierCurveTo(bL*0.6,-bH*0.85,bL*0.05,-bH*1.05,-bL*0.1,-bH*0.95);
+    ctx.bezierCurveTo(-bL*0.35,-bH*0.75,-bL*0.2,-bH*0.35,bL*0.1,-bH*0.28);
+    ctx.bezierCurveTo(bL*0.3,-bH*0.2,bL*0.5,-bH*0.22,bL*0.55,-bH*0.3); ctx.closePath();
+  },_SL.mantle,2.2);
+  _slGloss(()=>{ctx.ellipse(bL*0.22,-bH*0.72,bL*0.14,bH*0.18,-0.3,0,Math.PI*2);},0.28);
+  for(let i=0;i<4;i++){
+    const px=bL*0.55-i*bL*0.32, rp=Math.sin(t*spd*2+i*1.1)*1.5*crawlDamp;
+    ctx.save(); ctx.globalAlpha=0.22;
+    ctx.beginPath(); ctx.moveTo(px,bH*0.28+rp); ctx.quadraticCurveTo(px-bL*0.08,bH*0.45+rp,px-bL*0.16,bH*0.28+rp);
+    _slLine(_SL.outline,1.2); ctx.stroke(); ctx.restore();
+  }
+  const sbx=bL*0.6+hfx, sby=-bH*0.55+hfy;
+  const stalkLen=1-stalkRet*0.82, sway=Math.sin(t*0.9)*0.14*(1-stalkRet), sway2=Math.sin(t*0.9+0.8)*0.14*(1-stalkRet);
+  _slEyestalk(sbx-5*sc,sby,sway,18*stalkLen*sc,5.5*(0.4+0.6*stalkLen)*sc);
+  _slEyestalk(sbx+5*sc,sby,sway2,20*stalkLen*sc,5.5*(0.4+0.6*stalkLen)*sc);
+  const mx=bL*0.79+hfx, my=-bH*0.08+hfy;
+  if(mouthOpen>0.08){
+    const mw=7*mouthOpen*sc, mh=10*mouthOpen*sc;
+    ctx.beginPath(); ctx.ellipse(mx,my,mw,mh,0.15,0,Math.PI*2);
+    ctx.strokeStyle=_SL.outline; ctx.lineWidth=2.2; ctx.stroke(); ctx.fillStyle=_SL.mouthIn; ctx.fill();
+    if(mouthOpen>0.4){
+      const dripLen=mh+4*(mouthOpen-0.4)*sc;
+      ctx.beginPath(); ctx.moveTo(mx-1,my+mh-1); ctx.quadraticCurveTo(mx,my+mh+dripLen*0.6,mx+1,my+mh+dripLen);
+      ctx.lineWidth=2.5; ctx.strokeStyle=_SL.slime; ctx.stroke();
+      ctx.beginPath(); ctx.arc(mx+1,my+mh+dripLen,2*mouthOpen,0,Math.PI*2); ctx.fillStyle=_SL.slime; ctx.fill();
+    }
+    ctx.save(); ctx.globalAlpha=0.5;
+    ctx.beginPath(); ctx.ellipse(mx-mw*0.2,my-mh*0.15,mw*0.5,mh*0.35,0.15,0,Math.PI*2);
+    ctx.fillStyle=_SL.slime; ctx.fill(); ctx.restore();
+  } else {
+    ctx.save(); ctx.globalAlpha=0.6;
+    ctx.beginPath(); ctx.moveTo(mx-3*sc,my+2*sc); ctx.quadraticCurveTo(mx+3*sc,my-4*sc,mx-2*sc,my-8*sc);
+    _slLine(_SL.outline,1.4); ctx.stroke(); ctx.restore();
+  }
+  ctx_.restore();
+}
+
 // Логічні розміри екрану (CSS px) — оновлюються при resize
 let gW = window.innerWidth;
 let gH = window.innerHeight;
@@ -2311,58 +2531,19 @@ class Unit {
         ctx.shadowColor = '#000';
         ctx.shadowBlur  = 6;
         if (this.type === 'monster' && this.monsterKind === 'slime') {
-            // Слизь — кругла, напівпрозора, желеподібна
-            let t = Date.now() / 600;
-            let wobble = Math.sin(t) * 2;
-            let rg = ctx.createRadialGradient(this.x - 4, dy + 6, 2, this.x, dy + this.size/2, this.size/2 + 2);
-            rg.addColorStop(0,   'rgba(150,255,150,0.95)');
-            rg.addColorStop(0.5, 'rgba(60,200,60,0.85)');
-            rg.addColorStop(1,   'rgba(20,120,20,0.7)');
-            ctx.fillStyle = rg;
-            ctx.beginPath();
-            ctx.ellipse(this.x, dy + this.size/2 + wobble*0.3, this.size/2 + wobble*0.4, this.size/2 - wobble*0.3, 0, 0, Math.PI*2);
-            ctx.fill();
-            // Очі
-            ctx.fillStyle = '#000';
-            ctx.beginPath(); ctx.arc(this.x - 5, dy + this.size/2 - 2, 2.5, 0, Math.PI*2); ctx.fill();
-            ctx.beginPath(); ctx.arc(this.x + 5, dy + this.size/2 - 2, 2.5, 0, Math.PI*2); ctx.fill();
-            ctx.fillStyle = '#fff';
-            ctx.beginPath(); ctx.arc(this.x - 4, dy + this.size/2 - 3, 1, 0, Math.PI*2); ctx.fill();
-            ctx.beginPath(); ctx.arc(this.x + 6, dy + this.size/2 - 3, 1, 0, Math.PI*2); ctx.fill();
-            // Блиск
-            ctx.fillStyle = 'rgba(255,255,255,0.35)';
-            ctx.beginPath(); ctx.ellipse(this.x - 6, dy + 7, 4, 2.5, -0.5, 0, Math.PI*2); ctx.fill();
+            // Слизь — Don't Starve style slug
+            ctx.shadowBlur = 0;
+            let _t = Date.now() / 1000;
+            let _dir = (this.patrolDir || -1);
+            drawSlug(ctx, this.x, this.y - camY, _t, _dir, {phase:0, t:0}, 0.72);
 
         } else if (this.type === 'monster' && this.monsterKind === 'skeleton') {
-            // Скелет — кістяний, сірувато-жовтий, з черепом
-            let s = this.size;
-            // Тіло (тулуб)
-            ctx.fillStyle = '#c8b870';
-            ctx.fillRect(dx + s*0.3, dy + s*0.45, s*0.4, s*0.4);
-            // Ребра
-            ctx.strokeStyle = '#a09050'; ctx.lineWidth = 1.5;
-            for (let r = 0; r < 3; r++) {
-                let ry = dy + s*0.5 + r*4;
-                ctx.beginPath(); ctx.moveTo(dx+s*0.3, ry); ctx.lineTo(dx+s*0.1, ry+2); ctx.stroke();
-                ctx.beginPath(); ctx.moveTo(dx+s*0.7, ry); ctx.lineTo(dx+s*0.9, ry+2); ctx.stroke();
-            }
-            // Ноги
-            ctx.fillStyle = '#c8b870';
-            ctx.fillRect(dx + s*0.25, dy + s*0.82, s*0.18, s*0.18);
-            ctx.fillRect(dx + s*0.57, dy + s*0.82, s*0.18, s*0.18);
-            // Руки
-            ctx.fillRect(dx + s*0.05, dy + s*0.48, s*0.18, s*0.1);
-            ctx.fillRect(dx + s*0.77, dy + s*0.48, s*0.18, s*0.1);
-            // Череп
-            ctx.fillStyle = '#ddd4a0';
-            ctx.beginPath(); ctx.arc(this.x, dy + s*0.28, s*0.26, 0, Math.PI*2); ctx.fill();
-            // Очниці
-            ctx.fillStyle = '#1a1408';
-            ctx.beginPath(); ctx.ellipse(this.x - s*0.1, dy + s*0.26, s*0.08, s*0.1, 0, 0, Math.PI*2); ctx.fill();
-            ctx.beginPath(); ctx.ellipse(this.x + s*0.1, dy + s*0.26, s*0.08, s*0.1, 0, 0, Math.PI*2); ctx.fill();
-            // Посмішка
-            ctx.strokeStyle = '#1a1408'; ctx.lineWidth = 1;
-            ctx.beginPath(); ctx.arc(this.x, dy + s*0.34, s*0.1, 0.1, Math.PI-0.1); ctx.stroke();
+            // Скелет — Don't Starve style
+            ctx.shadowBlur = 0;
+            let _t = Date.now() / 1000;
+            let _dir = (this.patrolDir || -1);
+            // hip = ~19px above floor at sc=0.38
+            drawSkeleton(ctx, this.x, this.y - camY - 19, _t, _dir, 0.38);
 
         } else if (this.type === 'monster' && this.monsterKind === 'zombie') {
             // Зомбі — зеленуватий, повільний, розхристаний
