@@ -1163,30 +1163,17 @@ function drawSlug(ctx_,x,y,t,dir=1,atk={phase:0,t:0},sc=1.0){
   _slGloss(()=>{ ctx.ellipse(cx-rX*0.18,cy-rY*0.33,rX*0.38,rY*0.30,-0.3,0,Math.PI*2); },0.52);
   _slGloss(()=>{ ctx.ellipse(cx+rX*0.26,cy-rY*0.52,rX*0.11,rY*0.11,0,0,Math.PI*2); },0.38);
 
-  // ── Symmetric neutral eyes ──
-  const eyeSep=rX*0.29;
-  const eyeY=cy-rY*0.08;
-  const eyes=[
-    {x:cx-eyeSep, rX:rX*0.13, rY:rY*0.17*eyeStr, tilt:0},
-    {x:cx+eyeSep, rX:rX*0.13, rY:rY*0.17*eyeStr, tilt:0},
-  ];
+  // ── Simple dot eyes ──
+  const eyeSep=rX*0.28;
+  const eyeY=cy-rY*0.10;
+  const eyeR=rX*0.10;
+  const eyes=[{x:cx-eyeSep},{x:cx+eyeSep}];
   for(const e of eyes){
-    // sclera
-    ctx_.beginPath(); ctx_.ellipse(e.x,eyeY,e.rX,e.rY,0,0,Math.PI*2);
-    ctx_.fillStyle=_SL.eyeBase; ctx_.strokeStyle=_SL.outline; ctx_.lineWidth=1.5; ctx_.fill(); ctx_.stroke();
-    // iris
-    ctx_.beginPath(); ctx_.arc(e.x,eyeY+e.rY*0.05,e.rX*0.60,0,Math.PI*2);
-    ctx_.fillStyle=_SL.eyeIris; ctx_.fill();
-    // round pupil
-    ctx_.beginPath(); ctx_.arc(e.x,eyeY+e.rY*0.05,e.rX*0.32,0,Math.PI*2);
+    ctx_.beginPath(); ctx_.arc(e.x,eyeY,eyeR*eyeStr,0,Math.PI*2);
     ctx_.fillStyle=_SL.eye; ctx_.fill();
-    // main shine
-    ctx_.save(); ctx_.globalAlpha=0.92;
-    ctx_.beginPath(); ctx_.ellipse(e.x-e.rX*0.22,eyeY-e.rY*0.28,e.rX*0.20,e.rY*0.20,-0.4,0,Math.PI*2);
-    ctx_.fillStyle=_SL.eyeHL; ctx_.fill(); ctx_.restore();
-    // small secondary shine
-    ctx_.save(); ctx_.globalAlpha=0.60;
-    ctx_.beginPath(); ctx_.arc(e.x+e.rX*0.22,eyeY+e.rY*0.08,e.rX*0.085,0,Math.PI*2);
+    // small white shine
+    ctx_.save(); ctx_.globalAlpha=0.90;
+    ctx_.beginPath(); ctx_.arc(e.x-eyeR*0.30,eyeY-eyeR*0.30,eyeR*0.28,0,Math.PI*2);
     ctx_.fillStyle=_SL.eyeHL; ctx_.fill(); ctx_.restore();
   }
 
@@ -1194,56 +1181,21 @@ function drawSlug(ctx_,x,y,t,dir=1,atk={phase:0,t:0},sc=1.0){
   if(blush>0.05){
     ctx_.save(); ctx_.globalAlpha=blush*0.5;
     for(let s=-1;s<=1;s+=2){
-      ctx_.beginPath(); ctx_.ellipse(cx+s*eyeSep*1.65,eyeY+eyes[0].rY*0.95,eyes[0].rX*0.60,eyes[0].rY*0.22,0,0,Math.PI*2);
+      ctx_.beginPath(); ctx_.ellipse(cx+s*eyeSep*1.65,eyeY+eyeR*0.95,eyeR*0.60,eyeR*0.22,0,0,Math.PI*2);
       ctx_.fillStyle=_SL.blush; ctx_.fill();
     }
     ctx_.restore();
   }
 
-  // ── Mouth ──
-  const eRY0=eyes[0].rY;
-  const mouthX=cx, mouthY=eyeY+eRY0+rY*0.10;
-  if(mouthOpen>0.12){
-    // gaping maw — wide jagged mouth
-    const mw=rX*0.32*mouthOpen, mh=rY*0.26*mouthOpen;
-    ctx_.beginPath(); ctx_.ellipse(mouthX,mouthY,mw,mh,0,0,Math.PI*2);
-    ctx_.fillStyle=_SL.mouth; ctx_.strokeStyle=_SL.outline; ctx_.lineWidth=1.8; ctx_.fill(); ctx_.stroke();
-    // upper fangs (3 triangles)
-    ctx_.fillStyle=_SL.tooth;
-    const numF=3;
-    for(let i=0;i<numF;i++){
-      const fx=mouthX-mw*0.65+i*(mw*1.3/(numF-1));
-      ctx_.beginPath();
-      ctx_.moveTo(fx-mw*0.11,mouthY-mh*0.35);
-      ctx_.lineTo(fx+mw*0.11,mouthY-mh*0.35);
-      ctx_.lineTo(fx,mouthY+mh*0.18);
-      ctx_.closePath(); ctx_.fill();
-    }
-    // acid drip below mouth
-    ctx_.save(); ctx_.globalAlpha=0.75;
-    const dy=mouthY+mh;
-    ctx_.beginPath(); ctx_.moveTo(mouthX,dy);
-    ctx_.quadraticCurveTo(mouthX+2*sc,dy+7*sc,mouthX+1*sc,dy+12*sc);
-    ctx_.strokeStyle=_SL.acid; ctx_.lineWidth=2.8*sc; ctx_.stroke();
-    ctx_.beginPath(); ctx_.arc(mouthX+sc,dy+12*sc,2.5*sc*mouthOpen,0,Math.PI*2);
-    ctx_.fillStyle=_SL.acid; ctx_.fill(); ctx_.restore();
-  } else {
-    // sinister wide grin with one central fang
-    ctx_.save(); ctx_.globalAlpha=0.82;
-    const mw=rX*0.30;
-    ctx_.beginPath();
-    ctx_.moveTo(mouthX-mw,mouthY);
-    ctx_.quadraticCurveTo(mouthX,mouthY+rY*0.22,mouthX+mw,mouthY);
-    _slLine(_SL.mouth,2.2*sc); ctx_.stroke();
-    // single menacing fang in center
-    ctx_.fillStyle=_SL.tooth;
-    ctx_.beginPath();
-    ctx_.moveTo(mouthX-mw*0.12,mouthY+rY*0.04);
-    ctx_.lineTo(mouthX+mw*0.12,mouthY+rY*0.04);
-    ctx_.lineTo(mouthX,mouthY+rY*0.18);
-    ctx_.closePath(); ctx_.fill();
-    ctx_.restore();
-  }
+  // ── Mouth (barely visible) ──
+  const mouthX=cx, mouthY=eyeY+eyeR+rY*0.18;
+  ctx_.save(); ctx_.globalAlpha=0.28+mouthOpen*0.45;
+  const mw=rX*(0.14+mouthOpen*0.18);
+  ctx_.beginPath();
+  ctx_.moveTo(mouthX-mw,mouthY);
+  ctx_.quadraticCurveTo(mouthX,mouthY+rY*(0.04+mouthOpen*0.12),mouthX+mw,mouthY);
+  _slLine(_SL.mouth,1.2*sc); ctx_.stroke();
+  ctx_.restore();
 
   ctx_.restore();
 }
