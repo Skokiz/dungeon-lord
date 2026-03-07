@@ -1136,9 +1136,6 @@ function drawSlug(ctx_,x,y,t,dir=1,atk={phase:0,t:0},sc=1.0){
 
   ctx_.save(); ctx_.translate(x,y); ctx_.scale(dir,1);
 
-  // Acid slime trail
-  _slTrail(0,0,rX+18*sc);
-
   // Drop shadow
   ctx_.save(); ctx_.globalAlpha=0.15;
   ctx_.beginPath(); ctx_.ellipse(cx*0.4,-1,rX*0.75,4*sc,0,0,Math.PI*2);
@@ -1268,6 +1265,8 @@ let _permaData = { lordAtkLvl:0, lordAtkCost:80,  lordVitLvl:0, lordVitCost:70,
 let floors = [];
 let units = [];
 let particles = [];
+let slimeTrails = []; // trail blobs behind moving slimes
+let slimeStains = []; // ground stains on slime death
 let dmgTexts = [];        // плаваючі числа пошкоджень
 let screenShake = 0;      // кадри тремтіння екрану
 let axeProjectiles = []; // снаряди гоблінів
@@ -2509,10 +2508,14 @@ class Unit {
                 // Біжимо до героя
                 let dir = aggroTarget.x > this.x ? 1 : -1;
                 this.x += dir * this.speed * 1.5 * _dt;
+                if (this.monsterKind === 'slime' && !this._atkAnimStart && Math.random() < 0.35)
+                    slimeTrails.push({x:this.x+(Math.random()-.5)*8, y:this.y, floorIdx:this.floorIdx, life:40, maxLife:40, r:2+Math.random()*4});
             } else {
                 // Патруль
                 if (!this.patrolDir) this.patrolDir = 1;
                 this.x += this.speed * 0.5 * this.patrolDir * _dt;
+                if (this.monsterKind === 'slime' && !this._atkAnimStart && Math.random() < 0.20)
+                    slimeTrails.push({x:this.x+(Math.random()-.5)*6, y:this.y, floorIdx:this.floorIdx, life:40, maxLife:40, r:2+Math.random()*3.5});
                 let fx = centerX - CFG.floorW/2 + 30;
                 let fw = CFG.floorW - 60;
                 if (this.x > fx + fw) this.patrolDir = -1;
@@ -2562,6 +2565,17 @@ class Unit {
             ctx.shadowBlur = 0;
             let _t = Date.now() / 1000;
             let _dir = (this.patrolDir || -1);
+            // During attack, face toward nearest hero
+            if (this._atkAnimStart) {
+                let _nh = null, _nd = Infinity;
+                for (let _u of units) {
+                    if (_u.type==='hero' && _u.floorIdx===this.floorIdx && _u.hp>0) {
+                        let _d = Math.abs(_u.x - this.x);
+                        if (_d < _nd) { _nd=_d; _nh=_u; }
+                    }
+                }
+                if (_nh) _dir = _nh.x > this.x ? 1 : -1;
+            }
             // Attack animation: phase1=0-200ms windup, phase2=200-400ms strike, phase3=400-600ms recover
             let _atk = {phase:0, t:0};
             if (this._atkAnimStart) {
@@ -4504,6 +4518,33 @@ function loop(ts) {
         }
     }
 
+    // ── Сліди слизу (рендер ПЕРЕД юнітами, щоб бути під ними) ──────────
+    for (let i = slimeStains.length-1; i>=0; i--) {
+        let s = slimeStains[i];
+        s.life -= _dt;
+        let sa = (s.life / s.maxLife) * 0.62;
+        ctx.save(); ctx.globalAlpha = sa;
+        ctx.fillStyle = '#2a8008';
+        ctx.beginPath(); ctx.ellipse(s.x, s.y - GAME.cameraY, s.r, s.r*0.28, 0, 0, Math.PI*2); ctx.fill();
+        ctx.globalAlpha = sa * 0.5;
+        ctx.strokeStyle = '#1a5a04'; ctx.lineWidth = 1;
+        ctx.stroke(); ctx.restore();
+        if (s.life <= 0) slimeStains.splice(i, 1);
+    }
+    for (let i = slimeTrails.length-1; i>=0; i--) {
+        let t = slimeTrails[i];
+        t.life -= _dt;
+        let lf = t.life / t.maxLife;
+        let ta = Math.sin(lf * Math.PI) * 0.58; // плавна поява і зникнення
+        ctx.save(); ctx.globalAlpha = ta;
+        ctx.fillStyle = '#3aaa10';
+        ctx.beginPath(); ctx.ellipse(t.x, t.y - GAME.cameraY, t.r*1.6, t.r*0.5, 0, 0, Math.PI*2); ctx.fill();
+        ctx.globalAlpha = ta * 0.45;
+        ctx.strokeStyle = '#1a6600'; ctx.lineWidth = 0.7;
+        ctx.stroke(); ctx.restore();
+        if (t.life <= 0) slimeTrails.splice(i, 1);
+    }
+
     // Юніти
     for (let i = units.length - 1; i >= 0; i--) {
         let u = units[i];
@@ -4594,6 +4635,27 @@ function loop(ts) {
                 spawnDmgText(u.x, u.y - u.size, '+' + reward + '💀', '#ffcc00', u.heroRank !== 'normal');
                 updateUI();
             } else if (u.type === 'lord') { gameOver(); }
+            // SLIME смерть: краплі слизу + плюма + слід на землі
+            if (u.type === 'monster' && u.monsterKind === 'slime') {
+                for (let _pi=0; _pi<14; _pi++) {
+                    let _ang = Math.random() * Math.PI * 2;
+                    let _spd = 0.6 + Math.random() * 3.2;
+                    spawnParticle(u.x+(Math.random()-.5)*12, u.y-6, '#3aaa10', {
+                        vx: Math.cos(_ang)*_spd, vy: Math.sin(_ang)*_spd - 2.8,
+                        size: 2+Math.random()*5, life: 28+Math.random()*22
+                    });
+                }
+                // Кілька великих крапель
+                for (let _pi=0; _pi<5; _pi++) {
+                    let _ang = -Math.PI*0.3 - Math.random()*Math.PI*0.4;
+                    let _spd = 1.5 + Math.random() * 2;
+                    spawnParticle(u.x+(Math.random()-.5)*8, u.y-10, '#5abf30', {
+                        vx: Math.cos(_ang)*_spd, vy: Math.sin(_ang)*_spd,
+                        size: 4+Math.random()*4, life: 35+Math.random()*20
+                    });
+                }
+                slimeStains.push({x:u.x, y:u.y, floorIdx:u.floorIdx, life:300, maxLife:300, r:18+Math.random()*10});
+            }
             units.splice(i, 1);
         } else {
             // AIR_ELE напівпрозорий таймер + зняття бусту урону
