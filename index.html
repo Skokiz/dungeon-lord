@@ -1065,14 +1065,18 @@ function drawSkeleton(ctx_,x,y,t,dir=1,sc=0.38){
 }
 
 // ═══════════════════════════════════════════════════════════
-//  drawSlug — Don't Starve style animated slug
+//  drawSlug — Anime slime (Rimuru Tempest style)
 //  drawSlug(ctx_, x, y, t, dir=1, atk={phase,t}, sc=1.0)
 //  x,y = ground position (bottom-center)
 // ═══════════════════════════════════════════════════════════
 const _SL = {
-  outline:'#180600', body:'#8a8456', bodyHL:'#b0aa76', mantle:'#5e5230',
-  belly:'#c0b882', slime:'#7ab822', slimeDark:'#4a8800',
-  eye:'#0e0400', eyeHL:'rgba(255,255,220,0.85)', stalk:'#6e6840', mouthIn:'#0a0200',
+  outline:'#0a2540',
+  body:'#5dcfe8', bodyHL:'#c4f3ff', bodyDark:'#2a9ab8',
+  belly:'#a8f0ff',
+  slime:'#3ab8d0', slimeDark:'#1a8aaa',
+  eye:'#111133', eyeHL:'rgba(255,255,255,0.92)',
+  eyeBase:'#ddeeff', eyeIris:'#3355cc',
+  blush:'rgba(255,130,160,0.5)', mouth:'#0a1a33',
 };
 const _slEase = p => p*p*(3-2*p);
 function _slLine(color,w){ ctx.strokeStyle=color; ctx.lineWidth=w; ctx.lineCap='round'; ctx.lineJoin='round'; }
@@ -1088,11 +1092,11 @@ function _slGloss(pathFn,alpha=0.38){
 function _slTrail(x,y,len){
   ctx.save(); ctx.translate(x,y);
   const grad=ctx.createLinearGradient(-len,0,0,0);
-  grad.addColorStop(0,'rgba(120,190,30,0)'); grad.addColorStop(0.4,'rgba(120,190,30,0.15)'); grad.addColorStop(1,'rgba(120,190,30,0.4)');
-  ctx.beginPath(); ctx.moveTo(0,5); ctx.quadraticCurveTo(-len*0.5,8,-len,5); ctx.quadraticCurveTo(-len*0.5,2,0,5);
+  grad.addColorStop(0,'rgba(58,184,208,0)'); grad.addColorStop(0.4,'rgba(58,184,208,0.12)'); grad.addColorStop(1,'rgba(58,184,208,0.35)');
+  ctx.beginPath(); ctx.moveTo(0,4); ctx.quadraticCurveTo(-len*0.5,7,-len,4); ctx.quadraticCurveTo(-len*0.5,1,0,4);
   ctx.fillStyle=grad; ctx.fill();
-  ctx.beginPath(); ctx.moveTo(-4,5); ctx.quadraticCurveTo(-len*0.5,5.5,-len+4,5);
-  _slLine('rgba(180,240,60,0.45)',1.5); ctx.stroke(); ctx.restore();
+  ctx.beginPath(); ctx.moveTo(-4,4); ctx.quadraticCurveTo(-len*0.5,4.5,-len+4,4);
+  _slLine('rgba(100,220,240,0.4)',1.5); ctx.stroke(); ctx.restore();
 }
 function _slEyestalk(bx,by,angle,len,eyeR){
   const tx=bx+Math.sin(angle)*len, ty=by-Math.cos(angle)*len;
@@ -1105,73 +1109,122 @@ function _slEyestalk(bx,by,angle,len,eyeR){
   ctx.fillStyle=_SL.eyeHL; ctx.fill(); ctx.restore();
 }
 function drawSlug(ctx_,x,y,t,dir=1,atk={phase:0,t:0},sc=1.0){
-  const spd=1.1, crawlDamp=atk.phase>0?0.15:1;
-  const wc=Math.sin(t*spd)*crawlDamp, wc2=Math.sin(t*spd*2)*crawlDamp;
-  let atkLen=0,headFwd=0,headUp=0,mouthOpen=0,stalkRet=0,flash=0;
   const p=atk.t;
-  if(atk.phase===1){const e=_slEase(p);atkLen=-e*0.28;headUp=-e*9;headFwd=-e*4;mouthOpen=e*0.25;stalkRet=e*0.6;}
-  else if(atk.phase===2){const e=_slEase(p);atkLen=0.45*(1-e);headFwd=22*(1-e);headUp=-9+18*_slEase(Math.min(p*2,1));mouthOpen=1.0-e*0.4;stalkRet=1.0;flash=Math.max(0,1-p*3);}
-  else if(atk.phase===3){const e=_slEase(p);stalkRet=1-e;mouthOpen=(1-e)*0.3;}
-  const bL=(48+wc*7)*(1+atkLen)*sc, bH=(16-wc*2)*sc, bWave=wc*2.5*sc;
-  const hfx=headFwd*sc, hfy=headUp*sc;
+  const ease=_slEase;
+  // Idle idle idle
+  const bob=Math.sin(t*2.2)*0.04;
+  // Per-phase deformation
+  let sqX=1, sqY=1, offX=0, offY=0, mouthOpen=0, eyeStr=1, flash=0, blush=0, wobble=0;
+  if(atk.phase===0){
+    // gentle squish-bob while hopping/crawling
+    sqX=1+bob*0.45; sqY=1-bob*0.3; offY=-bob;
+  } else if(atk.phase===1){
+    // windup: flatten & crouch
+    const e=ease(p);
+    sqX=1+e*0.42; sqY=1-e*0.38; offY=e*2; eyeStr=1-e*0.45;
+  } else if(atk.phase===2){
+    // strike: lunge forward as teardrop
+    const e=ease(p);
+    const ext=1-e;
+    sqX=1+ext*0.65; sqY=1-ext*0.32; offX=ext*10*sc; mouthOpen=ext*0.9; eyeStr=1+ext*0.35; flash=Math.max(0,1-p*3);
+  } else if(atk.phase===3){
+    // recover + blush
+    const e=ease(p);
+    sqX=1+(1-e)*0.15; sqY=1+(1-e)*0.12; blush=(1-e)*0.9;
+    wobble=Math.sin(p*Math.PI*3)*(1-p)*0.12;
+  }
+  sqX+=wobble; sqY-=wobble*0.5;
+
+  const rX=24*sc*sqX, rY=21*sc*sqY;
+  const cx=offX, cy=-rY-offY*sc;
+
   ctx_.save(); ctx_.translate(x,y); ctx_.scale(dir,1);
-  _slTrail(0,0,bL+30*sc);
-  _slShape(()=>{
-    ctx.moveTo(-bL*0.85,bH*0.35); ctx.bezierCurveTo(-bL*0.3,bH*0.65,bL*0.3,bH*0.65,bL*0.75,bH*0.25+bWave*0.3);
-    ctx.bezierCurveTo(bL*0.5,bH*0.5,-bL*0.3,bH*0.55,-bL*0.85,bH*0.35); ctx.closePath();
-  },_SL.belly,0);
-  _slShape(()=>{
-    ctx.moveTo(bL*0.82+hfx,bH*0.1+bWave*0.05+hfy);
-    ctx.bezierCurveTo(bL*0.88+hfx,-bH*0.6+hfy,bL*0.3+hfx*0.5,-bH+hfy*0.5,0,-bH*1.05);
-    ctx.bezierCurveTo(-bL*0.35,-bH,-bL*0.8,-bH*0.4+bWave,-bL*0.9,bWave*0.6);
-    ctx.bezierCurveTo(-bL*0.95,bH*0.1+bWave*0.5,-bL*0.88,bH*0.3,-bL*0.7,bH*0.38);
-    ctx.bezierCurveTo(-bL*0.3,bH*0.5,bL*0.3,bH*0.45,bL*0.82+hfx,bH*0.1+bWave*0.05+hfy); ctx.closePath();
-  },_SL.body);
-  _slGloss(()=>{ctx.ellipse(bL*0.1,-bH*0.6,bL*0.28,bH*0.28,-0.2,0,Math.PI*2);},0.32);
+
+  // Slime trail
+  _slTrail(0,0,rX+18*sc);
+
+  // Drop shadow
+  ctx_.save(); ctx_.globalAlpha=0.15;
+  ctx_.beginPath(); ctx_.ellipse(cx*0.4,-1,rX*0.75,4*sc,0,0,Math.PI*2);
+  ctx_.fillStyle=_SL.bodyDark; ctx_.fill(); ctx_.restore();
+
+  // Main body blob
+  _slShape(()=>{ ctx.ellipse(cx,cy,rX,rY,0,0,Math.PI*2); },_SL.body,2.6);
+
+  // Flash on strike
   if(flash>0.02){
-    ctx.save(); ctx.globalAlpha=flash*0.45;
-    ctx.beginPath();
-    ctx.moveTo(bL*0.82+hfx,bH*0.1+hfy); ctx.bezierCurveTo(bL*0.88+hfx,-bH*0.6+hfy,bL*0.3+hfx*0.5,-bH+hfy*0.5,0,-bH*1.05);
-    ctx.bezierCurveTo(-bL*0.35,-bH,-bL*0.8,-bH*0.4+bWave,-bL*0.9,bWave*0.6);
-    ctx.bezierCurveTo(-bL*0.95,bH*0.1,-bL*0.88,bH*0.3,-bL*0.7,bH*0.38);
-    ctx.bezierCurveTo(-bL*0.3,bH*0.5,bL*0.3,bH*0.45,bL*0.82+hfx,bH*0.1+hfy); ctx.closePath();
-    ctx.fillStyle='#e0dc90'; ctx.fill(); ctx.restore();
+    ctx_.save(); ctx_.globalAlpha=flash*0.5;
+    ctx_.beginPath(); ctx_.ellipse(cx,cy,rX,rY,0,0,Math.PI*2);
+    ctx_.fillStyle='#e0f8ff'; ctx_.fill(); ctx_.restore();
   }
-  _slShape(()=>{
-    ctx.moveTo(bL*0.55,-bH*0.3); ctx.bezierCurveTo(bL*0.6,-bH*0.85,bL*0.05,-bH*1.05,-bL*0.1,-bH*0.95);
-    ctx.bezierCurveTo(-bL*0.35,-bH*0.75,-bL*0.2,-bH*0.35,bL*0.1,-bH*0.28);
-    ctx.bezierCurveTo(bL*0.3,-bH*0.2,bL*0.5,-bH*0.22,bL*0.55,-bH*0.3); ctx.closePath();
-  },_SL.mantle,2.2);
-  _slGloss(()=>{ctx.ellipse(bL*0.22,-bH*0.72,bL*0.14,bH*0.18,-0.3,0,Math.PI*2);},0.28);
-  for(let i=0;i<4;i++){
-    const px=bL*0.55-i*bL*0.32, rp=Math.sin(t*spd*2+i*1.1)*1.5*crawlDamp;
-    ctx.save(); ctx.globalAlpha=0.22;
-    ctx.beginPath(); ctx.moveTo(px,bH*0.28+rp); ctx.quadraticCurveTo(px-bL*0.08,bH*0.45+rp,px-bL*0.16,bH*0.28+rp);
-    _slLine(_SL.outline,1.2); ctx.stroke(); ctx.restore();
+
+  // Belly (lighter lower half)
+  ctx_.save(); ctx_.globalAlpha=0.3;
+  ctx_.beginPath(); ctx_.ellipse(cx,cy+rY*0.22,rX*0.72,rY*0.48,0,0,Math.PI*2);
+  ctx_.fillStyle=_SL.belly; ctx_.fill(); ctx_.restore();
+
+  // Primary gloss (large top-left)
+  _slGloss(()=>{ ctx.ellipse(cx-rX*0.18,cy-rY*0.32,rX*0.40,rY*0.32,-0.3,0,Math.PI*2); },0.55);
+  // Secondary small gloss
+  _slGloss(()=>{ ctx.ellipse(cx+rX*0.28,cy-rY*0.52,rX*0.13,rY*0.13,0,0,Math.PI*2); },0.40);
+
+  // ── Eyes ──
+  const eyeSep=rX*0.30;
+  const eyeY=cy-rY*0.05;
+  const eRX=rX*0.21, eRY=rY*0.30*eyeStr;
+  for(let s=-1;s<=1;s+=2){
+    const ex=cx+s*eyeSep;
+    // white sclera
+    ctx_.beginPath(); ctx_.ellipse(ex,eyeY,eRX,eRY,0,0,Math.PI*2);
+    ctx_.fillStyle=_SL.eyeBase; ctx_.strokeStyle=_SL.outline; ctx_.lineWidth=1.6; ctx_.fill(); ctx_.stroke();
+    // iris
+    ctx_.beginPath(); ctx_.ellipse(ex+eRX*0.07,eyeY+eRY*0.06,eRX*0.60,eRY*0.72,0,0,Math.PI*2);
+    ctx_.fillStyle=_SL.eyeIris; ctx_.fill();
+    // pupil
+    ctx_.beginPath(); ctx_.ellipse(ex+eRX*0.10,eyeY+eRY*0.10,eRX*0.32,eRY*0.46,0,0,Math.PI*2);
+    ctx_.fillStyle=_SL.eye; ctx_.fill();
+    // main shine
+    ctx_.save(); ctx_.globalAlpha=0.92;
+    ctx_.beginPath(); ctx_.ellipse(ex-eRX*0.22,eyeY-eRY*0.28,eRX*0.22,eRY*0.22,-0.4,0,Math.PI*2);
+    ctx_.fillStyle=_SL.eyeHL; ctx_.fill(); ctx_.restore();
+    // tiny secondary shine
+    ctx_.save(); ctx_.globalAlpha=0.65;
+    ctx_.beginPath(); ctx_.arc(ex+eRX*0.22,eyeY+eRY*0.05,eRX*0.09,0,Math.PI*2);
+    ctx_.fillStyle=_SL.eyeHL; ctx_.fill(); ctx_.restore();
   }
-  const sbx=bL*0.6+hfx, sby=-bH*0.55+hfy;
-  const stalkLen=1-stalkRet*0.82, sway=Math.sin(t*0.9)*0.14*(1-stalkRet), sway2=Math.sin(t*0.9+0.8)*0.14*(1-stalkRet);
-  _slEyestalk(sbx-5*sc,sby,sway,18*stalkLen*sc,5.5*(0.4+0.6*stalkLen)*sc);
-  _slEyestalk(sbx+5*sc,sby,sway2,20*stalkLen*sc,5.5*(0.4+0.6*stalkLen)*sc);
-  const mx=bL*0.79+hfx, my=-bH*0.08+hfy;
-  if(mouthOpen>0.08){
-    const mw=7*mouthOpen*sc, mh=10*mouthOpen*sc;
-    ctx.beginPath(); ctx.ellipse(mx,my,mw,mh,0.15,0,Math.PI*2);
-    ctx.strokeStyle=_SL.outline; ctx.lineWidth=2.2; ctx.stroke(); ctx.fillStyle=_SL.mouthIn; ctx.fill();
-    if(mouthOpen>0.4){
-      const dripLen=mh+4*(mouthOpen-0.4)*sc;
-      ctx.beginPath(); ctx.moveTo(mx-1,my+mh-1); ctx.quadraticCurveTo(mx,my+mh+dripLen*0.6,mx+1,my+mh+dripLen);
-      ctx.lineWidth=2.5; ctx.strokeStyle=_SL.slime; ctx.stroke();
-      ctx.beginPath(); ctx.arc(mx+1,my+mh+dripLen,2*mouthOpen,0,Math.PI*2); ctx.fillStyle=_SL.slime; ctx.fill();
+
+  // ── Blush marks (post-attack) ──
+  if(blush>0.05){
+    ctx_.save(); ctx_.globalAlpha=blush*0.55;
+    for(let s=-1;s<=1;s+=2){
+      ctx_.beginPath(); ctx_.ellipse(cx+s*eyeSep*1.6,eyeY+eRY*0.9,eRX*0.65,eRY*0.25,0,0,Math.PI*2);
+      ctx_.fillStyle=_SL.blush; ctx_.fill();
     }
-    ctx.save(); ctx.globalAlpha=0.5;
-    ctx.beginPath(); ctx.ellipse(mx-mw*0.2,my-mh*0.15,mw*0.5,mh*0.35,0.15,0,Math.PI*2);
-    ctx.fillStyle=_SL.slime; ctx.fill(); ctx.restore();
-  } else {
-    ctx.save(); ctx.globalAlpha=0.6;
-    ctx.beginPath(); ctx.moveTo(mx-3*sc,my+2*sc); ctx.quadraticCurveTo(mx+3*sc,my-4*sc,mx-2*sc,my-8*sc);
-    _slLine(_SL.outline,1.4); ctx.stroke(); ctx.restore();
+    ctx_.restore();
   }
+
+  // ── Mouth ──
+  const mouthX=cx, mouthY=eyeY+eRY+rY*0.12;
+  if(mouthOpen>0.12){
+    // wide open circle mouth for attack
+    ctx_.beginPath(); ctx_.ellipse(mouthX,mouthY,rX*0.17*mouthOpen,rY*0.20*mouthOpen,0,0,Math.PI*2);
+    ctx_.fillStyle=_SL.mouth; ctx_.strokeStyle=_SL.outline; ctx_.lineWidth=1.5; ctx_.fill(); ctx_.stroke();
+    // teeth hint
+    ctx_.save(); ctx_.globalAlpha=0.72;
+    ctx_.fillStyle='#ddeeff';
+    ctx_.beginPath(); ctx_.ellipse(mouthX,mouthY-rY*0.08*mouthOpen,rX*0.12*mouthOpen,rY*0.06*mouthOpen,0,0,Math.PI*2);
+    ctx_.fill(); ctx_.restore();
+  } else {
+    // cute w-smile
+    ctx_.save(); ctx_.globalAlpha=0.72;
+    const mw=rX*0.30;
+    ctx_.beginPath();
+    ctx_.moveTo(mouthX-mw,mouthY);
+    ctx_.quadraticCurveTo(mouthX-mw*0.4,mouthY+rY*0.20,mouthX,mouthY+rY*0.04);
+    ctx_.quadraticCurveTo(mouthX+mw*0.4,mouthY+rY*0.20,mouthX+mw,mouthY);
+    _slLine(_SL.mouth,1.8*sc); ctx_.stroke(); ctx_.restore();
+  }
+
   ctx_.restore();
 }
 
