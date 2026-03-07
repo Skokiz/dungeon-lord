@@ -1075,7 +1075,7 @@ const _SL = {
   belly:'#88df44',
   slime:'#3aaa10', slimeDark:'#1a6600',
   eye:'#060200', eyeHL:'rgba(255,255,180,0.95)',
-  eyeBase:'#fff0cc', eyeIris:'#dd3300',
+  eyeBase:'#ffffff', eyeIris:'#3a6fcc',
   blush:'rgba(200,55,55,0.45)', mouth:'#050d00',
   tooth:'#f5f0d0', acid:'#8ce830',
 };
@@ -1163,23 +1163,22 @@ function drawSlug(ctx_,x,y,t,dir=1,atk={phase:0,t:0},sc=1.0){
   _slGloss(()=>{ ctx.ellipse(cx-rX*0.18,cy-rY*0.33,rX*0.38,rY*0.30,-0.3,0,Math.PI*2); },0.52);
   _slGloss(()=>{ ctx.ellipse(cx+rX*0.26,cy-rY*0.52,rX*0.11,rY*0.11,0,0,Math.PI*2); },0.38);
 
-  // ── Asymmetric eyes (left eye bigger = creepy) ──
+  // ── Symmetric neutral eyes ──
   const eyeSep=rX*0.29;
   const eyeY=cy-rY*0.08;
-  // left eye larger, right eye smaller & slightly tilted inward (menacing angle)
   const eyes=[
-    {x:cx-eyeSep, rX:rX*0.14, rY:rY*0.19*eyeStr, tilt:0},
-    {x:cx+eyeSep, rX:rX*0.11, rY:rY*0.15*eyeStr, tilt:0.18},
+    {x:cx-eyeSep, rX:rX*0.13, rY:rY*0.17*eyeStr, tilt:0},
+    {x:cx+eyeSep, rX:rX*0.13, rY:rY*0.17*eyeStr, tilt:0},
   ];
   for(const e of eyes){
-    // sclera — warm yellow-white for creepy look
-    ctx_.beginPath(); ctx_.ellipse(e.x,eyeY,e.rX,e.rY,e.tilt,0,Math.PI*2);
-    ctx_.fillStyle=_SL.eyeBase; ctx_.strokeStyle=_SL.outline; ctx_.lineWidth=1.7; ctx_.fill(); ctx_.stroke();
-    // orange-red iris
-    ctx_.beginPath(); ctx_.ellipse(e.x+e.rX*0.07,eyeY+e.rY*0.06,e.rX*0.62,e.rY*0.74,e.tilt,0,Math.PI*2);
+    // sclera
+    ctx_.beginPath(); ctx_.ellipse(e.x,eyeY,e.rX,e.rY,0,0,Math.PI*2);
+    ctx_.fillStyle=_SL.eyeBase; ctx_.strokeStyle=_SL.outline; ctx_.lineWidth=1.5; ctx_.fill(); ctx_.stroke();
+    // iris
+    ctx_.beginPath(); ctx_.arc(e.x,eyeY+e.rY*0.05,e.rX*0.60,0,Math.PI*2);
     ctx_.fillStyle=_SL.eyeIris; ctx_.fill();
-    // slit pupil (vertical — reptile/demon)
-    ctx_.beginPath(); ctx_.ellipse(e.x+e.rX*0.09,eyeY+e.rY*0.07,e.rX*0.12,e.rY*0.56,e.tilt,0,Math.PI*2);
+    // round pupil
+    ctx_.beginPath(); ctx_.arc(e.x,eyeY+e.rY*0.05,e.rX*0.32,0,Math.PI*2);
     ctx_.fillStyle=_SL.eye; ctx_.fill();
     // main shine
     ctx_.save(); ctx_.globalAlpha=0.92;
