@@ -1070,13 +1070,14 @@ function drawSkeleton(ctx_,x,y,t,dir=1,sc=0.38){
 //  x,y = ground position (bottom-center)
 // ═══════════════════════════════════════════════════════════
 const _SL = {
-  outline:'#0a2540',
-  body:'#5dcfe8', bodyHL:'#c4f3ff', bodyDark:'#2a9ab8',
-  belly:'#a8f0ff',
-  slime:'#3ab8d0', slimeDark:'#1a8aaa',
-  eye:'#111133', eyeHL:'rgba(255,255,255,0.92)',
-  eyeBase:'#ddeeff', eyeIris:'#3355cc',
-  blush:'rgba(255,130,160,0.5)', mouth:'#0a1a33',
+  outline:'#091a00',
+  body:'#5abf30', bodyHL:'#b8ff70', bodyDark:'#287a05',
+  belly:'#88df44',
+  slime:'#3aaa10', slimeDark:'#1a6600',
+  eye:'#060200', eyeHL:'rgba(255,255,180,0.95)',
+  eyeBase:'#fff0cc', eyeIris:'#dd3300',
+  blush:'rgba(200,55,55,0.45)', mouth:'#050d00',
+  tooth:'#f5f0d0', acid:'#8ce830',
 };
 const _slEase = p => p*p*(3-2*p);
 function _slLine(color,w){ ctx.strokeStyle=color; ctx.lineWidth=w; ctx.lineCap='round'; ctx.lineJoin='round'; }
@@ -1092,11 +1093,11 @@ function _slGloss(pathFn,alpha=0.38){
 function _slTrail(x,y,len){
   ctx.save(); ctx.translate(x,y);
   const grad=ctx.createLinearGradient(-len,0,0,0);
-  grad.addColorStop(0,'rgba(58,184,208,0)'); grad.addColorStop(0.4,'rgba(58,184,208,0.12)'); grad.addColorStop(1,'rgba(58,184,208,0.35)');
+  grad.addColorStop(0,'rgba(58,170,16,0)'); grad.addColorStop(0.4,'rgba(58,170,16,0.14)'); grad.addColorStop(1,'rgba(58,170,16,0.38)');
   ctx.beginPath(); ctx.moveTo(0,4); ctx.quadraticCurveTo(-len*0.5,7,-len,4); ctx.quadraticCurveTo(-len*0.5,1,0,4);
   ctx.fillStyle=grad; ctx.fill();
   ctx.beginPath(); ctx.moveTo(-4,4); ctx.quadraticCurveTo(-len*0.5,4.5,-len+4,4);
-  _slLine('rgba(100,220,240,0.4)',1.5); ctx.stroke(); ctx.restore();
+  _slLine('rgba(140,230,48,0.45)',1.5); ctx.stroke(); ctx.restore();
 }
 function _slEyestalk(bx,by,angle,len,eyeR){
   const tx=bx+Math.sin(angle)*len, ty=by-Math.cos(angle)*len;
@@ -1111,36 +1112,31 @@ function _slEyestalk(bx,by,angle,len,eyeR){
 function drawSlug(ctx_,x,y,t,dir=1,atk={phase:0,t:0},sc=1.0){
   const p=atk.t;
   const ease=_slEase;
-  // Idle idle idle
   const bob=Math.sin(t*2.2)*0.04;
-  // Per-phase deformation
+  const jig=Math.sin(t*3.7)*0.018; // extra jiggle on blob surface
   let sqX=1, sqY=1, offX=0, offY=0, mouthOpen=0, eyeStr=1, flash=0, blush=0, wobble=0;
   if(atk.phase===0){
-    // gentle squish-bob while hopping/crawling
-    sqX=1+bob*0.45; sqY=1-bob*0.3; offY=-bob;
+    sqX=1+bob*0.45+jig*0.15; sqY=1-bob*0.3; offY=-bob;
   } else if(atk.phase===1){
-    // windup: flatten & crouch
     const e=ease(p);
-    sqX=1+e*0.42; sqY=1-e*0.38; offY=e*2; eyeStr=1-e*0.45;
+    sqX=1+e*0.44; sqY=1-e*0.40; offY=e*2; eyeStr=1-e*0.5;
   } else if(atk.phase===2){
-    // strike: lunge forward as teardrop
-    const e=ease(p);
-    const ext=1-e;
-    sqX=1+ext*0.65; sqY=1-ext*0.32; offX=ext*10*sc; mouthOpen=ext*0.9; eyeStr=1+ext*0.35; flash=Math.max(0,1-p*3);
+    const e=ease(p); const ext=1-e;
+    sqX=1+ext*0.68; sqY=1-ext*0.35; offX=ext*11*sc; mouthOpen=ext*0.95; eyeStr=1+ext*0.4; flash=Math.max(0,1-p*3);
   } else if(atk.phase===3){
-    // recover + blush
     const e=ease(p);
-    sqX=1+(1-e)*0.15; sqY=1+(1-e)*0.12; blush=(1-e)*0.9;
-    wobble=Math.sin(p*Math.PI*3)*(1-p)*0.12;
+    sqX=1+(1-e)*0.18; sqY=1+(1-e)*0.14; blush=(1-e)*0.95;
+    wobble=Math.sin(p*Math.PI*3)*(1-p)*0.14;
   }
-  sqX+=wobble; sqY-=wobble*0.5;
+  sqX+=wobble; sqY-=wobble*0.6;
 
   const rX=24*sc*sqX, rY=21*sc*sqY;
   const cx=offX, cy=-rY-offY*sc;
+  const bp=t*1.4; // bump phase for idle surface wobble
 
   ctx_.save(); ctx_.translate(x,y); ctx_.scale(dir,1);
 
-  // Slime trail
+  // Acid slime trail
   _slTrail(0,0,rX+18*sc);
 
   // Drop shadow
@@ -1148,81 +1144,119 @@ function drawSlug(ctx_,x,y,t,dir=1,atk={phase:0,t:0},sc=1.0){
   ctx_.beginPath(); ctx_.ellipse(cx*0.4,-1,rX*0.75,4*sc,0,0,Math.PI*2);
   ctx_.fillStyle=_SL.bodyDark; ctx_.fill(); ctx_.restore();
 
-  // Main body blob
-  _slShape(()=>{ ctx.ellipse(cx,cy,rX,rY,0,0,Math.PI*2); },_SL.body,2.6);
+  // ── Bumpy organic blob body ──
+  // Drawn as a polygon of 14 points with sine bumps on the upper half
+  ctx_.beginPath();
+  const segs=14;
+  for(let i=0;i<=segs;i++){
+    const a=((i/segs)*Math.PI*2)-Math.PI*0.5;
+    const inTopHalf=Math.sin(a)<0;
+    const bump=inTopHalf ? 1+Math.sin(a*2.5+bp)*0.07+Math.sin(a*5+bp*1.3)*0.03 : 1;
+    const px=cx+Math.cos(a)*rX*bump;
+    const py=cy+Math.sin(a)*rY*bump;
+    if(i===0) ctx_.moveTo(px,py); else ctx_.lineTo(px,py);
+  }
+  ctx_.closePath();
+  ctx_.fillStyle=_SL.body; ctx_.strokeStyle=_SL.outline; ctx_.lineWidth=2.6; ctx_.lineJoin='round';
+  ctx_.fill(); ctx_.stroke();
 
-  // Flash on strike
+  // Flash on strike (acid yellow-green)
   if(flash>0.02){
-    ctx_.save(); ctx_.globalAlpha=flash*0.5;
+    ctx_.save(); ctx_.globalAlpha=flash*0.55;
     ctx_.beginPath(); ctx_.ellipse(cx,cy,rX,rY,0,0,Math.PI*2);
-    ctx_.fillStyle='#e0f8ff'; ctx_.fill(); ctx_.restore();
+    ctx_.fillStyle='#ccff44'; ctx_.fill(); ctx_.restore();
   }
 
-  // Belly (lighter lower half)
-  ctx_.save(); ctx_.globalAlpha=0.3;
-  ctx_.beginPath(); ctx_.ellipse(cx,cy+rY*0.22,rX*0.72,rY*0.48,0,0,Math.PI*2);
+  // Belly highlight
+  ctx_.save(); ctx_.globalAlpha=0.28;
+  ctx_.beginPath(); ctx_.ellipse(cx,cy+rY*0.25,rX*0.70,rY*0.44,0,0,Math.PI*2);
   ctx_.fillStyle=_SL.belly; ctx_.fill(); ctx_.restore();
 
-  // Primary gloss (large top-left)
-  _slGloss(()=>{ ctx.ellipse(cx-rX*0.18,cy-rY*0.32,rX*0.40,rY*0.32,-0.3,0,Math.PI*2); },0.55);
-  // Secondary small gloss
-  _slGloss(()=>{ ctx.ellipse(cx+rX*0.28,cy-rY*0.52,rX*0.13,rY*0.13,0,0,Math.PI*2); },0.40);
+  // Gloss
+  _slGloss(()=>{ ctx.ellipse(cx-rX*0.18,cy-rY*0.33,rX*0.38,rY*0.30,-0.3,0,Math.PI*2); },0.52);
+  _slGloss(()=>{ ctx.ellipse(cx+rX*0.26,cy-rY*0.52,rX*0.11,rY*0.11,0,0,Math.PI*2); },0.38);
 
-  // ── Eyes ──
-  const eyeSep=rX*0.30;
-  const eyeY=cy-rY*0.05;
-  const eRX=rX*0.21, eRY=rY*0.30*eyeStr;
-  for(let s=-1;s<=1;s+=2){
-    const ex=cx+s*eyeSep;
-    // white sclera
-    ctx_.beginPath(); ctx_.ellipse(ex,eyeY,eRX,eRY,0,0,Math.PI*2);
-    ctx_.fillStyle=_SL.eyeBase; ctx_.strokeStyle=_SL.outline; ctx_.lineWidth=1.6; ctx_.fill(); ctx_.stroke();
-    // iris
-    ctx_.beginPath(); ctx_.ellipse(ex+eRX*0.07,eyeY+eRY*0.06,eRX*0.60,eRY*0.72,0,0,Math.PI*2);
+  // ── Asymmetric eyes (left eye bigger = creepy) ──
+  const eyeSep=rX*0.29;
+  const eyeY=cy-rY*0.08;
+  // left eye larger, right eye smaller & slightly tilted inward (menacing angle)
+  const eyes=[
+    {x:cx-eyeSep, rX:rX*0.235, rY:rY*0.33*eyeStr, tilt:0},
+    {x:cx+eyeSep, rX:rX*0.175, rY:rY*0.26*eyeStr, tilt:0.18},
+  ];
+  for(const e of eyes){
+    // sclera — warm yellow-white for creepy look
+    ctx_.beginPath(); ctx_.ellipse(e.x,eyeY,e.rX,e.rY,e.tilt,0,Math.PI*2);
+    ctx_.fillStyle=_SL.eyeBase; ctx_.strokeStyle=_SL.outline; ctx_.lineWidth=1.7; ctx_.fill(); ctx_.stroke();
+    // orange-red iris
+    ctx_.beginPath(); ctx_.ellipse(e.x+e.rX*0.07,eyeY+e.rY*0.06,e.rX*0.62,e.rY*0.74,e.tilt,0,Math.PI*2);
     ctx_.fillStyle=_SL.eyeIris; ctx_.fill();
-    // pupil
-    ctx_.beginPath(); ctx_.ellipse(ex+eRX*0.10,eyeY+eRY*0.10,eRX*0.32,eRY*0.46,0,0,Math.PI*2);
+    // slit pupil (vertical — reptile/demon)
+    ctx_.beginPath(); ctx_.ellipse(e.x+e.rX*0.09,eyeY+e.rY*0.07,e.rX*0.12,e.rY*0.56,e.tilt,0,Math.PI*2);
     ctx_.fillStyle=_SL.eye; ctx_.fill();
     // main shine
     ctx_.save(); ctx_.globalAlpha=0.92;
-    ctx_.beginPath(); ctx_.ellipse(ex-eRX*0.22,eyeY-eRY*0.28,eRX*0.22,eRY*0.22,-0.4,0,Math.PI*2);
+    ctx_.beginPath(); ctx_.ellipse(e.x-e.rX*0.22,eyeY-e.rY*0.28,e.rX*0.20,e.rY*0.20,-0.4,0,Math.PI*2);
     ctx_.fillStyle=_SL.eyeHL; ctx_.fill(); ctx_.restore();
-    // tiny secondary shine
-    ctx_.save(); ctx_.globalAlpha=0.65;
-    ctx_.beginPath(); ctx_.arc(ex+eRX*0.22,eyeY+eRY*0.05,eRX*0.09,0,Math.PI*2);
+    // small secondary shine
+    ctx_.save(); ctx_.globalAlpha=0.60;
+    ctx_.beginPath(); ctx_.arc(e.x+e.rX*0.22,eyeY+e.rY*0.08,e.rX*0.085,0,Math.PI*2);
     ctx_.fillStyle=_SL.eyeHL; ctx_.fill(); ctx_.restore();
   }
 
-  // ── Blush marks (post-attack) ──
+  // ── Blush (post-attack) ──
   if(blush>0.05){
-    ctx_.save(); ctx_.globalAlpha=blush*0.55;
+    ctx_.save(); ctx_.globalAlpha=blush*0.5;
     for(let s=-1;s<=1;s+=2){
-      ctx_.beginPath(); ctx_.ellipse(cx+s*eyeSep*1.6,eyeY+eRY*0.9,eRX*0.65,eRY*0.25,0,0,Math.PI*2);
+      ctx_.beginPath(); ctx_.ellipse(cx+s*eyeSep*1.65,eyeY+eyes[0].rY*0.95,eyes[0].rX*0.60,eyes[0].rY*0.22,0,0,Math.PI*2);
       ctx_.fillStyle=_SL.blush; ctx_.fill();
     }
     ctx_.restore();
   }
 
   // ── Mouth ──
-  const mouthX=cx, mouthY=eyeY+eRY+rY*0.12;
+  const eRY0=eyes[0].rY;
+  const mouthX=cx, mouthY=eyeY+eRY0+rY*0.10;
   if(mouthOpen>0.12){
-    // wide open circle mouth for attack
-    ctx_.beginPath(); ctx_.ellipse(mouthX,mouthY,rX*0.17*mouthOpen,rY*0.20*mouthOpen,0,0,Math.PI*2);
-    ctx_.fillStyle=_SL.mouth; ctx_.strokeStyle=_SL.outline; ctx_.lineWidth=1.5; ctx_.fill(); ctx_.stroke();
-    // teeth hint
-    ctx_.save(); ctx_.globalAlpha=0.72;
-    ctx_.fillStyle='#ddeeff';
-    ctx_.beginPath(); ctx_.ellipse(mouthX,mouthY-rY*0.08*mouthOpen,rX*0.12*mouthOpen,rY*0.06*mouthOpen,0,0,Math.PI*2);
-    ctx_.fill(); ctx_.restore();
+    // gaping maw — wide jagged mouth
+    const mw=rX*0.32*mouthOpen, mh=rY*0.26*mouthOpen;
+    ctx_.beginPath(); ctx_.ellipse(mouthX,mouthY,mw,mh,0,0,Math.PI*2);
+    ctx_.fillStyle=_SL.mouth; ctx_.strokeStyle=_SL.outline; ctx_.lineWidth=1.8; ctx_.fill(); ctx_.stroke();
+    // upper fangs (3 triangles)
+    ctx_.fillStyle=_SL.tooth;
+    const numF=3;
+    for(let i=0;i<numF;i++){
+      const fx=mouthX-mw*0.65+i*(mw*1.3/(numF-1));
+      ctx_.beginPath();
+      ctx_.moveTo(fx-mw*0.11,mouthY-mh*0.35);
+      ctx_.lineTo(fx+mw*0.11,mouthY-mh*0.35);
+      ctx_.lineTo(fx,mouthY+mh*0.18);
+      ctx_.closePath(); ctx_.fill();
+    }
+    // acid drip below mouth
+    ctx_.save(); ctx_.globalAlpha=0.75;
+    const dy=mouthY+mh;
+    ctx_.beginPath(); ctx_.moveTo(mouthX,dy);
+    ctx_.quadraticCurveTo(mouthX+2*sc,dy+7*sc,mouthX+1*sc,dy+12*sc);
+    ctx_.strokeStyle=_SL.acid; ctx_.lineWidth=2.8*sc; ctx_.stroke();
+    ctx_.beginPath(); ctx_.arc(mouthX+sc,dy+12*sc,2.5*sc*mouthOpen,0,Math.PI*2);
+    ctx_.fillStyle=_SL.acid; ctx_.fill(); ctx_.restore();
   } else {
-    // cute w-smile
-    ctx_.save(); ctx_.globalAlpha=0.72;
+    // sinister wide grin with one central fang
+    ctx_.save(); ctx_.globalAlpha=0.82;
     const mw=rX*0.30;
     ctx_.beginPath();
     ctx_.moveTo(mouthX-mw,mouthY);
-    ctx_.quadraticCurveTo(mouthX-mw*0.4,mouthY+rY*0.20,mouthX,mouthY+rY*0.04);
-    ctx_.quadraticCurveTo(mouthX+mw*0.4,mouthY+rY*0.20,mouthX+mw,mouthY);
-    _slLine(_SL.mouth,1.8*sc); ctx_.stroke(); ctx_.restore();
+    ctx_.quadraticCurveTo(mouthX,mouthY+rY*0.22,mouthX+mw,mouthY);
+    _slLine(_SL.mouth,2.2*sc); ctx_.stroke();
+    // single menacing fang in center
+    ctx_.fillStyle=_SL.tooth;
+    ctx_.beginPath();
+    ctx_.moveTo(mouthX-mw*0.12,mouthY+rY*0.04);
+    ctx_.lineTo(mouthX+mw*0.12,mouthY+rY*0.04);
+    ctx_.lineTo(mouthX,mouthY+rY*0.18);
+    ctx_.closePath(); ctx_.fill();
+    ctx_.restore();
   }
 
   ctx_.restore();
