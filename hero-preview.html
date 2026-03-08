@@ -2,369 +2,461 @@
 <html>
 <head>
 <meta charset="utf-8">
-<title>Рекрут — Don't Starve Chibi</title>
+<title>Рекрут — Mobile RPG Style</title>
 <style>
 * { margin:0; padding:0; box-sizing:border-box; }
 body {
-  background:#0c0a18;
+  background:#0d0b1a;
   display:flex; flex-direction:column; align-items:center;
-  min-height:100vh; gap:10px; padding:20px;
+  min-height:100vh; gap:8px; padding:20px;
   font-family:monospace; color:#998888;
 }
-canvas { background:#110e20; border-radius:16px; display:block; }
+canvas { border-radius:14px; display:block; }
 h2 { font-size:13px; color:#cc9966; letter-spacing:2px; margin-top:4px; }
 p  { font-size:10px; letter-spacing:1px; color:#443344; }
 </style>
 </head>
 <body>
-<h2>РЕКРУТ  ·  Don't Starve Chibi  ·  Medieval Fantasy</h2>
-<canvas id="c" width="680" height="300"></canvas>
-<p>idle walk · sword drawn · magic rune glow · scale ×3</p>
+<h2>РЕКРУТ · Mobile RPG Style · Medieval Fantasy</h2>
+<canvas id="c" width="700" height="460"></canvas>
+<p>walk cycle · magic sword · rune glow</p>
 
 <script>
 const cvs = document.getElementById('c');
 const ctx  = cvs.getContext('2d');
 
-// ── helper: rounded rect ──────────────────────────────────
-function rr(x,y,w,h,r){
-  ctx.beginPath();
-  ctx.moveTo(x+r,y); ctx.lineTo(x+w-r,y); ctx.arcTo(x+w,y,x+w,y+r,r);
-  ctx.lineTo(x+w,y+h-r); ctx.arcTo(x+w,y+h,x+w-r,y+h,r);
-  ctx.lineTo(x+r,y+h); ctx.arcTo(x,y+h,x,y+h-r,r);
-  ctx.lineTo(x,y+r); ctx.arcTo(x,y,x+r,y,r); ctx.closePath();
+// ── Palette ────────────────────────────────────────────────────
+const OL       = '#181008'; // outline
+const SKIN     = '#e8b87a';
+const SKIN_SH  = '#c49050';
+const IRON     = '#8898a8';
+const IRON_H   = '#ccdde8';
+const IRON_SH  = '#506070';
+const RED      = '#c43030';
+const RED_SH   = '#801818';
+const RED_H    = '#e04040';
+const LTHR     = '#8b5e3c';
+const LTHR_SH  = '#5a3520';
+const LTHR_H   = '#b07a50';
+const STEEL    = '#b8c8d0';
+const STEEL_H  = '#e8f4f8';
+const GOLD     = '#c8a030';
+const DARK     = '#2a1810';
+
+// ── Core helpers ───────────────────────────────────────────────
+function fs(fill, lw) {
+  ctx.fillStyle = fill; ctx.fill();
+  ctx.strokeStyle = OL; ctx.lineWidth = lw; ctx.stroke();
 }
 
-// ── helper: capsule bone ──────────────────────────────────
-function cap(x1,y1,x2,y2,r,fill,ow=1.8){
-  const a=Math.atan2(y2-y1,x2-x1), px=-Math.sin(a), py=Math.cos(a);
+// Capsule limb (from p1 to p2, radius r)
+function cap(x1,y1,x2,y2,r,fill,lw) {
+  const a = Math.atan2(y2-y1, x2-x1);
   ctx.beginPath();
-  ctx.arc(x1,y1,r,a+Math.PI/2,a-Math.PI/2);
-  ctx.arc(x2,y2,r,a-Math.PI/2,a+Math.PI/2);
+  ctx.arc(x1, y1, r, a+Math.PI/2, a-Math.PI/2);
+  ctx.arc(x2, y2, r, a-Math.PI/2, a+Math.PI/2);
   ctx.closePath();
-  ctx.strokeStyle='#090400'; ctx.lineWidth=ow; ctx.stroke();
-  ctx.fillStyle=fill; ctx.fill();
-  // gloss strip
-  ctx.save(); ctx.globalAlpha=0.22;
+  fs(fill, lw);
+  // highlight strip on top-left
+  const px = -Math.sin(a)*r*0.42, py = Math.cos(a)*r*0.42;
+  ctx.save(); ctx.globalAlpha = 0.22;
   ctx.beginPath();
-  ctx.arc(x1+px*r*0.42,y1+py*r*0.42,r*0.28,a+Math.PI/2,a-Math.PI/2);
-  ctx.arc(x2+px*r*0.42,y2+py*r*0.42,r*0.28,a-Math.PI/2,a+Math.PI/2);
-  ctx.closePath(); ctx.fillStyle='#fff'; ctx.fill(); ctx.restore();
+  ctx.arc(x1+px, y1+py, r*0.28, a+Math.PI/2, a-Math.PI/2);
+  ctx.arc(x2+px, y2+py, r*0.28, a-Math.PI/2, a+Math.PI/2);
+  ctx.closePath();
+  ctx.fillStyle = '#fff'; ctx.fill();
+  ctx.restore();
 }
 
-// ── RECRUIT ───────────────────────────────────────────────
-// x,y = hip center in world; sc = scale (preview uses ~3)
-function drawRecruit(ctx_, x, y, t, dir=1, sc=1){
-  const OL='#090400';
-  // walk cycle
-  const spd=2.2, wc=Math.sin(t*spd), wc_c=Math.cos(t*spd);
-  const bob=(1-Math.abs(wc))*2.5;
-  const lF= wc*0.46, lB=-lF;
-  const kF=0.06+Math.max(0,wc_c)*0.72, kB=0.06+Math.max(0,-wc_c)*0.72;
-  const aF=-wc*0.30, aB=-aF;
-  const eF=0.12+Math.max(0,-wc_c)*0.28, eB=0.12+Math.max(0,wc_c)*0.28;
+// ── RECRUIT ────────────────────────────────────────────────────
+// x, y = ground position (boots touch here)
+// t = time (s), dir = 1 right / -1 left, sc = scale
+function drawRecruit(x, y, t, dir, sc) {
+  dir = dir || 1; sc = sc || 1;
+  const lw = 2.4 * sc;
 
-  // proportions (local px, y=0 at hip, up=negative)
-  const THIGH=19, SHIN=16;
-  const UA=14, FA=11;
-  const HX=0, HY=0;
-  const SP=-28;         // spine top (shoulder level)
-  const SX=12, SY=SP+4; // shoulder attachment
-  const NY=SP-7;         // neck
-  const HHY=NY-15;       // head center
+  // Walk cycle
+  const spd = 2.2;
+  const wc  = Math.sin(t * spd);
+  const wcc = Math.cos(t * spd);
+  const bob = (1 - Math.abs(wc)) * 3.5;
 
-  // leg helper
-  function leg(hx,hy,thA,kBend,dim){
-    const kx=hx+Math.sin(thA)*THIGH, ky=hy+Math.cos(thA)*THIGH;
-    const sA=thA-kBend, ax=kx+Math.sin(sA)*SHIN, ay=ky+Math.cos(sA)*SHIN;
-    // thigh — leather trousers
-    cap(hx,hy, kx,ky, 6, dim?'#2a2218':'#4a3820', 2);
-    // shin — leather boot
-    cap(kx,ky, ax,ay, 5, dim?'#201810':'#382810', 2);
-    // foot
-    const fa=sA*0.35, fx=ax+Math.cos(fa)*11, fy=ay+Math.abs(Math.sin(fa))*2+3;
-    cap(ax,ay, fx,fy, 4.5, dim?'#201810':'#2e2010', 2);
-  }
+  // Leg swing angles (deg)
+  const legF =  wc * 26;
+  const legB = -wc * 26;
+  // Knee bend (bend opposite leg when swinging)
+  const kF   = Math.max(0,  wcc) * 20;
+  const kB   = Math.max(0, -wcc) * 20;
+  // Arms opposite to legs
+  const armF = -wc * 22;
+  const armB =  wc * 22;
 
-  // arm helper — returns wrist [wx,wy,eA]
-  function arm(sx,sy,uA,eBend,dim){
-    const ex=sx+Math.sin(uA)*UA, ey=sy+Math.cos(uA)*UA;
-    const eA=uA+eBend, wx=ex+Math.sin(eA)*FA, wy=ey+Math.cos(eA)*FA;
-    // chainmail sleeve → iron pauldron round cap at shoulder
-    cap(sx,sy, ex,ey, 5, dim?'#2a2c30':'#5a5c62', 2);    // upper arm
-    cap(ex,ey, wx,wy, 4, dim?'#242628':'#4a4c50', 2);     // forearm + bracer
-    return [wx,wy,eA];
-  }
+  ctx.save();
+  ctx.translate(x, y - bob * sc);
+  ctx.scale(dir * sc, sc);
+  // Local coords: origin = ground (boot level), y<0 = up
 
-  ctx_.save();
-  ctx_.translate(x, y - bob*sc);
-  ctx_.scale(dir*sc, sc);
+  function C(x1,y1,x2,y2,r,fill) { cap(x1,y1,x2,y2,r,fill,lw); }
 
-  // ── BACK LEG & ARM ──────────────────────────────────────
-  leg( 4, HY, lB, kB, true);
-  arm(-SX, SY, aB, eB, true);
+  // ── Draw one leg (rotated from hip) ─────────────────────────
+  // angle: swing angle (deg), knee: shin extra angle (deg)
+  function drawLeg(angle, knee, thR, shR) {
+    const hipY = -72; // hip above ground (local)
+    ctx.save();
+    ctx.translate(0, hipY);
+    ctx.rotate(angle * Math.PI/180);
 
-  // ── TABARD / SURCOAT (behind body) ──────────────────────
-  // simple trapezoid flap in front
-  ctx.fillStyle='#7a1518';
-  ctx.beginPath();
-  ctx.moveTo(-8, SP+6);
-  ctx.bezierCurveTo(-13, SP+14, -15, HY+2, -11, HY+22);
-  ctx.lineTo( 11, HY+22);
-  ctx.bezierCurveTo( 15, HY+2,  13, SP+14,  8, SP+6);
-  ctx.closePath();
-  ctx.strokeStyle=OL; ctx.lineWidth=2; ctx.stroke(); ctx.fill();
-  // tabard shadow side
-  ctx.save(); ctx.globalAlpha=0.22; ctx.fillStyle='#000';
-  ctx.beginPath();
-  ctx.moveTo(-4,SP+8); ctx.bezierCurveTo(-13,SP+16,-14,HY,-9,HY+22);
-  ctx.lineTo(-2,HY+22); ctx.closePath(); ctx.fill(); ctx.restore();
-  // tabard cross emblem
-  ctx.save(); ctx.globalAlpha=0.55; ctx.strokeStyle='#cc8833'; ctx.lineWidth=1.8; ctx.lineCap='round';
-  ctx.beginPath(); ctx.moveTo(0,SP+10); ctx.lineTo(0,SP+22); ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(-5,SP+15); ctx.lineTo(5,SP+15); ctx.stroke();
-  ctx.restore();
+    // Thigh
+    C(0, 0, 0, 32, thR, LTHR);
+    // Knee guard
+    ctx.beginPath(); ctx.arc(0, 32, thR*0.75, 0, Math.PI*2);
+    fs(IRON, lw*0.75);
 
-  // ── PELVIS BELT ─────────────────────────────────────────
-  ctx.beginPath(); rr(-11,HY-3,22,7,3);
-  ctx.strokeStyle=OL; ctx.lineWidth=2; ctx.stroke(); ctx.fillStyle='#5a3a18'; ctx.fill();
-  // belt buckle
-  ctx.fillStyle='#a08030';
-  ctx.beginPath(); rr(-4,HY-2,8,5,1); ctx.fill();
-  ctx.strokeStyle=OL; ctx.lineWidth=1; ctx.stroke();
+    ctx.save();
+    ctx.translate(0, 32);
+    ctx.rotate(knee * Math.PI/180);
+    // Shin
+    C(0, 0, 0, 28, shR, LTHR_SH);
 
-  // ── BODY (chainmail hauberk) ─────────────────────────────
-  ctx.beginPath(); rr(HX-11, SP+2, 22, 26, 5);
-  ctx.strokeStyle=OL; ctx.lineWidth=2.5; ctx.stroke(); ctx.fillStyle='#5a5c62'; ctx.fill();
-  // chainmail dot texture
-  ctx.save(); ctx.globalAlpha=0.18;
-  for(let cy=SP+6; cy<SP+26; cy+=4){
-    for(let cx2=-8; cx2<9; cx2+=4){
-      ctx.beginPath(); ctx.arc(cx2,cy,1,0,Math.PI*2); ctx.fillStyle='#000'; ctx.fill();
-    }
-  }
-  ctx.restore();
-  // chest leather strap
-  ctx.save(); ctx.strokeStyle='#7a5530'; ctx.lineWidth=2.5;
-  ctx.beginPath(); ctx.moveTo(-6,SP+4); ctx.lineTo(-6,SP+24); ctx.stroke();
-  ctx.beginPath(); ctx.moveTo( 6,SP+4); ctx.lineTo( 6,SP+24); ctx.stroke();
-  ctx.restore();
-  // pauldron (shoulder armour)
-  for(const sx2 of[-SX, SX]){
-    ctx.beginPath(); ctx.ellipse(sx2, SY+2, 7, 5, sx2<0?0.3:-0.3, 0, Math.PI*2);
-    ctx.strokeStyle=OL; ctx.lineWidth=1.8; ctx.stroke(); ctx.fillStyle='#747880'; ctx.fill();
-    ctx.save(); ctx.globalAlpha=0.28; ctx.fillStyle='#fff';
-    ctx.beginPath(); ctx.ellipse(sx2+(sx2<0?1.5:-1.5), SY-1, 3.5, 2, sx2<0?0.3:-0.3, 0, Math.PI*2);
-    ctx.fill(); ctx.restore();
-  }
-
-  // ── FRONT ARM ───────────────────────────────────────────
-  const [fwx,fwy,felbA] = arm(SX, SY, aF, eF, false);
-
-  // ── SWORD (front hand) ──────────────────────────────────
-  ctx.save(); ctx.translate(fwx, fwy); ctx.rotate(-0.12 + felbA*0.18);
-  // blade — faint magic rune glow
-  const runeGlow = 0.15 + 0.12*Math.sin(t*1.8);
-  ctx.save(); ctx.globalAlpha=runeGlow; ctx.shadowBlur=12; ctx.shadowColor='#5588ff';
-  ctx.strokeStyle='#8ab0ff'; ctx.lineWidth=8; ctx.lineCap='round';
-  ctx.beginPath(); ctx.moveTo(0,-30); ctx.lineTo(0,5); ctx.stroke();
-  ctx.restore();
-  // blade outline (dark pass)
-  ctx.strokeStyle=OL; ctx.lineWidth=5.5; ctx.lineCap='round';
-  ctx.beginPath(); ctx.moveTo(0,-30); ctx.lineTo(0,6); ctx.stroke();
-  // blade fill (iron)
-  const bladeGrad = ctx.createLinearGradient(-3,-30,3,-30);
-  bladeGrad.addColorStop(0,'#c0c4cc'); bladeGrad.addColorStop(0.5,'#e8eaee'); bladeGrad.addColorStop(1,'#9098a8');
-  ctx.strokeStyle=bladeGrad; ctx.lineWidth=3.5;
-  ctx.beginPath(); ctx.moveTo(0,-30); ctx.lineTo(0,6); ctx.stroke();
-  // blade fuller (groove)
-  ctx.save(); ctx.globalAlpha=0.4; ctx.strokeStyle='#9098a8'; ctx.lineWidth=1;
-  ctx.beginPath(); ctx.moveTo(0,-26); ctx.lineTo(0,2); ctx.stroke(); ctx.restore();
-  // blade tip taper
-  ctx.fillStyle='#d0d4dc';
-  ctx.beginPath(); ctx.moveTo(-3,-22); ctx.lineTo(0,-34); ctx.lineTo(3,-22); ctx.closePath(); ctx.fill();
-  ctx.strokeStyle=OL; ctx.lineWidth=1.2; ctx.stroke();
-  // crossguard (iron)
-  ctx.strokeStyle=OL; ctx.lineWidth=4.5; ctx.lineCap='round';
-  ctx.beginPath(); ctx.moveTo(-10,-4); ctx.lineTo(10,-4); ctx.stroke();
-  ctx.strokeStyle='#888890'; ctx.lineWidth=3;
-  ctx.beginPath(); ctx.moveTo(-10,-4); ctx.lineTo(10,-4); ctx.stroke();
-  // grip (leather wrapped)
-  ctx.strokeStyle=OL; ctx.lineWidth=5; ctx.lineCap='round';
-  ctx.beginPath(); ctx.moveTo(-1,0); ctx.lineTo(-1,8); ctx.stroke();
-  ctx.strokeStyle='#7a4a20'; ctx.lineWidth=3.5;
-  ctx.beginPath(); ctx.moveTo(-1,0); ctx.lineTo(-1,8); ctx.stroke();
-  // grip wrapping lines
-  ctx.save(); ctx.globalAlpha=0.5; ctx.strokeStyle='#5a3010'; ctx.lineWidth=1.2;
-  for(let gi=0;gi<4;gi++){ ctx.beginPath(); ctx.moveTo(-3,gi*2); ctx.lineTo(2,gi*2); ctx.stroke(); }
-  ctx.restore();
-  // pommel
-  ctx.beginPath(); ctx.arc(0,10,4,0,Math.PI*2);
-  ctx.strokeStyle=OL; ctx.lineWidth=1.8; ctx.stroke(); ctx.fillStyle='#888890'; ctx.fill();
-  ctx.restore(); // weapon
-
-  // ── FRONT LEG ───────────────────────────────────────────
-  leg(-4, HY, lF, kF, false);
-
-  // ── NECK ────────────────────────────────────────────────
-  cap(HX, SP, HX, NY, 4, '#c89060', 2);
-  // coif (chainmail neck protector)
-  ctx.beginPath(); rr(HX-6, NY-2, 12, 8, 3);
-  ctx.strokeStyle=OL; ctx.lineWidth=1.5; ctx.stroke(); ctx.fillStyle='#5a5c62'; ctx.fill();
-
-  // ── HEAD (big chibi, open-face with nasal helm) ──────────
-  // head shape
-  ctx.beginPath(); ctx.ellipse(HX, HHY, 13, 15, 0, 0, Math.PI*2);
-  ctx.strokeStyle=OL; ctx.lineWidth=2.8; ctx.stroke(); ctx.fillStyle='#c89060'; ctx.fill();
-  // face highlight (3/4 lit)
-  ctx.save(); ctx.globalAlpha=0.28;
-  ctx.beginPath(); ctx.ellipse(HX-4, HHY-4, 7, 8, -0.2, 0, Math.PI*2);
-  ctx.fillStyle='#f0c080'; ctx.fill(); ctx.restore();
-
-  // ── HELMET (iron, open-face / spangenhelm) ───────────────
-  // skull cap
-  ctx.beginPath(); ctx.ellipse(HX, HHY-2, 13.5, 10, 0, Math.PI, 0);
-  ctx.strokeStyle=OL; ctx.lineWidth=2.5; ctx.stroke(); ctx.fillStyle='#707880'; ctx.fill();
-  // rim band
-  ctx.beginPath(); rr(HX-13, HHY+6, 26, 5, 2);
-  ctx.strokeStyle=OL; ctx.lineWidth=2; ctx.stroke(); ctx.fillStyle='#80888e'; ctx.fill();
-  // helm highlight gloss
-  ctx.save(); ctx.globalAlpha=0.25;
-  ctx.beginPath(); ctx.ellipse(HX-4, HHY-8, 5.5, 4, -0.3, 0, Math.PI*2);
-  ctx.fillStyle='#ffffff'; ctx.fill(); ctx.restore();
-  // nasal guard (vertical iron bar over nose)
-  ctx.strokeStyle=OL; ctx.lineWidth=3.5; ctx.lineCap='round';
-  ctx.beginPath(); ctx.moveTo(HX, HHY+5); ctx.lineTo(HX, HHY+13); ctx.stroke();
-  ctx.strokeStyle='#808890'; ctx.lineWidth=2.2;
-  ctx.beginPath(); ctx.moveTo(HX, HHY+5); ctx.lineTo(HX, HHY+13); ctx.stroke();
-  // helm rivets
-  ctx.fillStyle='#909898';
-  for(const rv of[[-9,HHY+7],[-5,HHY+4],[5,HHY+4],[9,HHY+7]]){
-    ctx.beginPath(); ctx.arc(rv[0],rv[1],1.2,0,Math.PI*2); ctx.fill();
-  }
-  // small dent (worn recruit helm)
-  ctx.save(); ctx.globalAlpha=0.35; ctx.strokeStyle='#404850'; ctx.lineWidth=1.2;
-  ctx.beginPath(); ctx.moveTo(HX+6,HHY-7); ctx.quadraticCurveTo(HX+9,HHY-4,HX+7,HHY-2); ctx.stroke();
-  ctx.restore();
-
-  // ── FACE DETAILS ────────────────────────────────────────
-  // eyes — young warrior, determined
-  for(const ex of [-5, 4]){
-    const eyeY = HHY+8;
-    // eyebrow (slight furrow)
-    ctx.save(); ctx.strokeStyle='#7a4a20'; ctx.lineWidth=1.5; ctx.lineCap='round';
-    ctx.beginPath(); ctx.moveTo(ex-2, eyeY-6); ctx.lineTo(ex+2.5, eyeY-7); ctx.stroke();
+    // Boot (at ankle)
+    ctx.save();
+    ctx.translate(0, 28);
+    // Boot body
+    ctx.beginPath();
+    ctx.moveTo(-shR-1, 0);
+    ctx.bezierCurveTo(-shR-1, 14, shR*2+8, 16, shR*2+10, 10);
+    ctx.bezierCurveTo(shR*2+10, 4, shR+2, 0, shR+1, 0);
+    ctx.closePath();
+    fs(DARK, lw*0.85);
+    // Boot toe iron cap
+    ctx.beginPath();
+    ctx.ellipse(shR*1.6+7, 9, 8, 6, 0, 0, Math.PI*2);
+    fs(IRON_SH, lw*0.7);
+    // Highlight on boot
+    ctx.save(); ctx.globalAlpha = 0.22;
+    ctx.beginPath();
+    ctx.ellipse(2, 4, shR, 4, 0, 0, Math.PI*2);
+    ctx.fillStyle = '#fff'; ctx.fill();
     ctx.restore();
-    // eye white
-    ctx.beginPath(); ctx.ellipse(ex+0.5, eyeY, 3.2, 2.8, 0, 0, Math.PI*2);
-    ctx.fillStyle='#f0e8d8'; ctx.fill(); ctx.strokeStyle=OL; ctx.lineWidth=1.2; ctx.stroke();
-    // iris (brown/amber — young warrior)
-    ctx.beginPath(); ctx.ellipse(ex+1, eyeY, 2, 2, 0, 0, Math.PI*2);
-    ctx.fillStyle='#6a3a10'; ctx.fill();
-    // pupil
-    ctx.beginPath(); ctx.arc(ex+1, eyeY, 1.1, 0, Math.PI*2);
-    ctx.fillStyle='#0a0400'; ctx.fill();
-    // eye shine
-    ctx.save(); ctx.globalAlpha=0.85;
-    ctx.beginPath(); ctx.arc(ex-0.2, eyeY-0.8, 0.7, 0, Math.PI*2);
-    ctx.fillStyle='#fff'; ctx.fill(); ctx.restore();
+    ctx.restore(); // boot
+    ctx.restore(); // shin
+    ctx.restore(); // leg
   }
-  // nose (simple bump)
-  ctx.strokeStyle='#a07040'; ctx.lineWidth=1.2; ctx.lineCap='round';
-  ctx.beginPath(); ctx.moveTo(HX+1, HHY+10); ctx.quadraticCurveTo(HX+4, HHY+14, HX+2, HHY+16); ctx.stroke();
-  // mouth — slight determined set
-  ctx.strokeStyle='#8a4a28'; ctx.lineWidth=1.5; ctx.lineCap='round';
-  ctx.beginPath(); ctx.moveTo(HX-4, HHY+18); ctx.quadraticCurveTo(HX, HHY+20, HX+4, HHY+18); ctx.stroke();
-  // cheek blush (young face)
-  ctx.save(); ctx.globalAlpha=0.18;
-  ctx.beginPath(); ctx.ellipse(HX-7, HHY+16, 4, 2.5, -0.2, 0, Math.PI*2); ctx.fillStyle='#cc5533'; ctx.fill();
-  ctx.beginPath(); ctx.ellipse(HX+7, HHY+16, 4, 2.5,  0.2, 0, Math.PI*2); ctx.fillStyle='#cc5533'; ctx.fill();
+
+  // ── BACK LEG ───────────────────────────────────────────────
+  drawLeg(legB, kB, 11, 9);
+
+  // ── BACK ARM ───────────────────────────────────────────────
+  ctx.save();
+  ctx.translate(-18, -115); // left shoulder
+  ctx.rotate(armB * Math.PI/180);
+  C(0, 0, -3, 24, 9, IRON);    // upper arm (armored)
+  C(-3, 24, -4, 44, 8, SKIN);  // forearm
+  ctx.beginPath(); ctx.arc(-4, 50, 8, 0, Math.PI*2); fs(SKIN, lw*0.8);
   ctx.restore();
 
-  // ── MAGIC RUNE on blade (floats up) ─────────────────────
-  // small arcane sigil visible on blade
-  const [fwx2,fwy2] = [fwx, fwy]; // front wrist approximate
-  const runeA = 0.3 + 0.2*Math.sin(t*2.5);
-  ctx.save(); ctx.globalAlpha=runeA;
-  ctx.translate(fwx2+2, fwy2-22); ctx.rotate(t*0.4);
-  ctx.strokeStyle='#88aaff'; ctx.lineWidth=0.9; ctx.lineCap='round';
-  ctx.beginPath(); ctx.moveTo(-3,0); ctx.lineTo(3,0); ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(0,-3); ctx.lineTo(0,3); ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(-2,-2); ctx.lineTo(2,2); ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(2,-2); ctx.lineTo(-2,2); ctx.stroke();
+  // ── TORSO ──────────────────────────────────────────────────
+  // Red tabard
+  ctx.beginPath();
+  ctx.moveTo(-21, -72);
+  ctx.bezierCurveTo(-24, -85, -26, -112, -22, -122);
+  ctx.bezierCurveTo(-18, -130, 18, -130, 22, -122);
+  ctx.bezierCurveTo(26, -112, 24, -85, 21, -72);
+  ctx.bezierCurveTo(20, -66, -20, -66, -21, -72);
+  ctx.closePath();
+  fs(RED, lw);
+  // Shadow side of tabard
+  ctx.save(); ctx.globalAlpha = 0.22;
+  ctx.beginPath();
+  ctx.moveTo(10, -72); ctx.bezierCurveTo(18, -82, 18, -118, 14, -126);
+  ctx.bezierCurveTo(18, -130, 22, -122, 22, -122);
+  ctx.bezierCurveTo(26, -112, 24, -85, 21, -72);
+  ctx.closePath();
+  ctx.fillStyle = RED_SH; ctx.fill();
   ctx.restore();
 
-  ctx_.restore();
-}
+  // Iron breastplate
+  ctx.beginPath();
+  ctx.moveTo(-14, -74);
+  ctx.bezierCurveTo(-16, -88, -16, -114, -12, -122);
+  ctx.bezierCurveTo(-8, -128, 8, -128, 12, -122);
+  ctx.bezierCurveTo(16, -114, 16, -88, 14, -74);
+  ctx.bezierCurveTo(12, -70, -12, -70, -14, -74);
+  ctx.closePath();
+  fs(IRON, lw);
+  // Breastplate highlight
+  ctx.save(); ctx.globalAlpha = 0.32;
+  ctx.beginPath();
+  ctx.moveTo(-7, -78);
+  ctx.bezierCurveTo(-8, -104, -5, -120, -2, -124);
+  ctx.bezierCurveTo(2, -127, 7, -118, 8, -94);
+  ctx.bezierCurveTo(8, -84, -2, -76, -7, -78);
+  ctx.closePath();
+  ctx.fillStyle = '#fff'; ctx.fill();
+  ctx.restore();
+  // Breastplate center ridge
+  ctx.beginPath();
+  ctx.moveTo(0, -74); ctx.lineTo(0, -120);
+  ctx.strokeStyle = IRON_SH; ctx.lineWidth = 1.6*sc; ctx.stroke();
 
-// ── scene ─────────────────────────────────────────────────
-const GROUND_Y = 245;
-const SC_BIG   = 3.0;   // large preview
-const SC_SMALL = 0.72;  // game-size reference
+  // Belt
+  ctx.beginPath(); ctx.rect(-22, -76, 44, 10);
+  fs(LTHR, lw*0.9);
+  // Buckle
+  ctx.beginPath(); ctx.rect(-6, -75, 12, 8); fs(GOLD, 1.5*sc);
+  ctx.beginPath(); ctx.rect(-3, -73, 6, 4);
+  ctx.fillStyle = LTHR; ctx.fill();
 
-function drawFloor(){
-  // stone tile ground
-  ctx.fillStyle='#1a1628'; ctx.fillRect(0, GROUND_Y, 680, 55);
-  ctx.strokeStyle='#252035'; ctx.lineWidth=1;
-  for(let tx=0;tx<680;tx+=40){
-    ctx.beginPath(); ctx.moveTo(tx,GROUND_Y); ctx.lineTo(tx,GROUND_Y+55); ctx.stroke();
+  // Left pauldron
+  ctx.save(); ctx.translate(-22, -122);
+  ctx.beginPath(); ctx.ellipse(0, 0, 15, 9, -0.2, 0, Math.PI*2);
+  fs(IRON, lw);
+  ctx.beginPath(); ctx.moveTo(-13, 3); ctx.lineTo(11, 3);
+  ctx.strokeStyle = IRON_SH; ctx.lineWidth = 1.3*sc; ctx.stroke();
+  ctx.restore();
+
+  // ── SWORD ARM (right / front) ───────────────────────────────
+  ctx.save();
+  ctx.translate(20, -122); // right shoulder
+  ctx.rotate(armF * Math.PI/180);
+
+  // Right pauldron
+  ctx.beginPath(); ctx.ellipse(0, 0, 15, 9, 0.2, 0, Math.PI*2);
+  fs(IRON, lw);
+  ctx.beginPath(); ctx.moveTo(-11, 3); ctx.lineTo(13, 3);
+  ctx.strokeStyle = IRON_SH; ctx.lineWidth = 1.3*sc; ctx.stroke();
+
+  // Upper arm
+  C(0, 0, 4, 24, 9, IRON);
+  // Bracer (forearm, iron-clad)
+  C(4, 24, 6, 46, 8, IRON);
+  // Fist
+  ctx.beginPath(); ctx.arc(7, 53, 9, 0, Math.PI*2); fs(SKIN, lw*0.85);
+
+  // ── SWORD ────────────────────────────────────────────────────
+  ctx.save();
+  ctx.translate(7, 53);
+  ctx.rotate(-0.22); // slight forward tilt
+
+  // Grip (leather-wrapped)
+  ctx.beginPath(); ctx.rect(-3.5, 2, 7, 22); fs(LTHR, 1.6*sc);
+  for (let g = 5; g < 22; g += 5) {
+    ctx.beginPath(); ctx.moveTo(-3.5, 2+g); ctx.lineTo(3.5, 2+g);
+    ctx.strokeStyle = LTHR_SH; ctx.lineWidth = 1.6*sc; ctx.stroke();
   }
-  ctx.beginPath(); ctx.moveTo(0,GROUND_Y); ctx.lineTo(680,GROUND_Y); ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(0,GROUND_Y+28); ctx.lineTo(680,GROUND_Y+28); ctx.stroke();
-  // subtle torch light
-  ctx.save(); ctx.globalAlpha=0.08;
-  for(const tx2 of [100,340,580]){
-    const g=ctx.createRadialGradient(tx2,GROUND_Y-20,5,tx2,GROUND_Y-20,90);
-    g.addColorStop(0,'#ffaa44'); g.addColorStop(1,'rgba(0,0,0,0)');
-    ctx.fillStyle=g; ctx.fillRect(tx2-90,GROUND_Y-80,180,160);
+  // Pommel
+  ctx.beginPath(); ctx.ellipse(0, 25, 6.5, 5.5, 0, 0, Math.PI*2);
+  fs(IRON, 1.5*sc);
+
+  // Crossguard (wider, slight curve)
+  ctx.beginPath();
+  ctx.moveTo(-15, -3);
+  ctx.bezierCurveTo(-15, -8, 15, -8, 15, -3);
+  ctx.bezierCurveTo(15, 3, -15, 3, -15, -3);
+  ctx.closePath();
+  fs(IRON, lw*0.9);
+  // Crossguard highlight
+  ctx.save(); ctx.globalAlpha = 0.3;
+  ctx.beginPath();
+  ctx.moveTo(-12, -4); ctx.bezierCurveTo(-12, -7, 12, -7, 12, -4);
+  ctx.strokeStyle = '#fff'; ctx.lineWidth = 2*sc; ctx.stroke();
+  ctx.restore();
+
+  // Blade — drawn twice: glow layer + solid
+  const bladeGlow = 0.45 + 0.55 * Math.sin(t * 3.2);
+  ctx.save();
+  ctx.shadowColor = '#8888ff';
+  ctx.shadowBlur  = 20 * sc * bladeGlow;
+  ctx.globalAlpha = bladeGlow;
+  ctx.beginPath();
+  ctx.moveTo(-5, -5);
+  ctx.lineTo(-3, -54); ctx.lineTo(0, -68); ctx.lineTo(3, -54); ctx.lineTo(5, -5);
+  ctx.closePath();
+  ctx.fillStyle = STEEL_H; ctx.fill();
+  ctx.restore();
+  // Blade solid
+  ctx.beginPath();
+  ctx.moveTo(-5, -5);
+  ctx.lineTo(-3, -54); ctx.lineTo(0, -68); ctx.lineTo(3, -54); ctx.lineTo(5, -5);
+  ctx.closePath();
+  fs(STEEL, lw*0.8);
+  // Fuller groove
+  ctx.beginPath(); ctx.moveTo(0, -6); ctx.lineTo(0, -58);
+  ctx.strokeStyle = '#8898a8'; ctx.lineWidth = sc; ctx.stroke();
+  // Edge highlight
+  ctx.save(); ctx.globalAlpha = 0.55;
+  ctx.beginPath();
+  ctx.moveTo(-3, -6); ctx.lineTo(-2, -54); ctx.lineTo(0, -66);
+  ctx.strokeStyle = STEEL_H; ctx.lineWidth = 1.5*sc; ctx.lineCap = 'round'; ctx.stroke();
+  ctx.restore();
+
+  ctx.restore(); // sword local
+  ctx.restore(); // sword arm
+
+  // ── FRONT LEG ─────────────────────────────────────────────
+  drawLeg(legF, kF, 12, 10);
+
+  // ── NECK ──────────────────────────────────────────────────
+  ctx.beginPath();
+  ctx.moveTo(-7, -122); ctx.lineTo(-6, -134);
+  ctx.lineTo(6, -134); ctx.lineTo(7, -122);
+  ctx.closePath();
+  fs(SKIN, lw*0.9);
+  // Chainmail coif ring
+  ctx.beginPath(); ctx.ellipse(0, -128, 20, 13, 0, 0, Math.PI*2);
+  fs(IRON_SH, lw*0.8);
+
+  // ── HEAD ──────────────────────────────────────────────────
+  ctx.beginPath();
+  ctx.ellipse(2, -154, 23, 25, 0, 0, Math.PI*2);
+  fs(SKIN, lw);
+  // Subtle shadow side
+  ctx.save(); ctx.globalAlpha = 0.18;
+  ctx.beginPath(); ctx.ellipse(10, -154, 13, 20, 0.2, 0, Math.PI*2);
+  ctx.fillStyle = SKIN_SH; ctx.fill();
+  ctx.restore();
+
+  // ── HELMET ────────────────────────────────────────────────
+  // Bowl
+  ctx.beginPath();
+  ctx.moveTo(-23, -160);
+  ctx.bezierCurveTo(-24, -200, 25, -200, 26, -160);
+  ctx.lineTo(22, -152);
+  ctx.bezierCurveTo(20, -146, -20, -146, -22, -152);
+  ctx.closePath();
+  fs(IRON, lw);
+  // Highlight patch
+  ctx.save(); ctx.globalAlpha = 0.38;
+  ctx.beginPath();
+  ctx.moveTo(-10, -163);
+  ctx.bezierCurveTo(-9, -196, 15, -193, 16, -163);
+  ctx.lineTo(12, -158);
+  ctx.bezierCurveTo(8, -155, -6, -157, -10, -163);
+  ctx.closePath();
+  ctx.fillStyle = '#fff'; ctx.fill();
+  ctx.restore();
+  // Brim band
+  ctx.beginPath();
+  ctx.moveTo(-23, -160);
+  ctx.bezierCurveTo(-20, -150, 20, -150, 26, -160);
+  ctx.bezierCurveTo(20, -154, -20, -154, -23, -160);
+  ctx.closePath();
+  fs(IRON_SH, 1.5*sc);
+  // Nasal guard
+  ctx.beginPath();
+  ctx.moveTo(-3, -152); ctx.lineTo(-3, -135);
+  ctx.lineTo(3, -135); ctx.lineTo(3, -152);
+  ctx.closePath();
+  fs(IRON_SH, 1.5*sc);
+  // Cheek guards (small plates)
+  ctx.save(); ctx.translate(-22, -155);
+  ctx.beginPath(); ctx.ellipse(0, 6, 6, 9, -0.1, 0, Math.PI*2); fs(IRON_SH, 1.2*sc);
+  ctx.restore();
+  ctx.save(); ctx.translate(23, -155);
+  ctx.beginPath(); ctx.ellipse(0, 6, 6, 9, 0.1, 0, Math.PI*2); fs(IRON_SH, 1.2*sc);
+  ctx.restore();
+
+  // ── FACE ──────────────────────────────────────────────────
+  function eye(ex, ey) {
+    // White
+    ctx.beginPath(); ctx.ellipse(ex, ey, 6.5, 7.5, 0, 0, Math.PI*2);
+    fs('#fff', 1.5*sc);
+    // Iris
+    ctx.beginPath(); ctx.ellipse(ex+0.5, ey+0.5, 4.5, 5.5, 0, 0, Math.PI*2);
+    ctx.fillStyle = '#7b5030'; ctx.fill();
+    // Pupil
+    ctx.beginPath(); ctx.ellipse(ex+0.5, ey+0.5, 2.8, 3.5, 0, 0, Math.PI*2);
+    ctx.fillStyle = '#180a00'; ctx.fill();
+    // Shine
+    ctx.beginPath(); ctx.ellipse(ex-1, ey-1, 1.5, 2, 0, 0, Math.PI*2);
+    ctx.fillStyle = '#fff'; ctx.fill();
   }
-  ctx.restore();
-}
+  eye(-12, -149);
+  eye(12, -149);
 
-function drawLabel(text, x, y){
-  ctx.fillStyle='rgba(200,180,140,0.65)';
-  ctx.font='11px monospace'; ctx.textAlign='center';
-  ctx.fillText(text, x, y);
-}
-
-// ── loop ──────────────────────────────────────────────────
-let t0=null;
-function loop(ts){
-  if(!t0) t0=ts;
-  const t=(ts-t0)/1000;
-
-  ctx.clearRect(0,0,680,300);
-
-  // ambient bg gradient
-  const bg=ctx.createRadialGradient(340,150,20,340,150,320);
-  bg.addColorStop(0,'rgba(30,20,50,0.4)'); bg.addColorStop(1,'rgba(0,0,0,0)');
-  ctx.fillStyle=bg; ctx.fillRect(0,0,680,300);
-
-  drawFloor();
-
-  // ── big preview — facing right ───────────────────────────
-  drawRecruit(ctx, 165, GROUND_Y, t, 1, SC_BIG);
-  drawLabel('dir →', 165, GROUND_Y+18);
-
-  // ── big preview — facing left ────────────────────────────
-  drawRecruit(ctx, 370, GROUND_Y, t, -1, SC_BIG);
-  drawLabel('dir ←', 370, GROUND_Y+18);
-
-  // ── game-scale reference ─────────────────────────────────
-  drawRecruit(ctx, 530, GROUND_Y, t,  1, SC_SMALL);
-  drawRecruit(ctx, 560, GROUND_Y, t, -1, SC_SMALL);
-  drawLabel('game size ×0.72', 545, GROUND_Y+18);
-
-  // ── rune particle floating up ────────────────────────────
-  const rp=((t*0.4)%1);
-  ctx.save(); ctx.globalAlpha=(1-rp)*0.35;
-  ctx.fillStyle='#88aaff';
-  ctx.font='10px monospace'; ctx.textAlign='center';
-  ctx.fillText('ᚱ', 210, GROUND_Y-70-rp*40);
+  // Eyebrows (furrowed for determined look)
+  ctx.save(); ctx.lineCap = 'round'; ctx.lineWidth = 3.3*sc;
+  ctx.strokeStyle = '#5a3018';
+  ctx.beginPath(); ctx.moveTo(-19, -163); ctx.lineTo(-7, -160); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(7, -160); ctx.lineTo(19, -163); ctx.stroke();
   ctx.restore();
 
-  requestAnimationFrame(loop);
+  // Nose
+  ctx.beginPath(); ctx.arc(2, -138, 3.5, 0, Math.PI);
+  ctx.strokeStyle = SKIN_SH; ctx.lineWidth = 2*sc; ctx.stroke();
+
+  // Mouth (slight confident smile)
+  ctx.beginPath();
+  ctx.moveTo(-9, -128); ctx.bezierCurveTo(-4, -124, 6, -124, 10, -128);
+  ctx.strokeStyle = '#9b4428'; ctx.lineWidth = 2.6*sc;
+  ctx.lineCap = 'round'; ctx.stroke();
+
+  // Blush
+  ctx.save(); ctx.globalAlpha = 0.2;
+  ctx.beginPath(); ctx.ellipse(-17, -133, 10, 5.5, -0.15, 0, Math.PI*2);
+  ctx.fillStyle = '#ff7777'; ctx.fill();
+  ctx.beginPath(); ctx.ellipse(19, -133, 10, 5.5, 0.15, 0, Math.PI*2);
+  ctx.fillStyle = '#ff7777'; ctx.fill();
+  ctx.restore();
+
+  // ── FLOATING RUNE ──────────────────────────────────────────
+  const runeY = -215 + Math.sin(t * 2.3) * 10;
+  const runeA = 0.5 + 0.5 * Math.sin(t * 4.5);
+  ctx.save();
+  ctx.globalAlpha = runeA;
+  ctx.shadowColor = '#8888ff';
+  ctx.shadowBlur  = 14 * sc;
+  ctx.fillStyle   = '#aaaaff';
+  ctx.font        = `bold ${18*sc}px serif`;
+  ctx.textAlign   = 'center';
+  ctx.fillText('ᚱ', 26, runeY);
+  ctx.restore();
+
+  ctx.restore(); // main transform
 }
-requestAnimationFrame(loop);
+
+// ── RENDER LOOP ────────────────────────────────────────────────
+let t0 = null;
+function frame(ts) {
+  if (!t0) t0 = ts;
+  const t = (ts - t0) / 1000;
+
+  ctx.clearRect(0, 0, cvs.width, cvs.height);
+
+  // Background gradient
+  const bg = ctx.createLinearGradient(0, 0, 0, cvs.height);
+  bg.addColorStop(0, '#1c1630');
+  bg.addColorStop(1, '#0c0a18');
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, cvs.width, cvs.height);
+
+  // Stone-floor grid hint
+  ctx.strokeStyle = '#2c2048'; ctx.lineWidth = 1;
+  const GY = Math.round(cvs.height * 0.9); // ground y
+  for (let gx = 0; gx < cvs.width; gx += 80) {
+    ctx.beginPath();
+    ctx.moveTo(gx,    GY);
+    ctx.lineTo(gx+40, GY + 8);
+    ctx.stroke();
+  }
+  ctx.beginPath();
+  ctx.moveTo(0, GY); ctx.lineTo(cvs.width, GY);
+  ctx.strokeStyle = '#3a2860'; ctx.lineWidth = 1.5; ctx.stroke();
+
+  // Labels
+  ctx.fillStyle = '#554466'; ctx.font = '11px monospace'; ctx.textAlign = 'center';
+  ctx.fillText('→ right', 160, GY + 28);
+  ctx.fillText('← left',  460, GY + 28);
+  ctx.fillText('game ×0.72', 620, GY + 28);
+
+  const SC = 2.0;
+  drawRecruit(160, GY, t,           1,  SC);
+  drawRecruit(460, GY, t + 0.72,   -1,  SC);
+  drawRecruit(620, GY, t,            1,  0.72);
+
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
 </script>
 </body>
 </html>
