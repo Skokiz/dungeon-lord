@@ -18,7 +18,7 @@ p  { font-size:10px; letter-spacing:1px; color:#443344; }
 </head>
 <body>
 <h2>РЕКРУТ · Pixel RPG Style</h2>
-<canvas id="c" width="360" height="420"></canvas>
+<canvas id="c" width="240" height="300"></canvas>
 <p>walk cycle · sword · idle animation</p>
 
 <script>
@@ -445,30 +445,10 @@ function drawRecruit(x, y, t, dir, sc) {
 // ── RENDER LOOP ────────────────────────────────────────────────
 const CW = cvs.width, CH = cvs.height;
 
-// Card dimensions (centered)
-const CARD_W = 220, CARD_H = 310;
-const CARD_X = (CW - CARD_W) / 2;
-const CARD_Y = (CH - CARD_H) / 2;
-const CARD_R = 18; // corner radius
-
-function drawCloud(cx, cy, size) {
-  ctx.save();
-  ctx.fillStyle = '#e8f0ff';
-  [[0,0,size],[size*0.6,-size*0.3,size*0.7],[size*1.1,0,size*0.6],[-size*0.55,-size*0.15,size*0.65]].forEach(([dx,dy,r]) => {
-    ctx.beginPath(); ctx.arc(cx+dx, cy+dy, r, 0, Math.PI*2); ctx.fill();
-  });
-  ctx.restore();
-}
-
-function roundRect(x,y,w,h,r) {
-  ctx.beginPath();
-  ctx.moveTo(x+r, y);
-  ctx.lineTo(x+w-r, y); ctx.arcTo(x+w, y,   x+w, y+r,   r);
-  ctx.lineTo(x+w, y+h-r); ctx.arcTo(x+w, y+h, x+w-r, y+h, r);
-  ctx.lineTo(x+r, y+h); ctx.arcTo(x,   y+h, x,   y+h-r, r);
-  ctx.lineTo(x,   y+r); ctx.arcTo(x,   y,   x+r, y,     r);
-  ctx.closePath();
-}
+// SC=0.7 → character ~140px tall on 300px canvas
+const SC = 0.7;
+const GX = CW / 2;
+const GY = Math.round(CH * 0.80);
 
 let t0 = null;
 function frame(ts) {
@@ -477,83 +457,31 @@ function frame(ts) {
 
   ctx.clearRect(0, 0, CW, CH);
 
-  // Page background
-  ctx.fillStyle = '#1a1a2e';
+  // Dark dungeon background
+  ctx.fillStyle = '#12111a';
   ctx.fillRect(0, 0, CW, CH);
 
-  // Ground line inside card (character stands here)
-  // Character height: y=0 (ground) to y≈-200 (hair top) at SC=1.0 = 200px
-  // Card available (above label): 310 - 50 = 260px  →  SC = 1.0 fits with 32px sky above head
-  const SC = 1.0;
-  const GY_card = CARD_Y + CARD_H * 0.75;
+  // Stone floor
+  ctx.fillStyle = '#1e1c28';
+  ctx.fillRect(0, GY + 2, CW, CH - GY - 2);
+  ctx.fillStyle = '#28263a';
+  for (let tx = 0; tx < CW; tx += 32) {
+    ctx.fillRect(tx, GY + 2, 31, 18);
+    ctx.fillRect(tx + 16, GY + 22, 31, 18);
+  }
+  ctx.fillStyle = '#3a3850';
+  ctx.fillRect(0, GY, CW, 2);
 
-  // ── CARD CLIP (all content clipped to card shape) ────────────
+  // Shadow under feet
   ctx.save();
-  roundRect(CARD_X, CARD_Y, CARD_W, CARD_H, CARD_R);
-  ctx.clip();
-
-  // Sky gradient
-  const sky = ctx.createLinearGradient(CARD_X, CARD_Y, CARD_X, CARD_Y + CARD_H * 0.72);
-  sky.addColorStop(0, '#8ab8e8');
-  sky.addColorStop(1, '#c8dff8');
-  ctx.fillStyle = sky;
-  ctx.fillRect(CARD_X, CARD_Y, CARD_W, CARD_H);
-
-  // Distant hills
-  ctx.fillStyle = '#90b878';
+  ctx.globalAlpha = 0.35;
   ctx.beginPath();
-  ctx.moveTo(CARD_X, CARD_Y + CARD_H * 0.65);
-  ctx.bezierCurveTo(CARD_X + 40, CARD_Y + CARD_H * 0.52, CARD_X + 90, CARD_Y + CARD_H * 0.58, CARD_X + 140, CARD_Y + CARD_H * 0.52);
-  ctx.bezierCurveTo(CARD_X + 190, CARD_Y + CARD_H * 0.46, CARD_X + CARD_W, CARD_Y + CARD_H * 0.56, CARD_X + CARD_W, CARD_Y + CARD_H * 0.65);
-  ctx.lineTo(CARD_X + CARD_W, CARD_Y + CARD_H);
-  ctx.lineTo(CARD_X, CARD_Y + CARD_H);
-  ctx.closePath();
+  ctx.ellipse(GX, GY + 4, 18 * SC, 5 * SC, 0, 0, Math.PI * 2);
+  ctx.fillStyle = '#000';
   ctx.fill();
-
-  // Clouds (slow drift)
-  const cloudDrift = (t * 8) % (CARD_W + 80);
-  drawCloud(CARD_X + 30 + cloudDrift * 0.15, CARD_Y + 40, 14);
-  drawCloud(CARD_X + 140 - cloudDrift * 0.08, CARD_Y + 28, 10);
-
-  // Grass strip
-  ctx.fillStyle = '#8b6040';
-  ctx.fillRect(CARD_X, GY_card + 18, CARD_W, CARD_H);
-  ctx.fillStyle = '#4a9838';
-  ctx.fillRect(CARD_X, GY_card, CARD_W, 22);
-  ctx.fillStyle = '#62b848';
-  ctx.fillRect(CARD_X, GY_card, CARD_W, 8);
-  ctx.fillStyle = '#38801e';
-  ctx.fillRect(CARD_X, GY_card + 18, CARD_W, 4);
-
-  // Shadow
-  ctx.save(); ctx.globalAlpha = 0.22;
-  ctx.beginPath(); ctx.ellipse(CARD_X + CARD_W/2, GY_card + 5, 22, 6, 0, 0, Math.PI*2);
-  ctx.fillStyle = '#000'; ctx.fill();
   ctx.restore();
 
-  // ── CHARACTER (inside clip) ───────────────────────────────────
-  drawRecruit(CARD_X + CARD_W/2, GY_card, t, 1, SC);
-
-  // ── NAME LABEL (inside clip, at bottom) ──────────────────────
-  const labelY = CARD_Y + CARD_H - 50;
-  roundRect(CARD_X + 12, labelY, CARD_W - 24, 38, 8);
-  ctx.fillStyle = 'rgba(8, 4, 2, 0.82)'; ctx.fill();
-
-  ctx.textAlign = 'center';
-  ctx.fillStyle = '#f0d880';
-  ctx.font = 'bold 15px monospace';
-  ctx.fillText('РЕКРУТ', CARD_X + CARD_W/2, labelY + 16);
-  ctx.fillStyle = '#888866';
-  ctx.font = '10px monospace';
-  ctx.fillText('Recruit  ★ Lv.1', CARD_X + CARD_W/2, labelY + 30);
-
-  ctx.restore(); // release card clip
-
-  // ── CARD BORDER (drawn on top, outside clip) ──────────────────
-  roundRect(CARD_X, CARD_Y, CARD_W, CARD_H, CARD_R);
-  ctx.strokeStyle = '#c8a040'; ctx.lineWidth = 4; ctx.stroke();
-  roundRect(CARD_X+5, CARD_Y+5, CARD_W-10, CARD_H-10, CARD_R-3);
-  ctx.strokeStyle = '#e8c870'; ctx.lineWidth = 1.2; ctx.stroke();
+  drawRecruit(GX, GY, t, 1, SC);
 
   requestAnimationFrame(frame);
 }
