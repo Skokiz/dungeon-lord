@@ -481,7 +481,13 @@ function frame(ts) {
   ctx.fillStyle = '#1a1a2e';
   ctx.fillRect(0, 0, CW, CH);
 
-  // ── CARD CLIP ───────────────────────────────────────────────
+  // Ground line inside card (character stands here)
+  const GY_card = CARD_Y + CARD_H * 0.76;
+  // Scale: character total height ~175 units; available space = GY_card - CARD_Y - 10 = ~224px
+  // 224 / 175 ≈ 1.28 → use 1.25
+  const SC = 1.25;
+
+  // ── CARD CLIP (all content clipped to card shape) ────────────
   ctx.save();
   roundRect(CARD_X, CARD_Y, CARD_W, CARD_H, CARD_R);
   ctx.clip();
@@ -509,55 +515,45 @@ function frame(ts) {
   drawCloud(CARD_X + 30 + cloudDrift * 0.15, CARD_Y + 40, 14);
   drawCloud(CARD_X + 140 - cloudDrift * 0.08, CARD_Y + 28, 10);
 
-  // Ground (grass strip)
-  const GY_card = CARD_Y + CARD_H * 0.78;
-  // Dirt layer
+  // Grass strip
   ctx.fillStyle = '#8b6040';
-  ctx.fillRect(CARD_X, GY_card + 18, CARD_W, CARD_H - (GY_card + 18 - CARD_Y));
-  // Grass top
+  ctx.fillRect(CARD_X, GY_card + 18, CARD_W, CARD_H);
   ctx.fillStyle = '#4a9838';
   ctx.fillRect(CARD_X, GY_card, CARD_W, 22);
-  // Grass highlight
   ctx.fillStyle = '#62b848';
   ctx.fillRect(CARD_X, GY_card, CARD_W, 8);
-  // Grass dark edge
   ctx.fillStyle = '#38801e';
   ctx.fillRect(CARD_X, GY_card + 18, CARD_W, 4);
 
-  // Shadow under character
-  ctx.save(); ctx.globalAlpha = 0.25;
-  ctx.beginPath(); ctx.ellipse(CARD_X + CARD_W/2, GY_card + 4, 30, 7, 0, 0, Math.PI*2);
+  // Shadow
+  ctx.save(); ctx.globalAlpha = 0.22;
+  ctx.beginPath(); ctx.ellipse(CARD_X + CARD_W/2, GY_card + 5, 22, 6, 0, 0, Math.PI*2);
   ctx.fillStyle = '#000'; ctx.fill();
   ctx.restore();
 
-  ctx.restore(); // card clip
+  // ── CHARACTER (inside clip) ───────────────────────────────────
+  drawRecruit(CARD_X + CARD_W/2, GY_card, t, 1, SC);
 
-  // ── CARD BORDER ─────────────────────────────────────────────
-  // Outer gold border
-  roundRect(CARD_X, CARD_Y, CARD_W, CARD_H, CARD_R);
-  ctx.strokeStyle = '#c8a040'; ctx.lineWidth = 4; ctx.stroke();
-  // Inner thin border
-  roundRect(CARD_X+5, CARD_Y+5, CARD_W-10, CARD_H-10, CARD_R-3);
-  ctx.strokeStyle = '#e8c870'; ctx.lineWidth = 1.2; ctx.stroke();
-
-  // ── CHARACTER ───────────────────────────────────────────────
-  const GY_char = GY_card + 2;
-  drawRecruit(CARD_X + CARD_W/2, GY_char, t, 1, 2.6);
-
-  // ── NAME LABEL ──────────────────────────────────────────────
-  // Label background strip
-  const labelY = CARD_Y + CARD_H - 52;
-  roundRect(CARD_X + 12, labelY, CARD_W - 24, 40, 8);
-  ctx.fillStyle = 'rgba(10, 6, 2, 0.78)'; ctx.fill();
-  ctx.strokeStyle = '#c8a040'; ctx.lineWidth = 1.5; ctx.stroke();
+  // ── NAME LABEL (inside clip, at bottom) ──────────────────────
+  const labelY = CARD_Y + CARD_H - 50;
+  roundRect(CARD_X + 12, labelY, CARD_W - 24, 38, 8);
+  ctx.fillStyle = 'rgba(8, 4, 2, 0.82)'; ctx.fill();
 
   ctx.textAlign = 'center';
   ctx.fillStyle = '#f0d880';
   ctx.font = 'bold 15px monospace';
-  ctx.fillText('РЕКРУТ', CARD_X + CARD_W/2, labelY + 18);
+  ctx.fillText('РЕКРУТ', CARD_X + CARD_W/2, labelY + 16);
   ctx.fillStyle = '#888866';
   ctx.font = '10px monospace';
-  ctx.fillText('Recruit  ★ Lv.1', CARD_X + CARD_W/2, labelY + 32);
+  ctx.fillText('Recruit  ★ Lv.1', CARD_X + CARD_W/2, labelY + 30);
+
+  ctx.restore(); // release card clip
+
+  // ── CARD BORDER (drawn on top, outside clip) ──────────────────
+  roundRect(CARD_X, CARD_Y, CARD_W, CARD_H, CARD_R);
+  ctx.strokeStyle = '#c8a040'; ctx.lineWidth = 4; ctx.stroke();
+  roundRect(CARD_X+5, CARD_Y+5, CARD_W-10, CARD_H-10, CARD_R-3);
+  ctx.strokeStyle = '#e8c870'; ctx.lineWidth = 1.2; ctx.stroke();
 
   requestAnimationFrame(frame);
 }
