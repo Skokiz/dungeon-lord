@@ -2,414 +2,441 @@
 <html>
 <head>
 <meta charset="utf-8">
-<title>Рекрут — Mobile RPG Style</title>
+<title>Рекрут — Pixel RPG Style</title>
 <style>
 * { margin:0; padding:0; box-sizing:border-box; }
 body {
-  background:#0d0b1a;
+  background:#1a1a2e;
   display:flex; flex-direction:column; align-items:center;
   min-height:100vh; gap:8px; padding:20px;
   font-family:monospace; color:#998888;
 }
-canvas { border-radius:14px; display:block; }
+canvas { border-radius:14px; display:block; image-rendering:pixelated; }
 h2 { font-size:13px; color:#cc9966; letter-spacing:2px; margin-top:4px; }
 p  { font-size:10px; letter-spacing:1px; color:#443344; }
 </style>
 </head>
 <body>
-<h2>РЕКРУТ · Mobile RPG Style · Medieval Fantasy</h2>
+<h2>РЕКРУТ · Pixel RPG Style</h2>
 <canvas id="c" width="700" height="460"></canvas>
-<p>walk cycle · magic sword · rune glow</p>
+<p>walk cycle · sword · idle animation</p>
 
 <script>
 const cvs = document.getElementById('c');
 const ctx  = cvs.getContext('2d');
 
-// ── Palette ────────────────────────────────────────────────────
-const OL       = '#181008'; // outline
-const SKIN     = '#e8b87a';
-const SKIN_SH  = '#c49050';
-const IRON     = '#8898a8';
-const IRON_H   = '#ccdde8';
-const IRON_SH  = '#506070';
-const RED      = '#c43030';
-const RED_SH   = '#801818';
-const RED_H    = '#e04040';
-const LTHR     = '#8b5e3c';
-const LTHR_SH  = '#5a3520';
-const LTHR_H   = '#b07a50';
-const STEEL    = '#b8c8d0';
-const STEEL_H  = '#e8f4f8';
-const GOLD     = '#c8a030';
-const DARK     = '#2a1810';
+// ── Palette (pixel RPG style matching reference) ─────────────────
+const OL       = '#1a0e00';   // outline
+const SKIN     = '#d4956a';   // face/hands
+const SKIN_SH  = '#aa6a3e';   // skin shadow
+const SKIN_H   = '#e8b88a';   // skin highlight
+const HAIR     = '#6b3e20';   // brown hair
+const HAIR_H   = '#9a5a2a';   // hair highlight
+const HAIR_SH  = '#3e2010';   // hair dark
+const SHIRT    = '#e0d4b0';   // cream shirt
+const SHIRT_SH = '#b8aa80';   // shirt shadow
+const SHIRT_H  = '#f0e8cc';   // shirt highlight
+const VEST     = '#3e2810';   // dark brown leather vest
+const VEST_H   = '#6a4228';   // vest highlight
+const VEST_SH  = '#1e1208';   // vest shadow
+const PANTS    = '#5a6872';   // blue-grey pants
+const PANTS_SH = '#3a4852';   // pants shadow
+const PANTS_H  = '#7a8898';   // pants highlight
+const BOOT     = '#221408';   // dark boot
+const BOOT_H   = '#3e2818';   // boot highlight
+const BELT     = '#2a1808';   // dark belt
+const BUCKLE   = '#a07828';   // belt buckle
+const BL_EDGE  = '#d8e4e8';   // blade edge
+const BL_FLAT  = '#a8b8c0';   // blade flat
+const BL_SH    = '#788898';   // blade shadow
+const HILT     = '#5a3818';   // sword handle
+const HILT_H   = '#8a5828';   // handle highlight
+const GUARD    = '#888888';   // crossguard
 
-// ── Core helpers ───────────────────────────────────────────────
-function fs(fill, lw) {
-  ctx.fillStyle = fill; ctx.fill();
-  ctx.strokeStyle = OL; ctx.lineWidth = lw; ctx.stroke();
+// ── px: draw a solid colored rectangle (pixel art style) ─────────
+function px(x, y, w, h, col) {
+  ctx.fillStyle = col;
+  ctx.fillRect(Math.round(x), Math.round(y), Math.round(w), Math.round(h));
 }
 
-// Capsule limb (from p1 to p2, radius r)
-function cap(x1,y1,x2,y2,r,fill,lw) {
+// ── Line segment ─────────────────────────────────────────────────
+function ln(x1, y1, x2, y2, col, lw) {
+  ctx.beginPath();
+  ctx.moveTo(x1, y1); ctx.lineTo(x2, y2);
+  ctx.strokeStyle = col; ctx.lineWidth = lw;
+  ctx.lineCap = 'round'; ctx.stroke();
+}
+
+// ── Outlined rect ────────────────────────────────────────────────
+function box(x, y, w, h, fill, outline, lw) {
+  ctx.fillStyle = fill;
+  ctx.fillRect(x, y, w, h);
+  ctx.strokeStyle = outline; ctx.lineWidth = lw;
+  ctx.strokeRect(x + lw/2, y + lw/2, w - lw, h - lw);
+}
+
+// ── Outlined ellipse ─────────────────────────────────────────────
+function ell(cx, cy, rx, ry, fill, outline, lw) {
+  ctx.beginPath();
+  ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI*2);
+  ctx.fillStyle = fill; ctx.fill();
+  ctx.strokeStyle = outline; ctx.lineWidth = lw; ctx.stroke();
+}
+
+// ── Polygon (points array, [x,y,...]) ────────────────────────────
+function poly(pts, fill, outline, lw) {
+  ctx.beginPath();
+  ctx.moveTo(pts[0], pts[1]);
+  for (let i = 2; i < pts.length; i += 2) ctx.lineTo(pts[i], pts[i+1]);
+  ctx.closePath();
+  ctx.fillStyle = fill; ctx.fill();
+  if (outline) { ctx.strokeStyle = outline; ctx.lineWidth = lw; ctx.stroke(); }
+}
+
+// ── Capsule (limb) ───────────────────────────────────────────────
+function cap(x1,y1,x2,y2,r,fill,outline,lw) {
   const a = Math.atan2(y2-y1, x2-x1);
   ctx.beginPath();
   ctx.arc(x1, y1, r, a+Math.PI/2, a-Math.PI/2);
   ctx.arc(x2, y2, r, a-Math.PI/2, a+Math.PI/2);
   ctx.closePath();
-  fs(fill, lw);
-  // highlight strip on top-left
-  const px = -Math.sin(a)*r*0.42, py = Math.cos(a)*r*0.42;
-  ctx.save(); ctx.globalAlpha = 0.22;
-  ctx.beginPath();
-  ctx.arc(x1+px, y1+py, r*0.28, a+Math.PI/2, a-Math.PI/2);
-  ctx.arc(x2+px, y2+py, r*0.28, a-Math.PI/2, a+Math.PI/2);
-  ctx.closePath();
-  ctx.fillStyle = '#fff'; ctx.fill();
-  ctx.restore();
+  ctx.fillStyle = fill; ctx.fill();
+  ctx.strokeStyle = outline; ctx.lineWidth = lw; ctx.stroke();
 }
 
-// ── RECRUIT ────────────────────────────────────────────────────
-// x, y = ground position (boots touch here)
-// t = time (s), dir = 1 right / -1 left, sc = scale
+// ── RECRUIT ──────────────────────────────────────────────────────
+// Pixel RPG style: cream shirt, brown leather vest, grey pants, dark boots
+// No armor, no helmet — simple adventurer look like the reference image
 function drawRecruit(x, y, t, dir, sc) {
   dir = dir || 1; sc = sc || 1;
-  const lw = 2.4 * sc;
+  const lw = Math.max(1, 1.8 * sc);
 
-  // Walk cycle
-  const spd = 2.2;
+  // ── Walk cycle ────────────────────────────────────────────────
+  const spd = 2.0;
   const wc  = Math.sin(t * spd);
   const wcc = Math.cos(t * spd);
-  const bob = (1 - Math.abs(wc)) * 3.5;
+  const bob = (1 - Math.abs(wc)) * 2.5 * sc;
 
-  // Leg swing angles (deg)
-  const legF =  wc * 26;
-  const legB = -wc * 26;
-  // Knee bend (bend opposite leg when swinging)
-  const kF   = Math.max(0,  wcc) * 20;
-  const kB   = Math.max(0, -wcc) * 20;
-  // Arms opposite to legs
-  const armF = -wc * 22;
-  const armB =  wc * 22;
+  const legSwing =  wc * 24;          // degrees
+  const legBack  = -wc * 24;
+  const kneeF    = Math.max(0,  wcc) * 18;
+  const kneeB    = Math.max(0, -wcc) * 18;
+  const armSwing = -wc * 18;
+  const armBack  =  wc * 18;
+
+  // Sword arm stays mostly down, slight idle sway
+  const swordSway = Math.sin(t * 1.5) * 6;
 
   ctx.save();
-  ctx.translate(x, y - bob * sc);
+  ctx.translate(x, y - bob);
   ctx.scale(dir * sc, sc);
-  // Local coords: origin = ground (boot level), y<0 = up
+  // Origin: ground (feet); y negative = upward
 
-  function C(x1,y1,x2,y2,r,fill) { cap(x1,y1,x2,y2,r,fill,lw); }
+  const G = 0; // ground y in local
 
-  // ── Draw one leg (rotated from hip) ─────────────────────────
-  // angle: swing angle (deg), knee: shin extra angle (deg)
-  function drawLeg(angle, knee, thR, shR) {
-    const hipY = -72; // hip above ground (local)
+  // ── Helper: draw a leg segment ─────────────────────────────
+  // thighAngle: swing angle, kneeAngle: extra shin angle
+  function drawLeg(thighAngle, kneeAngle, isFront) {
+    const hipY = -72;
+    const thighLen = 34;
+    const shinLen  = 30;
+    const thR = 9;
+    const shR = 8;
+
     ctx.save();
     ctx.translate(0, hipY);
-    ctx.rotate(angle * Math.PI/180);
+    ctx.rotate(thighAngle * Math.PI/180);
 
-    // Thigh
-    C(0, 0, 0, 32, thR, LTHR);
-    // Knee guard
-    ctx.beginPath(); ctx.arc(0, 32, thR*0.75, 0, Math.PI*2);
-    fs(IRON, lw*0.75);
+    // Thigh (pants)
+    cap(0, 0, 0, thighLen, thR, PANTS, OL, lw);
+    // Highlight left side of thigh
+    ctx.save(); ctx.globalAlpha = 0.18;
+    cap(-thR*0.3, 2, -thR*0.3, thighLen-2, thR*0.45, '#fff', null, 0);
+    ctx.restore();
 
     ctx.save();
-    ctx.translate(0, 32);
-    ctx.rotate(knee * Math.PI/180);
-    // Shin
-    C(0, 0, 0, 28, shR, LTHR_SH);
+    ctx.translate(0, thighLen);
+    ctx.rotate(kneeAngle * Math.PI/180);
 
-    // Boot (at ankle)
+    // Shin (pants, slightly darker)
+    cap(0, 0, 0, shinLen, shR, PANTS_SH, OL, lw);
+
+    // Boot
     ctx.save();
-    ctx.translate(0, 28);
-    // Boot body
+    ctx.translate(0, shinLen);
+    // Boot upper (tube)
+    cap(0, -4, 0, 8, shR+1, BOOT, OL, lw);
+    // Boot toe — rectangular pixel style pointing forward
+    poly([
+      -shR-1, 4,
+      shR*2.2+4, 4,
+      shR*2.2+4, 14,
+      -shR-1, 14
+    ], BOOT, OL, lw);
+    // Toe round tip
     ctx.beginPath();
-    ctx.moveTo(-shR-1, 0);
-    ctx.bezierCurveTo(-shR-1, 14, shR*2+8, 16, shR*2+10, 10);
-    ctx.bezierCurveTo(shR*2+10, 4, shR+2, 0, shR+1, 0);
-    ctx.closePath();
-    fs(DARK, lw*0.85);
-    // Boot toe iron cap
-    ctx.beginPath();
-    ctx.ellipse(shR*1.6+7, 9, 8, 6, 0, 0, Math.PI*2);
-    fs(IRON_SH, lw*0.7);
-    // Highlight on boot
+    ctx.arc(shR*2.2+2, 9, 6, 0, Math.PI*2);
+    ctx.fillStyle = BOOT; ctx.fill();
+    ctx.strokeStyle = OL; ctx.lineWidth = lw; ctx.stroke();
+    // Boot highlight
     ctx.save(); ctx.globalAlpha = 0.22;
-    ctx.beginPath();
-    ctx.ellipse(2, 4, shR, 4, 0, 0, Math.PI*2);
-    ctx.fillStyle = '#fff'; ctx.fill();
+    ln(-shR+1, 2, shR*1.5, 2, '#fff', 2*sc);
     ctx.restore();
     ctx.restore(); // boot
+
     ctx.restore(); // shin
-    ctx.restore(); // leg
+    ctx.restore(); // thigh
   }
 
   // ── BACK LEG ───────────────────────────────────────────────
-  drawLeg(legB, kB, 11, 9);
+  drawLeg(legBack, kneeB, false);
 
-  // ── BACK ARM ───────────────────────────────────────────────
-  ctx.save();
-  ctx.translate(-18, -115); // left shoulder
-  ctx.rotate(armB * Math.PI/180);
-  C(0, 0, -3, 24, 9, IRON);    // upper arm (armored)
-  C(-3, 24, -4, 44, 8, SKIN);  // forearm
-  ctx.beginPath(); ctx.arc(-4, 50, 8, 0, Math.PI*2); fs(SKIN, lw*0.8);
-  ctx.restore();
+  // ── BACK ARM ────────────────────────────────────────────────
+  {
+    const shoulderX = -15, shoulderY = -110;
+    ctx.save();
+    ctx.translate(shoulderX, shoulderY);
+    ctx.rotate(armBack * Math.PI/180);
+    // Upper arm (shirt sleeve)
+    cap(0, 0, -1, 26, 9, SHIRT, OL, lw);
+    // Forearm (shirt)
+    cap(-1, 26, -2, 48, 8, SHIRT_SH, OL, lw);
+    // Hand
+    ell(-2, 54, 7, 6, SKIN, OL, lw*0.8);
+    ctx.restore();
+  }
 
   // ── TORSO ──────────────────────────────────────────────────
-  // Red tabard
-  ctx.beginPath();
-  ctx.moveTo(-21, -72);
-  ctx.bezierCurveTo(-24, -85, -26, -112, -22, -122);
-  ctx.bezierCurveTo(-18, -130, 18, -130, 22, -122);
-  ctx.bezierCurveTo(26, -112, 24, -85, 21, -72);
-  ctx.bezierCurveTo(20, -66, -20, -66, -21, -72);
-  ctx.closePath();
-  fs(RED, lw);
-  // Shadow side of tabard
+  // Shirt (visible at sides and bottom)
+  poly([
+    -22, G-72,
+    -24, G-112,
+    -20, G-126,
+     20, G-126,
+     24, G-112,
+     22, G-72
+  ], SHIRT, OL, lw);
+  // Shirt highlight (left side)
   ctx.save(); ctx.globalAlpha = 0.22;
-  ctx.beginPath();
-  ctx.moveTo(10, -72); ctx.bezierCurveTo(18, -82, 18, -118, 14, -126);
-  ctx.bezierCurveTo(18, -130, 22, -122, 22, -122);
-  ctx.bezierCurveTo(26, -112, 24, -85, 21, -72);
-  ctx.closePath();
-  ctx.fillStyle = RED_SH; ctx.fill();
+  poly([-22, G-72, -24, G-112, -16, G-118, -14, G-78], SHIRT_H, null, 0);
+  ctx.restore();
+  // Shirt collar V-neck
+  poly([0, G-120, -10, G-112, 0, G-108, 10, G-112], SHIRT_SH, OL, lw*0.7);
+
+  // Leather vest (dark, over shirt)
+  // Left side of vest
+  poly([
+    -22, G-72,
+    -24, G-112,
+    -20, G-126,
+    -3,  G-126,
+    -3,  G-72
+  ], VEST, OL, lw);
+  ctx.save(); ctx.globalAlpha = 0.3;
+  poly([-22, G-72, -24, G-112, -18, G-118, -16, G-76], VEST_H, null, 0);
   ctx.restore();
 
-  // Iron breastplate
-  ctx.beginPath();
-  ctx.moveTo(-14, -74);
-  ctx.bezierCurveTo(-16, -88, -16, -114, -12, -122);
-  ctx.bezierCurveTo(-8, -128, 8, -128, 12, -122);
-  ctx.bezierCurveTo(16, -114, 16, -88, 14, -74);
-  ctx.bezierCurveTo(12, -70, -12, -70, -14, -74);
-  ctx.closePath();
-  fs(IRON, lw);
-  // Breastplate highlight
-  ctx.save(); ctx.globalAlpha = 0.32;
-  ctx.beginPath();
-  ctx.moveTo(-7, -78);
-  ctx.bezierCurveTo(-8, -104, -5, -120, -2, -124);
-  ctx.bezierCurveTo(2, -127, 7, -118, 8, -94);
-  ctx.bezierCurveTo(8, -84, -2, -76, -7, -78);
-  ctx.closePath();
-  ctx.fillStyle = '#fff'; ctx.fill();
+  // Right side of vest
+  poly([
+     22, G-72,
+     24, G-112,
+     20, G-126,
+      3, G-126,
+      3, G-72
+  ], VEST, OL, lw);
+  // Vest right highlight
+  ctx.save(); ctx.globalAlpha = 0.15;
+  poly([22, G-72, 24, G-112, 18, G-118, 16, G-76], '#fff', null, 0);
   ctx.restore();
-  // Breastplate center ridge
-  ctx.beginPath();
-  ctx.moveTo(0, -74); ctx.lineTo(0, -120);
-  ctx.strokeStyle = IRON_SH; ctx.lineWidth = 1.6*sc; ctx.stroke();
 
   // Belt
-  ctx.beginPath(); ctx.rect(-22, -76, 44, 10);
-  fs(LTHR, lw*0.9);
+  poly([-23, G-74, 23, G-74, 23, G-66, -23, G-66], BELT, OL, lw*0.9);
   // Buckle
-  ctx.beginPath(); ctx.rect(-6, -75, 12, 8); fs(GOLD, 1.5*sc);
-  ctx.beginPath(); ctx.rect(-3, -73, 6, 4);
-  ctx.fillStyle = LTHR; ctx.fill();
-
-  // Left pauldron
-  ctx.save(); ctx.translate(-22, -122);
-  ctx.beginPath(); ctx.ellipse(0, 0, 15, 9, -0.2, 0, Math.PI*2);
-  fs(IRON, lw);
-  ctx.beginPath(); ctx.moveTo(-13, 3); ctx.lineTo(11, 3);
-  ctx.strokeStyle = IRON_SH; ctx.lineWidth = 1.3*sc; ctx.stroke();
+  ell(0, G-70, 8, 5, BUCKLE, OL, lw*0.8);
+  // Belt stitch line
+  ctx.save(); ctx.globalAlpha = 0.35;
+  ln(-20, G-70, -10, G-70, '#fff', sc);
+  ln(10, G-70, 20, G-70, '#fff', sc);
   ctx.restore();
 
-  // ── SWORD ARM (right / front) ───────────────────────────────
-  ctx.save();
-  ctx.translate(20, -122); // right shoulder
-  ctx.rotate(armF * Math.PI/180);
+  // Shirt collar / neckline
+  ctx.save(); ctx.globalAlpha = 0.7;
+  ln(-8, G-124, 0, G-114, SHIRT_SH, lw*0.9);
+  ln(8, G-124, 0, G-114, SHIRT_SH, lw*0.9);
+  ctx.restore();
 
-  // Right pauldron
-  ctx.beginPath(); ctx.ellipse(0, 0, 15, 9, 0.2, 0, Math.PI*2);
-  fs(IRON, lw);
-  ctx.beginPath(); ctx.moveTo(-11, 3); ctx.lineTo(13, 3);
-  ctx.strokeStyle = IRON_SH; ctx.lineWidth = 1.3*sc; ctx.stroke();
+  // ── SWORD ARM (right / front) ─────────────────────────────
+  {
+    const shoulderX = 17, shoulderY = -112;
+    ctx.save();
+    ctx.translate(shoulderX, shoulderY);
+    ctx.rotate((armSwing + swordSway) * Math.PI/180);
 
-  // Upper arm
-  C(0, 0, 4, 24, 9, IRON);
-  // Bracer (forearm, iron-clad)
-  C(4, 24, 6, 46, 8, IRON);
-  // Fist
-  ctx.beginPath(); ctx.arc(7, 53, 9, 0, Math.PI*2); fs(SKIN, lw*0.85);
+    // Upper arm
+    cap(0, 0, 2, 26, 9, SHIRT, OL, lw);
+    // Forearm
+    cap(2, 26, 4, 48, 8, SHIRT_SH, OL, lw);
+    // Fist / hand holding sword
+    ell(5, 54, 8, 7, SKIN, OL, lw);
 
-  // ── SWORD ────────────────────────────────────────────────────
-  ctx.save();
-  ctx.translate(7, 53);
-  ctx.rotate(-0.22); // slight forward tilt
+    // ── SWORD ─────────────────────────────────────────────
+    ctx.save();
+    ctx.translate(5, 56);
+    ctx.rotate(0.35); // angled down-forward like reference
 
-  // Grip (leather-wrapped)
-  ctx.beginPath(); ctx.rect(-3.5, 2, 7, 22); fs(LTHR, 1.6*sc);
-  for (let g = 5; g < 22; g += 5) {
-    ctx.beginPath(); ctx.moveTo(-3.5, 2+g); ctx.lineTo(3.5, 2+g);
-    ctx.strokeStyle = LTHR_SH; ctx.lineWidth = 1.6*sc; ctx.stroke();
+    // Handle / grip
+    cap(0, 0, 0, 20, 3.5, HILT, OL, lw*0.8);
+    // Handle wrapping straps
+    ctx.save(); ctx.globalAlpha = 0.5;
+    for (let g = 3; g < 20; g += 5) {
+      ln(-3.5, g, 3.5, g, HILT_H, sc);
+    }
+    ctx.restore();
+    // Pommel (round)
+    ell(0, 23, 5.5, 4.5, GUARD, OL, lw*0.7);
+
+    // Crossguard (simple bar)
+    poly([-12, -2.5, 12, -2.5, 12, 3.5, -12, 3.5], GUARD, OL, lw*0.8);
+    // Crossguard highlight
+    ctx.save(); ctx.globalAlpha = 0.3;
+    ln(-10, -1, 10, -1, '#fff', sc);
+    ctx.restore();
+
+    // Blade (shorter, wider — more like a short sword / seax from reference)
+    poly([
+      -5.5, -4,
+       5.5, -4,
+       3,   -52,
+       0,   -62,
+      -3,   -52
+    ], BL_FLAT, OL, lw*0.75);
+    // Blade left edge highlight
+    ctx.save(); ctx.globalAlpha = 0.55;
+    ln(-4, -4, -2, -55, BL_EDGE, 2*sc);
+    ctx.restore();
+    // Blade fuller groove
+    ctx.save(); ctx.globalAlpha = 0.5;
+    ln(0, -5, 0, -50, BL_SH, sc);
+    ctx.restore();
+    // Blade right shadow
+    ctx.save(); ctx.globalAlpha = 0.28;
+    poly([2, -4, 5.5, -4, 2.5, -52, 0, -60], BL_SH, null, 0);
+    ctx.restore();
+
+    ctx.restore(); // sword
+    ctx.restore(); // sword arm
   }
-  // Pommel
-  ctx.beginPath(); ctx.ellipse(0, 25, 6.5, 5.5, 0, 0, Math.PI*2);
-  fs(IRON, 1.5*sc);
-
-  // Crossguard (wider, slight curve)
-  ctx.beginPath();
-  ctx.moveTo(-15, -3);
-  ctx.bezierCurveTo(-15, -8, 15, -8, 15, -3);
-  ctx.bezierCurveTo(15, 3, -15, 3, -15, -3);
-  ctx.closePath();
-  fs(IRON, lw*0.9);
-  // Crossguard highlight
-  ctx.save(); ctx.globalAlpha = 0.3;
-  ctx.beginPath();
-  ctx.moveTo(-12, -4); ctx.bezierCurveTo(-12, -7, 12, -7, 12, -4);
-  ctx.strokeStyle = '#fff'; ctx.lineWidth = 2*sc; ctx.stroke();
-  ctx.restore();
-
-  // Blade — drawn twice: glow layer + solid
-  const bladeGlow = 0.45 + 0.55 * Math.sin(t * 3.2);
-  ctx.save();
-  ctx.shadowColor = '#8888ff';
-  ctx.shadowBlur  = 20 * sc * bladeGlow;
-  ctx.globalAlpha = bladeGlow;
-  ctx.beginPath();
-  ctx.moveTo(-5, -5);
-  ctx.lineTo(-3, -54); ctx.lineTo(0, -68); ctx.lineTo(3, -54); ctx.lineTo(5, -5);
-  ctx.closePath();
-  ctx.fillStyle = STEEL_H; ctx.fill();
-  ctx.restore();
-  // Blade solid
-  ctx.beginPath();
-  ctx.moveTo(-5, -5);
-  ctx.lineTo(-3, -54); ctx.lineTo(0, -68); ctx.lineTo(3, -54); ctx.lineTo(5, -5);
-  ctx.closePath();
-  fs(STEEL, lw*0.8);
-  // Fuller groove
-  ctx.beginPath(); ctx.moveTo(0, -6); ctx.lineTo(0, -58);
-  ctx.strokeStyle = '#8898a8'; ctx.lineWidth = sc; ctx.stroke();
-  // Edge highlight
-  ctx.save(); ctx.globalAlpha = 0.55;
-  ctx.beginPath();
-  ctx.moveTo(-3, -6); ctx.lineTo(-2, -54); ctx.lineTo(0, -66);
-  ctx.strokeStyle = STEEL_H; ctx.lineWidth = 1.5*sc; ctx.lineCap = 'round'; ctx.stroke();
-  ctx.restore();
-
-  ctx.restore(); // sword local
-  ctx.restore(); // sword arm
 
   // ── FRONT LEG ─────────────────────────────────────────────
-  drawLeg(legF, kF, 12, 10);
+  drawLeg(legSwing, kneeF, true);
 
   // ── NECK ──────────────────────────────────────────────────
-  ctx.beginPath();
-  ctx.moveTo(-7, -122); ctx.lineTo(-6, -134);
-  ctx.lineTo(6, -134); ctx.lineTo(7, -122);
-  ctx.closePath();
-  fs(SKIN, lw*0.9);
-  // Chainmail coif ring
-  ctx.beginPath(); ctx.ellipse(0, -128, 20, 13, 0, 0, Math.PI*2);
-  fs(IRON_SH, lw*0.8);
+  poly([-7, G-122, 7, G-122, 6, G-136, -6, G-136], SKIN, OL, lw*0.9);
 
   // ── HEAD ──────────────────────────────────────────────────
-  ctx.beginPath();
-  ctx.ellipse(2, -154, 23, 25, 0, 0, Math.PI*2);
-  fs(SKIN, lw);
-  // Subtle shadow side
+  // Head shape — slightly rectangular pixel art style
+  const hx = 1, hy = G-162;
+  const hw = 22, hh = 26;
+  ell(hx, hy, hw, hh, SKIN, OL, lw);
+  // Face shadow (right side)
   ctx.save(); ctx.globalAlpha = 0.18;
-  ctx.beginPath(); ctx.ellipse(10, -154, 13, 20, 0.2, 0, Math.PI*2);
-  ctx.fillStyle = SKIN_SH; ctx.fill();
+  ell(hx+8, hy+2, hw*0.5, hh*0.7, SKIN_SH, null, 0);
+  ctx.restore();
+  // Face highlight (left side)
+  ctx.save(); ctx.globalAlpha = 0.22;
+  ell(hx-8, hy-6, hw*0.4, hh*0.45, '#fff', null, 0);
   ctx.restore();
 
-  // ── HELMET ────────────────────────────────────────────────
-  // Bowl
+  // ── HAIR ──────────────────────────────────────────────────
+  // Top of hair
   ctx.beginPath();
-  ctx.moveTo(-23, -160);
-  ctx.bezierCurveTo(-24, -200, 25, -200, 26, -160);
-  ctx.lineTo(22, -152);
-  ctx.bezierCurveTo(20, -146, -20, -146, -22, -152);
+  ctx.moveTo(hx-22, hy-4);
+  ctx.bezierCurveTo(hx-24, hy-38, hx+24, hy-38, hx+22, hy-4);
+  ctx.bezierCurveTo(hx+18, hy-12, hx-18, hy-12, hx-22, hy-4);
   ctx.closePath();
-  fs(IRON, lw);
-  // Highlight patch
-  ctx.save(); ctx.globalAlpha = 0.38;
+  ctx.fillStyle = HAIR; ctx.fill();
+  ctx.strokeStyle = OL; ctx.lineWidth = lw; ctx.stroke();
+
+  // Hair highlight
+  ctx.save(); ctx.globalAlpha = 0.32;
   ctx.beginPath();
-  ctx.moveTo(-10, -163);
-  ctx.bezierCurveTo(-9, -196, 15, -193, 16, -163);
-  ctx.lineTo(12, -158);
-  ctx.bezierCurveTo(8, -155, -6, -157, -10, -163);
+  ctx.moveTo(hx-10, hy-30);
+  ctx.bezierCurveTo(hx-6, hy-38, hx+8, hy-36, hx+12, hy-28);
+  ctx.bezierCurveTo(hx+6, hy-34, hx-4, hy-34, hx-10, hy-30);
   ctx.closePath();
-  ctx.fillStyle = '#fff'; ctx.fill();
+  ctx.fillStyle = HAIR_H; ctx.fill();
   ctx.restore();
-  // Brim band
+
+  // Side hair (hangs down beside ears)
+  ctx.save();
+  // Left sideburn
   ctx.beginPath();
-  ctx.moveTo(-23, -160);
-  ctx.bezierCurveTo(-20, -150, 20, -150, 26, -160);
-  ctx.bezierCurveTo(20, -154, -20, -154, -23, -160);
+  ctx.moveTo(hx-20, hy-8);
+  ctx.bezierCurveTo(hx-28, hy-2, hx-28, hy+14, hx-22, hy+18);
+  ctx.bezierCurveTo(hx-18, hy+12, hx-20, hy+2, hx-18, hy-4);
   ctx.closePath();
-  fs(IRON_SH, 1.5*sc);
-  // Nasal guard
+  ctx.fillStyle = HAIR; ctx.fill();
+  ctx.strokeStyle = OL; ctx.lineWidth = lw*0.8; ctx.stroke();
+  // Right sideburn
   ctx.beginPath();
-  ctx.moveTo(-3, -152); ctx.lineTo(-3, -135);
-  ctx.lineTo(3, -135); ctx.lineTo(3, -152);
+  ctx.moveTo(hx+20, hy-8);
+  ctx.bezierCurveTo(hx+28, hy-2, hx+28, hy+14, hx+22, hy+18);
+  ctx.bezierCurveTo(hx+18, hy+12, hx+20, hy+2, hx+18, hy-4);
   ctx.closePath();
-  fs(IRON_SH, 1.5*sc);
-  // Cheek guards (small plates)
-  ctx.save(); ctx.translate(-22, -155);
-  ctx.beginPath(); ctx.ellipse(0, 6, 6, 9, -0.1, 0, Math.PI*2); fs(IRON_SH, 1.2*sc);
-  ctx.restore();
-  ctx.save(); ctx.translate(23, -155);
-  ctx.beginPath(); ctx.ellipse(0, 6, 6, 9, 0.1, 0, Math.PI*2); fs(IRON_SH, 1.2*sc);
+  ctx.fillStyle = HAIR; ctx.fill();
+  ctx.strokeStyle = OL; ctx.lineWidth = lw*0.8; ctx.stroke();
   ctx.restore();
 
   // ── FACE ──────────────────────────────────────────────────
+  // Eyes — pixel RPG style, simple and readable
   function eye(ex, ey) {
     // White
-    ctx.beginPath(); ctx.ellipse(ex, ey, 6.5, 7.5, 0, 0, Math.PI*2);
-    fs('#fff', 1.5*sc);
-    // Iris
-    ctx.beginPath(); ctx.ellipse(ex+0.5, ey+0.5, 4.5, 5.5, 0, 0, Math.PI*2);
-    ctx.fillStyle = '#7b5030'; ctx.fill();
+    ell(ex, ey, 5.5, 6, '#f0e8d8', OL, lw*0.7);
+    // Iris (brown)
+    ell(ex+0.5, ey+0.5, 3.5, 4.5, '#6b4020', null, 0);
     // Pupil
-    ctx.beginPath(); ctx.ellipse(ex+0.5, ey+0.5, 2.8, 3.5, 0, 0, Math.PI*2);
-    ctx.fillStyle = '#180a00'; ctx.fill();
+    ell(ex+0.5, ey+0.5, 2, 2.8, '#1a0800', null, 0);
     // Shine
-    ctx.beginPath(); ctx.ellipse(ex-1, ey-1, 1.5, 2, 0, 0, Math.PI*2);
-    ctx.fillStyle = '#fff'; ctx.fill();
+    ell(ex-1, ey-1.5, 1.3, 1.6, '#ffffff', null, 0);
   }
-  eye(-12, -149);
-  eye(12, -149);
+  eye(hx-10, hy-4);
+  eye(hx+10, hy-4);
 
-  // Eyebrows (furrowed for determined look)
-  ctx.save(); ctx.lineCap = 'round'; ctx.lineWidth = 3.3*sc;
-  ctx.strokeStyle = '#5a3018';
-  ctx.beginPath(); ctx.moveTo(-19, -163); ctx.lineTo(-7, -160); ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(7, -160); ctx.lineTo(19, -163); ctx.stroke();
+  // Eyebrows (simple, straight — pixel RPG)
+  ctx.save(); ctx.lineCap = 'round'; ctx.lineWidth = 2.8*sc;
+  ctx.strokeStyle = HAIR_SH;
+  ctx.beginPath(); ctx.moveTo(hx-16, hy-16); ctx.lineTo(hx-5, hy-14); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(hx+5, hy-14); ctx.lineTo(hx+16, hy-16); ctx.stroke();
   ctx.restore();
 
-  // Nose
-  ctx.beginPath(); ctx.arc(2, -138, 3.5, 0, Math.PI);
+  // Nose (simple, two dots / bump like pixel art)
+  ctx.save(); ctx.globalAlpha = 0.6;
+  ctx.beginPath(); ctx.arc(hx+3, hy+6, 2.5, 0, Math.PI);
   ctx.strokeStyle = SKIN_SH; ctx.lineWidth = 2*sc; ctx.stroke();
+  ctx.restore();
 
-  // Mouth (slight confident smile)
+  // Mouth (neutral / slight smirk)
   ctx.beginPath();
-  ctx.moveTo(-9, -128); ctx.bezierCurveTo(-4, -124, 6, -124, 10, -128);
-  ctx.strokeStyle = '#9b4428'; ctx.lineWidth = 2.6*sc;
+  ctx.moveTo(hx-7, hy+16);
+  ctx.bezierCurveTo(hx-3, hy+20, hx+5, hy+20, hx+9, hy+16);
+  ctx.strokeStyle = '#8b4020'; ctx.lineWidth = 2.2*sc;
   ctx.lineCap = 'round'; ctx.stroke();
 
-  // Blush
-  ctx.save(); ctx.globalAlpha = 0.2;
-  ctx.beginPath(); ctx.ellipse(-17, -133, 10, 5.5, -0.15, 0, Math.PI*2);
-  ctx.fillStyle = '#ff7777'; ctx.fill();
-  ctx.beginPath(); ctx.ellipse(19, -133, 10, 5.5, 0.15, 0, Math.PI*2);
-  ctx.fillStyle = '#ff7777'; ctx.fill();
+  // Chin stubble hint (very subtle)
+  ctx.save(); ctx.globalAlpha = 0.12;
+  ell(hx, hy+20, 10, 5, HAIR, null, 0);
   ctx.restore();
 
-  // ── FLOATING RUNE ──────────────────────────────────────────
-  const runeY = -215 + Math.sin(t * 2.3) * 10;
-  const runeA = 0.5 + 0.5 * Math.sin(t * 4.5);
+  // ── IDLE SWORD GLINT (subtle) ───────────────────────────────
+  const glint = 0.3 + 0.7 * Math.abs(Math.sin(t * 2.8));
   ctx.save();
-  ctx.globalAlpha = runeA;
-  ctx.shadowColor = '#8888ff';
-  ctx.shadowBlur  = 14 * sc;
-  ctx.fillStyle   = '#aaaaff';
-  ctx.font        = `bold ${18*sc}px serif`;
-  ctx.textAlign   = 'center';
-  ctx.fillText('ᚱ', 26, runeY);
+  ctx.globalAlpha = glint * 0.25;
+  ctx.shadowColor = '#d8e8ff';
+  ctx.shadowBlur  = 8 * sc;
+  ctx.beginPath();
+  // Position relative to sword arm's extended position
+  ctx.arc(30, -85, 3*sc, 0, Math.PI*2);
+  ctx.fillStyle = '#e8f4ff'; ctx.fill();
   ctx.restore();
 
   ctx.restore(); // main transform
@@ -423,36 +450,37 @@ function frame(ts) {
 
   ctx.clearRect(0, 0, cvs.width, cvs.height);
 
-  // Background gradient
+  // Background
   const bg = ctx.createLinearGradient(0, 0, 0, cvs.height);
-  bg.addColorStop(0, '#1c1630');
-  bg.addColorStop(1, '#0c0a18');
+  bg.addColorStop(0, '#2a2a4a');
+  bg.addColorStop(1, '#0e0e1e');
   ctx.fillStyle = bg;
   ctx.fillRect(0, 0, cvs.width, cvs.height);
 
-  // Stone-floor grid hint
-  ctx.strokeStyle = '#2c2048'; ctx.lineWidth = 1;
-  const GY = Math.round(cvs.height * 0.9); // ground y
-  for (let gx = 0; gx < cvs.width; gx += 80) {
+  // Ground line
+  const GY = Math.round(cvs.height * 0.88);
+  ctx.strokeStyle = '#3a3060'; ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.moveTo(0, GY); ctx.lineTo(cvs.width, GY); ctx.stroke();
+
+  // Subtle floor grid
+  ctx.strokeStyle = '#222040'; ctx.lineWidth = 1;
+  for (let gx = 0; gx < cvs.width; gx += 60) {
     ctx.beginPath();
-    ctx.moveTo(gx,    GY);
-    ctx.lineTo(gx+40, GY + 8);
+    ctx.moveTo(gx, GY);
+    ctx.lineTo(gx+30, GY+6);
     ctx.stroke();
   }
-  ctx.beginPath();
-  ctx.moveTo(0, GY); ctx.lineTo(cvs.width, GY);
-  ctx.strokeStyle = '#3a2860'; ctx.lineWidth = 1.5; ctx.stroke();
 
   // Labels
   ctx.fillStyle = '#554466'; ctx.font = '11px monospace'; ctx.textAlign = 'center';
-  ctx.fillText('→ right', 160, GY + 28);
-  ctx.fillText('← left',  460, GY + 28);
+  ctx.fillText('→ right',  160, GY + 28);
+  ctx.fillText('← left',   460, GY + 28);
   ctx.fillText('game ×0.72', 620, GY + 28);
 
   const SC = 2.0;
-  drawRecruit(160, GY, t,           1,  SC);
-  drawRecruit(460, GY, t + 0.72,   -1,  SC);
-  drawRecruit(620, GY, t,            1,  0.72);
+  drawRecruit(160, GY, t,          1,  SC);
+  drawRecruit(460, GY, t + 0.8,  -1,  SC);
+  drawRecruit(620, GY, t,          1,  0.72);
 
   requestAnimationFrame(frame);
 }
