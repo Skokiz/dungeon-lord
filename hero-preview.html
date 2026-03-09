@@ -482,10 +482,10 @@ function frame(ts) {
   ctx.fillRect(0, 0, CW, CH);
 
   // Ground line inside card (character stands here)
-  const GY_card = CARD_Y + CARD_H * 0.76;
-  // Scale: character total height ~175 units; available space = GY_card - CARD_Y - 10 = ~224px
-  // 224 / 175 ≈ 1.28 → use 1.25
-  const SC = 1.25;
+  // Character height: y=0 (ground) to y≈-200 (hair top) at SC=1.0 = 200px
+  // Card available (above label): 310 - 50 = 260px  →  SC = 1.0 fits with 32px sky above head
+  const SC = 1.0;
+  const GY_card = CARD_Y + CARD_H * 0.75;
 
   // ── CARD CLIP (all content clipped to card shape) ────────────
   ctx.save();
