@@ -18,7 +18,7 @@ p  { font-size:10px; letter-spacing:1px; color:#443344; }
 </head>
 <body>
 <h2>РЕКРУТ · Pixel RPG Style</h2>
-<canvas id="c" width="700" height="460"></canvas>
+<canvas id="c" width="360" height="420"></canvas>
 <p>walk cycle · sword · idle animation</p>
 
 <script>
@@ -443,44 +443,121 @@ function drawRecruit(x, y, t, dir, sc) {
 }
 
 // ── RENDER LOOP ────────────────────────────────────────────────
+const CW = cvs.width, CH = cvs.height;
+
+// Card dimensions (centered)
+const CARD_W = 220, CARD_H = 310;
+const CARD_X = (CW - CARD_W) / 2;
+const CARD_Y = (CH - CARD_H) / 2;
+const CARD_R = 18; // corner radius
+
+function drawCloud(cx, cy, size) {
+  ctx.save();
+  ctx.fillStyle = '#e8f0ff';
+  [[0,0,size],[size*0.6,-size*0.3,size*0.7],[size*1.1,0,size*0.6],[-size*0.55,-size*0.15,size*0.65]].forEach(([dx,dy,r]) => {
+    ctx.beginPath(); ctx.arc(cx+dx, cy+dy, r, 0, Math.PI*2); ctx.fill();
+  });
+  ctx.restore();
+}
+
+function roundRect(x,y,w,h,r) {
+  ctx.beginPath();
+  ctx.moveTo(x+r, y);
+  ctx.lineTo(x+w-r, y); ctx.arcTo(x+w, y,   x+w, y+r,   r);
+  ctx.lineTo(x+w, y+h-r); ctx.arcTo(x+w, y+h, x+w-r, y+h, r);
+  ctx.lineTo(x+r, y+h); ctx.arcTo(x,   y+h, x,   y+h-r, r);
+  ctx.lineTo(x,   y+r); ctx.arcTo(x,   y,   x+r, y,     r);
+  ctx.closePath();
+}
+
 let t0 = null;
 function frame(ts) {
   if (!t0) t0 = ts;
   const t = (ts - t0) / 1000;
 
-  ctx.clearRect(0, 0, cvs.width, cvs.height);
+  ctx.clearRect(0, 0, CW, CH);
 
-  // Background
-  const bg = ctx.createLinearGradient(0, 0, 0, cvs.height);
-  bg.addColorStop(0, '#2a2a4a');
-  bg.addColorStop(1, '#0e0e1e');
-  ctx.fillStyle = bg;
-  ctx.fillRect(0, 0, cvs.width, cvs.height);
+  // Page background
+  ctx.fillStyle = '#1a1a2e';
+  ctx.fillRect(0, 0, CW, CH);
 
-  // Ground line
-  const GY = Math.round(cvs.height * 0.88);
-  ctx.strokeStyle = '#3a3060'; ctx.lineWidth = 1.5;
-  ctx.beginPath(); ctx.moveTo(0, GY); ctx.lineTo(cvs.width, GY); ctx.stroke();
+  // ── CARD CLIP ───────────────────────────────────────────────
+  ctx.save();
+  roundRect(CARD_X, CARD_Y, CARD_W, CARD_H, CARD_R);
+  ctx.clip();
 
-  // Subtle floor grid
-  ctx.strokeStyle = '#222040'; ctx.lineWidth = 1;
-  for (let gx = 0; gx < cvs.width; gx += 60) {
-    ctx.beginPath();
-    ctx.moveTo(gx, GY);
-    ctx.lineTo(gx+30, GY+6);
-    ctx.stroke();
-  }
+  // Sky gradient
+  const sky = ctx.createLinearGradient(CARD_X, CARD_Y, CARD_X, CARD_Y + CARD_H * 0.72);
+  sky.addColorStop(0, '#8ab8e8');
+  sky.addColorStop(1, '#c8dff8');
+  ctx.fillStyle = sky;
+  ctx.fillRect(CARD_X, CARD_Y, CARD_W, CARD_H);
 
-  // Labels
-  ctx.fillStyle = '#554466'; ctx.font = '11px monospace'; ctx.textAlign = 'center';
-  ctx.fillText('→ right',  160, GY + 28);
-  ctx.fillText('← left',   460, GY + 28);
-  ctx.fillText('game ×0.72', 620, GY + 28);
+  // Distant hills
+  ctx.fillStyle = '#90b878';
+  ctx.beginPath();
+  ctx.moveTo(CARD_X, CARD_Y + CARD_H * 0.65);
+  ctx.bezierCurveTo(CARD_X + 40, CARD_Y + CARD_H * 0.52, CARD_X + 90, CARD_Y + CARD_H * 0.58, CARD_X + 140, CARD_Y + CARD_H * 0.52);
+  ctx.bezierCurveTo(CARD_X + 190, CARD_Y + CARD_H * 0.46, CARD_X + CARD_W, CARD_Y + CARD_H * 0.56, CARD_X + CARD_W, CARD_Y + CARD_H * 0.65);
+  ctx.lineTo(CARD_X + CARD_W, CARD_Y + CARD_H);
+  ctx.lineTo(CARD_X, CARD_Y + CARD_H);
+  ctx.closePath();
+  ctx.fill();
 
-  const SC = 2.0;
-  drawRecruit(160, GY, t,          1,  SC);
-  drawRecruit(460, GY, t + 0.8,  -1,  SC);
-  drawRecruit(620, GY, t,          1,  0.72);
+  // Clouds (slow drift)
+  const cloudDrift = (t * 8) % (CARD_W + 80);
+  drawCloud(CARD_X + 30 + cloudDrift * 0.15, CARD_Y + 40, 14);
+  drawCloud(CARD_X + 140 - cloudDrift * 0.08, CARD_Y + 28, 10);
+
+  // Ground (grass strip)
+  const GY_card = CARD_Y + CARD_H * 0.78;
+  // Dirt layer
+  ctx.fillStyle = '#8b6040';
+  ctx.fillRect(CARD_X, GY_card + 18, CARD_W, CARD_H - (GY_card + 18 - CARD_Y));
+  // Grass top
+  ctx.fillStyle = '#4a9838';
+  ctx.fillRect(CARD_X, GY_card, CARD_W, 22);
+  // Grass highlight
+  ctx.fillStyle = '#62b848';
+  ctx.fillRect(CARD_X, GY_card, CARD_W, 8);
+  // Grass dark edge
+  ctx.fillStyle = '#38801e';
+  ctx.fillRect(CARD_X, GY_card + 18, CARD_W, 4);
+
+  // Shadow under character
+  ctx.save(); ctx.globalAlpha = 0.25;
+  ctx.beginPath(); ctx.ellipse(CARD_X + CARD_W/2, GY_card + 4, 30, 7, 0, 0, Math.PI*2);
+  ctx.fillStyle = '#000'; ctx.fill();
+  ctx.restore();
+
+  ctx.restore(); // card clip
+
+  // ── CARD BORDER ─────────────────────────────────────────────
+  // Outer gold border
+  roundRect(CARD_X, CARD_Y, CARD_W, CARD_H, CARD_R);
+  ctx.strokeStyle = '#c8a040'; ctx.lineWidth = 4; ctx.stroke();
+  // Inner thin border
+  roundRect(CARD_X+5, CARD_Y+5, CARD_W-10, CARD_H-10, CARD_R-3);
+  ctx.strokeStyle = '#e8c870'; ctx.lineWidth = 1.2; ctx.stroke();
+
+  // ── CHARACTER ───────────────────────────────────────────────
+  const GY_char = GY_card + 2;
+  drawRecruit(CARD_X + CARD_W/2, GY_char, t, 1, 2.6);
+
+  // ── NAME LABEL ──────────────────────────────────────────────
+  // Label background strip
+  const labelY = CARD_Y + CARD_H - 52;
+  roundRect(CARD_X + 12, labelY, CARD_W - 24, 40, 8);
+  ctx.fillStyle = 'rgba(10, 6, 2, 0.78)'; ctx.fill();
+  ctx.strokeStyle = '#c8a040'; ctx.lineWidth = 1.5; ctx.stroke();
+
+  ctx.textAlign = 'center';
+  ctx.fillStyle = '#f0d880';
+  ctx.font = 'bold 15px monospace';
+  ctx.fillText('РЕКРУТ', CARD_X + CARD_W/2, labelY + 18);
+  ctx.fillStyle = '#888866';
+  ctx.font = '10px monospace';
+  ctx.fillText('Recruit  ★ Lv.1', CARD_X + CARD_W/2, labelY + 32);
 
   requestAnimationFrame(frame);
 }
