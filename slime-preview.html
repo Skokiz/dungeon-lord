@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Слайм — анімації</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  background:#0e0d16;
+  display:flex; flex-direction:column; align-items:center;
+  min-height:100vh; gap:6px; padding:20px;
+  font-family:monospace; color:#557755;
+}
+canvas { border-radius:10px; display:block; image-rendering:pixelated; }
+h2 { font-size:12px; color:#44dd44; letter-spacing:2px; margin-top:4px; }
+p  { font-size:10px; letter-spacing:1px; color:#334433; }
+</style>
+</head>
+<body>
+<h2>СЛАЙМ · Pixel RPG</h2>
+<canvas id="c" width="360" height="200"></canvas>
+<p>idle · walk · run · attack</p>
+
+<script>
+const cvs = document.getElementById('c');
+const ctx = cvs.getContext('2d');
+const CW = cvs.width, CH = cvs.height;
+
+// ── Slime palette ───────────────────────────────────────────────
+const SL = {
+  body:     '#44dd22',
+  bodyMid:  '#33bb11',
+  bodyDark: '#1a6600',
+  shine1:   '#aaff66',
+  shine2:   '#eeffcc',
+  shadow:   'rgba(0,80,0,0.28)',
+  outline:  '#0a1f00',
+  eye:      '#0a0500',
+  eyeHL:    'rgba(255,255,200,0.95)',
+  pupil:    '#1a3a00',
+  blush:    'rgba(200,60,60,0.45)',
+  mouth:    '#072200',
+  acid:     '#aaff00',
+  trail:    'rgba(50,200,20,0.25)',
+};
+
+const ease = p => p * p * (3 - 2 * p);
+
+// ── Core slime draw ─────────────────────────────────────────────
+// mode: 'idle' | 'walk' | 'run' | 'atk'
+// atkState: { phase:0..3, p:0..1 }
+// lean: rotation angle (radians, + = forward tilt)
+function drawSlime(x, y, t, dir, mode, atkState, sc) {
+  dir  = dir  ?? 1;
+  mode = mode ?? 'idle';
+  atkState = atkState ?? { phase:0, p:0 };
+  sc   = sc   ?? 1.0;
+
+  // ── Compute deformation ─────────────────────────────────────
+  let sqX=1, sqY=1, offY=0, offX=0, lean=0;
+  let mouthOpen=0, eyeSquint=0, flash=0, blush=0, wobble=0;
+  let angry=false;
+
+  if (mode === 'idle') {
+    const bob = Math.sin(t * 2.2) * 0.04;
+    const jig = Math.sin(t * 3.8) * 0.016;
+    sqX = 1 + bob*0.50 + jig*0.14;
+    sqY = 1 - bob*0.32;
+    offY = bob * 4 * sc;
+
+  } else if (mode === 'walk') {
+    // hop every ~0.6s
+    const ph  = t * 3.6;
+    const hop = Math.max(0, Math.sin(ph));          // air phase
+    const sqsh= Math.max(0, -Math.sin(ph) * 0.55); // landing squash
+    sqX = 1 + sqsh*0.38 - hop*0.10;
+    sqY = 1 - sqsh*0.24 + hop*0.22;
+    offY = -hop * 10 * sc;
+    lean = Math.sin(ph) * 0.07;
+
+  } else if (mode === 'run') {
+    // faster, angrier hops
+    const ph   = t * 6.4;
+    const hop  = Math.max(0, Math.sin(ph));
+    const sqsh = Math.max(0, -Math.sin(ph) * 0.6);
+    sqX = 1 + sqsh*0.55 - hop*0.18;
+    sqY = 1 - sqsh*0.38 + hop*0.32;
+    offY  = -hop * 16 * sc;
+    lean  = 0.22 + Math.sin(ph) * 0.10;   // always leaning forward
+    angry = true;
+
+  } else if (mode === 'atk') {
+    const ph = atkState.phase, p = atkState.p;
+    if (ph === 1) {                        // wind-up: squash wide
+      const e = ease(p);
+      sqX=1+e*0.48; sqY=1-e*0.42; offY=e*3*sc; eyeSquint=e*0.4;
+    } else if (ph === 2) {                 // strike: lunge forward
+      const e = ease(p), ext = 1-e;
+      sqX=1+ext*0.72; sqY=1-ext*0.38; offX=ext*14*sc*dir;
+      mouthOpen=ext*1.0; eyeSquint=-ext*0.35; flash=Math.max(0,1-p*3);
+    } else if (ph === 3) {                 // recover: wobble
+      const e = ease(p);
+      sqX=1+(1-e)*0.20; sqY=1+(1-e)*0.16; blush=(1-e)*0.90;
+      wobble = Math.sin(p*Math.PI*3)*(1-p)*0.15;
+    } else {                               // ph=0 idle between attacks
+      const bob = Math.sin(t*2.2)*0.04;
+      sqX=1+bob*0.5; sqY=1-bob*0.32; offY=bob*4*sc;
+    }
+    sqX += wobble; sqY -= wobble*0.6;
+  }
+
+  const rX = 24*sc*sqX, rY = 21*sc*sqY;
+  const cx  = offX, cy = -rY - offY;
+
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.scale(dir, 1);
+  if (lean !== 0) ctx.rotate(lean);
+
+  // ── Ground shadow ──────────────────────────────────────────
+  ctx.save(); ctx.globalAlpha = 0.22;
+  ctx.beginPath();
+  ctx.ellipse(cx*0.4, -1, rX*0.76, 4.5*sc, 0, 0, Math.PI*2);
+  ctx.fillStyle = SL.bodyDark; ctx.fill();
+  ctx.restore();
+
+  // ── Run trail (speed streaks) ──────────────────────────────
+  if (mode === 'run') {
+    ctx.save(); ctx.globalAlpha = 0.32;
+    for (let i = 1; i <= 3; i++) {
+      const tx = cx + i * 9 * sc * dir * (-dir); // behind
+      const alpha = 0.28 - i * 0.07;
+      ctx.globalAlpha = alpha;
+      ctx.beginPath();
+      ctx.ellipse(cx - i*11*sc, cy, rX*(0.85 - i*0.18), rY*(0.70 - i*0.16), 0, 0, Math.PI*2);
+      ctx.fillStyle = SL.trail; ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  // ── Body ───────────────────────────────────────────────────
+  // Radial gradient for roundness
+  const grad = ctx.createRadialGradient(
+    cx - rX*0.18, cy - rY*0.30, rY*0.05,
+    cx, cy, rX*1.1
+  );
+  grad.addColorStop(0,   SL.shine1);
+  grad.addColorStop(0.35, SL.body);
+  grad.addColorStop(0.75, SL.bodyMid);
+  grad.addColorStop(1,   SL.bodyDark);
+
+  ctx.beginPath(); ctx.ellipse(cx, cy, rX, rY, 0, 0, Math.PI*2);
+  ctx.strokeStyle = SL.outline; ctx.lineWidth = 2.4; ctx.stroke();
+  ctx.fillStyle   = grad; ctx.fill();
+
+  // Flash on strike
+  if (flash > 0.02) {
+    ctx.save(); ctx.globalAlpha = flash * 0.55;
+    ctx.beginPath(); ctx.ellipse(cx, cy, rX, rY, 0, 0, Math.PI*2);
+    ctx.fillStyle = '#ccff44'; ctx.fill();
+    ctx.restore();
+  }
+
+  // ── Belly lighter patch ────────────────────────────────────
+  ctx.save(); ctx.globalAlpha = 0.22;
+  ctx.beginPath();
+  ctx.ellipse(cx, cy + rY*0.28, rX*0.60, rY*0.42, 0, 0, Math.PI*2);
+  ctx.fillStyle = '#aaffaa'; ctx.fill();
+  ctx.restore();
+
+  // ── Top gloss specular ─────────────────────────────────────
+  ctx.save(); ctx.globalAlpha = 0.55;
+  ctx.beginPath();
+  ctx.ellipse(cx - rX*0.18, cy - rY*0.32, rX*0.36, rY*0.28, -0.3, 0, Math.PI*2);
+  ctx.fillStyle = SL.shine2; ctx.fill();
+  ctx.restore();
+  ctx.save(); ctx.globalAlpha = 0.38;
+  ctx.beginPath();
+  ctx.ellipse(cx + rX*0.25, cy - rY*0.50, rX*0.11, rY*0.11, 0, 0, Math.PI*2);
+  ctx.fillStyle = SL.shine2; ctx.fill();
+  ctx.restore();
+
+  // ── Eyes ───────────────────────────────────────────────────
+  const eyeSep = rX * 0.30;
+  const eyeY   = cy - rY * 0.10;
+  const eyeR   = rX * 0.115;
+
+  for (let s of [-1, 1]) {
+    const ex = cx + s * eyeSep;
+
+    // Angry brow (run/wind-up)
+    if (angry || eyeSquint > 0.1) {
+      ctx.save(); ctx.globalAlpha = angry ? 0.9 : eyeSquint * 0.9;
+      ctx.beginPath();
+      ctx.moveTo(ex - eyeR*1.1, eyeY - eyeR*1.0 - eyeR*0.2);
+      ctx.lineTo(ex + eyeR*1.0 * s, eyeY - eyeR*1.4 + (s > 0 ? -eyeR*0.3 : eyeR*0.3));
+      ctx.strokeStyle = SL.outline; ctx.lineWidth = 1.8; ctx.lineCap = 'round'; ctx.stroke();
+      ctx.restore();
+    }
+
+    // Eyeball
+    const curR = eyeR * (1 + (eyeSquint < 0 ? -eyeSquint * 0.4 : 0));
+    ctx.beginPath(); ctx.ellipse(
+      ex, eyeY,
+      curR, curR * (angry ? 0.55 : (1 - Math.abs(eyeSquint)*0.25)),
+      0, 0, Math.PI*2
+    );
+    ctx.fillStyle = SL.eye; ctx.fill();
+
+    // Pupil highlight
+    ctx.save(); ctx.globalAlpha = 0.92;
+    ctx.beginPath();
+    ctx.arc(ex - eyeR*0.30, eyeY - eyeR*0.32, eyeR*0.30, 0, Math.PI*2);
+    ctx.fillStyle = SL.eyeHL; ctx.fill();
+    ctx.restore();
+  }
+
+  // ── Blush ──────────────────────────────────────────────────
+  if (blush > 0.05) {
+    ctx.save(); ctx.globalAlpha = blush * 0.5;
+    for (let s of [-1, 1]) {
+      ctx.beginPath();
+      ctx.ellipse(cx + s*eyeSep*1.7, eyeY + eyeR, eyeR*0.65, eyeR*0.22, 0, 0, Math.PI*2);
+      ctx.fillStyle = SL.blush; ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  // ── Mouth ──────────────────────────────────────────────────
+  const mouthY = eyeY + eyeR + rY*0.20;
+  const mw = rX * (0.14 + mouthOpen*0.20);
+  ctx.save(); ctx.globalAlpha = 0.32 + mouthOpen*0.50 + (angry ? 0.3 : 0);
+  ctx.beginPath();
+  ctx.moveTo(cx - mw, mouthY);
+  ctx.quadraticCurveTo(cx, mouthY + rY*(0.04 + mouthOpen*0.14 - (angry?0.06:0)), cx + mw, mouthY);
+  ctx.strokeStyle = SL.mouth;
+  ctx.lineWidth   = 1.4 * sc;
+  ctx.lineCap = 'round'; ctx.stroke();
+  // small teeth on attack strike
+  if (mouthOpen > 0.5) {
+    ctx.fillStyle = '#e8e0b0';
+    for (let i=-1; i<=1; i++) {
+      ctx.beginPath();
+      ctx.moveTo(cx + i*mw*0.38, mouthY);
+      ctx.lineTo(cx + i*mw*0.38 - mw*0.12, mouthY + rY*0.09);
+      ctx.lineTo(cx + i*mw*0.38 + mw*0.12, mouthY + rY*0.09);
+      ctx.closePath(); ctx.fill();
+    }
+  }
+  ctx.restore();
+
+  // ── Acid drip (attack phase 2) ─────────────────────────────
+  if (mouthOpen > 0.6 && flash < 0.3) {
+    ctx.save(); ctx.globalAlpha = 0.65;
+    ctx.beginPath();
+    ctx.arc(cx + mw*0.4, mouthY + rY*0.18, 2.5*sc, 0, Math.PI*2);
+    ctx.fillStyle = SL.acid; ctx.fill();
+    ctx.restore();
+  }
+
+  ctx.restore(); // dir + lean
+}
+
+// ── Attack state machine ────────────────────────────────────────
+const ATTACK_DUR = [0, 0.38, 0.28, 0.50]; // duration of phases 1,2,3 (s)
+const ATTACK_WAIT = 2.8; // idle seconds between attacks
+let atkPhase = 0, atkP = 0, atkWait = 0;
+
+function tickAtk(dt) {
+  if (atkPhase === 0) {
+    atkWait += dt;
+    if (atkWait >= ATTACK_WAIT) { atkPhase = 1; atkP = 0; atkWait = 0; }
+  } else {
+    atkP += dt / ATTACK_DUR[atkPhase];
+    if (atkP >= 1) { atkP = 0; atkPhase = (atkPhase >= 3) ? 0 : atkPhase + 1; }
+  }
+}
+
+// ── Labels ──────────────────────────────────────────────────────
+const SLOTS = [
+  { x: 45,  mode:'idle',  label:'idle'   },
+  { x: 135, mode:'walk',  label:'ходьба' },
+  { x: 225, mode:'run',   label:'агро'   },
+  { x: 315, mode:'atk',   label:'атака'  },
+];
+const GY = 160;
+
+// ── Render loop ─────────────────────────────────────────────────
+let t0 = null, tPrev = 0;
+
+function frame(ts) {
+  if (!t0) { t0 = ts; tPrev = ts; }
+  const t  = (ts - t0) / 1000;
+  const dt = Math.min((ts - tPrev) / 1000, 0.05);
+  tPrev = ts;
+
+  tickAtk(dt);
+
+  ctx.clearRect(0, 0, CW, CH);
+
+  // Background
+  ctx.fillStyle = '#0e0d16';
+  ctx.fillRect(0, 0, CW, CH);
+
+  // Stone floor strip
+  ctx.fillStyle = '#1a1828';
+  ctx.fillRect(0, GY, CW, CH - GY);
+  ctx.fillStyle = '#22203a';
+  for (let tx = 0; tx < CW; tx += 32) {
+    ctx.fillRect(tx,    GY + 1, 31, 16);
+    ctx.fillRect(tx+16, GY + 18, 31, 16);
+  }
+  ctx.fillStyle = '#3a3858';
+  ctx.fillRect(0, GY, CW, 2);
+
+  // Dividers
+  ctx.strokeStyle = '#1e1c2e'; ctx.lineWidth = 1;
+  for (let i = 1; i < 4; i++) {
+    ctx.beginPath(); ctx.moveTo(i*90, 0); ctx.lineTo(i*90, GY - 8); ctx.stroke();
+  }
+
+  const atkState = { phase: atkPhase, p: atkP };
+
+  for (const s of SLOTS) {
+    const mode = s.mode === 'atk' ? 'atk' : s.mode;
+    drawSlime(s.x, GY, t, 1, mode, atkState, 1.0);
+
+    // Label
+    ctx.fillStyle = '#334433';
+    ctx.font = '9px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(s.label, s.x, GY + 36);
+  }
+
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
