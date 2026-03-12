@@ -2449,9 +2449,13 @@ class Unit {
                 this._sPrevAtkCd = this.attackCooldown; this._sPrevX = this.x;
                 this._sRingT = 0;
             }
-            // Оновлюємо напрямок лише коли не атакуємо — щоб не розвертався від ворога
-            if (Math.abs(this.x - this._sPrevX) > 0.2 && this._sAtkT <= 0)
+            // Під час бою — дивимось на ворога; при ходьбі — за напрямком руху
+            if (this.state === 'fight') {
+                const _hero = units.find(u => u.type === 'hero' && u.floorIdx === this.floorIdx && u.hp > 0);
+                if (_hero) this._sDir = _hero.x > this.x ? 1 : -1;
+            } else if (Math.abs(this.x - this._sPrevX) > 0.2) {
                 this._sDir = this.x > this._sPrevX ? 1 : -1;
+            }
             this._sPrevX = this.x;
 
             // Detect attack fired: cooldown jumped up → just reset after firing
@@ -2467,7 +2471,7 @@ class Unit {
 
             // Hop: advance only while moving, speed ~0.85 s per hop
             if (this.state === 'move')
-                this._sHopPh = (this._sHopPh + _DT / 0.85) % 1;
+                this._sHopPh = (this._sHopPh + _DT / 0.90) % 1;
             else
                 this._sHopPh = Math.max(0, this._sHopPh - _DT * 4);
 
@@ -2531,7 +2535,7 @@ class Unit {
                 const ringA = this._sRingT * 0.90;
                 // кут центру дуги: 0 = вправо, π = вліво
                 const arcA  = this._sDir > 0 ? 0 : Math.PI;
-                const span  = Math.PI * 0.35; // ~63° в кожну сторону = 126° дуга
+                const span  = Math.PI / 4; // 45° в кожну сторону = рівно 90° (чверть кола)
                 ctx.shadowBlur = 0;
                 ctx.strokeStyle = `rgba(80,255,60,${ringA})`;
                 ctx.lineWidth   = 4 * this._sRingT;
