@@ -2449,7 +2449,8 @@ class Unit {
                 this._sPrevAtkCd = this.attackCooldown; this._sPrevX = this.x;
                 this._sRingT = 0;
             }
-            if (Math.abs(this.x - this._sPrevX) > 0.2)
+            // Оновлюємо напрямок лише коли не атакуємо — щоб не розвертався від ворога
+            if (Math.abs(this.x - this._sPrevX) > 0.2 && this._sAtkT <= 0)
                 this._sDir = this.x > this._sPrevX ? 1 : -1;
             this._sPrevX = this.x;
 
@@ -2523,19 +2524,24 @@ class Unit {
 
             const _cy = _floorY - _yOff - _R * _sy;
 
-            // ── Expanding acid ring on attack ───────────────────────────
+            // ── Чверть-дуга в сторону ворога при атаці ─────────────────
             if (this._sRingT > 0) {
                 const rp = 1 - this._sRingT;
-                const ringR  = _R * (1.1 + rp * 3.5);
-                const ringA  = this._sRingT * 0.85;
+                const ringR = _R * (1.2 + rp * 3.2);
+                const ringA = this._sRingT * 0.90;
+                // кут центру дуги: 0 = вправо, π = вліво
+                const arcA  = this._sDir > 0 ? 0 : Math.PI;
+                const span  = Math.PI * 0.35; // ~63° в кожну сторону = 126° дуга
                 ctx.shadowBlur = 0;
                 ctx.strokeStyle = `rgba(80,255,60,${ringA})`;
-                ctx.lineWidth   = 3.5 * this._sRingT;
-                ctx.beginPath(); ctx.arc(_cx, _cy, ringR, 0, Math.PI * 2); ctx.stroke();
-                // second inner ring
-                ctx.strokeStyle = `rgba(200,255,100,${ringA * 0.5})`;
-                ctx.lineWidth   = 2;
-                ctx.beginPath(); ctx.arc(_cx, _cy, ringR * 0.6, 0, Math.PI * 2); ctx.stroke();
+                ctx.lineWidth   = 4 * this._sRingT;
+                ctx.lineCap     = 'round';
+                ctx.beginPath(); ctx.arc(_cx + _xOff, _cy, ringR, arcA - span, arcA + span); ctx.stroke();
+                // тонша внутрішня дуга
+                ctx.strokeStyle = `rgba(200,255,100,${ringA * 0.55})`;
+                ctx.lineWidth   = 2 * this._sRingT;
+                ctx.beginPath(); ctx.arc(_cx + _xOff, _cy, ringR * 0.55, arcA - span * 0.7, arcA + span * 0.7); ctx.stroke();
+                ctx.lineCap = 'butt';
             }
 
             // ── Dust on landing ─────────────────────────────────────────
