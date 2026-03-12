@@ -587,97 +587,56 @@
         /* ── Душа Підземелля ── */
         #soul-dungeon-screen {
             position:fixed; top:0; left:0; width:100%; height:100%;
-            background:radial-gradient(ellipse at 50% -5%,#2a0068 0%,#110028 35%,#060016 65%,#020008 100%);
+            background:radial-gradient(ellipse at 50% 30%, #1a0040 0%, #080018 50%, #030008 100%);
             display:none; flex-direction:column; align-items:center;
             justify-content:flex-start; overflow-y:auto;
-            padding:22px 14px 36px; gap:14px; z-index:350; }
-        #soul-dungeon-screen h2 {
-            color:#ebbfff; font-size:22px; margin:0; text-align:center; letter-spacing:2px;
-            text-shadow:0 0 28px rgba(185,65,255,0.85),0 0 60px rgba(100,0,200,0.4);
-            font-variant:small-caps; }
-        #soul-dungeon-elite {
-            color:#fff; font-size:21px; font-weight:bold; letter-spacing:1px;
-            background:linear-gradient(135deg,rgba(140,20,200,0.75),rgba(80,10,140,0.85));
-            border:1.5px solid rgba(200,100,255,0.52); border-radius:50px; padding:7px 26px;
-            box-shadow:0 0 22px rgba(185,65,255,0.38),inset 0 1px 0 rgba(255,255,255,0.09); }
-        #soul-dungeon-hint {
-            color:rgba(170,130,205,0.72); font-size:11.5px; text-align:center;
-            max-width:278px; line-height:1.65; }
-        #soul-dungeon-cards {
-            display:grid; grid-template-columns:repeat(2,1fr);
-            gap:10px; width:100%; max-width:360px; }
+            padding:24px 16px 32px; gap:16px; z-index:350;
+        }
+        #soul-dungeon-screen h2 { color:#cc88ff; text-shadow:0 0 24px #8800ff;
+            text-align:center; margin:0; font-size:22px; }
+        #soul-dungeon-elite { color:#ff88ff; font-size:20px; font-weight:bold;
+            background:rgba(120,0,160,0.5); border:1px solid rgba(220,100,255,0.4);
+            border-radius:10px; padding:6px 20px; }
+        #soul-dungeon-hint { color:#886699; font-size:12px; text-align:center;
+            max-width:320px; line-height:1.5; }
+        #soul-dungeon-cards { display:flex; flex-wrap:wrap; gap:12px;
+            justify-content:center; width:100%; max-width:560px; }
         .perma-card {
-            background:linear-gradient(155deg,rgba(55,15,95,0.97),rgba(22,4,52,0.99));
-            border:1px solid rgba(140,60,220,0.4); border-radius:16px;
-            padding:16px 11px 13px; display:flex; flex-direction:column;
-            align-items:center; gap:8px; position:relative; overflow:hidden;
-            box-shadow:0 0 22px rgba(100,0,200,0.22),0 5px 22px rgba(0,0,0,0.52),
-                       inset 0 1px 0 rgba(255,255,255,0.04); }
-        .perma-card::before {
-            content:''; position:absolute; top:0; left:15%; right:15%; height:1px;
-            background:linear-gradient(90deg,transparent,rgba(210,130,255,0.42),transparent); }
-        /* Per-type top accent */
-        .perma-card[data-type="lordAtk"]    { border-top:2px solid rgba(220,80,80,0.65); }
-        .perma-card[data-type="lordVit"]    { border-top:2px solid rgba(210,100,255,0.65); }
-        .perma-card[data-type="mobAtk"]     { border-top:2px solid rgba(255,140,60,0.65); }
-        .perma-card[data-type="mobVit"]     { border-top:2px solid rgba(70,150,255,0.65); }
-        .perma-card[data-type="startSouls"] { border-top:2px solid rgba(80,230,180,0.65); }
-        .perma-card[data-type="soulStone"]  { border-top:2px solid rgba(255,215,60,0.72); }
-        .perma-card[data-type="floor"]      { border-top:2px solid rgba(90,200,100,0.65); }
-        .perma-card-icon {
-            font-size:28px; filter:drop-shadow(0 0 8px rgba(200,100,255,0.55)); }
-        .perma-card-name {
-            color:#e2caff; font-weight:700; font-size:11.5px;
-            text-align:center; letter-spacing:0.3px; line-height:1.3; }
-        .perma-card-lvl {
-            display:flex; align-items:center; gap:5px;
-            background:rgba(90,25,150,0.38); border:1px solid rgba(145,65,225,0.25);
-            border-radius:20px; padding:2px 10px;
-            color:rgba(195,155,240,0.82); font-size:10px; }
-        .perma-card-lvl b { color:#d8aaff; font-size:12px; }
-        .perma-card-sep {
-            width:75%; height:1px; margin:1px 0;
-            background:linear-gradient(90deg,transparent,rgba(120,50,200,0.38),transparent); }
-        .perma-card-desc {
-            color:rgba(158,118,198,0.88); font-size:9.5px; text-align:center;
-            line-height:1.55; min-height:26px;
-            display:flex; align-items:center; justify-content:center; }
+            background:rgba(40,10,70,0.9); border:1px solid #5a2880;
+            border-radius:14px; padding:14px 12px; width:140px; min-width:130px;
+            display:flex; flex-direction:column; align-items:center; gap:6px;
+            box-shadow:0 0 14px rgba(100,0,200,0.25); }
+        .perma-card-icon { font-size:26px; }
+        .perma-card-name { color:#ddbbff; font-weight:bold; font-size:12px; text-align:center; }
+        .perma-card-lvl { color:#9977bb; font-size:11px; }
+        .perma-card-desc { color:#776699; font-size:10px; text-align:center; line-height:1.4; }
         .perma-buy-btn {
-            margin-top:2px; width:100%;
-            background:linear-gradient(155deg,rgba(88,22,138,0.92),rgba(56,12,98,0.97));
-            border:1px solid rgba(130,58,200,0.48); border-radius:10px;
-            color:#e8ccff; font-weight:700; font-size:12px;
-            padding:9px 4px; cursor:pointer; letter-spacing:0.5px;
-            -webkit-appearance:none; touch-action:manipulation; transition:transform 0.12s; }
-        .perma-buy-btn:active { transform:scale(0.94); }
-        .perma-buy-btn.can-afford {
-            background:linear-gradient(155deg,rgba(135,42,215,0.96),rgba(92,20,162,0.99));
-            border-color:rgba(200,100,255,0.72); color:#fff;
-            box-shadow:0 0 16px rgba(185,65,255,0.48),0 2px 8px rgba(0,0,0,0.4); }
-        .perma-buy-btn.cannot-afford { opacity:0.35; cursor:default; }
-        .perma-buy-btn.maxed {
-            background:linear-gradient(155deg,rgba(18,68,22,0.88),rgba(12,48,16,0.92));
-            border-color:rgba(58,158,68,0.5); color:#66dd77; opacity:0.82;
-            cursor:default; box-shadow:0 0 10px rgba(50,200,70,0.15); }
-        .perma-card-floor-picker { grid-column:1/-1; }
-        .floor-picker-row { display:flex; align-items:center; gap:8px; width:100%; justify-content:center; }
-        .floor-picker-label {
-            color:#e2caff; font-weight:bold; font-size:13px;
-            min-width:100px; text-align:center; }
-        .floor-arrow {
-            background:linear-gradient(135deg,rgba(88,22,138,0.82),rgba(56,12,98,0.92));
-            border:1px solid rgba(138,68,210,0.5); border-radius:8px; color:#cc88ff;
-            font-size:15px; width:32px; height:32px; cursor:pointer;
-            display:flex; align-items:center; justify-content:center;
+            margin-top:4px; width:100%;
+            background:rgba(80,20,130,0.9); border:1px solid #8844cc;
+            border-radius:8px; color:#ffddff; font-weight:bold; font-size:12px;
+            padding:7px 4px; cursor:pointer;
             -webkit-appearance:none; touch-action:manipulation; }
-        .floor-arrow:active { transform:scale(0.88); background:rgba(128,48,198,0.95); }
+        .perma-buy-btn:active { transform:scale(0.95); }
+        .perma-buy-btn.can-afford { background:rgba(100,20,160,0.95);
+            border-color:#cc66ff; color:#fff;
+            box-shadow:0 0 10px rgba(180,60,255,0.4); }
+        .perma-buy-btn.cannot-afford { opacity:0.45; cursor:default; }
+        .perma-buy-btn.maxed { background:rgba(20,60,20,0.85); border-color:#336633;
+            color:#55cc55; opacity:0.75; cursor:default; }
+        .perma-card-floor-picker { width:180px; min-width:170px; }
+        .floor-picker-row { display:flex; align-items:center; gap:8px; width:100%; justify-content:center; }
+        .floor-picker-label { color:#ddbbff; font-weight:bold; font-size:13px;
+            min-width:90px; text-align:center; }
+        .floor-arrow { background:rgba(80,20,130,0.8); border:1px solid #7744bb;
+            border-radius:6px; color:#cc88ff; font-size:15px; width:28px; height:28px;
+            cursor:pointer; display:flex; align-items:center; justify-content:center;
+            -webkit-appearance:none; touch-action:manipulation; }
+        .floor-arrow:active { transform:scale(0.9); }
         #btn-close-soul-dungeon {
-            background:linear-gradient(135deg,rgba(35,10,65,0.95),rgba(22,4,50,0.98));
-            border:1.5px solid rgba(118,58,178,0.52); border-radius:14px;
-            color:#bb88ff; padding:13px 44px; font-size:15px; cursor:pointer;
-            letter-spacing:0.5px; -webkit-appearance:none; touch-action:manipulation;
-            box-shadow:0 0 16px rgba(100,0,200,0.22),inset 0 1px 0 rgba(255,255,255,0.05); }
-        #btn-close-soul-dungeon:active { transform:scale(0.97); opacity:0.9; }
+            background:rgba(40,10,70,0.95); border:2px solid #6633aa;
+            border-radius:12px; color:#bb88ff; padding:12px 36px;
+            font-size:15px; cursor:pointer;
+            -webkit-appearance:none; touch-action:manipulation; }
 
         /* ── Інструкція ── */
         #instructions-screen {
@@ -956,268 +915,123 @@ const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 
 // ═══════════════════════════════════════════════════════════
-//  drawSkeleton — Chibi Don't Starve style skeleton
+//  drawSkeleton — Don't Starve style animated skeleton
 //  drawSkeleton(ctx_, x, y, t, dir=1, sc=0.38)
 //  x,y = hip center; sc = scale factor
 // ═══════════════════════════════════════════════════════════
 const _SK = {
-  outline:'#0e0400', bone:'#ecddb0', boneHL:'#f8f2d8',
-  dim:'#a09870', dimHL:'#c0b888', joint:'#d4ca8c',
-  eye:'#040100', eyeGlow:'rgba(50,255,90,0.88)', eyeDot:'rgba(140,255,170,0.95)',
-  tooth:'#d8cc72', crack:'#180600',
+  outline:'#180600', bone:'#ddd3a2', boneHL:'#f4eccc',
+  dim:'#96906a', dimHL:'#b8b28a', joint:'#c6bc8c',
+  eye:'#0b0300', eyeGlow:'rgba(50,255,90,0.30)',
+  tooth:'#c2b46e', crack:'#180600',
 };
 function _skBone(x1,y1,x2,y2,r,dim=false){
   const fill=dim?_SK.dim:_SK.bone, hl=dim?_SK.dimHL:_SK.boneHL;
   const a=Math.atan2(y2-y1,x2-x1), px=-Math.sin(a), py=Math.cos(a);
   ctx.beginPath(); ctx.arc(x1,y1,r,a+Math.PI/2,a-Math.PI/2); ctx.arc(x2,y2,r,a-Math.PI/2,a+Math.PI/2); ctx.closePath();
   ctx.strokeStyle=_SK.outline; ctx.lineWidth=2.8; ctx.stroke(); ctx.fillStyle=fill; ctx.fill();
-  ctx.save(); ctx.globalAlpha=0.50;
-  ctx.beginPath(); ctx.arc(x1+px*r*0.40,y1+py*r*0.40,r*0.28,a+Math.PI/2,a-Math.PI/2);
-  ctx.arc(x2+px*r*0.40,y2+py*r*0.40,r*0.28,a-Math.PI/2,a+Math.PI/2); ctx.closePath();
+  const hr=r*0.28, ox=px*r*0.42-1, oy=py*r*0.42-1;
+  ctx.save(); ctx.globalAlpha=0.52;
+  ctx.beginPath(); ctx.arc(x1+ox,y1+oy,hr,a+Math.PI/2,a-Math.PI/2); ctx.arc(x2+ox,y2+oy,hr,a-Math.PI/2,a+Math.PI/2); ctx.closePath();
   ctx.fillStyle=hl; ctx.fill(); ctx.restore();
 }
 function _skJnt(x,y,r,dim=false){
   ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2);
   ctx.strokeStyle=_SK.outline; ctx.lineWidth=1.8; ctx.stroke(); ctx.fillStyle=dim?_SK.dim:_SK.joint; ctx.fill();
-  ctx.save(); ctx.globalAlpha=0.50;
-  ctx.beginPath(); ctx.arc(x-r*0.28,y-r*0.32,r*0.30,0,Math.PI*2);
+  ctx.save(); ctx.globalAlpha=0.5;
+  ctx.beginPath(); ctx.arc(x-r*0.3,y-r*0.35,r*0.32,0,Math.PI*2);
   ctx.fillStyle=dim?_SK.dimHL:_SK.boneHL; ctx.fill(); ctx.restore();
 }
 function _skSkull(x,y,tilt,jawOpen){
   ctx.save(); ctx.translate(x,y); ctx.rotate(tilt);
-  // Big round cranium (chibi — head ≈ half total height)
-  ctx.beginPath(); ctx.ellipse(0,-8,17,20,0,0,Math.PI*2);
-  ctx.strokeStyle=_SK.outline; ctx.lineWidth=3; ctx.stroke(); ctx.fillStyle=_SK.bone; ctx.fill();
-  // Gloss top-left
-  ctx.save(); ctx.globalAlpha=0.42;
-  ctx.beginPath(); ctx.ellipse(-6,-15,8,9,-0.3,0,Math.PI*2);
+  ctx.beginPath(); ctx.ellipse(0,-5,14,16,0,0,Math.PI*2);
+  ctx.strokeStyle=_SK.outline; ctx.lineWidth=2.8; ctx.stroke(); ctx.fillStyle=_SK.bone; ctx.fill();
+  ctx.save(); ctx.globalAlpha=0.38; ctx.beginPath(); ctx.ellipse(-4,-10,8,9,-0.3,0,Math.PI*2);
   ctx.fillStyle=_SK.boneHL; ctx.fill(); ctx.restore();
-  // Crack
-  ctx.save(); ctx.strokeStyle=_SK.crack; ctx.lineWidth=1.1; ctx.globalAlpha=0.68;
-  ctx.beginPath(); ctx.moveTo(5,-25); ctx.lineTo(4,-18); ctx.lineTo(6,-12); ctx.lineTo(4,-6); ctx.stroke(); ctx.restore();
-  // Large eye sockets with green glow
-  for(const sx of[-6.5,6.5]){
-    ctx.beginPath(); ctx.ellipse(sx,-9,6,5.5,sx<0?-0.12:0.12,0,Math.PI*2);
-    ctx.fillStyle=_SK.eye; ctx.fill();
-    ctx.save(); ctx.globalAlpha=0.65;
-    ctx.beginPath(); ctx.ellipse(sx,-9.5,3.6,3.2,sx<0?-0.12:0.12,0,Math.PI*2);
-    ctx.fillStyle=_SK.eyeGlow; ctx.fill(); ctx.restore();
-    ctx.save(); ctx.globalAlpha=0.92;
-    ctx.beginPath(); ctx.arc(sx-0.8,-10.2,1.3,0,Math.PI*2);
-    ctx.fillStyle=_SK.eyeDot; ctx.fill(); ctx.restore();
-  }
-  // Nose hole (triangle)
-  ctx.beginPath(); ctx.moveTo(0,0.5); ctx.lineTo(-3,4.5); ctx.lineTo(3,4.5);
-  ctx.closePath(); ctx.fillStyle=_SK.eye; ctx.fill();
-  // Jaw
-  const jy=jawOpen*3.5;
+  ctx.save(); ctx.globalAlpha=0.25; ctx.strokeStyle=_SK.outline; ctx.lineWidth=1.2;
+  ctx.beginPath(); ctx.ellipse(0,-5,12,14,0,Math.PI*1.15,Math.PI*1.6); ctx.stroke(); ctx.restore();
+  const jy=jawOpen*2.5;
   ctx.save(); ctx.translate(0,jy);
-  ctx.beginPath(); ctx.ellipse(0,10,12,7,0,0.08,Math.PI-0.08);
-  ctx.strokeStyle=_SK.outline; ctx.lineWidth=2.6; ctx.stroke(); ctx.fillStyle=_SK.bone; ctx.fill();
-  ctx.save(); ctx.globalAlpha=0.32; ctx.beginPath(); ctx.ellipse(-3.5,9,5.5,3.2,-0.15,0,Math.PI*2);
+  ctx.beginPath(); ctx.ellipse(0,8,10,6.5,0,0.08,Math.PI-0.08);
+  ctx.strokeStyle=_SK.outline; ctx.lineWidth=2.4; ctx.stroke(); ctx.fillStyle=_SK.bone; ctx.fill();
+  ctx.save(); ctx.globalAlpha=0.35; ctx.beginPath(); ctx.ellipse(-3,7,5,3,-0.2,0,Math.PI*2);
   ctx.fillStyle=_SK.boneHL; ctx.fill(); ctx.restore();
-  // Two chibi teeth
-  ctx.fillStyle=_SK.tooth;
-  for(const tx of[-4.5,4.5]){
-    ctx.beginPath(); ctxRoundRect(ctx,tx-2.8,6,5.6,6.5,1.2);
-    ctx.strokeStyle=_SK.outline; ctx.lineWidth=0.9; ctx.stroke(); ctx.fill();
+  for(let i=0;i<4;i++){
+    const tx=(i-1.5)*4.6;
+    ctxRoundRect(ctx, tx-1.8,4.5,3.4,5,0.8);
+    ctx.strokeStyle=_SK.outline; ctx.lineWidth=1; ctx.stroke(); ctx.fillStyle=_SK.tooth; ctx.fill();
   }
   ctx.restore();
+  for(const sx of[-5,5]){
+    ctx.beginPath(); ctx.ellipse(sx,-7,4.5,3.8,sx<0?-0.12:0.12,0,Math.PI*2); ctx.fillStyle=_SK.eye; ctx.fill();
+    ctx.save(); ctx.globalAlpha=0.55; ctx.beginPath(); ctx.ellipse(sx,-7.5,2.6,2.0,sx<0?-0.12:0.12,0,Math.PI*2);
+    ctx.fillStyle=_SK.eyeGlow; ctx.fill(); ctx.restore();
+    ctx.save(); ctx.globalAlpha=0.7; ctx.beginPath(); ctx.arc(sx,-7.5,0.9,0,Math.PI*2);
+    ctx.fillStyle='rgba(160,255,180,0.9)'; ctx.fill(); ctx.restore();
+  }
+  ctx.beginPath(); ctx.moveTo(0,-0.5); ctx.lineTo(-2.8,3.5); ctx.lineTo(2.8,3.5);
+  ctx.closePath(); ctx.fillStyle=_SK.eye; ctx.fill();
+  ctx.save(); ctx.strokeStyle=_SK.crack; ctx.lineWidth=1.1; ctx.globalAlpha=0.7;
+  ctx.beginPath(); ctx.moveTo(2,-18); ctx.lineTo(1,-13); ctx.lineTo(3,-9); ctx.lineTo(1,-5); ctx.stroke(); ctx.restore();
   ctx.restore();
 }
-function _skTorso(x,y){
-  // Shoulder crossbones
-  _skBone(x,y+4,x-15,y+4,2.4); _skBone(x,y+4,x+15,y+4,2.4);
-  // 3 wide chibi rib pairs
-  for(const[ry,ow,oh] of[[y+5,14,9],[y+11,13,8],[y+17,10,6]]){
+function _skRibcage(x,y){
+  _skBone(x,y,x,y+20,2.5); _skBone(x,y,x-12,y-8,2); _skBone(x,y,x+12,y-8,2);
+  for(const{ry,w,h} of [{ry:y+2,w:14,h:7},{ry:y+7,w:13,h:6},{ry:y+12,w:11,h:5},{ry:y+17,w:8,h:3}]){
     for(const s of[-1,1]){
       ctx.beginPath(); ctx.moveTo(x,ry);
-      ctx.bezierCurveTo(x+s*ow*0.38,ry-3,x+s*ow,ry+oh*0.45,x+s*ow,ry+oh);
-      ctx.lineWidth=3.8; ctx.strokeStyle=_SK.outline; ctx.lineCap='round'; ctx.stroke();
-      ctx.lineWidth=2.2; ctx.strokeStyle=_SK.bone; ctx.stroke();
+      ctx.bezierCurveTo(x+s*w*0.4,ry-2,x+s*w,ry+h*0.5,x+s*w,ry+h);
+      ctx.lineWidth=3; ctx.strokeStyle=_SK.outline; ctx.lineCap='round'; ctx.stroke();
+      ctx.lineWidth=1.5; ctx.strokeStyle=_SK.bone; ctx.stroke();
     }
   }
 }
 function _skLeg(hx,hy,thighA,kneeBend,dim){
-  const THIGH=23,SHIN=21;
+  const THIGH=26,SHIN=24;
   const kx=hx+Math.sin(thighA)*THIGH, ky=hy+Math.cos(thighA)*THIGH;
   const shinA=thighA-kneeBend, ax=kx+Math.sin(shinA)*SHIN, ay=ky+Math.cos(shinA)*SHIN;
-  _skBone(hx,hy,kx,ky,6.5,dim); _skJnt(kx,ky,4.8,dim);
-  _skBone(kx,ky,ax,ay,5,dim); _skJnt(ax,ay,3.8,dim);
-  const footA=shinA*0.38, fx=ax+Math.cos(footA)*12, fy=ay+Math.abs(Math.sin(footA))*2+3;
-  _skBone(ax,ay,fx,fy,3.8,dim);
+  _skBone(hx,hy,kx,ky,5,dim); _skJnt(kx,ky,4,dim); _skBone(kx,ky,ax,ay,4,dim); _skJnt(ax,ay,3.2,dim);
+  const footA=shinA*0.4, fx=ax+Math.cos(footA)*11, fy=ay+Math.abs(Math.sin(footA))*2+2;
+  _skBone(ax,ay,fx,fy,3,dim); _skBone(fx,fy,fx+4,fy+1,1.8,dim);
 }
 function _skArm(sx,sy,upperA,elbowBend,dim){
-  const UA=17,FA=14;
+  const UA=19,FA=16;
   const ex=sx+Math.sin(upperA)*UA, ey=sy+Math.cos(upperA)*UA;
   const elbA=upperA+elbowBend, wx=ex+Math.sin(elbA)*FA, wy=ey+Math.cos(elbA)*FA;
-  _skBone(sx,sy,ex,ey,4.2,dim); _skJnt(ex,ey,3.4,dim); _skBone(ex,ey,wx,wy,3.2,dim);
-  for(const[da,len] of[[-0.30,5],[0,6.5],[0.30,5]]){
-    const fa=elbA+da; _skBone(wx,wy,wx+Math.sin(fa)*len,wy+Math.cos(fa)*len,1.8,dim);
+  _skBone(sx,sy,ex,ey,3.5,dim); _skJnt(ex,ey,2.8,dim); _skBone(ex,ey,wx,wy,2.8,dim);
+  for(const[da,len] of[[-0.32,6],[0,7],[0.32,6]]){
+    const fa=elbA+da; _skBone(wx,wy,wx+Math.sin(fa)*len,wy+Math.cos(fa)*len,1.4,dim);
   }
 }
 function drawSkeleton(ctx_,x,y,t,dir=1,sc=0.38){
   const spd=2.2, wc=Math.sin(t*spd), wc_c=Math.cos(t*spd);
   const bob=(1-Math.abs(wc))*3.5, hipT=wc_c*0.035*dir;
-  const jawOpen=Math.abs(Math.sin(t*1.1))*0.30;
+  const jawOpen=Math.abs(Math.sin(t*1.1))*0.28;
   const legA_F=wc*0.52*dir, legA_B=-legA_F;
   const knee_F=0.08+Math.max(0,wc_c)*0.85, knee_B=0.08+Math.max(0,-wc_c)*0.85;
   const armA_F=-wc*0.40*dir, armA_B=-armA_F;
   const elbow_F=0.20+Math.max(0,-wc_c)*0.40, elbow_B=0.20+Math.max(0,wc_c)*0.40;
-  const HX=0,HY=0,SPINE_TOP=-36,SHL_Y=SPINE_TOP+6,SHL_X=15,NECK_Y=SPINE_TOP-7,HEAD_Y=NECK_Y-22;
+  const HX=0,HY=0,SPINE_TOP=-40,RIB_Y=SPINE_TOP-2,SHL_Y=SPINE_TOP+4,SHL_X=12,NECK_Y=SPINE_TOP-10,HEAD_Y=NECK_Y-18;
   ctx_.save(); ctx_.translate(x,y-bob*sc); ctx_.rotate(0.05*dir+hipT); ctx_.scale(sc,sc);
-  // Back leg + arm (dim)
   _skLeg(4,HY,legA_B,knee_B,true); _skArm(-SHL_X,SHL_Y,armA_B,elbow_B,true);
-  // Pelvis
-  _skBone(-11,HY-2,11,HY-2,6.5);
-  // Spine
-  const smid=SPINE_TOP*0.5; _skBone(HX,HY-3,HX+1,smid,3.5); _skBone(HX+1,smid,HX,SPINE_TOP,3.2);
-  // Torso
-  _skTorso(HX,SPINE_TOP);
-  // Front arm + leg
+  _skBone(-10,HY-2,10,HY-2,5.5);
+  const smid=SPINE_TOP*0.5; _skBone(HX,HY-3,HX+1,smid,3.2); _skBone(HX+1,smid,HX,SPINE_TOP,3.0);
+  _skRibcage(HX,RIB_Y);
   _skArm(SHL_X,SHL_Y,armA_F,elbow_F,false); _skLeg(-4,HY,legA_F,knee_F,false);
-  // Neck + skull
-  _skBone(HX,SPINE_TOP,HX,NECK_Y,3.2);
+  _skBone(HX,SPINE_TOP,HX,NECK_Y,2.8);
   _skSkull(HX,HEAD_Y,wc*0.06*dir,jawOpen);
   ctx_.restore();
 }
 
 // ═══════════════════════════════════════════════════════════
-//  drawHero — Chibi Don't Starve style warrior hero
-//  drawHero(ctx_, x, y, t, dir=1, rank, weapon, lv)
-//  x,y = hip center; dir = facing dir (1=right, -1=left)
-// ═══════════════════════════════════════════════════════════
-function drawHero(ctx_,x,y,t,dir=1,rank='normal',weapon='sword',lv=1){
-  const R={
-    normal:   {vest:'#3e2810',shirt:'#e0d4b0',hair:'#6b3e20',pants:'#5a6872',eyes:'#7b5030',boot:'#221408'},
-    elite_hp: {vest:'#1a4428',shirt:'#c8f0d8',hair:'#2a6a3a',pants:'#3a6858',eyes:'#44cc88',boot:'#112218'},
-    elite_atk:{vest:'#6a2800',shirt:'#f8d890',hair:'#8b4800',pants:'#7a4820',eyes:'#ffaa44',boot:'#331100'},
-    boss:     {vest:'#440055',shirt:'#d8a8f8',hair:'#550077',pants:'#4a2858',eyes:'#ee88ff',boot:'#220033'},
-  }[rank]||{vest:'#3e2810',shirt:'#e0d4b0',hair:'#6b3e20',pants:'#5a6872',eyes:'#7b5030',boot:'#221408'};
-  const OL='#1a0e00',sc=0.38,spd=2.2;
-  const wc=Math.sin(t*spd),wcc=Math.cos(t*spd);
-  const bob=(1-Math.abs(wc))*2;
-  const lF=wc*0.44,lB=-lF,kF=0.06+Math.max(0,wcc)*0.65,kB=0.06+Math.max(0,-wcc)*0.65;
-  const aF=-wc*0.30,aB=-aF,eF=0.10+Math.max(0,-wcc)*0.25,eB=0.10+Math.max(0,wcc)*0.25;
-  const THIGH=18,SHIN=15,UA=13,FA=11;
-  const HX=0,HY=0,SY=-28,HEAD_Y=-44;
-  function cap(x1,y1,x2,y2,r,f){
-    const a=Math.atan2(y2-y1,x2-x1);
-    ctx.beginPath();ctx.arc(x1,y1,r,a+Math.PI/2,a-Math.PI/2);ctx.arc(x2,y2,r,a-Math.PI/2,a+Math.PI/2);ctx.closePath();
-    ctx.strokeStyle=OL;ctx.lineWidth=2;ctx.stroke();ctx.fillStyle=f;ctx.fill();
-  }
-  function leg(hx,hy,thA,kBend,dim){
-    const kx=hx+Math.sin(thA)*THIGH,ky=hy+Math.cos(thA)*THIGH;
-    const sA=thA-kBend,ax=kx+Math.sin(sA)*SHIN,ay=ky+Math.cos(sA)*SHIN;
-    cap(hx,hy,kx,ky,5.5,dim?'#3a4852':R.pants);
-    cap(kx,ky,ax,ay,4.5,dim?'#2a3840':'#4a5862');
-    cap(ax,ay,ax+Math.cos(sA*0.3)*8,ay+2,3.5,dim?'#1a0e04':R.boot);
-  }
-  function arm(sx,sy,uA,eBend,dim){
-    const ex=sx+Math.sin(uA)*UA,ey=sy+Math.cos(uA)*UA;
-    const eA=uA+eBend,wx=ex+Math.sin(eA)*FA,wy=ey+Math.cos(eA)*FA;
-    const sc_=dim?'#a8a090':R.shirt;
-    cap(sx,sy,ex,ey,4,sc_);cap(ex,ey,wx,wy,3.5,sc_);
-    ctx.beginPath();ctx.arc(wx,wy,3,0,Math.PI*2);
-    ctx.strokeStyle=OL;ctx.lineWidth=1.5;ctx.stroke();ctx.fillStyle=dim?'#aa7050':'#d4956a';ctx.fill();
-    return[wx,wy,eA];
-  }
-  ctx_.save();ctx_.translate(x,y-bob*sc);ctx_.scale(dir*sc,sc);
-  leg(3,HY,lB,kB,true);arm(-10,SY,aB,eB,true);
-  // shirt
-  ctx.beginPath();ctx.moveTo(-11,HY);ctx.bezierCurveTo(-13,HY-10,-13,SY+4,-11,SY);ctx.lineTo(11,SY);ctx.bezierCurveTo(13,SY+4,13,HY-10,11,HY);ctx.closePath();
-  ctx.strokeStyle=OL;ctx.lineWidth=2;ctx.stroke();ctx.fillStyle=R.shirt;ctx.fill();
-  // vest left
-  ctx.beginPath();ctx.moveTo(-11,HY);ctx.bezierCurveTo(-13,HY-10,-13,SY+4,-11,SY);ctx.lineTo(-1,SY);ctx.lineTo(-1,HY);ctx.closePath();
-  ctx.strokeStyle=OL;ctx.lineWidth=1.5;ctx.stroke();ctx.fillStyle=R.vest;ctx.fill();
-  // vest right
-  ctx.beginPath();ctx.moveTo(11,HY);ctx.bezierCurveTo(13,HY-10,13,SY+4,11,SY);ctx.lineTo(1,SY);ctx.lineTo(1,HY);ctx.closePath();
-  ctx.strokeStyle=OL;ctx.lineWidth=1.5;ctx.stroke();ctx.fillStyle=R.vest;ctx.fill();
-  // vest highlight
-  ctx.save();ctx.globalAlpha=0.18;ctx.strokeStyle='#fff';ctx.lineWidth=1.5;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(-10,HY-2);ctx.lineTo(-10,SY+3);ctx.stroke();ctx.restore();
-  // belt
-  ctx.fillStyle='#2a1808';ctx.fillRect(-11,HY-4,22,5);ctx.strokeStyle=OL;ctx.lineWidth=1.5;ctx.strokeRect(-11,HY-4,22,5);
-  ctx.beginPath();ctx.ellipse(0,HY-1,4,3,0,0,Math.PI*2);ctx.strokeStyle=OL;ctx.lineWidth=1;ctx.stroke();ctx.fillStyle='#a07828';ctx.fill();
-  // front arm + leg
-  const[fwx,fwy,felbA]=arm(10,SY,aF,eF,false);
-  leg(-3,HY,lF,kF,false);
-  // weapon
-  ctx.save();ctx.translate(fwx,fwy);ctx.rotate(-0.1+felbA*0.2);
-  if(weapon==='sword'){
-    const wCol=lv>=8?'#aaeeff':'#c8d4d8';
-    ctx.strokeStyle='#5a3818';ctx.lineWidth=4;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(0,7);ctx.lineTo(0,-3);ctx.stroke();
-    ctx.strokeStyle='#8a5828';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(0,7);ctx.lineTo(0,-3);ctx.stroke();
-    ctx.strokeStyle=OL;ctx.lineWidth=3.5;ctx.lineCap='butt';ctx.beginPath();ctx.moveTo(-7,-3);ctx.lineTo(7,-3);ctx.stroke();
-    ctx.strokeStyle='#888';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(-7,-3);ctx.lineTo(7,-3);ctx.stroke();
-    ctx.strokeStyle=OL;ctx.lineWidth=4.5;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(0,-3);ctx.lineTo(0,-25);ctx.stroke();
-    ctx.strokeStyle=wCol;ctx.lineWidth=2.5;ctx.beginPath();ctx.moveTo(0,-3);ctx.lineTo(0,-25);ctx.stroke();
-    ctx.save();ctx.globalAlpha=0.5;ctx.strokeStyle='#e8f4f8';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(-1,-4);ctx.lineTo(-1,-24);ctx.stroke();ctx.restore();
-  }else if(weapon==='spear'){
-    ctx.strokeStyle=OL;ctx.lineWidth=5;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(0,-36);ctx.lineTo(0,10);ctx.stroke();
-    ctx.strokeStyle='#aa8855';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(0,-36);ctx.lineTo(0,10);ctx.stroke();
-    ctx.fillStyle='#cce0ff';ctx.beginPath();ctx.moveTo(-5,-22);ctx.lineTo(0,-38);ctx.lineTo(5,-22);ctx.closePath();ctx.strokeStyle=OL;ctx.lineWidth=1.5;ctx.stroke();ctx.fill();
-  }else if(weapon==='staff'){
-    ctx.strokeStyle=OL;ctx.lineWidth=5;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(0,-32);ctx.lineTo(0,10);ctx.stroke();
-    ctx.strokeStyle='#8855aa';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(0,-32);ctx.lineTo(0,10);ctx.stroke();
-    const gp=0.5+0.5*Math.sin(Date.now()/300);
-    ctx.fillStyle=`rgba(200,100,255,${0.7+gp*0.3})`;ctx.beginPath();ctx.arc(0,-34,8,0,Math.PI*2);ctx.fill();
-    ctx.strokeStyle=OL;ctx.lineWidth=1.5;ctx.stroke();ctx.fillStyle='rgba(255,220,255,0.9)';ctx.beginPath();ctx.arc(-2,-36,3,0,Math.PI*2);ctx.fill();
-  }else if(weapon==='axe'){
-    ctx.strokeStyle=OL;ctx.lineWidth=5;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(0,-26);ctx.lineTo(0,10);ctx.stroke();
-    ctx.strokeStyle='#884422';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(0,-26);ctx.lineTo(0,10);ctx.stroke();
-    ctx.fillStyle='#cc4422';ctx.beginPath();ctx.moveTo(-4,-12);ctx.lineTo(-14,-24);ctx.lineTo(-10,-4);ctx.closePath();ctx.strokeStyle=OL;ctx.lineWidth=1.8;ctx.stroke();ctx.fill();
-  }else if(weapon==='dagger'){
-    ctx.strokeStyle=OL;ctx.lineWidth=4;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(0,-19);ctx.lineTo(0,6);ctx.stroke();
-    ctx.strokeStyle='#55ccaa';ctx.lineWidth=2.5;ctx.beginPath();ctx.moveTo(0,-19);ctx.lineTo(0,6);ctx.stroke();
-    ctx.strokeStyle='#aaaacc';ctx.lineWidth=4;ctx.lineCap='butt';ctx.beginPath();ctx.moveTo(-6,-7);ctx.lineTo(6,-3);ctx.stroke();
-    ctx.strokeStyle=OL;ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(-6,-7);ctx.lineTo(6,-3);ctx.stroke();
-  }
-  ctx.restore();
-  // neck
-  ctx.fillStyle='#d4956a';ctx.fillRect(-4,HEAD_Y+10,8,SY-(HEAD_Y+10));ctx.strokeStyle=OL;ctx.lineWidth=1.5;ctx.strokeRect(-4,HEAD_Y+10,8,SY-(HEAD_Y+10));
-  // head
-  ctx.beginPath();ctx.ellipse(HX,HEAD_Y,11,13,0,0,Math.PI*2);ctx.strokeStyle=OL;ctx.lineWidth=2.2;ctx.stroke();ctx.fillStyle='#d4956a';ctx.fill();
-  ctx.save();ctx.globalAlpha=0.15;ctx.beginPath();ctx.ellipse(HX+5,HEAD_Y+2,6,10,0.2,0,Math.PI*2);ctx.fillStyle='#aa6a3e';ctx.fill();ctx.restore();
-  // hair top
-  ctx.beginPath();ctx.moveTo(HX-10,HEAD_Y-1);ctx.bezierCurveTo(HX-12,HEAD_Y-18,HX+11,HEAD_Y-18,HX+10,HEAD_Y-1);ctx.bezierCurveTo(HX+8,HEAD_Y-8,HX-8,HEAD_Y-8,HX-10,HEAD_Y-1);ctx.closePath();
-  ctx.strokeStyle=OL;ctx.lineWidth=2;ctx.stroke();ctx.fillStyle=R.hair;ctx.fill();
-  ctx.save();ctx.globalAlpha=0.28;ctx.beginPath();ctx.ellipse(HX-3,HEAD_Y-12,4,3.5,-0.3,0,Math.PI*2);ctx.fillStyle='#c8904c';ctx.fill();ctx.restore();
-  // side hair
-  ctx.beginPath();ctx.moveTo(HX-10,HEAD_Y-1);ctx.bezierCurveTo(HX-14,HEAD_Y+5,HX-12,HEAD_Y+10,HX-9,HEAD_Y+10);ctx.bezierCurveTo(HX-8,HEAD_Y+4,HX-9,HEAD_Y+2,HX-8,HEAD_Y);ctx.closePath();
-  ctx.strokeStyle=OL;ctx.lineWidth=1.5;ctx.stroke();ctx.fillStyle=R.hair;ctx.fill();
-  // eyes
-  function eyeAt(ex,ey){
-    ctx.beginPath();ctx.ellipse(ex,ey,2.8,3.5,0,0,Math.PI*2);ctx.strokeStyle=OL;ctx.lineWidth=1.2;ctx.stroke();ctx.fillStyle='#f0e8d8';ctx.fill();
-    ctx.beginPath();ctx.ellipse(ex+0.3,ey+0.3,1.8,2.5,0,0,Math.PI*2);ctx.fillStyle=R.eyes;ctx.fill();
-    ctx.beginPath();ctx.ellipse(ex+0.3,ey+0.3,1,1.4,0,0,Math.PI*2);ctx.fillStyle='#1a0800';ctx.fill();
-    ctx.beginPath();ctx.arc(ex-0.6,ey-1,0.7,0,Math.PI*2);ctx.fillStyle='#fff';ctx.fill();
-  }
-  eyeAt(HX-5,HEAD_Y-1);eyeAt(HX+5,HEAD_Y-1);
-  // eyebrows
-  ctx.save();ctx.lineCap='round';ctx.lineWidth=1.8;ctx.strokeStyle=R.hair;
-  ctx.beginPath();ctx.moveTo(HX-8,HEAD_Y-8);ctx.lineTo(HX-2.5,HEAD_Y-7);ctx.stroke();
-  ctx.beginPath();ctx.moveTo(HX+2.5,HEAD_Y-7);ctx.lineTo(HX+8,HEAD_Y-8);ctx.stroke();
-  ctx.restore();
-  ctx.beginPath();ctx.arc(HX+1.5,HEAD_Y+4,1.2,0,Math.PI);ctx.strokeStyle='#aa6a3e';ctx.lineWidth=1.5;ctx.stroke();
-  ctx.beginPath();ctx.moveTo(HX-4,HEAD_Y+7);ctx.bezierCurveTo(HX-1,HEAD_Y+9,HX+3,HEAD_Y+9,HX+5,HEAD_Y+7);ctx.strokeStyle='#8b4020';ctx.lineWidth=1.5;ctx.lineCap='round';ctx.stroke();
-  if(rank==='boss'){ctx.save();ctx.globalAlpha=0.25+0.12*Math.sin(t*3);ctx.shadowBlur=10;ctx.shadowColor='#cc00ff';ctx.strokeStyle='#cc00ff';ctx.lineWidth=2;ctx.beginPath();ctx.arc(HX,HEAD_Y,14,0,Math.PI*2);ctx.stroke();ctx.restore();}
-  ctx_.restore();
-}
-
-// ═══════════════════════════════════════════════════════════
-//  drawSlug — Anime slime (Rimuru Tempest style)
+//  drawSlug — Don't Starve style animated slug
 //  drawSlug(ctx_, x, y, t, dir=1, atk={phase,t}, sc=1.0)
 //  x,y = ground position (bottom-center)
 // ═══════════════════════════════════════════════════════════
 const _SL = {
-  outline:'#091a00',
-  body:'#5abf30', bodyHL:'#b8ff70', bodyDark:'#287a05',
-  belly:'#88df44',
-  slime:'#3aaa10', slimeDark:'#1a6600',
-  eye:'#060200', eyeHL:'rgba(255,255,180,0.95)',
-  eyeBase:'#ffffff', eyeIris:'#3a6fcc',
-  blush:'rgba(200,55,55,0.45)', mouth:'#050d00',
-  tooth:'#f5f0d0', acid:'#8ce830',
+  outline:'#180600', body:'#8a8456', bodyHL:'#b0aa76', mantle:'#5e5230',
+  belly:'#c0b882', slime:'#7ab822', slimeDark:'#4a8800',
+  eye:'#0e0400', eyeHL:'rgba(255,255,220,0.85)', stalk:'#6e6840', mouthIn:'#0a0200',
 };
 const _slEase = p => p*p*(3-2*p);
 function _slLine(color,w){ ctx.strokeStyle=color; ctx.lineWidth=w; ctx.lineCap='round'; ctx.lineJoin='round'; }
@@ -1233,11 +1047,11 @@ function _slGloss(pathFn,alpha=0.38){
 function _slTrail(x,y,len){
   ctx.save(); ctx.translate(x,y);
   const grad=ctx.createLinearGradient(-len,0,0,0);
-  grad.addColorStop(0,'rgba(58,170,16,0)'); grad.addColorStop(0.4,'rgba(58,170,16,0.14)'); grad.addColorStop(1,'rgba(58,170,16,0.38)');
-  ctx.beginPath(); ctx.moveTo(0,4); ctx.quadraticCurveTo(-len*0.5,7,-len,4); ctx.quadraticCurveTo(-len*0.5,1,0,4);
+  grad.addColorStop(0,'rgba(120,190,30,0)'); grad.addColorStop(0.4,'rgba(120,190,30,0.15)'); grad.addColorStop(1,'rgba(120,190,30,0.4)');
+  ctx.beginPath(); ctx.moveTo(0,5); ctx.quadraticCurveTo(-len*0.5,8,-len,5); ctx.quadraticCurveTo(-len*0.5,2,0,5);
   ctx.fillStyle=grad; ctx.fill();
-  ctx.beginPath(); ctx.moveTo(-4,4); ctx.quadraticCurveTo(-len*0.5,4.5,-len+4,4);
-  _slLine('rgba(140,230,48,0.45)',1.5); ctx.stroke(); ctx.restore();
+  ctx.beginPath(); ctx.moveTo(-4,5); ctx.quadraticCurveTo(-len*0.5,5.5,-len+4,5);
+  _slLine('rgba(180,240,60,0.45)',1.5); ctx.stroke(); ctx.restore();
 }
 function _slEyestalk(bx,by,angle,len,eyeR){
   const tx=bx+Math.sin(angle)*len, ty=by-Math.cos(angle)*len;
@@ -1249,114 +1063,74 @@ function _slEyestalk(bx,by,angle,len,eyeR){
   ctx.save(); ctx.globalAlpha=0.85; ctx.beginPath(); ctx.arc(tx-eyeR*0.28,ty-eyeR*0.3,eyeR*0.28,0,Math.PI*2);
   ctx.fillStyle=_SL.eyeHL; ctx.fill(); ctx.restore();
 }
-function drawSlug(ctx_,x,y,t,dir=1,atk={phase:0,t:0},sc=1.0,mode='idle'){
+function drawSlug(ctx_,x,y,t,dir=1,atk={phase:0,t:0},sc=1.0){
+  const spd=1.1, crawlDamp=atk.phase>0?0.15:1;
+  const wc=Math.sin(t*spd)*crawlDamp, wc2=Math.sin(t*spd*2)*crawlDamp;
+  let atkLen=0,headFwd=0,headUp=0,mouthOpen=0,stalkRet=0,flash=0;
   const p=atk.t;
-  const ease=_slEase;
-  const bob=Math.sin(t*2.2)*0.04;
-  const jig=Math.sin(t*3.7)*0.018; // extra jiggle on blob surface
-  let sqX=1, sqY=1, offX=0, offY=0, mouthOpen=0, eyeStr=1, flash=0, blush=0, wobble=0;
-  let lean=0, angryBrows=false;
-  if(atk.phase===0){
-    if(mode==='walk'){
-      const ph=t*3.6, hop=Math.max(0,Math.sin(ph)), sqsh=Math.max(0,-Math.sin(ph)*0.55);
-      sqX=1+sqsh*0.36-hop*0.08+bob*0.10; sqY=1-sqsh*0.22+hop*0.20; offY=(-hop*8-bob)*sc;
-    } else if(mode==='run'){
-      const ph=t*6.4, hop=Math.max(0,Math.sin(ph)), sqsh=Math.max(0,-Math.sin(ph)*0.60);
-      sqX=1+sqsh*0.52-hop*0.16; sqY=1-sqsh*0.36+hop*0.28; offY=-hop*14*sc;
-      lean=0.18; angryBrows=true;
-    } else {
-      sqX=1+bob*0.45+jig*0.15; sqY=1-bob*0.3; offY=-bob;
-    }
-  } else if(atk.phase===1){
-    const e=ease(p);
-    sqX=1+e*0.44; sqY=1-e*0.40; offY=e*2; eyeStr=1-e*0.5;
-  } else if(atk.phase===2){
-    const e=ease(p); const ext=1-e;
-    sqX=1+ext*0.68; sqY=1-ext*0.35; offX=ext*11*sc; mouthOpen=ext*0.95; eyeStr=1+ext*0.4; flash=Math.max(0,1-p*3);
-  } else if(atk.phase===3){
-    const e=ease(p);
-    sqX=1+(1-e)*0.18; sqY=1+(1-e)*0.14; blush=(1-e)*0.95;
-    wobble=Math.sin(p*Math.PI*3)*(1-p)*0.14;
-  }
-  sqX+=wobble; sqY-=wobble*0.6;
-
-  const rX=24*sc*sqX, rY=21*sc*sqY;
-  const cx=offX, cy=-rY-offY*sc;
-
-
+  if(atk.phase===1){const e=_slEase(p);atkLen=-e*0.28;headUp=-e*9;headFwd=-e*4;mouthOpen=e*0.25;stalkRet=e*0.6;}
+  else if(atk.phase===2){const e=_slEase(p);atkLen=0.45*(1-e);headFwd=22*(1-e);headUp=-9+18*_slEase(Math.min(p*2,1));mouthOpen=1.0-e*0.4;stalkRet=1.0;flash=Math.max(0,1-p*3);}
+  else if(atk.phase===3){const e=_slEase(p);stalkRet=1-e;mouthOpen=(1-e)*0.3;}
+  const bL=(48+wc*7)*(1+atkLen)*sc, bH=(16-wc*2)*sc, bWave=wc*2.5*sc;
+  const hfx=headFwd*sc, hfy=headUp*sc;
   ctx_.save(); ctx_.translate(x,y); ctx_.scale(dir,1);
-  if(lean) ctx_.rotate(lean);
-
-  // Drop shadow
-  ctx_.save(); ctx_.globalAlpha=0.15;
-  ctx_.beginPath(); ctx_.ellipse(cx*0.4,-1,rX*0.75,4*sc,0,0,Math.PI*2);
-  ctx_.fillStyle=_SL.bodyDark; ctx_.fill(); ctx_.restore();
-
-  // ── Smooth blob body ──
-  _slShape(()=>{ ctx.ellipse(cx,cy,rX,rY,0,0,Math.PI*2); },_SL.body,2.6);
-
-  // Flash on strike (acid yellow-green)
+  _slTrail(0,0,bL+30*sc);
+  _slShape(()=>{
+    ctx.moveTo(-bL*0.85,bH*0.35); ctx.bezierCurveTo(-bL*0.3,bH*0.65,bL*0.3,bH*0.65,bL*0.75,bH*0.25+bWave*0.3);
+    ctx.bezierCurveTo(bL*0.5,bH*0.5,-bL*0.3,bH*0.55,-bL*0.85,bH*0.35); ctx.closePath();
+  },_SL.belly,0);
+  _slShape(()=>{
+    ctx.moveTo(bL*0.82+hfx,bH*0.1+bWave*0.05+hfy);
+    ctx.bezierCurveTo(bL*0.88+hfx,-bH*0.6+hfy,bL*0.3+hfx*0.5,-bH+hfy*0.5,0,-bH*1.05);
+    ctx.bezierCurveTo(-bL*0.35,-bH,-bL*0.8,-bH*0.4+bWave,-bL*0.9,bWave*0.6);
+    ctx.bezierCurveTo(-bL*0.95,bH*0.1+bWave*0.5,-bL*0.88,bH*0.3,-bL*0.7,bH*0.38);
+    ctx.bezierCurveTo(-bL*0.3,bH*0.5,bL*0.3,bH*0.45,bL*0.82+hfx,bH*0.1+bWave*0.05+hfy); ctx.closePath();
+  },_SL.body);
+  _slGloss(()=>{ctx.ellipse(bL*0.1,-bH*0.6,bL*0.28,bH*0.28,-0.2,0,Math.PI*2);},0.32);
   if(flash>0.02){
-    ctx_.save(); ctx_.globalAlpha=flash*0.55;
-    ctx_.beginPath(); ctx_.ellipse(cx,cy,rX,rY,0,0,Math.PI*2);
-    ctx_.fillStyle='#ccff44'; ctx_.fill(); ctx_.restore();
+    ctx.save(); ctx.globalAlpha=flash*0.45;
+    ctx.beginPath();
+    ctx.moveTo(bL*0.82+hfx,bH*0.1+hfy); ctx.bezierCurveTo(bL*0.88+hfx,-bH*0.6+hfy,bL*0.3+hfx*0.5,-bH+hfy*0.5,0,-bH*1.05);
+    ctx.bezierCurveTo(-bL*0.35,-bH,-bL*0.8,-bH*0.4+bWave,-bL*0.9,bWave*0.6);
+    ctx.bezierCurveTo(-bL*0.95,bH*0.1,-bL*0.88,bH*0.3,-bL*0.7,bH*0.38);
+    ctx.bezierCurveTo(-bL*0.3,bH*0.5,bL*0.3,bH*0.45,bL*0.82+hfx,bH*0.1+hfy); ctx.closePath();
+    ctx.fillStyle='#e0dc90'; ctx.fill(); ctx.restore();
   }
-
-  // Belly highlight
-  ctx_.save(); ctx_.globalAlpha=0.28;
-  ctx_.beginPath(); ctx_.ellipse(cx,cy+rY*0.25,rX*0.70,rY*0.44,0,0,Math.PI*2);
-  ctx_.fillStyle=_SL.belly; ctx_.fill(); ctx_.restore();
-
-  // Gloss
-  _slGloss(()=>{ ctx.ellipse(cx-rX*0.18,cy-rY*0.33,rX*0.38,rY*0.30,-0.3,0,Math.PI*2); },0.52);
-  _slGloss(()=>{ ctx.ellipse(cx+rX*0.26,cy-rY*0.52,rX*0.11,rY*0.11,0,0,Math.PI*2); },0.38);
-
-  // ── Simple dot eyes ──
-  const eyeSep=rX*0.28;
-  const eyeY=cy-rY*0.10;
-  const eyeR=rX*0.10;
-  const eyes=[{x:cx-eyeSep},{x:cx+eyeSep}];
-  // Angry brows (run mode): inward-slanted lines above eyes
-  if(angryBrows){
-    ctx_.save(); ctx_.strokeStyle=_SL.outline; ctx_.lineWidth=1.6; ctx_.lineCap='round';
-    for(let s=-1;s<=1;s+=2){
-      const ex=cx+s*eyeSep;
-      ctx_.beginPath();
-      ctx_.moveTo(ex-eyeR*1.0, eyeY-eyeR*1.5-eyeR*s*0.5);
-      ctx_.lineTo(ex+eyeR*1.0, eyeY-eyeR*1.5+eyeR*s*0.5);
-      ctx_.stroke();
+  _slShape(()=>{
+    ctx.moveTo(bL*0.55,-bH*0.3); ctx.bezierCurveTo(bL*0.6,-bH*0.85,bL*0.05,-bH*1.05,-bL*0.1,-bH*0.95);
+    ctx.bezierCurveTo(-bL*0.35,-bH*0.75,-bL*0.2,-bH*0.35,bL*0.1,-bH*0.28);
+    ctx.bezierCurveTo(bL*0.3,-bH*0.2,bL*0.5,-bH*0.22,bL*0.55,-bH*0.3); ctx.closePath();
+  },_SL.mantle,2.2);
+  _slGloss(()=>{ctx.ellipse(bL*0.22,-bH*0.72,bL*0.14,bH*0.18,-0.3,0,Math.PI*2);},0.28);
+  for(let i=0;i<4;i++){
+    const px=bL*0.55-i*bL*0.32, rp=Math.sin(t*spd*2+i*1.1)*1.5*crawlDamp;
+    ctx.save(); ctx.globalAlpha=0.22;
+    ctx.beginPath(); ctx.moveTo(px,bH*0.28+rp); ctx.quadraticCurveTo(px-bL*0.08,bH*0.45+rp,px-bL*0.16,bH*0.28+rp);
+    _slLine(_SL.outline,1.2); ctx.stroke(); ctx.restore();
+  }
+  const sbx=bL*0.6+hfx, sby=-bH*0.55+hfy;
+  const stalkLen=1-stalkRet*0.82, sway=Math.sin(t*0.9)*0.14*(1-stalkRet), sway2=Math.sin(t*0.9+0.8)*0.14*(1-stalkRet);
+  _slEyestalk(sbx-5*sc,sby,sway,18*stalkLen*sc,5.5*(0.4+0.6*stalkLen)*sc);
+  _slEyestalk(sbx+5*sc,sby,sway2,20*stalkLen*sc,5.5*(0.4+0.6*stalkLen)*sc);
+  const mx=bL*0.79+hfx, my=-bH*0.08+hfy;
+  if(mouthOpen>0.08){
+    const mw=7*mouthOpen*sc, mh=10*mouthOpen*sc;
+    ctx.beginPath(); ctx.ellipse(mx,my,mw,mh,0.15,0,Math.PI*2);
+    ctx.strokeStyle=_SL.outline; ctx.lineWidth=2.2; ctx.stroke(); ctx.fillStyle=_SL.mouthIn; ctx.fill();
+    if(mouthOpen>0.4){
+      const dripLen=mh+4*(mouthOpen-0.4)*sc;
+      ctx.beginPath(); ctx.moveTo(mx-1,my+mh-1); ctx.quadraticCurveTo(mx,my+mh+dripLen*0.6,mx+1,my+mh+dripLen);
+      ctx.lineWidth=2.5; ctx.strokeStyle=_SL.slime; ctx.stroke();
+      ctx.beginPath(); ctx.arc(mx+1,my+mh+dripLen,2*mouthOpen,0,Math.PI*2); ctx.fillStyle=_SL.slime; ctx.fill();
     }
-    ctx_.restore();
+    ctx.save(); ctx.globalAlpha=0.5;
+    ctx.beginPath(); ctx.ellipse(mx-mw*0.2,my-mh*0.15,mw*0.5,mh*0.35,0.15,0,Math.PI*2);
+    ctx.fillStyle=_SL.slime; ctx.fill(); ctx.restore();
+  } else {
+    ctx.save(); ctx.globalAlpha=0.6;
+    ctx.beginPath(); ctx.moveTo(mx-3*sc,my+2*sc); ctx.quadraticCurveTo(mx+3*sc,my-4*sc,mx-2*sc,my-8*sc);
+    _slLine(_SL.outline,1.4); ctx.stroke(); ctx.restore();
   }
-  for(const e of eyes){
-    ctx_.beginPath(); ctx_.arc(e.x,eyeY,eyeR*eyeStr,0,Math.PI*2);
-    ctx_.fillStyle=_SL.eye; ctx_.fill();
-    // small white shine
-    ctx_.save(); ctx_.globalAlpha=0.90;
-    ctx_.beginPath(); ctx_.arc(e.x-eyeR*0.30,eyeY-eyeR*0.30,eyeR*0.28,0,Math.PI*2);
-    ctx_.fillStyle=_SL.eyeHL; ctx_.fill(); ctx_.restore();
-  }
-
-  // ── Blush (post-attack) ──
-  if(blush>0.05){
-    ctx_.save(); ctx_.globalAlpha=blush*0.5;
-    for(let s=-1;s<=1;s+=2){
-      ctx_.beginPath(); ctx_.ellipse(cx+s*eyeSep*1.65,eyeY+eyeR*0.95,eyeR*0.60,eyeR*0.22,0,0,Math.PI*2);
-      ctx_.fillStyle=_SL.blush; ctx_.fill();
-    }
-    ctx_.restore();
-  }
-
-  // ── Mouth (barely visible) ──
-  const mouthX=cx, mouthY=eyeY+eyeR+rY*0.18;
-  ctx_.save(); ctx_.globalAlpha=0.28+mouthOpen*0.45;
-  const mw=rX*(0.14+mouthOpen*0.18);
-  ctx_.beginPath();
-  ctx_.moveTo(mouthX-mw,mouthY);
-  ctx_.quadraticCurveTo(mouthX,mouthY+rY*(0.04+mouthOpen*0.12),mouthX+mw,mouthY);
-  _slLine(_SL.mouth,1.2*sc); ctx_.stroke();
-  ctx_.restore();
-
   ctx_.restore();
 }
 
@@ -1422,14 +1196,11 @@ let GAME = {
 let _permaData = { lordAtkLvl:0, lordAtkCost:80,  lordVitLvl:0, lordVitCost:70,
                    mobAtkLvl:0,  mobAtkCost:75,   mobVitLvl:0,  mobVitCost:60,
                    floorLvls: Array(20).fill(0), floorCosts: [60,65,70,75,80,85,90,95,100,105,110,115,120,125,130,135,140,145,150,155],
-                   startSoulsLvl:0, startSoulsCost:100,
-                   soulStoneLvl:0, soulStoneCost:120 };
+                   startSoulsLvl:0, startSoulsCost:100 };
 
 let floors = [];
 let units = [];
 let particles = [];
-let slimeTrails = []; // trail blobs behind moving slimes
-let slimeStains = []; // ground stains on slime death
 let dmgTexts = [];        // плаваючі числа пошкоджень
 let screenShake = 0;      // кадри тремтіння екрану
 let axeProjectiles = []; // снаряди гоблінів
@@ -1454,8 +1225,7 @@ class Floor {
         this.teleportCooldown = 0;
         this.isBatFloor  = (depth + 1 === 6); // глибина 5 → рівень 6 → кажан
         let _pfl = (_permaData && Array.isArray(_permaData.floorLvls))
-            ? (_permaData.floorLvls[depth] || 0)
-            : 0;
+            ? (_permaData.floorLvls[depth] || 0) : 0;
         this.maxMonsters = (this.isBatFloor ? 4 : 2) + _pfl * (this.isBatFloor ? 2 : 1);
         // Базова ціна залежить від глибини; якщо є perma апгрейди — ціна як після _pfl покупок
         let _fBase = Math.round(60 * Math.pow(1.1, depth) / 5) * 5;
@@ -1474,51 +1244,13 @@ class Floor {
         let lordFloorIdx = floors.length - 1;
         let isLordFloor  = this.depth === lordFloorIdx;
 
-        // ── 1. Заповнення кімнати — кам'яна кладка ──────────────────────
+        // ── 1. Заповнення кімнати (кам'яна порода) ──────────────────────
         let roomGrad = ctx.createLinearGradient(fx, fty, fx, fy);
         roomGrad.addColorStop(0,   '#1a1218');
         roomGrad.addColorStop(0.5, '#231828');
         roomGrad.addColorStop(1,   '#1a1218');
         ctx.fillStyle = roomGrad;
         ctx.fillRect(fx, fty, fw, fh);
-
-        // Текстура кам'яної кладки на задній стіні
-        {
-            const BW = 44, BH = 18; // розмір блоку
-            let bseed = this.depth * 317 + 91;
-            let bpseudo = () => { bseed = (bseed * 1664525 + 1013904223) & 0xffffffff; return (bseed >>> 0) / 0xffffffff; };
-            ctx.save();
-            ctx.beginPath(); ctx.rect(fx, fty, fw, fh); ctx.clip();
-            for (let row = 0; row * BH < fh + BH; row++) {
-                let offsetX = (row % 2 === 0) ? 0 : BW / 2;
-                for (let col = -1; col * BW < fw + BW; col++) {
-                    let bx = fx + col * BW + offsetX;
-                    let by = fty + row * BH;
-                    let lightVar = bpseudo() * 0.06;
-                    ctx.fillStyle = `rgba(${40 + lightVar*80|0},${28 + lightVar*50|0},${50 + lightVar*60|0},0.55)`;
-                    ctx.fillRect(bx + 1, by + 1, BW - 2, BH - 2);
-                    // тінь-грань знизу і праворуч
-                    ctx.fillStyle = 'rgba(0,0,0,0.18)';
-                    ctx.fillRect(bx + 1, by + BH - 3, BW - 2, 2);
-                    ctx.fillRect(bx + BW - 3, by + 1, 2, BH - 2);
-                    // відблиск зверху
-                    ctx.fillStyle = 'rgba(160,120,220,0.07)';
-                    ctx.fillRect(bx + 1, by + 1, BW - 2, 2);
-                    // випадкова тріщина
-                    if (bpseudo() < 0.15) {
-                        ctx.strokeStyle = 'rgba(0,0,0,0.3)';
-                        ctx.lineWidth = 0.7;
-                        let cx1 = bx + 6 + bpseudo() * (BW - 12);
-                        let cy1 = by + 4;
-                        ctx.beginPath();
-                        ctx.moveTo(cx1, cy1);
-                        ctx.lineTo(cx1 + (bpseudo()-0.5)*10, cy1 + BH - 8);
-                        ctx.stroke();
-                    }
-                }
-            }
-            ctx.restore();
-        }
 
         // ── 2. Кам'яні стіни (ліва і права) ────────────────────────────
         let wallW = 22;
@@ -1547,32 +1279,19 @@ class Floor {
         }
 
         // ── 3. Підлога — кам'яні плити ──────────────────────────────────
-        {
-            const PW = 52, PH = 14;
-            let pseed = this.depth * 211 + 33;
-            let ppseudo = () => { pseed = (pseed * 1664525 + 1013904223) & 0xffffffff; return (pseed >>> 0) / 0xffffffff; };
-            ctx.save();
-            ctx.beginPath(); ctx.rect(fx, fy, fw, PH); ctx.clip();
-            for (let col = -1; col * PW < fw + PW; col++) {
-                let px = fx + col * PW;
-                let lightV = ppseudo() * 0.08;
-                ctx.fillStyle = `rgba(${70+lightV*60|0},${44+lightV*40|0},${90+lightV*60|0},1)`;
-                ctx.fillRect(px + 1, fy + 1, PW - 2, PH - 2);
-                // тінь знизу плити
-                ctx.fillStyle = 'rgba(0,0,0,0.3)';
-                ctx.fillRect(px + 1, fy + PH - 3, PW - 2, 2);
-                // відблиск зверху
-                ctx.fillStyle = 'rgba(200,160,255,0.1)';
-                ctx.fillRect(px + 1, fy + 1, PW - 2, 3);
-                // щілина між плитами
-                ctx.fillStyle = 'rgba(0,0,0,0.6)';
-                ctx.fillRect(px, fy, 1, PH);
-            }
-            ctx.restore();
-            // Відблиск зверху підлоги
-            ctx.fillStyle = 'rgba(180,140,255,0.06)';
-            ctx.fillRect(fx, fy, fw, 3);
+        let floorGrad = ctx.createLinearGradient(0, fy, 0, fy + 14);
+        floorGrad.addColorStop(0, '#4a3060'); floorGrad.addColorStop(1, '#2a1840');
+        ctx.fillStyle = floorGrad;
+        ctx.fillRect(fx, fy, fw, 14);
+        // плиткові лінії на підлозі
+        ctx.strokeStyle = 'rgba(0,0,0,0.5)'; ctx.lineWidth = 1;
+        let tileW = 40;
+        for (let tx = fx; tx < fx + fw; tx += tileW) {
+            ctx.beginPath(); ctx.moveTo(tx, fy); ctx.lineTo(tx, fy + 14); ctx.stroke();
         }
+        // Відблиск зверху підлоги
+        ctx.fillStyle = 'rgba(180,140,255,0.08)';
+        ctx.fillRect(fx, fy, fw, 3);
 
         // ── 4. Стеля — сталактити ────────────────────────────────────────
         ctx.fillStyle = '#120e1a';
@@ -2427,8 +2146,6 @@ class Unit {
                     // Лорд отримав удар — мале тремтіння
                     if (enemy.type === 'lord') triggerScreenShake(3);
                 }
-                // Slug attack animation trigger
-                if (this.monsterKind === 'slime') this._atkAnimStart = Date.now();
 
                 // ── On-hit здібності атакуючого ───────────────────────────
 
@@ -2668,19 +2385,13 @@ class Unit {
                 u.hp > 0 && !u.isClimbing && Math.abs(u.x - this.x) < 210
             );
             if (aggroTarget) {
-                this._aggroed = true;
                 // Біжимо до героя
                 let dir = aggroTarget.x > this.x ? 1 : -1;
                 this.x += dir * this.speed * 1.5 * _dt;
-                if (this.monsterKind === 'slime' && !this._atkAnimStart && Math.random() < 0.35)
-                    slimeTrails.push({x:this.x+(Math.random()-.5)*8, y:this.y, floorIdx:this.floorIdx, life:40, maxLife:40, r:2+Math.random()*4});
             } else {
                 // Патруль
-                this._aggroed = false;
                 if (!this.patrolDir) this.patrolDir = 1;
                 this.x += this.speed * 0.5 * this.patrolDir * _dt;
-                if (this.monsterKind === 'slime' && !this._atkAnimStart && Math.random() < 0.20)
-                    slimeTrails.push({x:this.x+(Math.random()-.5)*6, y:this.y, floorIdx:this.floorIdx, life:40, maxLife:40, r:2+Math.random()*3.5});
                 let fx = centerX - CFG.floorW/2 + 30;
                 let fw = CFG.floorW - 60;
                 if (this.x > fx + fw) this.patrolDir = -1;
@@ -2726,119 +2437,102 @@ class Unit {
         ctx.shadowColor = '#000';
         ctx.shadowBlur  = 6;
         if (this.type === 'monster' && this.monsterKind === 'slime') {
-            // Слизь — Don't Starve style slug
-            ctx.shadowBlur = 0;
-            let _t = Date.now() / 1000;
-            let _dir = (this.patrolDir || -1);
-            // During attack, face toward nearest hero
-            if (this._atkAnimStart) {
-                let _nh = null, _nd = Infinity;
-                for (let _u of units) {
-                    if (_u.type==='hero' && _u.floorIdx===this.floorIdx && _u.hp>0) {
-                        let _d = Math.abs(_u.x - this.x);
-                        if (_d < _nd) { _nd=_d; _nh=_u; }
-                    }
-                }
-                if (_nh) _dir = _nh.x > this.x ? 1 : -1;
-            }
-            // Attack animation: phase1=0-200ms windup, phase2=200-400ms strike, phase3=400-600ms recover
-            let _atk = {phase:0, t:0};
-            if (this._atkAnimStart) {
-                let _el = Date.now() - this._atkAnimStart;
-                if      (_el < 200) { _atk = {phase:1, t:_el/200}; }
-                else if (_el < 400) { _atk = {phase:2, t:(_el-200)/200}; }
-                else if (_el < 600) { _atk = {phase:3, t:(_el-400)/200}; }
-                else                { this._atkAnimStart = null; }
-            }
-            let _mode = this._atkAnimStart ? 'idle' : (this._aggroed ? 'run' : 'walk');
-            drawSlug(ctx, this.x, this.y - camY, _t, _dir, _atk, 0.72, _mode);
+            // Слизь — кругла, напівпрозора, желеподібна
+            let t = Date.now() / 600;
+            let wobble = Math.sin(t) * 2;
+            let rg = ctx.createRadialGradient(this.x - 4, dy + 6, 2, this.x, dy + this.size/2, this.size/2 + 2);
+            rg.addColorStop(0,   'rgba(150,255,150,0.95)');
+            rg.addColorStop(0.5, 'rgba(60,200,60,0.85)');
+            rg.addColorStop(1,   'rgba(20,120,20,0.7)');
+            ctx.fillStyle = rg;
+            ctx.beginPath();
+            ctx.ellipse(this.x, dy + this.size/2 + wobble*0.3, this.size/2 + wobble*0.4, this.size/2 - wobble*0.3, 0, 0, Math.PI*2);
+            ctx.fill();
+            // Очі
+            ctx.fillStyle = '#000';
+            ctx.beginPath(); ctx.arc(this.x - 5, dy + this.size/2 - 2, 2.5, 0, Math.PI*2); ctx.fill();
+            ctx.beginPath(); ctx.arc(this.x + 5, dy + this.size/2 - 2, 2.5, 0, Math.PI*2); ctx.fill();
+            ctx.fillStyle = '#fff';
+            ctx.beginPath(); ctx.arc(this.x - 4, dy + this.size/2 - 3, 1, 0, Math.PI*2); ctx.fill();
+            ctx.beginPath(); ctx.arc(this.x + 6, dy + this.size/2 - 3, 1, 0, Math.PI*2); ctx.fill();
+            // Блиск
+            ctx.fillStyle = 'rgba(255,255,255,0.35)';
+            ctx.beginPath(); ctx.ellipse(this.x - 6, dy + 7, 4, 2.5, -0.5, 0, Math.PI*2); ctx.fill();
 
         } else if (this.type === 'monster' && this.monsterKind === 'skeleton') {
-            // Скелет — Don't Starve style
-            ctx.shadowBlur = 0;
-            let _t = Date.now() / 1000;
-            let _dir = (this.patrolDir || -1);
-            // hip = ~19px above floor at sc=0.38
-            drawSkeleton(ctx, this.x, this.y - camY - 19, _t, _dir, 0.38);
+            // Скелет — кістяний, сірувато-жовтий, з черепом
+            let s = this.size;
+            // Тіло (тулуб)
+            ctx.fillStyle = '#c8b870';
+            ctx.fillRect(dx + s*0.3, dy + s*0.45, s*0.4, s*0.4);
+            // Ребра
+            ctx.strokeStyle = '#a09050'; ctx.lineWidth = 1.5;
+            for (let r = 0; r < 3; r++) {
+                let ry = dy + s*0.5 + r*4;
+                ctx.beginPath(); ctx.moveTo(dx+s*0.3, ry); ctx.lineTo(dx+s*0.1, ry+2); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(dx+s*0.7, ry); ctx.lineTo(dx+s*0.9, ry+2); ctx.stroke();
+            }
+            // Ноги
+            ctx.fillStyle = '#c8b870';
+            ctx.fillRect(dx + s*0.25, dy + s*0.82, s*0.18, s*0.18);
+            ctx.fillRect(dx + s*0.57, dy + s*0.82, s*0.18, s*0.18);
+            // Руки
+            ctx.fillRect(dx + s*0.05, dy + s*0.48, s*0.18, s*0.1);
+            ctx.fillRect(dx + s*0.77, dy + s*0.48, s*0.18, s*0.1);
+            // Череп
+            ctx.fillStyle = '#ddd4a0';
+            ctx.beginPath(); ctx.arc(this.x, dy + s*0.28, s*0.26, 0, Math.PI*2); ctx.fill();
+            // Очниці
+            ctx.fillStyle = '#1a1408';
+            ctx.beginPath(); ctx.ellipse(this.x - s*0.1, dy + s*0.26, s*0.08, s*0.1, 0, 0, Math.PI*2); ctx.fill();
+            ctx.beginPath(); ctx.ellipse(this.x + s*0.1, dy + s*0.26, s*0.08, s*0.1, 0, 0, Math.PI*2); ctx.fill();
+            // Посмішка
+            ctx.strokeStyle = '#1a1408'; ctx.lineWidth = 1;
+            ctx.beginPath(); ctx.arc(this.x, dy + s*0.34, s*0.1, 0.1, Math.PI-0.1); ctx.stroke();
 
         } else if (this.type === 'monster' && this.monsterKind === 'zombie') {
-            // Зомбі — chibi Don't Starve style
-            let s = this.size; const OLZ='#0a0200';
-            // Torn shirt (triangle cloak)
-            ctx.fillStyle='#2a4a1a';
-            ctx.beginPath();ctx.moveTo(this.x,dy+s*0.42);ctx.lineTo(this.x-s*0.50,dy+s*1.05);ctx.lineTo(this.x+s*0.50,dy+s*1.05);ctx.closePath();
-            ctx.strokeStyle=OLZ;ctx.lineWidth=2;ctx.stroke();ctx.fill();
-            ctx.save();ctx.globalAlpha=0.35;ctx.strokeStyle='#1a3a0a';ctx.lineWidth=1.5;
-            ctx.beginPath();ctx.moveTo(this.x-s*0.28,dy+s*0.80);ctx.lineTo(this.x-s*0.38,dy+s*1.05);ctx.stroke();
-            ctx.beginPath();ctx.moveTo(this.x+s*0.14,dy+s*0.82);ctx.lineTo(this.x+s*0.28,dy+s*1.05);ctx.stroke();
-            ctx.restore();
-            // Body
-            ctx.beginPath();ctxRoundRect(ctx,dx+s*0.18,dy+s*0.40,s*0.64,s*0.42,4);
-            ctx.strokeStyle=OLZ;ctx.lineWidth=2.2;ctx.stroke();ctx.fillStyle='#4a7a30';ctx.fill();
-            // Reaching arm
-            ctx.strokeStyle='#3a6020';ctx.lineWidth=5.5;ctx.lineCap='round';
-            ctx.beginPath();ctx.moveTo(dx+s*0.88,dy+s*0.50);ctx.lineTo(dx+s*1.22,dy+s*0.28);ctx.stroke();
-            ctx.strokeStyle=OLZ;ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(dx+s*0.88,dy+s*0.50);ctx.lineTo(dx+s*1.22,dy+s*0.28);ctx.stroke();
-            // Dangling arm
-            ctx.strokeStyle='#3a6020';ctx.lineWidth=5.5;ctx.lineCap='round';
-            ctx.beginPath();ctx.moveTo(dx+s*0.12,dy+s*0.50);ctx.lineTo(dx-s*0.08,dy+s*0.88);ctx.stroke();
-            ctx.strokeStyle=OLZ;ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(dx+s*0.12,dy+s*0.50);ctx.lineTo(dx-s*0.08,dy+s*0.88);ctx.stroke();
-            // Legs
-            ctx.fillStyle='#3a6020';
-            ctx.beginPath();ctxRoundRect(ctx,dx+s*0.20,dy+s*0.80,s*0.24,s*0.22,3);ctx.strokeStyle=OLZ;ctx.lineWidth=2;ctx.stroke();ctx.fill();
-            ctx.beginPath();ctxRoundRect(ctx,dx+s*0.56,dy+s*0.80,s*0.24,s*0.22,3);ctx.stroke();ctx.fill();
-            // Big chibi head
-            ctx.beginPath();ctx.ellipse(this.x,dy+s*0.20,s*0.30,s*0.32,0,0,Math.PI*2);
-            ctx.strokeStyle=OLZ;ctx.lineWidth=2.8;ctx.stroke();ctx.fillStyle='#5a8c3a';ctx.fill();
-            ctx.save();ctx.globalAlpha=0.28;ctx.fillStyle='#90cc60';ctx.beginPath();ctx.ellipse(this.x-s*0.10,dy+s*0.10,s*0.11,s*0.09,-0.3,0,Math.PI*2);ctx.fill();ctx.restore();
-            // Stitch
-            ctx.save();ctx.strokeStyle='#1a3a08';ctx.lineWidth=1.0;ctx.globalAlpha=0.65;
-            ctx.beginPath();ctx.moveTo(this.x+s*0.10,dy+s*0.04);ctx.lineTo(this.x+s*0.08,dy+s*0.16);ctx.stroke();ctx.restore();
-            // Big yellow-green eyes
-            for(const _ez of[-s*0.11,s*0.11]){
-                ctx.beginPath();ctx.ellipse(this.x+_ez,dy+s*0.19,s*0.095,s*0.09,0,0,Math.PI*2);
-                ctx.fillStyle='#aacc00';ctx.fill();ctx.strokeStyle=OLZ;ctx.lineWidth=1.2;ctx.stroke();
-                ctx.beginPath();ctx.arc(this.x+_ez,dy+s*0.19,s*0.048,0,Math.PI*2);ctx.fillStyle='#111';ctx.fill();
-                ctx.save();ctx.globalAlpha=0.7;ctx.beginPath();ctx.arc(this.x+_ez-s*0.03,dy+s*0.165,s*0.022,0,Math.PI*2);ctx.fillStyle='#fff';ctx.fill();ctx.restore();
-            }
-            // Mouth
-            ctx.strokeStyle='#1a3a08';ctx.lineWidth=1.8;
-            ctx.beginPath();ctx.moveTo(this.x-s*0.12,dy+s*0.30);ctx.quadraticCurveTo(this.x,dy+s*0.37,this.x+s*0.12,dy+s*0.30);ctx.stroke();
+            // Зомбі — зеленуватий, повільний, розхристаний
+            let s = this.size;
+            // Тіло
+            ctx.fillStyle = '#4a7a30';
+            ctx.fillRect(dx + s*0.2, dy + s*0.4, s*0.6, s*0.45);
+            // Голова
+            ctx.fillStyle = '#5a8c3a';
+            ctx.beginPath(); ctx.arc(this.x, dy + s*0.28, s*0.28, 0, Math.PI*2); ctx.fill();
+            // Шия
+            ctx.fillStyle = '#4a7a30';
+            ctx.fillRect(dx + s*0.38, dy + s*0.37, s*0.24, s*0.1);
+            // Руки (зомбі тягнуть вперед одну руку)
+            ctx.strokeStyle = '#4a7a30'; ctx.lineWidth = 4;
+            ctx.beginPath(); ctx.moveTo(dx + s*0.1, dy + s*0.5); ctx.lineTo(dx - s*0.12, dy + s*0.45); ctx.stroke(); // ліва — вниз
+            ctx.beginPath(); ctx.moveTo(dx + s*0.9, dy + s*0.5); ctx.lineTo(dx + s*1.15, dy + s*0.3); ctx.stroke(); // права — вперед
+            // Ноги
+            ctx.fillStyle = '#3a6020';
+            ctx.fillRect(dx + s*0.22, dy + s*0.82, s*0.22, s*0.18);
+            ctx.fillRect(dx + s*0.56, dy + s*0.82, s*0.22, s*0.18);
+            // Очі — жовті, запалі
+            ctx.fillStyle = '#aacc00';
+            ctx.beginPath(); ctx.arc(this.x - s*0.1, dy + s*0.25, s*0.09, 0, Math.PI*2); ctx.fill();
+            ctx.beginPath(); ctx.arc(this.x + s*0.1, dy + s*0.25, s*0.09, 0, Math.PI*2); ctx.fill();
+            ctx.fillStyle = '#000';
+            ctx.beginPath(); ctx.arc(this.x - s*0.1, dy + s*0.25, s*0.05, 0, Math.PI*2); ctx.fill();
+            ctx.beginPath(); ctx.arc(this.x + s*0.1, dy + s*0.25, s*0.05, 0, Math.PI*2); ctx.fill();
+            // Рот — крива щілина
+            ctx.strokeStyle = '#2a4a18'; ctx.lineWidth = 1.5;
+            ctx.beginPath(); ctx.moveTo(this.x - s*0.12, dy + s*0.36); ctx.quadraticCurveTo(this.x, dy + s*0.42, this.x + s*0.12, dy + s*0.35); ctx.stroke();
 
         } else if (this.type === 'monster' && this.monsterKind === 'hounds') {
-            // Пес — chibi Don't Starve style
-            let s = this.size; const OLH='#0a0200';
-            // Body (oval, low and wide)
-            ctx.beginPath();ctx.ellipse(this.x-s*0.05,dy+s*0.64,s*0.40,s*0.24,0,0,Math.PI*2);
-            ctx.strokeStyle=OLH;ctx.lineWidth=2.5;ctx.stroke();ctx.fillStyle='#a05830';ctx.fill();
-            ctx.save();ctx.globalAlpha=0.24;ctx.fillStyle='#d08850';ctx.beginPath();ctx.ellipse(this.x-s*0.10,dy+s*0.58,s*0.18,s*0.09,-0.2,0,Math.PI*2);ctx.fill();ctx.restore();
-            // Tail (curled)
-            ctx.strokeStyle='#a05830';ctx.lineWidth=5;ctx.lineCap='round';
-            ctx.beginPath();ctx.moveTo(dx+s*0.08,dy+s*0.58);ctx.quadraticCurveTo(dx-s*0.10,dy+s*0.32,dx-s*0.02,dy+s*0.12);ctx.stroke();
-            ctx.strokeStyle=OLH;ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(dx+s*0.08,dy+s*0.58);ctx.quadraticCurveTo(dx-s*0.10,dy+s*0.32,dx-s*0.02,dy+s*0.12);ctx.stroke();
-            // 4 stubby legs
-            ctx.fillStyle='#804520';
-            for(const _lx of[dx+s*0.15,dx+s*0.30,dx+s*0.50,dx+s*0.65]){
-                ctx.beginPath();ctxRoundRect(ctx,_lx,dy+s*0.79,s*0.13,s*0.22,2);ctx.strokeStyle=OLH;ctx.lineWidth=1.8;ctx.stroke();ctx.fill();
-            }
-            // Big chibi head
-            ctx.beginPath();ctx.ellipse(this.x+s*0.32,dy+s*0.30,s*0.25,s*0.24,0.1,0,Math.PI*2);
-            ctx.strokeStyle=OLH;ctx.lineWidth=2.5;ctx.stroke();ctx.fillStyle='#c87040';ctx.fill();
-            ctx.save();ctx.globalAlpha=0.26;ctx.fillStyle='#e8a060';ctx.beginPath();ctx.ellipse(this.x+s*0.26,dy+s*0.23,s*0.10,s*0.08,-0.2,0,Math.PI*2);ctx.fill();ctx.restore();
-            // Floppy ears
+            // Пес — приземкуватий, коричневий, 4 ноги
+            let s = this.size;
+            ctx.fillStyle='#a05830'; ctx.fillRect(dx+s*0.08,dy+s*0.48,s*0.84,s*0.36);
+            ctx.fillStyle='#c87040'; ctx.beginPath(); ctx.ellipse(this.x+s*0.3,dy+s*0.36,s*0.22,s*0.2,0,0,Math.PI*2); ctx.fill();
             ctx.fillStyle='#a05830';
-            ctx.beginPath();ctx.ellipse(this.x+s*0.18,dy+s*0.22,s*0.08,s*0.15,0.5,0,Math.PI*2);ctx.strokeStyle=OLH;ctx.lineWidth=2;ctx.stroke();ctx.fill();
-            ctx.beginPath();ctx.ellipse(this.x+s*0.44,dy+s*0.20,s*0.08,s*0.13,-0.5,0,Math.PI*2);ctx.stroke();ctx.fill();
-            // Big eye
-            ctx.beginPath();ctx.arc(this.x+s*0.32,dy+s*0.28,s*0.08,0,Math.PI*2);ctx.fillStyle='#331100';ctx.fill();ctx.strokeStyle=OLH;ctx.lineWidth=1.5;ctx.stroke();
-            ctx.save();ctx.globalAlpha=0.8;ctx.beginPath();ctx.arc(this.x+s*0.30,dy+s*0.26,s*0.03,0,Math.PI*2);ctx.fillStyle='#fff';ctx.fill();ctx.restore();
-            // Snout + nose
-            ctx.beginPath();ctx.ellipse(this.x+s*0.36,dy+s*0.36,s*0.10,s*0.06,0.1,0,Math.PI*2);ctx.fillStyle='#c87040';ctx.fill();ctx.strokeStyle=OLH;ctx.lineWidth=1.5;ctx.stroke();
-            ctx.fillStyle='#331100';ctx.beginPath();ctx.arc(this.x+s*0.38,dy+s*0.34,s*0.035,0,Math.PI*2);ctx.fill();
-            // Fangs
-            ctx.fillStyle='#f5f0d0';
-            ctx.beginPath();ctx.moveTo(this.x+s*0.28,dy+s*0.41);ctx.lineTo(this.x+s*0.26,dy+s*0.47);ctx.lineTo(this.x+s*0.33,dy+s*0.41);ctx.closePath();ctx.fill();
-            ctx.beginPath();ctx.moveTo(this.x+s*0.39,dy+s*0.41);ctx.lineTo(this.x+s*0.37,dy+s*0.47);ctx.lineTo(this.x+s*0.44,dy+s*0.41);ctx.closePath();ctx.fill();
+            ctx.beginPath();ctx.moveTo(this.x+s*0.18,dy+s*0.22);ctx.lineTo(this.x+s*0.1,dy+s*0.06);ctx.lineTo(this.x+s*0.3,dy+s*0.2);ctx.closePath();ctx.fill();
+            ctx.beginPath();ctx.moveTo(this.x+s*0.42,dy+s*0.22);ctx.lineTo(this.x+s*0.5,dy+s*0.06);ctx.lineTo(this.x+s*0.3,dy+s*0.2);ctx.closePath();ctx.fill();
+            ctx.fillStyle='#000'; ctx.beginPath(); ctx.arc(this.x+s*0.3,dy+s*0.34,s*0.05,0,Math.PI*2); ctx.fill();
+            ctx.strokeStyle='#a05830'; ctx.lineWidth=3;
+            ctx.beginPath();ctx.moveTo(dx+s*0.08,dy+s*0.52);ctx.quadraticCurveTo(dx-s*0.1,dy+s*0.28,dx-s*0.05,dy+s*0.1);ctx.stroke();
+            ctx.fillStyle='#804520'; ctx.fillRect(dx+s*0.12,dy+s*0.8,s*0.14,s*0.2); ctx.fillRect(dx+s*0.3,dy+s*0.8,s*0.14,s*0.2); ctx.fillRect(dx+s*0.48,dy+s*0.8,s*0.14,s*0.2); ctx.fillRect(dx+s*0.66,dy+s*0.8,s*0.14,s*0.2);
 
         } else if (this.type === 'monster' && this.monsterKind === 'spirit') {
             let s = this.size, t2=Date.now()/400;
@@ -2861,80 +2555,25 @@ class Unit {
             ctx.fillStyle='#ff2255'; ctx.beginPath(); ctx.arc(this.x-s*0.08,dy+s*0.42,s*0.06,0,Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.arc(this.x+s*0.08,dy+s*0.42,s*0.06,0,Math.PI*2); ctx.fill();
 
         } else if (this.type === 'monster' && this.monsterKind === 'golem') {
-            // Ґолем — chibi Don't Starve style
-            let s = this.size; const OLG='#0a0200';
-            // Stone body (wide rounded block)
-            ctx.beginPath();ctxRoundRect(ctx,dx+s*0.02,dy+s*0.38,s*0.96,s*0.58,8);
-            ctx.strokeStyle=OLG;ctx.lineWidth=2.8;ctx.stroke();ctx.fillStyle='#776655';ctx.fill();
-            ctx.save();ctx.globalAlpha=0.24;ctx.fillStyle='#998877';ctx.beginPath();ctxRoundRect(ctx,dx+s*0.08,dy+s*0.43,s*0.38,s*0.20,5);ctx.fill();ctx.restore();
-            // Cracks
-            ctx.save();ctx.strokeStyle='#554433';ctx.lineWidth=1.5;ctx.globalAlpha=0.7;
-            ctx.beginPath();ctx.moveTo(this.x-s*0.05,dy+s*0.40);ctx.lineTo(this.x-s*0.12,dy+s*0.58);ctx.lineTo(this.x-s*0.04,dy+s*0.72);ctx.stroke();
-            ctx.beginPath();ctx.moveTo(this.x+s*0.12,dy+s*0.55);ctx.lineTo(this.x+s*0.20,dy+s*0.70);ctx.stroke();ctx.restore();
-            // Stone arm stumps
-            ctx.beginPath();ctxRoundRect(ctx,dx-s*0.14,dy+s*0.50,s*0.18,s*0.26,4);ctx.strokeStyle=OLG;ctx.lineWidth=2;ctx.stroke();ctx.fillStyle='#665544';ctx.fill();
-            ctx.beginPath();ctxRoundRect(ctx,dx+s*0.96,dy+s*0.50,s*0.18,s*0.26,4);ctx.stroke();ctx.fill();
-            // Legs (wide flat)
-            ctx.beginPath();ctxRoundRect(ctx,dx+s*0.12,dy+s*0.90,s*0.28,s*0.10,3);ctx.strokeStyle=OLG;ctx.lineWidth=1.8;ctx.stroke();ctx.fill();
-            ctx.beginPath();ctxRoundRect(ctx,dx+s*0.60,dy+s*0.90,s*0.28,s*0.10,3);ctx.stroke();ctx.fill();
-            // Big chibi head (wide stone block)
-            ctx.beginPath();ctxRoundRect(ctx,dx+s*0.08,dy+s*0.07,s*0.84,s*0.35,10);
-            ctx.strokeStyle=OLG;ctx.lineWidth=2.8;ctx.stroke();ctx.fillStyle='#998877';ctx.fill();
-            ctx.save();ctx.globalAlpha=0.28;ctx.fillStyle='#bbaa99';ctx.beginPath();ctxRoundRect(ctx,dx+s*0.12,dy+s*0.12,s*0.28,s*0.14,5);ctx.fill();ctx.restore();
-            // Head crack
-            ctx.save();ctx.strokeStyle=OLG;ctx.lineWidth=1.2;ctx.globalAlpha=0.6;
-            ctx.beginPath();ctx.moveTo(this.x,dy+s*0.07);ctx.lineTo(this.x+s*0.06,dy+s*0.22);ctx.stroke();ctx.restore();
-            // Big glowing orange eyes
-            for(const _ge of[-s*0.18,s*0.18]){
-                ctx.beginPath();ctx.arc(this.x+_ge,dy+s*0.22,s*0.11,0,Math.PI*2);
-                ctx.fillStyle='#ff8800';ctx.fill();ctx.strokeStyle=OLG;ctx.lineWidth=1.5;ctx.stroke();
-                ctx.save();ctx.globalAlpha=0.45;ctx.fillStyle='rgba(255,180,0,0.55)';ctx.shadowBlur=6;ctx.shadowColor='#ff8800';
-                ctx.beginPath();ctx.arc(this.x+_ge,dy+s*0.22,s*0.11,0,Math.PI*2);ctx.fill();ctx.restore();
-                ctx.fillStyle='rgba(255,240,200,0.85)';ctx.beginPath();ctx.arc(this.x+_ge+s*0.03,dy+s*0.19,s*0.04,0,Math.PI*2);ctx.fill();
-            }
+            let s = this.size;
+            ctx.fillStyle='#776655'; ctx.fillRect(dx+s*0.05,dy+s*0.35,s*0.9,s*0.6);
+            ctx.fillStyle='#998877'; ctx.fillRect(dx+s*0.15,dy+s*0.15,s*0.7,s*0.3);
+            ctx.strokeStyle='#554433'; ctx.lineWidth=2;
+            ctx.beginPath();ctx.moveTo(this.x,dy+s*0.2);ctx.lineTo(this.x-s*0.1,dy+s*0.4);ctx.stroke();
+            ctx.beginPath();ctx.moveTo(this.x+s*0.2,dy+s*0.5);ctx.lineTo(this.x+s*0.1,dy+s*0.7);ctx.stroke();
+            ctx.fillStyle='#ff8800'; ctx.beginPath(); ctx.arc(this.x-s*0.18,dy+s*0.25,s*0.1,0,Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.arc(this.x+s*0.18,dy+s*0.25,s*0.1,0,Math.PI*2); ctx.fill();
+            ctx.fillStyle='#665544'; ctx.fillRect(dx-s*0.1,dy+s*0.55,s*0.22,s*0.22); ctx.fillRect(dx+s*0.88,dy+s*0.55,s*0.22,s*0.22);
 
         } else if (this.type === 'monster' && this.monsterKind === 'minotaur') {
-            // Мінотавр — chibi Don't Starve style
-            let s = this.size; const OLM='#0a0200';
-            // Body (muscular, rounded)
-            ctx.beginPath();ctxRoundRect(ctx,dx+s*0.08,dy+s*0.40,s*0.84,s*0.50,6);
-            ctx.strokeStyle=OLM;ctx.lineWidth=2.5;ctx.stroke();ctx.fillStyle='#774422';ctx.fill();
-            ctx.save();ctx.globalAlpha=0.24;ctx.fillStyle='#aa6644';ctx.beginPath();ctxRoundRect(ctx,dx+s*0.14,dy+s*0.45,s*0.28,s*0.20,4);ctx.fill();ctx.restore();
-            // Arms (thick)
-            ctx.strokeStyle='#774422';ctx.lineWidth=7;ctx.lineCap='round';
-            ctx.beginPath();ctx.moveTo(dx+s*0.10,dy+s*0.52);ctx.lineTo(dx-s*0.10,dy+s*0.72);ctx.stroke();
-            ctx.beginPath();ctx.moveTo(dx+s*0.90,dy+s*0.52);ctx.lineTo(dx+s*1.10,dy+s*0.72);ctx.stroke();
-            ctx.strokeStyle=OLM;ctx.lineWidth=2;
-            ctx.beginPath();ctx.moveTo(dx+s*0.10,dy+s*0.52);ctx.lineTo(dx-s*0.10,dy+s*0.72);ctx.stroke();
-            ctx.beginPath();ctx.moveTo(dx+s*0.90,dy+s*0.52);ctx.lineTo(dx+s*1.10,dy+s*0.72);ctx.stroke();
-            // Legs
-            ctx.fillStyle='#663311';
-            ctx.beginPath();ctxRoundRect(ctx,dx+s*0.15,dy+s*0.86,s*0.26,s*0.16,3);ctx.strokeStyle=OLM;ctx.lineWidth=2;ctx.stroke();ctx.fill();
-            ctx.beginPath();ctxRoundRect(ctx,dx+s*0.59,dy+s*0.86,s*0.26,s*0.16,3);ctx.stroke();ctx.fill();
-            // Neck
-            ctx.beginPath();ctxRoundRect(ctx,dx+s*0.35,dy+s*0.30,s*0.30,s*0.16,4);
-            ctx.strokeStyle=OLM;ctx.lineWidth=2.2;ctx.stroke();ctx.fillStyle='#885533';ctx.fill();
-            // Big chibi bull head
-            ctx.beginPath();ctx.ellipse(this.x,dy+s*0.19,s*0.34,s*0.28,0,0,Math.PI*2);
-            ctx.strokeStyle=OLM;ctx.lineWidth=2.8;ctx.stroke();ctx.fillStyle='#996633';ctx.fill();
-            ctx.save();ctx.globalAlpha=0.26;ctx.fillStyle='#cc9966';ctx.beginPath();ctx.ellipse(this.x-s*0.10,dy+s*0.11,s*0.12,s*0.09,-0.3,0,Math.PI*2);ctx.fill();ctx.restore();
-            // Big curved horns
+            let s = this.size;
+            ctx.fillStyle='#774422'; ctx.fillRect(dx+s*0.1,dy+s*0.38,s*0.8,s*0.55);
+            ctx.fillStyle='#996633'; ctx.beginPath(); ctx.arc(this.x,dy+s*0.25,s*0.3,0,Math.PI*2); ctx.fill();
             ctx.fillStyle='#ccaa66';
-            ctx.beginPath();ctx.moveTo(this.x-s*0.28,dy+s*0.08);ctx.quadraticCurveTo(this.x-s*0.55,dy-s*0.22,this.x-s*0.38,dy-s*0.12);ctx.quadraticCurveTo(this.x-s*0.50,dy-s*0.05,this.x-s*0.24,dy+s*0.12);ctx.closePath();
-            ctx.strokeStyle=OLM;ctx.lineWidth=1.5;ctx.stroke();ctx.fill();
-            ctx.beginPath();ctx.moveTo(this.x+s*0.28,dy+s*0.08);ctx.quadraticCurveTo(this.x+s*0.55,dy-s*0.22,this.x+s*0.38,dy-s*0.12);ctx.quadraticCurveTo(this.x+s*0.50,dy-s*0.05,this.x+s*0.24,dy+s*0.12);ctx.closePath();
-            ctx.stroke();ctx.fill();
-            // Snout / muzzle
-            ctx.beginPath();ctx.ellipse(this.x,dy+s*0.28,s*0.16,s*0.10,0,0,Math.PI*2);ctx.fillStyle='#885533';ctx.fill();ctx.strokeStyle=OLM;ctx.lineWidth=1.8;ctx.stroke();
-            ctx.fillStyle='#331100';ctx.beginPath();ctx.arc(this.x-s*0.07,dy+s*0.26,s*0.04,0,Math.PI*2);ctx.fill();
-            ctx.beginPath();ctx.arc(this.x+s*0.07,dy+s*0.26,s*0.04,0,Math.PI*2);ctx.fill();
-            // Red glowing eyes
-            for(const _me of[-s*0.13,s*0.13]){
-                ctx.beginPath();ctx.arc(this.x+_me,dy+s*0.15,s*0.08,0,Math.PI*2);ctx.fillStyle='#ff0000';ctx.fill();ctx.strokeStyle=OLM;ctx.lineWidth=1.5;ctx.stroke();
-                ctx.save();ctx.globalAlpha=0.55;ctx.fillStyle='rgba(255,50,0,0.5)';ctx.shadowBlur=6;ctx.shadowColor='#ff2200';
-                ctx.beginPath();ctx.arc(this.x+_me,dy+s*0.15,s*0.08,0,Math.PI*2);ctx.fill();ctx.restore();
-                ctx.fillStyle='rgba(255,200,200,0.8)';ctx.beginPath();ctx.arc(this.x+_me-s*0.03,dy+s*0.12,s*0.03,0,Math.PI*2);ctx.fill();
-            }
+            ctx.beginPath();ctx.moveTo(this.x-s*0.22,dy+s*0.1);ctx.lineTo(this.x-s*0.4,dy-s*0.15);ctx.lineTo(this.x-s*0.15,dy+s*0.08);ctx.closePath();ctx.fill();
+            ctx.beginPath();ctx.moveTo(this.x+s*0.22,dy+s*0.1);ctx.lineTo(this.x+s*0.4,dy-s*0.15);ctx.lineTo(this.x+s*0.15,dy+s*0.08);ctx.closePath();ctx.fill();
+            ctx.fillStyle='#000'; ctx.beginPath(); ctx.arc(this.x-s*0.1,dy+s*0.22,s*0.09,0,Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.arc(this.x+s*0.1,dy+s*0.22,s*0.09,0,Math.PI*2); ctx.fill();
+            ctx.fillStyle='#ff0000'; ctx.beginPath(); ctx.arc(this.x-s*0.1,dy+s*0.22,s*0.04,0,Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.arc(this.x+s*0.1,dy+s*0.22,s*0.04,0,Math.PI*2); ctx.fill();
+            ctx.fillStyle='#663311'; ctx.fillRect(dx+s*0.18,dy+s*0.9,s*0.24,s*0.1); ctx.fillRect(dx+s*0.58,dy+s*0.9,s*0.24,s*0.1);
 
         } else if (this.type === 'monster' && this.monsterKind === 'shadow') {
             let s = this.size, tp=Date.now()/250;
@@ -2947,35 +2586,14 @@ class Unit {
             }
 
         } else if (this.type === 'monster' && this.monsterKind === 'necromancer') {
-            // Некромант — chibi Don't Starve style
-            let s = this.size; const OLN='#0a0200';
-            // Robes (wide flowing)
-            ctx.fillStyle='#332255';
-            ctx.beginPath();ctx.moveTo(this.x,dy+s*0.32);ctx.bezierCurveTo(this.x-s*0.48,dy+s*0.46,this.x-s*0.50,dy+s*0.86,this.x-s*0.42,dy+s*1.02);ctx.lineTo(this.x+s*0.42,dy+s*1.02);ctx.bezierCurveTo(this.x+s*0.50,dy+s*0.86,this.x+s*0.48,dy+s*0.46,this.x,dy+s*0.32);ctx.closePath();
-            ctx.strokeStyle=OLN;ctx.lineWidth=2.2;ctx.stroke();ctx.fill();
-            ctx.save();ctx.globalAlpha=0.20;ctx.fillStyle='#000';ctx.beginPath();ctx.moveTo(this.x-s*0.05,dy+s*0.35);ctx.bezierCurveTo(this.x-s*0.48,dy+s*0.48,this.x-s*0.48,dy+s*0.86,this.x-s*0.40,dy+s*1.02);ctx.lineTo(this.x-s*0.10,dy+s*1.02);ctx.closePath();ctx.fill();ctx.restore();
-            // Staff (back arm)
-            ctx.strokeStyle=OLN;ctx.lineWidth=4.5;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(dx+s*0.12,dy+s*0.42);ctx.lineTo(dx-s*0.06,dy-s*0.04);ctx.stroke();
-            ctx.strokeStyle='#886644';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(dx+s*0.12,dy+s*0.42);ctx.lineTo(dx-s*0.06,dy-s*0.04);ctx.stroke();
-            const _orbP=0.45+0.35*Math.sin(Date.now()/200);
-            ctx.fillStyle=`rgba(200,50,255,${_orbP+0.2})`;ctx.beginPath();ctx.arc(dx-s*0.06,dy-s*0.04,s*0.13,0,Math.PI*2);ctx.fill();
-            ctx.strokeStyle='#dd44ff';ctx.lineWidth=1.5;ctx.stroke();
-            ctx.fillStyle='rgba(240,180,255,0.85)';ctx.beginPath();ctx.arc(dx-s*0.09,dy-s*0.08,s*0.04,0,Math.PI*2);ctx.fill();
-            // Big chibi hooded head
-            ctx.beginPath();ctx.arc(this.x,dy+s*0.20,s*0.28,0,Math.PI*2);
-            ctx.strokeStyle=OLN;ctx.lineWidth=2.8;ctx.stroke();ctx.fillStyle='#553388';ctx.fill();
-            // Hood shape
-            ctx.fillStyle='#442266';
-            ctx.beginPath();ctx.moveTo(this.x-s*0.28,dy+s*0.20);ctx.bezierCurveTo(this.x-s*0.22,dy-s*0.10,this.x,dy-s*0.18,this.x+s*0.22,dy-s*0.10);ctx.lineTo(this.x+s*0.28,dy+s*0.20);ctx.closePath();
-            ctx.strokeStyle=OLN;ctx.lineWidth=2;ctx.stroke();ctx.fill();
-            // Hood tip
-            ctx.beginPath();ctx.moveTo(this.x,dy-s*0.18);ctx.lineTo(this.x+s*0.08,dy-s*0.28);ctx.lineTo(this.x-s*0.04,dy-s*0.26);ctx.closePath();ctx.fill();ctx.strokeStyle=OLN;ctx.lineWidth=1.5;ctx.stroke();
-            // Glowing purple eyes
-            for(const _ne of[-s*0.10,s*0.10]){
-                ctx.beginPath();ctx.arc(this.x+_ne,dy+s*0.18,s*0.08,0,Math.PI*2);ctx.fillStyle='#cc44ff';ctx.fill();ctx.strokeStyle=OLN;ctx.lineWidth=1.2;ctx.stroke();
-                ctx.save();ctx.globalAlpha=0.50;ctx.fillStyle='rgba(200,50,255,0.5)';ctx.shadowBlur=5;ctx.shadowColor='#aa00ff';ctx.beginPath();ctx.arc(this.x+_ne,dy+s*0.18,s*0.08,0,Math.PI*2);ctx.fill();ctx.restore();
-                ctx.fillStyle='rgba(255,220,255,0.85)';ctx.beginPath();ctx.arc(this.x+_ne-s*0.025,dy+s*0.155,s*0.025,0,Math.PI*2);ctx.fill();
-            }
+            let s = this.size;
+            ctx.fillStyle='#442266'; ctx.fillRect(dx+s*0.15,dy+s*0.3,s*0.7,s*0.65);
+            ctx.fillStyle='#553388'; ctx.beginPath(); ctx.arc(this.x,dy+s*0.22,s*0.24,0,Math.PI*2); ctx.fill();
+            ctx.strokeStyle='#886644'; ctx.lineWidth=3;
+            ctx.beginPath();ctx.moveTo(dx+s*0.1,dy+s*0.4);ctx.lineTo(dx-s*0.05,dy);ctx.stroke();
+            let orbP=0.4+0.3*Math.sin(Date.now()/200);
+            ctx.fillStyle='rgba(200,50,255,'+orbP+')'; ctx.beginPath(); ctx.arc(dx-s*0.05,dy,s*0.14,0,Math.PI*2); ctx.fill();
+            ctx.fillStyle='#cc44ff'; ctx.beginPath(); ctx.arc(this.x-s*0.1,dy+s*0.2,s*0.08,0,Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.arc(this.x+s*0.1,dy+s*0.2,s*0.08,0,Math.PI*2); ctx.fill();
 
         } else if (this.type === 'monster' && this.monsterKind === 'water_ele') {
             let s = this.size;
@@ -3034,38 +2652,16 @@ class Unit {
             ctx.fillStyle='#ffffff'; ctx.beginPath(); ctx.arc(this.x-s*0.12,dy+s*0.4,s*0.07,0,Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.arc(this.x+s*0.12,dy+s*0.4,s*0.07,0,Math.PI*2); ctx.fill();
 
         } else if (this.type === 'monster' && this.monsterKind === 'dark_knight') {
-            // Темний лицар — chibi Don't Starve style
-            let s = this.size; const OLDK='#0a0200';
-            // Cape
-            ctx.fillStyle='#0a1428';
-            ctx.beginPath();ctx.moveTo(this.x,dy+s*0.30);ctx.bezierCurveTo(this.x-s*0.50,dy+s*0.46,this.x-s*0.52,dy+s*0.92,this.x-s*0.40,dy+s*1.02);ctx.lineTo(this.x+s*0.40,dy+s*1.02);ctx.bezierCurveTo(this.x+s*0.52,dy+s*0.92,this.x+s*0.50,dy+s*0.46,this.x,dy+s*0.30);ctx.closePath();
-            ctx.strokeStyle=OLDK;ctx.lineWidth=2;ctx.stroke();ctx.fill();
-            // Armored body
-            ctx.beginPath();ctxRoundRect(ctx,dx+s*0.10,dy+s*0.36,s*0.80,s*0.50,5);
-            ctx.strokeStyle=OLDK;ctx.lineWidth=2.5;ctx.stroke();ctx.fillStyle='#1a2f55';ctx.fill();
-            ctx.save();ctx.globalAlpha=0.28;ctx.fillStyle='#4466aa';ctx.beginPath();ctxRoundRect(ctx,dx+s*0.14,dy+s*0.40,s*0.26,s*0.18,4);ctx.fill();ctx.restore();
-            // Big sword
-            ctx.strokeStyle=OLDK;ctx.lineWidth=5.5;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(dx+s*0.92,dy+s*0.15);ctx.lineTo(dx+s*0.88,dy+s*0.90);ctx.stroke();
-            ctx.strokeStyle='#8899cc';ctx.lineWidth=3.5;ctx.beginPath();ctx.moveTo(dx+s*0.92,dy+s*0.15);ctx.lineTo(dx+s*0.88,dy+s*0.90);ctx.stroke();
-            ctx.strokeStyle=OLDK;ctx.lineWidth=7;ctx.lineCap='butt';ctx.beginPath();ctx.moveTo(dx+s*0.72,dy+s*0.46);ctx.lineTo(dx+s*1.10,dy+s*0.46);ctx.stroke();
-            ctx.strokeStyle='#556688';ctx.lineWidth=5;ctx.beginPath();ctx.moveTo(dx+s*0.72,dy+s*0.46);ctx.lineTo(dx+s*1.10,dy+s*0.46);ctx.stroke();
-            // Armored legs
-            ctx.fillStyle='#223366';
-            ctx.beginPath();ctxRoundRect(ctx,dx+s*0.14,dy+s*0.82,s*0.28,s*0.20,4);ctx.strokeStyle=OLDK;ctx.lineWidth=2;ctx.stroke();ctx.fill();
-            ctx.beginPath();ctxRoundRect(ctx,dx+s*0.58,dy+s*0.82,s*0.28,s*0.20,4);ctx.stroke();ctx.fill();
-            // Big chibi helmet
-            ctx.beginPath();ctx.ellipse(this.x,dy+s*0.20,s*0.30,s*0.26,0,0,Math.PI*2);
-            ctx.strokeStyle=OLDK;ctx.lineWidth=2.8;ctx.stroke();ctx.fillStyle='#1a2f55';ctx.fill();
-            ctx.save();ctx.globalAlpha=0.24;ctx.fillStyle='#4466aa';ctx.beginPath();ctx.ellipse(this.x-s*0.10,dy+s*0.12,s*0.10,s*0.09,-0.3,0,Math.PI*2);ctx.fill();ctx.restore();
-            // Helmet ridge
-            ctx.beginPath();ctxRoundRect(ctx,dx+s*0.32,dy+s*0.04,s*0.36,s*0.08,3);ctx.strokeStyle=OLDK;ctx.lineWidth=1.5;ctx.stroke();ctx.fillStyle='#223366';ctx.fill();
-            // Dark visor
-            ctx.fillStyle='#050810';ctx.beginPath();ctxRoundRect(ctx,dx+s*0.22,dy+s*0.18,s*0.56,s*0.08,2);ctx.fill();
-            // Yellow glowing eyes
-            for(const _dke of[-s*0.10,s*0.10]){
-                ctx.beginPath();ctx.arc(this.x+_dke,dy+s*0.22,s*0.05,0,Math.PI*2);ctx.fillStyle='#ffdd00';ctx.fill();
-                ctx.save();ctx.globalAlpha=0.50;ctx.fillStyle='rgba(255,200,0,0.6)';ctx.shadowBlur=5;ctx.shadowColor='#ffdd00';ctx.beginPath();ctx.arc(this.x+_dke,dy+s*0.22,s*0.05,0,Math.PI*2);ctx.fill();ctx.restore();
-            }
+            let s = this.size;
+            ctx.fillStyle='#112244'; ctx.fillRect(dx+s*0.12,dy+s*0.38,s*0.76,s*0.58);
+            ctx.fillStyle='#223366'; ctx.fillRect(dx+s*0.18,dy+s*0.18,s*0.64,s*0.26);
+            ctx.fillStyle='#1a2f55'; ctx.beginPath(); ctx.arc(this.x,dy+s*0.22,s*0.3,0,Math.PI*2); ctx.fill();
+            ctx.fillStyle='#000'; ctx.fillRect(dx+s*0.18,dy+s*0.22,s*0.64,s*0.12);
+            ctx.strokeStyle='#8899cc'; ctx.lineWidth=4;
+            ctx.beginPath();ctx.moveTo(dx+s*0.85,dy+s*0.2);ctx.lineTo(dx+s*0.85,dy+s*0.9);ctx.stroke();
+            ctx.strokeStyle='#554422'; ctx.lineWidth=8;
+            ctx.beginPath();ctx.moveTo(dx+s*0.7,dy+s*0.48);ctx.lineTo(dx+s*1.0,dy+s*0.48);ctx.stroke();
+            ctx.fillStyle='#ffdd00'; ctx.beginPath(); ctx.arc(this.x-s*0.1,dy+s*0.25,s*0.06,0,Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.arc(this.x+s*0.1,dy+s*0.25,s*0.06,0,Math.PI*2); ctx.fill();
 
         } else if (this.type === 'monster' && this.monsterKind === 'banshee') {
             let s = this.size, tb=Date.now()/350, pulseb=0.6+0.3*Math.sin(tb);
@@ -3078,54 +2674,14 @@ class Unit {
             ctx.beginPath(); ctx.arc(this.x,dy+s*0.38,s*0.08,0,Math.PI); ctx.stroke();
 
         } else if (this.type === 'monster' && this.monsterKind === 'lich') {
-            // Ліч — chibi Don't Starve style
-            let s = this.size; const OLL='#0a0200'; const _lp=0.4+0.3*Math.sin(Date.now()/180);
-            // Dark robes
-            ctx.fillStyle='#1a0028';
-            ctx.beginPath();ctx.moveTo(this.x,dy+s*0.38);ctx.bezierCurveTo(this.x-s*0.52,dy+s*0.50,this.x-s*0.52,dy+s*0.92,this.x-s*0.42,dy+s*1.02);ctx.lineTo(this.x+s*0.42,dy+s*1.02);ctx.bezierCurveTo(this.x+s*0.52,dy+s*0.92,this.x+s*0.52,dy+s*0.50,this.x,dy+s*0.38);ctx.closePath();
-            ctx.strokeStyle=OLL;ctx.lineWidth=2.2;ctx.stroke();ctx.fill();
-            // Rune glow on robe
-            ctx.save();ctx.globalAlpha=_lp*0.4;ctx.strokeStyle='#cc44ff';ctx.lineWidth=1;
-            ctx.beginPath();ctx.moveTo(this.x-s*0.10,dy+s*0.62);ctx.lineTo(this.x,dy+s*0.54);ctx.lineTo(this.x+s*0.10,dy+s*0.62);ctx.stroke();ctx.restore();
-            // Pulsing soul orb at bottom
-            ctx.fillStyle=`rgba(200,0,255,${_lp})`;ctx.beginPath();ctx.arc(this.x,dy+s*0.78,s*0.16,0,Math.PI*2);ctx.fill();
-            ctx.strokeStyle='#dd44ff';ctx.lineWidth=1.5;ctx.stroke();
-            ctx.fillStyle='rgba(255,180,255,0.85)';ctx.beginPath();ctx.arc(this.x-s*0.04,dy+s*0.74,s*0.04,0,Math.PI*2);ctx.fill();
-            // Bony hands
-            ctx.strokeStyle='#d4c890';ctx.lineWidth=4;ctx.lineCap='round';
-            ctx.beginPath();ctx.moveTo(dx+s*0.10,dy+s*0.50);ctx.lineTo(dx-s*0.06,dy+s*0.74);ctx.stroke();
-            ctx.beginPath();ctx.moveTo(dx+s*0.90,dy+s*0.50);ctx.lineTo(dx+s*1.06,dy+s*0.74);ctx.stroke();
-            ctx.strokeStyle=OLL;ctx.lineWidth=1.5;
-            ctx.beginPath();ctx.moveTo(dx+s*0.10,dy+s*0.50);ctx.lineTo(dx-s*0.06,dy+s*0.74);ctx.stroke();
-            ctx.beginPath();ctx.moveTo(dx+s*0.90,dy+s*0.50);ctx.lineTo(dx+s*1.06,dy+s*0.74);ctx.stroke();
-            // Big chibi skull head
-            ctx.beginPath();ctx.ellipse(this.x,dy+s*0.22,s*0.28,s*0.30,0,0,Math.PI*2);
-            ctx.strokeStyle=OLL;ctx.lineWidth=2.8;ctx.stroke();ctx.fillStyle='#6622aa';ctx.fill();
-            ctx.save();ctx.globalAlpha=0.30;ctx.fillStyle='#aa88cc';ctx.beginPath();ctx.ellipse(this.x-s*0.10,dy+s*0.13,s*0.10,s*0.09,-0.3,0,Math.PI*2);ctx.fill();ctx.restore();
-            // Crown (ornate)
+            let s = this.size;
+            ctx.fillStyle='#220033'; ctx.fillRect(dx+s*0.18,dy+s*0.38,s*0.64,s*0.55);
+            ctx.fillStyle='#6622aa'; ctx.beginPath(); ctx.arc(this.x,dy+s*0.26,s*0.26,0,Math.PI*2); ctx.fill();
             ctx.fillStyle='#aa8800';
-            ctx.beginPath();ctxRoundRect(ctx,this.x-s*0.25,dy+s*0.02,s*0.50,s*0.08,2);ctx.strokeStyle=OLL;ctx.lineWidth=1.5;ctx.stroke();ctx.fill();
-            for(let _ci=0;_ci<5;_ci++){
-                const _cx2=this.x-s*0.22+_ci*s*0.11, _ch=_ci%2===0?s*0.14:s*0.09;
-                ctx.beginPath();ctxRoundRect(ctx,_cx2,dy+s*0.02-_ch,s*0.08,_ch,1);ctx.fill();ctx.strokeStyle=OLL;ctx.lineWidth=1;ctx.stroke();
-            }
-            ctx.fillStyle='#ff2244';ctx.beginPath();ctx.arc(this.x,dy+s*0.02-s*0.10,s*0.04,0,Math.PI*2);ctx.fill();
-            ctx.fillStyle='#4488ff';ctx.beginPath();ctx.arc(this.x-s*0.22,dy+s*0.02-s*0.06,s*0.03,0,Math.PI*2);ctx.fill();
-            ctx.beginPath();ctx.arc(this.x+s*0.22,dy+s*0.02-s*0.06,s*0.03,0,Math.PI*2);ctx.fill();
-            // Hollow glowing eyes
-            for(const _le of[-s*0.11,s*0.11]){
-                ctx.beginPath();ctx.arc(this.x+_le,dy+s*0.20,s*0.08,0,Math.PI*2);ctx.fillStyle='#000';ctx.fill();ctx.strokeStyle=OLL;ctx.lineWidth=1.5;ctx.stroke();
-                ctx.beginPath();ctx.arc(this.x+_le,dy+s*0.20,s*0.055,0,Math.PI*2);ctx.fillStyle='#ee44ff';ctx.fill();
-                ctx.save();ctx.globalAlpha=0.55;ctx.fillStyle='rgba(200,50,255,0.5)';ctx.shadowBlur=5;ctx.shadowColor='#cc00ff';ctx.beginPath();ctx.arc(this.x+_le,dy+s*0.20,s*0.055,0,Math.PI*2);ctx.fill();ctx.restore();
-                ctx.fillStyle='rgba(255,200,255,0.85)';ctx.beginPath();ctx.arc(this.x+_le-s*0.025,dy+s*0.175,s*0.022,0,Math.PI*2);ctx.fill();
-            }
-            // Nose triangle
-            ctx.fillStyle='#000';ctx.beginPath();ctx.moveTo(this.x,dy+s*0.30);ctx.lineTo(this.x-s*0.04,dy+s*0.35);ctx.lineTo(this.x+s*0.04,dy+s*0.35);ctx.closePath();ctx.fill();
-            // Teeth
-            ctx.fillStyle='#d4c870';
-            for(const _lt of[-s*0.10,-s*0.04,s*0.04,s*0.10]){
-                ctx.beginPath();ctxRoundRect(ctx,this.x+_lt-s*0.03,dy+s*0.37,s*0.06,s*0.06,1);ctx.strokeStyle=OLL;ctx.lineWidth=0.8;ctx.stroke();ctx.fill();
-            }
+            ctx.beginPath();ctx.moveTo(this.x-s*0.22,dy+s*0.08);ctx.lineTo(this.x-s*0.22,dy-s*0.06);ctx.lineTo(this.x-s*0.1,dy+s*0.02);ctx.lineTo(this.x,dy-s*0.1);ctx.lineTo(this.x+s*0.1,dy+s*0.02);ctx.lineTo(this.x+s*0.22,dy-s*0.06);ctx.lineTo(this.x+s*0.22,dy+s*0.08);ctx.closePath();ctx.fill();
+            ctx.fillStyle='#ee44ff'; ctx.beginPath(); ctx.arc(this.x-s*0.1,dy+s*0.22,s*0.09,0,Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.arc(this.x+s*0.1,dy+s*0.22,s*0.09,0,Math.PI*2); ctx.fill();
+            let lp=0.5+0.4*Math.sin(Date.now()/180);
+            ctx.fillStyle='rgba(200,0,255,'+lp+')'; ctx.beginPath(); ctx.arc(this.x,dy+s*0.7,s*0.18,0,Math.PI*2); ctx.fill();
 
         } else if (this.type === 'monster' && this.monsterKind === 'abyss') {
             let s = this.size, tap2=Date.now()/400;
@@ -3164,21 +2720,84 @@ class Unit {
             ctx.fillStyle='#000'; ctx.beginPath(); ctx.arc(this.x-s*0.1,dy+s*0.4,s*0.07,0,Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.arc(this.x+s*0.1,dy+s*0.4,s*0.07,0,Math.PI*2); ctx.fill();
 
         } else if (this.type === 'hero') {
-            ctx.shadowBlur = 0;
-            const _tH = Date.now() / 1000;
-            const _dirH = this.patrolDir || 1;
-            drawHero(ctx, this.x, this.y - camY - 14, _tH, _dirH, this.heroRank||'normal', this.heroWeapon||'sword', this.level||1);
-            // Іконка пасиву
-            const PASSIVE_ICONS = {toughness:'🛡',swift:'💨',armor:'⚔',spellburn:'🔥',holyaura:'✨',rage:'💢',firstblood:'🗡',warcry:'📯',unstoppable:'👁'};
+            let s = this.size;
+            let rank = this.heroRank || 'normal';
+            let lv   = this.level || 1;
+
+            // Кольори з типу героя (або overrides для елітів/босів)
+            let cloakCol  = this.heroCloakCol  || '#661122';
+            let bodyCol   = this.heroBodyCol   || '#cc2233';
+            let helmetCol = this.heroHelmetCol || '#666677';
+            if (rank === 'elite_hp')  { cloakCol='#115533'; bodyCol='#22aa66'; helmetCol='#44cc88'; }
+            if (rank === 'elite_atk') { cloakCol='#883300'; bodyCol='#ee6600'; helmetCol='#ffaa44'; }
+            if (rank === 'boss')      { cloakCol='#550066'; bodyCol='#aa00cc'; helmetCol='#cc88ff'; }
+
+            // Плащ
+            ctx.fillStyle = cloakCol;
+            ctx.beginPath(); ctx.moveTo(this.x, dy + s*0.3); ctx.lineTo(this.x - s*0.45, dy + s); ctx.lineTo(this.x + s*0.45, dy + s); ctx.closePath(); ctx.fill();
+
+            // Тіло
+            ctx.fillStyle = bodyCol;
+            ctx.fillRect(dx + s*0.22, dy + s*0.42, s*0.56, s*0.42);
+
+            // Шолом
+            ctx.fillStyle = helmetCol;
+            ctx.beginPath(); ctx.arc(this.x, dy + s*0.27, s*0.27, 0, Math.PI*2); ctx.fill();
+            ctx.fillStyle = '#333344';
+            ctx.fillRect(dx + s*0.08, dy + s*0.3, s*0.84, s*0.1);
+
+            // Зброя по типу
+            let wpn = this.heroWeapon || 'sword';
+            ctx.lineWidth = lv >= 7 ? 3 : 2;
+            if (wpn === 'sword') {
+                ctx.strokeStyle = lv >= 8 ? '#aaeeff' : '#aaaaaa';
+                ctx.beginPath(); ctx.moveTo(dx + s*1.0, dy + s*0.15); ctx.lineTo(dx + s*0.85, dy + s*0.72); ctx.stroke();
+                // Гарда
+                ctx.strokeStyle = '#888'; ctx.lineWidth = 2;
+                ctx.beginPath(); ctx.moveTo(dx + s*0.78, dy + s*0.5); ctx.lineTo(dx + s*1.05, dy + s*0.5); ctx.stroke();
+            } else if (wpn === 'spear') {
+                ctx.strokeStyle = '#88ccff';
+                ctx.beginPath(); ctx.moveTo(dx + s*1.0, dy + s*0.02); ctx.lineTo(dx + s*0.85, dy + s*0.78); ctx.stroke();
+                // Вістря
+                ctx.fillStyle = '#cceeff';
+                ctx.beginPath(); ctx.moveTo(dx + s*1.0, dy + s*0.02); ctx.lineTo(dx + s*0.9, dy + s*0.18); ctx.lineTo(dx + s*1.08, dy + s*0.18); ctx.closePath(); ctx.fill();
+            } else if (wpn === 'staff') {
+                ctx.strokeStyle = '#cc88ff'; ctx.lineWidth = 2;
+                ctx.beginPath(); ctx.moveTo(dx + s*1.0, dy + s*0.15); ctx.lineTo(dx + s*0.85, dy + s*0.85); ctx.stroke();
+                let glow2 = 0.5 + 0.5*Math.sin(Date.now()/300);
+                ctx.fillStyle = `rgba(180,100,255,${glow2})`;
+                ctx.beginPath(); ctx.arc(dx + s*1.0, dy + s*0.1, s*0.1, 0, Math.PI*2); ctx.fill();
+            } else if (wpn === 'axe') {
+                ctx.strokeStyle = '#ff6644'; ctx.lineWidth = 2;
+                ctx.beginPath(); ctx.moveTo(dx + s*1.0, dy + s*0.2); ctx.lineTo(dx + s*0.85, dy + s*0.75); ctx.stroke();
+                ctx.fillStyle = '#cc4422';
+                ctx.beginPath(); ctx.moveTo(dx + s*0.9, dy + s*0.2); ctx.lineTo(dx + s*1.12, dy + s*0.12); ctx.lineTo(dx + s*1.08, dy + s*0.38); ctx.closePath(); ctx.fill();
+            } else if (wpn === 'dagger') {
+                ctx.strokeStyle = '#88ffcc'; ctx.lineWidth = 1.5;
+                ctx.beginPath(); ctx.moveTo(dx + s*1.0, dy + s*0.25); ctx.lineTo(dx + s*0.9, dy + s*0.6); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(dx + s*0.78, dy + s*0.45); ctx.lineTo(dx + s*1.05, dy + s*0.38); ctx.stroke();
+            }
+
+            // Очі
+            ctx.fillStyle = '#ffeecc';
+            ctx.fillRect(this.x - s*0.12, dy + s*0.27, s*0.08, s*0.07);
+            ctx.fillRect(this.x + s*0.04, dy + s*0.27, s*0.08, s*0.07);
+
+            // Іконка пасиву (маленька, під HP баром)
+            const PASSIVE_ICONS = {
+                toughness:'🛡', swift:'💨', armor:'⚔', spellburn:'🔥',
+                holyaura:'✨', rage:'💢', firstblood:'🗡', warcry:'📯', unstoppable:'👁'
+            };
             if (this.heroPassive && PASSIVE_ICONS[this.heroPassive]) {
                 ctx.font = '8px Arial'; ctx.textAlign = 'center';
-                ctx.fillText(PASSIVE_ICONS[this.heroPassive], this.x + 14, this.y - camY - 38);
+                ctx.fillText(PASSIVE_ICONS[this.heroPassive], this.x + s*0.55, dy + s*0.08);
             }
-            // Назва типу
+
+            // Назва типу (маленька, над головою)
             if (this.heroLabel) {
                 ctx.fillStyle = 'rgba(255,220,180,0.85)';
                 ctx.font = '7px Arial'; ctx.textAlign = 'center';
-                ctx.fillText(this.heroLabel, this.x, this.y - camY - 40);
+                ctx.fillText(this.heroLabel, this.x, dy - 2);
             }
 
         } else if (this.type === 'lord') {
@@ -3273,6 +2892,7 @@ class Unit {
             ctx.globalAlpha = 1;
             ctx.shadowBlur  = 0;
         }
+
 
         // ── HP бар з градієнтом ──────────────────────────────────────────
         ctx.shadowBlur = 0;
@@ -3402,8 +3022,6 @@ function startGame(level) {
 
     // Душі на старт (базові 100 + бонус)
     GAME.souls = 100 + _permaData.startSoulsLvl * 10;
-    // Камінь Душ: базовий бонус до soulBonus (стакується з in-game Збирачем душ)
-    GAME.soulBonus = (_permaData.soulStoneLvl || 0);
 
     // Лорд: бонуси від perma
     GAME.maxLordHP  = 500  + _permaData.lordVitLvl * 100;
@@ -4794,33 +4412,6 @@ function loop(ts) {
         }
     }
 
-    // ── Сліди слизу (рендер ПЕРЕД юнітами, щоб бути під ними) ──────────
-    for (let i = slimeStains.length-1; i>=0; i--) {
-        let s = slimeStains[i];
-        s.life -= _dt;
-        let sa = (s.life / s.maxLife) * 0.62;
-        ctx.save(); ctx.globalAlpha = sa;
-        ctx.fillStyle = '#2a8008';
-        ctx.beginPath(); ctx.ellipse(s.x, s.y - GAME.cameraY, s.r, s.r*0.28, 0, 0, Math.PI*2); ctx.fill();
-        ctx.globalAlpha = sa * 0.5;
-        ctx.strokeStyle = '#1a5a04'; ctx.lineWidth = 1;
-        ctx.stroke(); ctx.restore();
-        if (s.life <= 0) slimeStains.splice(i, 1);
-    }
-    for (let i = slimeTrails.length-1; i>=0; i--) {
-        let t = slimeTrails[i];
-        t.life -= _dt;
-        let lf = t.life / t.maxLife;
-        let ta = Math.sin(lf * Math.PI) * 0.58; // плавна поява і зникнення
-        ctx.save(); ctx.globalAlpha = ta;
-        ctx.fillStyle = '#3aaa10';
-        ctx.beginPath(); ctx.ellipse(t.x, t.y - GAME.cameraY, t.r*1.6, t.r*0.5, 0, 0, Math.PI*2); ctx.fill();
-        ctx.globalAlpha = ta * 0.45;
-        ctx.strokeStyle = '#1a6600'; ctx.lineWidth = 0.7;
-        ctx.stroke(); ctx.restore();
-        if (t.life <= 0) slimeTrails.splice(i, 1);
-    }
-
     // Юніти
     for (let i = units.length - 1; i >= 0; i--) {
         let u = units[i];
@@ -4911,27 +4502,6 @@ function loop(ts) {
                 spawnDmgText(u.x, u.y - u.size, '+' + reward + '💀', '#ffcc00', u.heroRank !== 'normal');
                 updateUI();
             } else if (u.type === 'lord') { gameOver(); }
-            // SLIME смерть: краплі слизу + плюма + слід на землі
-            if (u.type === 'monster' && u.monsterKind === 'slime') {
-                for (let _pi=0; _pi<14; _pi++) {
-                    let _ang = Math.random() * Math.PI * 2;
-                    let _spd = 0.6 + Math.random() * 3.2;
-                    spawnParticle(u.x+(Math.random()-.5)*12, u.y-6, '#3aaa10', {
-                        vx: Math.cos(_ang)*_spd, vy: Math.sin(_ang)*_spd - 2.8,
-                        size: 2+Math.random()*5, life: 28+Math.random()*22
-                    });
-                }
-                // Кілька великих крапель
-                for (let _pi=0; _pi<5; _pi++) {
-                    let _ang = -Math.PI*0.3 - Math.random()*Math.PI*0.4;
-                    let _spd = 1.5 + Math.random() * 2;
-                    spawnParticle(u.x+(Math.random()-.5)*8, u.y-10, '#5abf30', {
-                        vx: Math.cos(_ang)*_spd, vy: Math.sin(_ang)*_spd,
-                        size: 4+Math.random()*4, life: 35+Math.random()*20
-                    });
-                }
-                slimeStains.push({x:u.x, y:u.y, floorIdx:u.floorIdx, life:300, maxLife:300, r:18+Math.random()*10});
-            }
             units.splice(i, 1);
         } else {
             // AIR_ELE напівпрозорий таймер + зняття бусту урону
@@ -5486,19 +5056,16 @@ const _PERMA_DEFAULTS = () => ({
     floorLvls: Array(_MAX_FLOORS).fill(0),
     floorCosts: _FLOOR_BASE_COSTS.slice(),
     startSoulsLvl:0, startSoulsCost:100,
-    soulStoneLvl:0,  soulStoneCost:120,
 });
 function _loadPerma() {
     try {
         let d = JSON.parse(_store.get('DLSiege_perma2') || '{}');
         let out = Object.assign(_PERMA_DEFAULTS(), d);
-        // Migration: old scalar floorLvl → per-floor arrays
         if (!Array.isArray(out.floorLvls)) {
             let oldLvl = (typeof d.floorLvl === 'number') ? d.floorLvl : 0;
             out.floorLvls = Array(_MAX_FLOORS).fill(oldLvl);
             out.floorCosts = _FLOOR_BASE_COSTS.map(c => r5(c * Math.pow(1.50, oldLvl)));
         }
-        // Ensure arrays are exactly _MAX_FLOORS length
         while (out.floorLvls.length < _MAX_FLOORS) out.floorLvls.push(0);
         while (out.floorCosts.length < _MAX_FLOORS) out.floorCosts.push(_FLOOR_BASE_COSTS[out.floorCosts.length] || 155);
         return out;
@@ -5517,16 +5084,12 @@ function buyPerma(type) {
     else if (type.startsWith('floor_')) {
         let di = parseInt(type.slice(6));
         if (isNaN(di) || di < 0 || di >= _MAX_FLOORS) return;
-        let isBat = (di + 1 === 6);
-        let maxPerma = 3; // bat: 4→10 (+2 each), regular: 2→5 (+1 each)
+        let maxPerma = 3;
         if (p.floorLvls[di] >= maxPerma) return;
-        cost = p.floorCosts[di];
-        if (avail < cost) return;
-        p.floorLvls[di]++;
-        p.floorCosts[di] = r5(p.floorCosts[di] * 1.50);
+        cost = p.floorCosts[di]; if (avail < cost) return;
+        p.floorLvls[di]++; p.floorCosts[di] = r5(p.floorCosts[di] * 1.50);
     }
     else if (type === 'startSouls') { cost = p.startSoulsCost; if (avail < cost) return; p.startSoulsLvl++; p.startSoulsCost = r5(p.startSoulsCost * 1.50); }
-    else if (type === 'soulStone') { cost = p.soulStoneCost;  if (avail < cost) return; p.soulStoneLvl++;  p.soulStoneCost  = r5(p.soulStoneCost  * 1.55); }
     else return;
     _store.set('DLSiege_elite', String(avail - cost));
     _savePerma(p);
@@ -5536,12 +5099,11 @@ function buyPerma(type) {
 
 // ── Інтерфейс Душі Підземелля ──────────────────────────────────────────────
 const _SD_CARDS = [
-    { type:'lordAtk',    icon:'⚔️', name:'Сила Лорда',           desc:'+5 атаки за рівень',              lvlKey:'lordAtkLvl', costKey:'lordAtkCost' },
-    { type:'lordVit',    icon:'💜', name:'Витривалість Лорда',    desc:'+100 HP, +2 броні, +0.1% реген', lvlKey:'lordVitLvl', costKey:'lordVitCost' },
-    { type:'mobAtk',     icon:'🗡️', name:'Сила Монстрів',         desc:'+10% дмг, +0.1 шв.атаки',       lvlKey:'mobAtkLvl',  costKey:'mobAtkCost'  },
-    { type:'mobVit',     icon:'🛡️', name:'Витривалість Монстрів', desc:'+25 HP, +1.5 броні',              lvlKey:'mobVitLvl',  costKey:'mobVitCost'  },
-    { type:'startSouls', icon:'💀', name:'Початкові Душі',        desc:'+10 душ на старті рівня',        lvlKey:'startSoulsLvl', costKey:'startSoulsCost' },
-    { type:'soulStone',  icon:'🔮', name:'Камінь Душ',            desc:'+1 💀 за кожне вбивство',        lvlKey:'soulStoneLvl',  costKey:'soulStoneCost'  },
+    { type:'lordAtk',    icon:'⚔️', name:'Сила Лорда',          desc:'+5 атаки за рівень',              lvlKey:'lordAtkLvl', costKey:'lordAtkCost' },
+    { type:'lordVit',    icon:'💜', name:'Витривалість Лорда',   desc:'+100 HP, +2 броні, +0.1% реген', lvlKey:'lordVitLvl', costKey:'lordVitCost' },
+    { type:'mobAtk',     icon:'🗡️', name:'Сила Монстрів',        desc:'+10% дмг, +0.1 шв.атаки',       lvlKey:'mobAtkLvl',  costKey:'mobAtkCost'  },
+    { type:'mobVit',     icon:'🛡️', name:'Витривалість Монстрів',desc:'+25 HP, +1.5 броні',              lvlKey:'mobVitLvl',  costKey:'mobVitCost'  },
+    { type:'startSouls', icon:'💀', name:'Початкові Душі',       desc:'+10 душ на старті рівня',        lvlKey:'startSoulsLvl', costKey:'startSoulsCost' },
 ];
 
 let _selectedFloor = 0;
@@ -5555,20 +5117,17 @@ function updateSoulDungeonUI() {
     document.getElementById('soul-dungeon-elite-num').innerText = avail;
     let cont = document.getElementById('soul-dungeon-cards');
     cont.innerHTML = '';
-
-    // ── General upgrade cards ──────────────────────────────────────────────
     _SD_CARDS.forEach(c => {
         let lvl  = p[c.lvlKey];
         let cost = p[c.costKey];
         let can  = avail >= cost;
         let card = document.createElement('div');
         card.className = 'perma-card';
-        card.dataset.type = c.type;
+        card.setAttribute('data-type', c.type);
         card.innerHTML = `
             <div class="perma-card-icon">${c.icon}</div>
             <div class="perma-card-name">${c.name}</div>
-            <div class="perma-card-lvl">Рівень <b>${lvl}</b></div>
-            <div class="perma-card-sep"></div>
+            <div class="perma-card-lvl">Рівень: <b>${lvl}</b></div>
             <div class="perma-card-desc">${c.desc}</div>
             <button class="perma-buy-btn ${can?'can-afford':'cannot-afford'}"
                 onclick="buyPerma('${c.type}')" ${can?'':'disabled'}>
@@ -5576,7 +5135,6 @@ function updateSoulDungeonUI() {
             </button>`;
         cont.appendChild(card);
     });
-
     // ── Floor picker card ──────────────────────────────────────────────────
     let di       = _selectedFloor;
     let isBat    = (di + 1 === 6);
@@ -5590,7 +5148,7 @@ function updateSoulDungeonUI() {
     let floorLabel = isBat ? `Поверх ${di+1} 🦇` : `Поверх ${di+1}`;
     let floorCard = document.createElement('div');
     floorCard.className = 'perma-card perma-card-floor-picker';
-    floorCard.dataset.type = 'floor';
+    floorCard.setAttribute('data-type', 'floor');
     floorCard.innerHTML = `
         <div class="perma-card-icon">🏰</div>
         <div class="perma-card-name">Слоти Монстрів</div>
@@ -5600,11 +5158,10 @@ function updateSoulDungeonUI() {
             <button class="floor-arrow" onclick="changeFloorSel(1)">▶</button>
         </div>
         <div class="perma-card-lvl">Монстрів: <b>${baseSlot + lvl * step}</b> / ${baseSlot + maxPerma * step}</div>
-        <div class="perma-card-sep"></div>
         <div class="perma-card-desc">${isBat ? '+2 кажани назавжди' : '+1 монстр назавжди'}</div>
         <button class="perma-buy-btn ${maxed ? 'maxed' : can ? 'can-afford' : 'cannot-afford'}"
             onclick="buyPerma('floor_${di}')" ${(can && !maxed) ? '' : 'disabled'}>
-            ${maxed ? 'МАКС.' : cost + ' <span class="esoul-icon">💀</span>'}
+            ${maxed ? 'МАКС.' : cost + ' <span class=\'esoul-icon\'>💀</span>'}
         </button>`;
     cont.appendChild(floorCard);
 }
