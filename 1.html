@@ -2437,115 +2437,164 @@ class Unit {
         ctx.shadowColor = '#000';
         ctx.shadowBlur  = 6;
         if (this.type === 'monster' && this.monsterKind === 'slime') {
-            const _R       = this.size / 2;
-            const _cx      = this.x;
-            const _floorY  = this.y - camY;
-            const _DT      = 1 / 60;
+            const _R      = this.size / 2;
+            const _cx     = this.x;
+            const _floorY = this.y - camY;
+            const _DT     = 1 / 60;
+            const _atkBase = this.attackCooldownBase || 60;
 
-            // ── Per-unit animation state ────────────────────────────────
+            // ── Per-unit anim state init ────────────────────────────────
             if (this._sDir === undefined) {
                 this._sDir = 1; this._sHopPh = 0; this._sAtkT = 0;
                 this._sPrevAtkCd = this.attackCooldown; this._sPrevX = this.x;
+                this._sRingT = 0;
             }
             if (Math.abs(this.x - this._sPrevX) > 0.2)
                 this._sDir = this.x > this._sPrevX ? 1 : -1;
             this._sPrevX = this.x;
 
-            // Detect attack fired: cooldown jumped up (just reset)
+            // Detect attack fired: cooldown jumped up → just reset after firing
             const _acd = this.attackCooldown || 0;
-            if (_acd > (this._sPrevAtkCd || 0) + 3) this._sAtkT = 1.0;
+            if (_acd > (this._sPrevAtkCd || 0) + 3) {
+                this._sAtkT = 1.0;   // impact anim countdown
+                this._sRingT = 1.0;  // expanding ring countdown
+            }
             this._sPrevAtkCd = _acd;
 
-            // Advance hop phase while moving
+            // Windup: how close to next attack (0=fresh, 1=about to fire)
+            const _windup = 1 - Math.min(1, _acd / (_atkBase * 0.30));
+
+            // Hop: advance only while moving, speed ~0.85 s per hop
             if (this.state === 'move')
-                this._sHopPh = (this._sHopPh + _DT / 0.48) % 1;
+                this._sHopPh = (this._sHopPh + _DT / 0.85) % 1;
             else
-                this._sHopPh = Math.max(0, this._sHopPh - _DT * 5);
+                this._sHopPh = Math.max(0, this._sHopPh - _DT * 4);
 
-            // Advance attack timer (1→0 over 0.65 s)
-            if (this._sAtkT > 0) this._sAtkT = Math.max(0, this._sAtkT - _DT / 0.65);
+            // Advance timers
+            const _atkDur = Math.min(0.55, _atkBase / 60 * 0.7);
+            if (this._sAtkT > 0) this._sAtkT  = Math.max(0, this._sAtkT  - _DT / _atkDur);
+            if (this._sRingT > 0) this._sRingT = Math.max(0, this._sRingT - _DT / 0.45);
 
-            // ── Compute squish/stretch ──────────────────────────────────
-            let _sx = 1, _sy = 1, _yOff = 0, _eyeDir = this._sDir, _blink = 0;
+            // ── Deformation ────────────────────────────────────────────
+            let _sx = 1, _sy = 1, _yOff = 0, _xOff = 0, _blink = 0, _angry = 0;
 
             if (this._sAtkT > 0) {
-                const t = 1 - this._sAtkT; // 0=just fired → 1=done
-                if (t < 0.14) {
-                    const f = t / 0.14;
-                    _sx = 1 + 0.55 * f;  _sy = 1 - 0.35 * f;
-                    _yOff = -_R * 0.25 * f;
-                } else if (t < 0.30) {
-                    const f = (t - 0.14) / 0.16;
-                    _sx = 1.55 - 0.55 * f;  _sy = 0.65 + 0.35 * f;
-                    // green flash
-                    ctx.shadowBlur = 0;
-                    ctx.fillStyle = `rgba(100,255,80,${(1 - f) * 0.18})`;
-                    ctx.fillRect(_cx - _R * 2.5, _floorY - _R * 3, _R * 5, _R * 3.2);
-                } else if (t < 0.75) {
-                    const f = (t - 0.30) / 0.45;
-                    const spring = Math.exp(-f * 7) * Math.cos(f * 22) * 0.11;
-                    _sx = 1 + spring;  _sy = 1 - spring;
+                // Impact animation
+                const t = 1 - this._sAtkT; // 0=fired → 1=done
+                if (t < 0.10) {            // lunge forward
+                    const f = t / 0.10;
+                    _sx = 1 + 0.70 * f;  _sy = 1 - 0.45 * f;
+                    _xOff = this._sDir * _R * 1.0 * f;
+                } else if (t < 0.25) {    // squash on impact
+                    const f = (t - 0.10) / 0.15;
+                    _sx = 1.70 - 0.85 * f;  _sy = 0.55 + 0.55 * f;
+                    _xOff = this._sDir * _R * 1.0 * (1 - f);
+                } else {                  // spring settle
+                    const f = (t - 0.25) / 0.75;
+                    const sp = Math.exp(-f * 6) * Math.cos(f * 20) * 0.13;
+                    _sx = 1 + sp;  _sy = 1 - sp;
                 }
+                _angry = 1;
+            } else if (_windup > 0.05 && this.state === 'fight') {
+                // Windup: squat down + lean, eyes angry
+                _sx = 1 + _windup * 0.18;   _sy = 1 - _windup * 0.14;
+                _xOff = this._sDir * _windup * _R * 0.25;
+                _angry = _windup;
             } else if (this.state === 'move') {
+                // Hop
                 const air = Math.max(0, Math.sin(this._sHopPh * Math.PI));
-                _sx = 1 + (1 - air) * 0.28 - air * 0.16;
-                _sy = 1 - (1 - air) * 0.20 + air * 0.20;
-                if (this._sHopPh > 0.80) {
-                    const spike = Math.sin((this._sHopPh - 0.80) / 0.20 * Math.PI) * 0.17;
-                    _sx += spike;  _sy -= spike * 0.75;
+                _sx = 1 + (1 - air) * 0.24 - air * 0.12;
+                _sy = 1 - (1 - air) * 0.18 + air * 0.18;
+                // extra squash spike at landing
+                if (this._sHopPh > 0.82) {
+                    const spk = Math.sin((this._sHopPh - 0.82) / 0.18 * Math.PI) * 0.14;
+                    _sx += spk;  _sy -= spk * 0.7;
                 }
-                _yOff = air * _R * 0.80;
+                _yOff = air * _R * 0.75;
             } else {
-                const _wob = Math.sin(Date.now() / 650) * 1.5;
-                _sx = 1 + _wob * 0.004;  _sy = 1 - _wob * 0.004;
+                // Idle breathe
+                const w = Math.sin(Date.now() / 680) * 1.5;
+                _sx = 1 + w * 0.004;  _sy = 1 - w * 0.004;
             }
 
-            // Occasional blink
-            const _bc = (Date.now() / 1000) % 3.6;
-            if (_bc > 3.3) _blink = Math.max(0, Math.sin((_bc - 3.3) / 0.15 * Math.PI));
+            // Blink
+            const _bc = (Date.now() / 1000) % 3.8;
+            if (_bc > 3.5) _blink = Math.max(0, Math.sin((_bc - 3.5) / 0.14 * Math.PI));
 
             const _cy = _floorY - _yOff - _R * _sy;
 
-            // ── Dust puff on landing ────────────────────────────────────
-            if (this.state === 'move' && this._sHopPh > 0.81 && this._sHopPh < 0.97) {
+            // ── Expanding acid ring on attack ───────────────────────────
+            if (this._sRingT > 0) {
+                const rp = 1 - this._sRingT;
+                const ringR  = _R * (1.1 + rp * 3.5);
+                const ringA  = this._sRingT * 0.85;
                 ctx.shadowBlur = 0;
-                const _da = Math.sin((this._sHopPh - 0.81) / 0.16 * Math.PI) * 0.38;
-                ctx.fillStyle = `rgba(80,50,110,${_da})`;
-                ctx.beginPath(); ctx.ellipse(_cx, _floorY, _R * _sx * 1.2, _R * 0.22, 0, 0, Math.PI * 2); ctx.fill();
+                ctx.strokeStyle = `rgba(80,255,60,${ringA})`;
+                ctx.lineWidth   = 3.5 * this._sRingT;
+                ctx.beginPath(); ctx.arc(_cx, _cy, ringR, 0, Math.PI * 2); ctx.stroke();
+                // second inner ring
+                ctx.strokeStyle = `rgba(200,255,100,${ringA * 0.5})`;
+                ctx.lineWidth   = 2;
+                ctx.beginPath(); ctx.arc(_cx, _cy, ringR * 0.6, 0, Math.PI * 2); ctx.stroke();
+            }
+
+            // ── Dust on landing ─────────────────────────────────────────
+            if (this.state === 'move' && this._sHopPh > 0.82 && this._sHopPh < 0.98) {
+                ctx.shadowBlur = 0;
+                const da = Math.sin((this._sHopPh - 0.82) / 0.16 * Math.PI) * 0.32;
+                ctx.fillStyle = `rgba(80,50,110,${da})`;
+                ctx.beginPath(); ctx.ellipse(_cx + _xOff, _floorY, _R*_sx*1.15, _R*0.19, 0, 0, Math.PI*2); ctx.fill();
             }
 
             // ── Body ────────────────────────────────────────────────────
             ctx.shadowColor = '#000'; ctx.shadowBlur = 7;
+            // Tint body slightly yellow/angry during windup/attack
+            const g0 = Math.round(160 + _angry * 30);
+            const g1 = Math.round(200 - _angry * 40);
             const rg = ctx.createRadialGradient(
-                _cx - _R*0.3*_sx, _cy - _R*0.25*_sy, _R*0.08,
-                _cx, _cy, _R * Math.max(_sx, _sy) + 2);
-            rg.addColorStop(0,    'rgba(160,255,160,0.97)');
-            rg.addColorStop(0.45, 'rgba(60,200,60,0.90)');
-            rg.addColorStop(1,    'rgba(20,120,20,0.75)');
+                _cx + _xOff - _R*0.3*_sx, _cy - _R*0.25*_sy, _R*0.08,
+                _cx + _xOff, _cy, _R * Math.max(_sx, _sy) + 2);
+            rg.addColorStop(0,    `rgba(${g0},255,${g0},0.97)`);
+            rg.addColorStop(0.45, `rgba(50,${g1},40,0.92)`);
+            rg.addColorStop(1,    'rgba(20,120,20,0.76)');
             ctx.fillStyle = rg;
-            ctx.beginPath(); ctx.ellipse(_cx, _cy, _R*_sx, _R*_sy, 0, 0, Math.PI*2); ctx.fill();
+            ctx.beginPath(); ctx.ellipse(_cx + _xOff, _cy, _R*_sx, _R*_sy, 0, 0, Math.PI*2); ctx.fill();
             ctx.shadowBlur = 0;
 
             // ── Eyes ────────────────────────────────────────────────────
             const _er       = _R * 0.21;
             const _eyeSprX  = _R * 0.37 * _sx;
-            const _eyeBaseY = _cy - _R * 0.08 * _sy;
+            const _eyeBaseY = _cy - _R * 0.10 * _sy;
             const _blinkH   = _er * Math.max(0.04, 1 - _blink);
+            // Angry brow angle
+            const _browTilt = _angry * 0.45;
             [-1, 1].forEach(side => {
-                const ex = _cx + side * _eyeSprX + _eyeDir * _er * 0.25;
-                ctx.fillStyle = '#e6ffe6';
+                const ex = _cx + _xOff + side * _eyeSprX + this._sDir * _er * 0.2;
+                // white
+                ctx.fillStyle = _angry > 0.3 ? `rgba(255,220,180,0.95)` : '#e6ffe6';
                 ctx.beginPath(); ctx.ellipse(ex, _eyeBaseY, _er, _blinkH, 0, 0, Math.PI*2); ctx.fill();
+                // pupil
                 if (_blink < 0.8) {
-                    ctx.fillStyle = '#0d1a0d';
-                    ctx.beginPath(); ctx.ellipse(ex + _eyeDir*_er*0.28, _eyeBaseY, _er*0.55, _er*0.55*(1-_blink*0.7), 0, 0, Math.PI*2); ctx.fill();
+                    ctx.fillStyle = _angry > 0.5 ? '#200000' : '#0d1a0d';
+                    const pupilH = _er * 0.55 * (1 - _blink*0.7) * (1 - _angry*0.35);
+                    ctx.beginPath(); ctx.ellipse(ex + this._sDir*_er*0.28, _eyeBaseY, _er*0.55, pupilH, 0, 0, Math.PI*2); ctx.fill();
                     ctx.fillStyle = 'rgba(255,255,255,0.72)';
                     ctx.beginPath(); ctx.arc(ex - _er*0.2, _eyeBaseY - _blinkH*0.28, _er*0.17, 0, Math.PI*2); ctx.fill();
                 }
+                // angry brow
+                if (_angry > 0.1) {
+                    ctx.strokeStyle = `rgba(20,80,20,${_angry * 0.9})`;
+                    ctx.lineWidth = 1.5;
+                    ctx.beginPath();
+                    ctx.moveTo(ex - _er*0.9, _eyeBaseY - _blinkH - 2 + side*_browTilt*3);
+                    ctx.lineTo(ex + _er*0.9, _eyeBaseY - _blinkH - 2 - side*_browTilt*3);
+                    ctx.stroke();
+                }
             });
 
-            // ── Specular highlight ──────────────────────────────────────
+            // ── Specular ────────────────────────────────────────────────
             ctx.fillStyle = 'rgba(255,255,255,0.37)';
-            ctx.beginPath(); ctx.ellipse(_cx - _R*0.28*_sx, _cy - _R*0.33*_sy, _R*0.27*_sx, _R*0.14*_sy, -0.4, 0, Math.PI*2); ctx.fill();
+            ctx.beginPath(); ctx.ellipse(_cx+_xOff - _R*0.28*_sx, _cy - _R*0.33*_sy, _R*0.27*_sx, _R*0.14*_sy, -0.4, 0, Math.PI*2); ctx.fill();
 
         } else if (this.type === 'monster' && this.monsterKind === 'skeleton') {
             // Скелет — кістяний, сірувато-жовтий, з черепом
