@@ -2461,8 +2461,9 @@ class Unit {
             // Detect attack fired: cooldown jumped up → just reset after firing
             const _acd = this.attackCooldown || 0;
             if (_acd > (this._sPrevAtkCd || 0) + 3) {
-                this._sAtkT = 1.0;   // impact anim countdown
-                this._sRingT = 1.0;  // expanding ring countdown
+                this._sAtkT   = 1.0;
+                this._sRingT  = 1.0;
+                this._sAtkDir = this._sDir; // зберігаємо напрямок в момент удару
             }
             this._sPrevAtkCd = _acd;
 
@@ -2528,26 +2529,6 @@ class Unit {
 
             const _cy = _floorY - _yOff - _R * _sy;
 
-            // ── Чверть-дуга в сторону ворога при атаці ─────────────────
-            if (this._sRingT > 0) {
-                const rp = 1 - this._sRingT;
-                const ringR = _R * (1.2 + rp * 3.2);
-                const ringA = this._sRingT * 0.90;
-                // кут центру дуги: 0 = вправо, π = вліво
-                const arcA  = this._sDir > 0 ? 0 : Math.PI;
-                const span  = Math.PI / 4; // 45° в кожну сторону = рівно 90° (чверть кола)
-                ctx.shadowBlur = 0;
-                ctx.strokeStyle = `rgba(80,255,60,${ringA})`;
-                ctx.lineWidth   = 4 * this._sRingT;
-                ctx.lineCap     = 'round';
-                ctx.beginPath(); ctx.arc(_cx + _xOff, _cy, ringR, arcA - span, arcA + span); ctx.stroke();
-                // тонша внутрішня дуга
-                ctx.strokeStyle = `rgba(200,255,100,${ringA * 0.55})`;
-                ctx.lineWidth   = 2 * this._sRingT;
-                ctx.beginPath(); ctx.arc(_cx + _xOff, _cy, ringR * 0.55, arcA - span * 0.7, arcA + span * 0.7); ctx.stroke();
-                ctx.lineCap = 'butt';
-            }
-
             // ── Dust on landing ─────────────────────────────────────────
             if (this.state === 'move' && this._sHopPh > 0.82 && this._sHopPh < 0.98) {
                 ctx.shadowBlur = 0;
@@ -2605,6 +2586,25 @@ class Unit {
             // ── Specular ────────────────────────────────────────────────
             ctx.fillStyle = 'rgba(255,255,255,0.37)';
             ctx.beginPath(); ctx.ellipse(_cx+_xOff - _R*0.28*_sx, _cy - _R*0.33*_sy, _R*0.27*_sx, _R*0.14*_sy, -0.4, 0, Math.PI*2); ctx.fill();
+
+            // ── Чверть-дуга в сторону ворога (поверх тіла) ─────────────
+            if (this._sRingT > 0) {
+                const _ad   = this._sAtkDir || this._sDir; // напрямок зафіксований в момент удару
+                const rp    = 1 - this._sRingT;
+                const ringR = _R * (1.4 + rp * 3.0);      // стартує вже за межами тіла
+                const ringA = this._sRingT * 0.95;
+                const arcA  = _ad > 0 ? 0 : Math.PI;      // 0=вправо, π=вліво
+                const span  = Math.PI / 4;                 // рівно 90° (чверть кола)
+                ctx.shadowBlur  = 0;
+                ctx.lineCap     = 'round';
+                ctx.strokeStyle = `rgba(80,255,60,${ringA})`;
+                ctx.lineWidth   = 4.5 * this._sRingT;
+                ctx.beginPath(); ctx.arc(_cx + _xOff, _cy, ringR, arcA - span, arcA + span); ctx.stroke();
+                ctx.strokeStyle = `rgba(200,255,100,${ringA * 0.5})`;
+                ctx.lineWidth   = 2 * this._sRingT;
+                ctx.beginPath(); ctx.arc(_cx + _xOff, _cy, ringR * 0.60, arcA - span * 0.65, arcA + span * 0.65); ctx.stroke();
+                ctx.lineCap = 'butt';
+            }
 
         } else if (this.type === 'monster' && this.monsterKind === 'skeleton') {
             // Скелет — кістяний, сірувато-жовтий, з черепом
