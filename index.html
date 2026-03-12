@@ -2447,6 +2447,7 @@ class Unit {
         if (this.hp <= 0) return;
         let dx = this.x - this.size/2;
         let dy = this.y - this.size - camY;
+        this._hpBarY = undefined; // скинути — буде перераховано нижче для слайма/скелета
 
         // ── Жива анімація погойдування ────────────────────────────────────
         let _bt  = Date.now() / 600 + this.x * 0.009;
@@ -2571,6 +2572,8 @@ class Unit {
             if (_bc > 3.5) _blink = Math.max(0, Math.sin((_bc - 3.5) / 0.14 * Math.PI));
 
             const _cy = _floorY - _yOff - _R * _sy;
+            // HP бар прив'язуємо до верхівки тіла (включаючи стрибок)
+            this._hpBarY = _cy - _R * _sy - 12;
 
             // ── Dust on landing ─────────────────────────────────────────
             if (this.state === 'move' && this._sHopPh > 0.82 && this._sHopPh < 0.98) {
@@ -2690,6 +2693,9 @@ class Unit {
             const _skSc   = this.size * 0.015;
             const _skHipY = (this.y - camY) - 50 * _skSc;
             drawSkeleton(ctx, this.x, _skHipY, this._skT, this._skDir, _skSc, this._skAtkP || 0);
+            // HP бар прив'язуємо до верхівки черепа
+            // HEAD_Y у local space = -68, тому в screen: hipY - 68*sc
+            this._hpBarY = _skHipY - 68 * _skSc - 12;
 
         } else if (this.type === 'monster' && this.monsterKind === 'zombie') {
             // Зомбі — зеленуватий, повільний, розхристаний
@@ -3101,7 +3107,8 @@ class Unit {
         let _isLord = this.type === 'lord';
         let _bw = _isLord ? 54 : 40, _bh = _isLord ? 10 : 7;
         let _bx = this.x - _bw / 2;
-        let _barTop = dy - 13;
+        // Для слайма і скелета — позиція рахується під час малювання (слідує за стрибком/анімацією)
+        let _barTop = this._hpBarY !== undefined ? this._hpBarY : dy - 13;
         // Фон
         ctx.fillStyle = '#220000'; ctx.fillRect(_bx, _barTop, _bw, _bh);
         // Заповнення з градієнтом (зелений→жовтий→червоний)
