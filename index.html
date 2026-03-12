@@ -1249,14 +1249,24 @@ function _slEyestalk(bx,by,angle,len,eyeR){
   ctx.save(); ctx.globalAlpha=0.85; ctx.beginPath(); ctx.arc(tx-eyeR*0.28,ty-eyeR*0.3,eyeR*0.28,0,Math.PI*2);
   ctx.fillStyle=_SL.eyeHL; ctx.fill(); ctx.restore();
 }
-function drawSlug(ctx_,x,y,t,dir=1,atk={phase:0,t:0},sc=1.0){
+function drawSlug(ctx_,x,y,t,dir=1,atk={phase:0,t:0},sc=1.0,mode='idle'){
   const p=atk.t;
   const ease=_slEase;
   const bob=Math.sin(t*2.2)*0.04;
   const jig=Math.sin(t*3.7)*0.018; // extra jiggle on blob surface
   let sqX=1, sqY=1, offX=0, offY=0, mouthOpen=0, eyeStr=1, flash=0, blush=0, wobble=0;
+  let lean=0, angryBrows=false;
   if(atk.phase===0){
-    sqX=1+bob*0.45+jig*0.15; sqY=1-bob*0.3; offY=-bob;
+    if(mode==='walk'){
+      const ph=t*3.6, hop=Math.max(0,Math.sin(ph)), sqsh=Math.max(0,-Math.sin(ph)*0.55);
+      sqX=1+sqsh*0.36-hop*0.08+bob*0.10; sqY=1-sqsh*0.22+hop*0.20; offY=(-hop*8-bob)*sc;
+    } else if(mode==='run'){
+      const ph=t*6.4, hop=Math.max(0,Math.sin(ph)), sqsh=Math.max(0,-Math.sin(ph)*0.60);
+      sqX=1+sqsh*0.52-hop*0.16; sqY=1-sqsh*0.36+hop*0.28; offY=-hop*14*sc;
+      lean=0.18; angryBrows=true;
+    } else {
+      sqX=1+bob*0.45+jig*0.15; sqY=1-bob*0.3; offY=-bob;
+    }
   } else if(atk.phase===1){
     const e=ease(p);
     sqX=1+e*0.44; sqY=1-e*0.40; offY=e*2; eyeStr=1-e*0.5;
@@ -1275,6 +1285,7 @@ function drawSlug(ctx_,x,y,t,dir=1,atk={phase:0,t:0},sc=1.0){
 
 
   ctx_.save(); ctx_.translate(x,y); ctx_.scale(dir,1);
+  if(lean) ctx_.rotate(lean);
 
   // Drop shadow
   ctx_.save(); ctx_.globalAlpha=0.15;
@@ -1305,6 +1316,18 @@ function drawSlug(ctx_,x,y,t,dir=1,atk={phase:0,t:0},sc=1.0){
   const eyeY=cy-rY*0.10;
   const eyeR=rX*0.10;
   const eyes=[{x:cx-eyeSep},{x:cx+eyeSep}];
+  // Angry brows (run mode): inward-slanted lines above eyes
+  if(angryBrows){
+    ctx_.save(); ctx_.strokeStyle=_SL.outline; ctx_.lineWidth=1.6; ctx_.lineCap='round';
+    for(let s=-1;s<=1;s+=2){
+      const ex=cx+s*eyeSep;
+      ctx_.beginPath();
+      ctx_.moveTo(ex-eyeR*1.0, eyeY-eyeR*1.5-eyeR*s*0.5);
+      ctx_.lineTo(ex+eyeR*1.0, eyeY-eyeR*1.5+eyeR*s*0.5);
+      ctx_.stroke();
+    }
+    ctx_.restore();
+  }
   for(const e of eyes){
     ctx_.beginPath(); ctx_.arc(e.x,eyeY,eyeR*eyeStr,0,Math.PI*2);
     ctx_.fillStyle=_SL.eye; ctx_.fill();
@@ -2645,6 +2668,7 @@ class Unit {
                 u.hp > 0 && !u.isClimbing && Math.abs(u.x - this.x) < 210
             );
             if (aggroTarget) {
+                this._aggroed = true;
                 // Біжимо до героя
                 let dir = aggroTarget.x > this.x ? 1 : -1;
                 this.x += dir * this.speed * 1.5 * _dt;
@@ -2652,6 +2676,7 @@ class Unit {
                     slimeTrails.push({x:this.x+(Math.random()-.5)*8, y:this.y, floorIdx:this.floorIdx, life:40, maxLife:40, r:2+Math.random()*4});
             } else {
                 // Патруль
+                this._aggroed = false;
                 if (!this.patrolDir) this.patrolDir = 1;
                 this.x += this.speed * 0.5 * this.patrolDir * _dt;
                 if (this.monsterKind === 'slime' && !this._atkAnimStart && Math.random() < 0.20)
@@ -2725,7 +2750,8 @@ class Unit {
                 else if (_el < 600) { _atk = {phase:3, t:(_el-400)/200}; }
                 else                { this._atkAnimStart = null; }
             }
-            drawSlug(ctx, this.x, this.y - camY, _t, _dir, _atk, 0.72);
+            let _mode = this._atkAnimStart ? 'idle' : (this._aggroed ? 'run' : 'walk');
+            drawSlug(ctx, this.x, this.y - camY, _t, _dir, _atk, 0.72, _mode);
 
         } else if (this.type === 'monster' && this.monsterKind === 'skeleton') {
             // Скелет — Don't Starve style
