@@ -1,435 +1,516 @@
 <!DOCTYPE html>
-<html>
+<html lang="uk">
 <head>
 <meta charset="utf-8">
-<title>Skeleton — Don't Starve style</title>
+<title>Skeleton Preview</title>
 <style>
-* { margin:0; padding:0; box-sizing:border-box; }
-body {
-  background: #0e0818;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  min-height: 100vh;
-  gap: 12px;
-  font-family: monospace;
-  color: #5544aa;
-}
-canvas { background: #120d22; border-radius: 14px; }
-p { font-size: 11px; letter-spacing: 1px; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #06000f; display: flex; flex-direction: column;
+         align-items: center; justify-content: center;
+         min-height: 100vh; font-family: monospace; color: #aaa; gap: 14px; }
+  canvas { border: 1px solid #2a1a40; border-radius: 8px; }
+  .btns { display: flex; gap: 10px; }
+  button { background: #12002a; border: 1px solid #442266; color: #bb99dd;
+           padding: 9px 22px; cursor: pointer; border-radius: 7px;
+           font-family: monospace; font-size: 14px; transition: all .15s; }
+  button:hover  { background: #220044; border-color: #7744aa; }
+  button.active { background: #330066; border-color: #cc66ff; color: #fff;
+                  box-shadow: 0 0 10px rgba(180,60,255,.35); }
 </style>
 </head>
 <body>
-<canvas id="c" width="340" height="310"></canvas>
-<p>skeleton.js · Don't Starve style · v2</p>
-
+<canvas id="c" width="620" height="380"></canvas>
+<div class="btns">
+  <button id="b-idle"   onclick="setMode('idle')">⚪ Idle</button>
+  <button id="b-walk"   onclick="setMode('walk')">🚶 Walk</button>
+  <button id="b-run"    onclick="setMode('run')">🏃 Run</button>
+  <button id="b-attack" onclick="setMode('attack')">⚔️ Attack</button>
+</div>
 <script>
-// ═══════════════════════════════════════════════════════════
-//  skeleton.js  v2  —  Don't Starve animated skeleton
-//  API:  drawSkeleton(ctx, x, y, timeSec, direction=1)
-//        x,y = hip center position
-// ═══════════════════════════════════════════════════════════
+const C  = document.getElementById('c');
+const cx = C.getContext('2d');
+let mode = 'idle', modeT = 0, gt = 0;
 
-const C = {
-  outline  : '#180600',
-  bone     : '#ddd3a2',   // main bone fill
-  boneHL   : '#f4eccc',   // highlight (bright stripe)
-  dim      : '#96906a',   // back/shadowed limbs
-  dimHL    : '#b8b28a',
-  joint    : '#c6bc8c',
-  eye      : '#0b0300',
-  eyeGlow  : 'rgba(50,255,90,0.30)',
-  tooth    : '#c2b46e',
-  crack    : '#180600',
-};
+function setMode(m) {
+  mode = m; modeT = 0;
+  document.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+  document.getElementById('b-' + m).classList.add('active');
+}
+setMode('idle');
 
-// ── core bone primitive — capsule + highlight stripe ────────
+// ── Math helpers ──────────────────────────────────────────────────────────
+const lerp  = (a, b, t) => a + (b - a) * t;
+const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+const ease  = t => t < .5 ? 2*t*t : -1+(4-2*t)*t;   // smooth ease in-out
 
-function bone(x1, y1, x2, y2, r, dim = false) {
-  const fill = dim ? C.dim : C.bone;
-  const hl   = dim ? C.dimHL : C.boneHL;
-  const a  = Math.atan2(y2 - y1, x2 - x1);
-  // perpendicular unit vector (for highlight offset)
-  const px = -Math.sin(a);
-  const py =  Math.cos(a);
-
-  // outline + fill
-  ctx.beginPath();
-  ctx.arc(x1, y1, r, a + Math.PI/2, a - Math.PI/2);
-  ctx.arc(x2, y2, r, a - Math.PI/2, a + Math.PI/2);
-  ctx.closePath();
-  ctx.strokeStyle = C.outline;
-  ctx.lineWidth   = 2.8;
-  ctx.stroke();
-  ctx.fillStyle = fill;
-  ctx.fill();
-
-  // highlight stripe (upper-left of bone)
-  const hr = r * 0.28;
-  const ox = px * r * 0.42 - 1;
-  const oy = py * r * 0.42 - 1;
-  ctx.save();
-  ctx.globalAlpha = 0.52;
-  ctx.beginPath();
-  ctx.arc(x1 + ox, y1 + oy, hr, a + Math.PI/2, a - Math.PI/2);
-  ctx.arc(x2 + ox, y2 + oy, hr, a - Math.PI/2, a + Math.PI/2);
-  ctx.closePath();
-  ctx.fillStyle = hl;
-  ctx.fill();
-  ctx.restore();
+// ── Bone drawing ──────────────────────────────────────────────────────────
+// Angles: measured from vertical (downward). +x = right, sin/cos layout.
+// sx,sy = start point;  angle = from vertical;  len = segment length
+function segEnd(sx, sy, angle, len) {
+  return { x: sx + Math.sin(angle) * len, y: sy + Math.cos(angle) * len };
 }
 
-// joint sphere with reflection dot
-function jnt(x, y, r, dim = false) {
-  const fill = dim ? C.dim : C.joint;
-  ctx.beginPath();
-  ctx.arc(x, y, r, 0, Math.PI * 2);
-  ctx.strokeStyle = C.outline;
-  ctx.lineWidth   = 1.8;
-  ctx.stroke();
-  ctx.fillStyle = fill;
-  ctx.fill();
-  // reflection
-  ctx.save();
-  ctx.globalAlpha = 0.5;
-  ctx.beginPath();
-  ctx.arc(x - r * 0.3, y - r * 0.35, r * 0.32, 0, Math.PI * 2);
-  ctx.fillStyle = dim ? C.dimHL : C.boneHL;
-  ctx.fill();
-  ctx.restore();
+function drawBone(x1, y1, x2, y2, w, col) {
+  cx.strokeStyle = col || '#c8b46a';
+  cx.lineWidth   = w;
+  cx.lineCap     = 'round';
+  cx.beginPath(); cx.moveTo(x1, y1); cx.lineTo(x2, y2); cx.stroke();
 }
 
-// ── skull ───────────────────────────────────────────────────
+function drawJoint(x, y, r, col) {
+  cx.fillStyle   = col || '#a89044';
+  cx.strokeStyle = '#6a5020';
+  cx.lineWidth   = 1;
+  cx.beginPath(); cx.arc(x, y, r, 0, Math.PI*2);
+  cx.fill(); cx.stroke();
+}
 
-function drawSkull(x, y, tilt, jawOpen) {
-  ctx.save();
-  ctx.translate(x, y);
-  ctx.rotate(tilt);
+// Two-segment limb: returns {ex,ey,hx,hy} (elbow/knee, hand/foot)
+function drawLimb(sx, sy, aUp, aLo, lenUp, lenLo, wUp, wLo, col, jcol, alpha) {
+  const e = segEnd(sx, sy, aUp, lenUp);
+  const h = segEnd(e.x, e.y, aLo, lenLo);
+  const a = cx.globalAlpha;
+  cx.globalAlpha = alpha ?? 1;
+  drawBone(sx, sy, e.x, e.y, wUp, col);
+  drawBone(e.x, e.y, h.x, h.y, wLo, col);
+  drawJoint(sx, sy, wUp * 0.55, jcol);
+  drawJoint(e.x, e.y, wUp * 0.60, jcol);
+  drawJoint(h.x, h.y, wLo * 0.50, jcol);
+  cx.globalAlpha = a;
+  return { ex: e.x, ey: e.y, hx: h.x, hy: h.y };
+}
 
-  // cranium
-  ctx.beginPath();
-  ctx.ellipse(0, -5, 14, 16, 0, 0, Math.PI * 2);
-  ctx.strokeStyle = C.outline;
-  ctx.lineWidth   = 2.8;
-  ctx.stroke();
-  ctx.fillStyle = C.bone;
-  ctx.fill();
+// ── Skeleton renderer ─────────────────────────────────────────────────────
+// pose fields:
+//   tiltBody   – body lean (rad)
+//   hipBob     – vertical offset (px) added to hipY
+//   hipSway    – horizontal offset
+//   jawOpen    – 0..1
+//   legLT,legLS – left leg thigh angle, shin angle  (absolute from vertical)
+//   legRT,legRS – right leg angles
+//   armLU,armLL – left arm upper/lower angles
+//   armRU,armRL – right arm angles
+//   weaponA    – extra weapon angle beyond lower arm
+//   headTilt   – skull tilt
 
-  // cranium highlight (top-left glow)
-  ctx.save();
-  ctx.globalAlpha = 0.38;
-  ctx.beginPath();
-  ctx.ellipse(-4, -10, 8, 9, -0.3, 0, Math.PI * 2);
-  ctx.fillStyle = C.boneHL;
-  ctx.fill();
-  ctx.restore();
+function drawSkeleton(posX, floorY, pose) {
+  const BC  = '#c8b46a';   // bone colour
+  const BJC = '#a08838';   // joint colour
+  const DBC = '#9a8840';   // back bone (dimmer)
+  const DBJ = '#706030';   // back joint
 
-  // temporal line (subtle ridge)
-  ctx.save();
-  ctx.globalAlpha = 0.25;
-  ctx.strokeStyle = C.outline;
-  ctx.lineWidth = 1.2;
-  ctx.beginPath();
-  ctx.ellipse(0, -5, 12, 14, 0, Math.PI * 1.15, Math.PI * 1.6);
-  ctx.stroke();
-  ctx.restore();
+  // ── Rig positions ──────────────────────────────────────────────
+  const hipX = posX + (pose.hipSway || 0);
+  const hipY = floorY - 46 + (pose.hipBob || 0);
 
-  // jaw (rotates slightly when walking)
-  const jy = jawOpen * 2.5;
-  ctx.save();
-  ctx.translate(0, jy);
-  ctx.beginPath();
-  ctx.ellipse(0, 8, 10, 6.5, 0, 0.08, Math.PI - 0.08);
-  ctx.strokeStyle = C.outline;
-  ctx.lineWidth   = 2.4;
-  ctx.stroke();
-  ctx.fillStyle = C.bone;
-  ctx.fill();
+  const spineLen = 27;
+  const bt = pose.tiltBody || 0;
+  const shouldX = hipX + Math.sin(bt) * spineLen;
+  const shouldY = hipY - spineLen;
 
-  // jaw highlight
-  ctx.save();
-  ctx.globalAlpha = 0.35;
-  ctx.beginPath();
-  ctx.ellipse(-3, 7, 5, 3, -0.2, 0, Math.PI * 2);
-  ctx.fillStyle = C.boneHL;
-  ctx.fill();
-  ctx.restore();
+  const neckLen = 9;
+  const neckX = shouldX + Math.sin(bt) * neckLen;
+  const neckY = shouldY - neckLen;
 
-  // teeth (4 upper, bottom of cranium)
-  for (let i = 0; i < 4; i++) {
-    const tx = (i - 1.5) * 4.6;
-    ctx.beginPath();
-    ctx.roundRect(tx - 1.8, 4.5, 3.4, 5, 0.8);
-    ctx.strokeStyle = C.outline;
-    ctx.lineWidth   = 1;
-    ctx.stroke();
-    ctx.fillStyle = C.tooth;
-    ctx.fill();
+  const ht = pose.headTilt || 0;
+  const headX = neckX + Math.sin(ht) * 5;
+  const headY = neckY - 11;
+
+  // ── Shadow ─────────────────────────────────────────────────────
+  cx.fillStyle = 'rgba(0,0,0,0.38)';
+  cx.beginPath();
+  cx.ellipse(posX, floorY + 2, 22, 5, 0, 0, Math.PI*2);
+  cx.fill();
+
+  // ── Back leg ───────────────────────────────────────────────────
+  drawLimb(hipX+4, hipY+3, pose.legRT, pose.legRS, 27, 25, 5.5, 4.5, DBC, DBJ, 0.72);
+  // back foot
+  { const kt = segEnd(hipX+4, hipY+3, pose.legRT, 27);
+    const at = segEnd(kt.x, kt.y, pose.legRS, 25);
+    drawBone(at.x, at.y, at.x + Math.sin(pose.legRS + 0.4)*10, at.y - 1, 3.5, DBC); }
+
+  // ── Back arm ───────────────────────────────────────────────────
+  drawLimb(shouldX+6, shouldY+3, pose.armRU, pose.armRL, 21, 18, 4, 3.5, DBC, DBJ, 0.68);
+
+  // ── Pelvis ─────────────────────────────────────────────────────
+  cx.strokeStyle = BC; cx.fillStyle = 'rgba(200,180,106,.18)'; cx.lineWidth = 3.5;
+  cx.beginPath(); cx.ellipse(hipX, hipY+3, 11, 6.5, bt, 0, Math.PI*2);
+  cx.fill(); cx.stroke();
+
+  // ── Spine ──────────────────────────────────────────────────────
+  drawBone(hipX, hipY, shouldX, shouldY, 4, BC);
+  for (let i = 0; i < 5; i++) {
+    const vf = i / 4;
+    const vx = lerp(hipX, shouldX, vf), vy = lerp(hipY, shouldY, vf);
+    drawJoint(vx, vy, 2.8, i % 2 === 0 ? '#d0bc70' : BJC);
   }
-  ctx.restore(); // jaw
+
+  // ── Ribcage ────────────────────────────────────────────────────
+  cx.lineWidth = 2;
+  for (let r = 0; r < 3; r++) {
+    const ry = shouldY + 4 + r * 7;
+    const rx = shouldX + Math.sin(bt) * r * 0.5;
+    const rw = 13 - r * 1.5;
+    cx.strokeStyle = r === 0 ? BC : '#b0a058';
+    cx.beginPath();
+    cx.moveTo(rx, ry);
+    cx.bezierCurveTo(rx - rw - 2, ry + 3, rx - rw - 2, ry + 7, rx - 3, ry + 9 - r * 0.5);
+    cx.stroke();
+    cx.beginPath();
+    cx.moveTo(rx, ry);
+    cx.bezierCurveTo(rx + rw + 2, ry + 3, rx + rw + 2, ry + 7, rx + 3, ry + 9 - r * 0.5);
+    cx.stroke();
+  }
+
+  // ── Front leg ──────────────────────────────────────────────────
+  drawLimb(hipX-4, hipY+3, pose.legLT, pose.legLS, 27, 25, 6, 5, BC, BJC);
+  // front foot bone
+  { const kf = segEnd(hipX-4, hipY+3, pose.legLT, 27);
+    const af = segEnd(kf.x, kf.y, pose.legLS, 25);
+    drawBone(af.x, af.y, af.x + Math.sin(pose.legLS + 0.4)*10, af.y - 1, 4, BC); }
+
+  // ── Front arm (weapon arm) ─────────────────────────────────────
+  const armFront = drawLimb(shouldX-6, shouldY+3, pose.armLU, pose.armLL, 21, 18, 4.5, 4, BC, BJC);
+
+  // ── Sword ──────────────────────────────────────────────────────
+  const wa = pose.armLL + (pose.weaponA || 0);
+  const hx2 = armFront.hx, hy2 = armFront.hy;
+  // handle
+  cx.strokeStyle = '#7a6030'; cx.lineWidth = 5; cx.lineCap = 'round';
+  cx.beginPath();
+  cx.moveTo(hx2, hy2);
+  cx.lineTo(hx2 + Math.sin(wa) * 10, hy2 + Math.cos(wa) * 10);
+  cx.stroke();
+  // guard
+  const gx = hx2 + Math.sin(wa) * 11, gy = hy2 + Math.cos(wa) * 11;
+  cx.strokeStyle = '#a07838'; cx.lineWidth = 5;
+  cx.beginPath();
+  cx.moveTo(gx - Math.cos(wa) * 7, gy + Math.sin(wa) * 7);
+  cx.lineTo(gx + Math.cos(wa) * 7, gy - Math.sin(wa) * 7);
+  cx.stroke();
+  // blade
+  const bTip = { x: hx2 + Math.sin(wa) * 40, y: hy2 + Math.cos(wa) * 40 };
+  const bladeGrad = cx.createLinearGradient(gx, gy, bTip.x, bTip.y);
+  bladeGrad.addColorStop(0, '#d0d0e0');
+  bladeGrad.addColorStop(1, 'rgba(180,180,200,0.4)');
+  cx.strokeStyle = bladeGrad; cx.lineWidth = 3.5;
+  cx.beginPath(); cx.moveTo(gx, gy); cx.lineTo(bTip.x, bTip.y); cx.stroke();
+  // edge glint
+  cx.strokeStyle = 'rgba(255,255,255,0.55)'; cx.lineWidth = 1;
+  cx.beginPath();
+  cx.moveTo(gx + Math.cos(wa)*1, gy - Math.sin(wa)*1);
+  cx.lineTo(bTip.x + Math.cos(wa)*1, bTip.y - Math.sin(wa)*1);
+  cx.stroke();
+
+  // ── Neck ───────────────────────────────────────────────────────
+  drawBone(shouldX, shouldY, neckX, neckY, 4, BC);
+  drawJoint(shouldX, shouldY, 4, BJC);
+
+  // ── Skull ──────────────────────────────────────────────────────
+  const skR = 13;
+  cx.save();
+  cx.translate(headX, headY);
+  cx.rotate(ht * 0.5);
+
+  // skull back
+  cx.shadowColor = 'rgba(0,0,0,0.65)'; cx.shadowBlur = 10;
+  cx.fillStyle   = '#c8b46a';
+  cx.strokeStyle = '#7a6020';
+  cx.lineWidth   = 1.8;
+  cx.beginPath(); cx.arc(0, 0, skR, 0, Math.PI*2); cx.fill(); cx.stroke();
+  cx.shadowBlur = 0;
+
+  // cranium shading
+  const cranGrad = cx.createRadialGradient(-3, -5, 2, 0, 0, skR);
+  cranGrad.addColorStop(0, 'rgba(255,240,160,0.5)');
+  cranGrad.addColorStop(1, 'rgba(80,50,0,0.4)');
+  cx.fillStyle = cranGrad;
+  cx.beginPath(); cx.arc(0, 0, skR, 0, Math.PI*2); cx.fill();
+
+  // cheekbone ridge
+  cx.fillStyle   = '#b0a050';
+  cx.strokeStyle = '#7a6020';
+  cx.lineWidth   = 1;
+  cx.beginPath(); cx.ellipse(0, 3, skR * 0.78, skR * 0.46, 0, 0, Math.PI); cx.fill();
 
   // eye sockets
-  for (const sx of [-5, 5]) {
-    ctx.beginPath();
-    ctx.ellipse(sx, -7, 4.5, 3.8, sx < 0 ? -0.12 : 0.12, 0, Math.PI * 2);
-    ctx.fillStyle = C.eye;
-    ctx.fill();
+  cx.fillStyle = '#100800';
+  cx.beginPath(); cx.ellipse(-4.8, -1, 3.8, 3.8, -0.15, 0, Math.PI*2); cx.fill();
+  cx.beginPath(); cx.ellipse( 4.8, -1, 3.8, 3.8,  0.15, 0, Math.PI*2); cx.fill();
 
-    // green glow
-    ctx.save();
-    ctx.globalAlpha = 0.55;
-    ctx.beginPath();
-    ctx.ellipse(sx, -7.5, 2.6, 2.0, sx < 0 ? -0.12 : 0.12, 0, Math.PI * 2);
-    ctx.fillStyle = C.eyeGlow;
-    ctx.fill();
-    ctx.restore();
+  // glowing eyes
+  cx.shadowColor = '#ff6600'; cx.shadowBlur = 8;
+  cx.fillStyle   = 'rgba(255,90,10,0.85)';
+  cx.beginPath(); cx.arc(-4.8, -1, 2.0, 0, Math.PI*2); cx.fill();
+  cx.beginPath(); cx.arc( 4.8, -1, 2.0, 0, Math.PI*2); cx.fill();
+  cx.shadowBlur = 0;
+  cx.fillStyle = 'rgba(255,200,80,0.6)';
+  cx.beginPath(); cx.arc(-4.8, -1, 0.8, 0, Math.PI*2); cx.fill();
+  cx.beginPath(); cx.arc( 4.8, -1, 0.8, 0, Math.PI*2); cx.fill();
 
-    // bright eye core
-    ctx.save();
-    ctx.globalAlpha = 0.7;
-    ctx.beginPath();
-    ctx.arc(sx, -7.5, 0.9, 0, Math.PI * 2);
-    ctx.fillStyle = 'rgba(160,255,180,0.9)';
-    ctx.fill();
-    ctx.restore();
+  // nasal
+  cx.fillStyle = '#100800';
+  cx.beginPath();
+  cx.moveTo(-1.5, 3); cx.lineTo(1.5, 3); cx.lineTo(0, 5.5); cx.closePath(); cx.fill();
+
+  // upper teeth
+  cx.fillStyle   = '#e0d080'; cx.strokeStyle = '#907828'; cx.lineWidth = 0.7;
+  for (let i = 0; i < 4; i++) {
+    const tx = -5.5 + i * 3.4;
+    cx.beginPath(); cx.rect(tx, skR - 5, 2.6, 3.5); cx.fill(); cx.stroke();
   }
 
-  // nose cavity
-  ctx.beginPath();
-  ctx.moveTo(0, -0.5); ctx.lineTo(-2.8, 3.5); ctx.lineTo(2.8, 3.5);
-  ctx.closePath();
-  ctx.fillStyle = C.eye;
-  ctx.fill();
+  // ── Jaw ────────────────────────────────────────────────────────
+  const jOpen = (pose.jawOpen || 0) * 9;
+  cx.restore();  // come back to world space so jaw orbits headX/headY
+  cx.save();
+  cx.translate(headX, headY + skR - 3);
+  cx.rotate(ht * 0.5 + (pose.jawOpen || 0) * 0.45);
 
-  // forehead crack
-  ctx.save();
-  ctx.strokeStyle = C.crack;
-  ctx.lineWidth   = 1.1;
-  ctx.globalAlpha = 0.7;
-  ctx.beginPath();
-  ctx.moveTo(2, -18); ctx.lineTo(1, -13); ctx.lineTo(3, -9); ctx.lineTo(1, -5);
-  ctx.stroke();
-  ctx.restore();
+  cx.fillStyle   = '#b0a050';
+  cx.strokeStyle = '#7a6020'; cx.lineWidth = 1.5;
+  cx.beginPath();
+  cx.ellipse(0, jOpen * 0.35 + 1, 7, 4.5, 0, 0, Math.PI*2);
+  cx.fill(); cx.stroke();
 
-  ctx.restore();
+  // lower teeth
+  cx.fillStyle   = '#e0d080'; cx.strokeStyle = '#907828'; cx.lineWidth = 0.7;
+  for (let i = 0; i < 3; i++) {
+    const tx = -4 + i * 3.6;
+    cx.beginPath();
+    cx.rect(tx, -jOpen * 0.3 - 4, 2.5, 3.2);
+    cx.fill(); cx.stroke();
+  }
+  cx.restore();
 }
 
-// ── ribcage ─────────────────────────────────────────────────
+// ── Poses ────────────────────────────────────────────────────────────────
 
-function drawRibcage(x, y) {
-  // sternum
-  bone(x, y, x, y + 20, 2.5);
+function poseIdle(t) {
+  const s = Math.sin(t * 0.7);
+  const s2 = Math.sin(t * 0.4);
+  return {
+    tiltBody: s2 * 0.025,
+    hipBob:   s * 1.2,
+    hipSway:  s2 * 1.5,
+    headTilt: s * 0.06,
+    jawOpen:  0,
+    legLT: 0.04,  legLS: -0.07,
+    legRT: -0.04, legRS: -0.07,
+    armLU: 0.55 + s * 0.03,  armLL: 0.35 + s * 0.05,
+    armRU: -0.35 + s * 0.03, armRL: 0.50 + s * 0.04,
+    weaponA: s * 0.08,
+  };
+}
 
-  // clavicles
-  bone(x, y, x - 12, y - 8, 2);
-  bone(x, y, x + 12, y - 8, 2);
+function poseWalk(t) {
+  // 0.9 sec per full cycle
+  const ph  = (t / 0.9) * Math.PI * 2;
+  const bob = Math.abs(Math.sin(ph)) * 2.8;
 
-  // 4 rib pairs (outer stroke trick: draw dark then bone-colored thinner)
-  const ribs = [
-    { ry: y + 2,  w: 14, h: 7  },
-    { ry: y + 7,  w: 13, h: 6  },
-    { ry: y + 12, w: 11, h: 5  },
-    { ry: y + 17, w:  8, h: 3  },  // floating ribs
-  ];
+  const legSwL =  Math.sin(ph) * 0.52;
+  const legSwR = -Math.sin(ph) * 0.52;
 
-  for (const { ry, w, h } of ribs) {
-    for (const s of [-1, 1]) {
-      ctx.beginPath();
-      ctx.moveTo(x, ry);
-      ctx.bezierCurveTo(
-        x + s * w * 0.4, ry - 2,
-        x + s * w,       ry + h * 0.5,
-        x + s * w,       ry + h
-      );
-      ctx.lineWidth   = 3;
-      ctx.strokeStyle = C.outline;
-      ctx.lineCap     = 'round';
-      ctx.stroke();
-      ctx.lineWidth   = 1.5;
-      ctx.strokeStyle = C.bone;
-      ctx.stroke();
-    }
+  // Shin: trails thigh, knee bends forward on swing, straightens on push
+  const shinL = legSwL > 0
+    ? legSwL * 0.55 - 0.30   // swinging fwd: shin lags behind (negative = back)
+    : legSwL * 0.35 - 0.06;  // pushing off: nearly straight
+  const shinR = legSwR > 0
+    ? legSwR * 0.55 - 0.30
+    : legSwR * 0.35 - 0.06;
+
+  return {
+    tiltBody: 0.04,
+    hipBob:  -bob,
+    hipSway:  Math.sin(ph * 0.5) * 1.8,
+    headTilt: 0,
+    jawOpen:  0,
+    legLT: legSwL, legLS: shinL,
+    legRT: legSwR, legRS: shinR,
+    armLU: 0.45 - Math.sin(ph) * 0.42,  armLL: 0.30 + Math.abs(Math.sin(ph)) * 0.28,
+    armRU: -0.20 + Math.sin(ph) * 0.30, armRL: 0.45 + Math.abs(Math.sin(ph)) * 0.18,
+    weaponA: Math.sin(ph) * 0.18,
+  };
+}
+
+function poseRun(t) {
+  // fast cycle ~0.45 sec
+  const ph  = (t / 0.45) * Math.PI * 2;
+  const bob = Math.abs(Math.sin(ph)) * 5.5;
+
+  const legSwL =  Math.sin(ph) * 0.82;
+  const legSwR = -Math.sin(ph) * 0.82;
+
+  const shinL = legSwL > 0
+    ? legSwL * 0.62 - 0.55
+    : legSwL * 0.28 - 0.08;
+  const shinR = legSwR > 0
+    ? legSwR * 0.62 - 0.55
+    : legSwR * 0.28 - 0.08;
+
+  const jawFlap = Math.abs(Math.sin(ph)) * 0.35;
+
+  return {
+    tiltBody: 0.18,
+    hipBob:  -bob,
+    hipSway:  Math.sin(ph * 0.5) * 2.5,
+    headTilt: -0.10,
+    jawOpen:  jawFlap,
+    legLT: legSwL, legLS: shinL,
+    legRT: legSwR, legRS: shinR,
+    armLU: 0.5  + Math.sin(ph) * 0.70,  armLL: 0.25 + Math.abs(Math.sin(ph)) * 0.55,
+    armRU: -0.3 - Math.sin(ph) * 0.60,  armRL: 0.40 + Math.abs(Math.sin(ph)) * 0.45,
+    weaponA: Math.sin(ph) * 0.40,
+  };
+}
+
+function poseAttack(t) {
+  // cycle: 1.1 sec
+  const cycle = 1.1;
+  const ph = (t % cycle) / cycle;  // 0..1
+
+  let armLU, armLL, wpA, jaw, bt;
+
+  if (ph < 0.22) {         // ── windup ──────────────────────────
+    const f = ease(ph / 0.22);
+    armLU = lerp(0.50, -1.05, f);
+    armLL = lerp(0.32, -0.70, f);
+    wpA   = lerp(0.00, -1.00, f);
+    jaw   = 0;
+    bt    = lerp(0.04, -0.18, f);
+  } else if (ph < 0.42) {  // ── swing (fast) ────────────────────
+    const f = ease((ph - 0.22) / 0.20);
+    armLU = lerp(-1.05, 1.30, f);
+    armLL = lerp(-0.70, 0.90, f);
+    wpA   = lerp(-1.00, 0.55, f);
+    jaw   = Math.sin(f * Math.PI) * 0.90;
+    bt    = lerp(-0.18, 0.28, f);
+  } else if (ph < 0.60) {  // ── follow-through ───────────────────
+    const f = ease((ph - 0.42) / 0.18);
+    armLU = lerp(1.30, 0.95, f);
+    armLL = lerp(0.90, 0.55, f);
+    wpA   = lerp(0.55, 0.28, f);
+    jaw   = lerp(0.5, 0, f);
+    bt    = lerp(0.28, 0.12, f);
+  } else {                  // ── recover ──────────────────────────
+    const f = ease((ph - 0.60) / 0.40);
+    armLU = lerp(0.95, 0.50, f);
+    armLL = lerp(0.55, 0.32, f);
+    wpA   = lerp(0.28, 0.00, f);
+    jaw   = 0;
+    bt    = lerp(0.12, 0.04, f);
+  }
+
+  return {
+    tiltBody: bt,
+    hipBob: 0, hipSway: 0,
+    headTilt: 0,
+    jawOpen: jaw,
+    legLT:  0.08, legLS: -0.08,
+    legRT: -0.08, legRS: -0.08,
+    armLU, armLL, weaponA: wpA,
+    armRU: -0.32, armRL: 0.48,
+  };
+}
+
+// ── Attack slash trail ────────────────────────────────────────────────────
+let slashTrail = [];  // [{x,y,age}]
+
+function updateSlashTrail(pose, posX, floorY) {
+  if (mode !== 'attack') { slashTrail = []; return; }
+  const ph = (modeT % 1.1) / 1.1;
+  if (ph > 0.22 && ph < 0.55) {
+    // tip of sword
+    const hipY = floorY - 46;
+    const bt = pose.tiltBody || 0;
+    const shouldX = posX + Math.sin(bt) * 27;
+    const shouldY = hipY - 27;
+    const ex = shouldX - 6 + Math.sin(pose.armLU) * 21;
+    const ey = shouldY + 3 + Math.cos(pose.armLU) * 21;
+    const hx = ex + Math.sin(pose.armLL) * 18;
+    const hy = ey + Math.cos(pose.armLL) * 18;
+    const wa = pose.armLL + (pose.weaponA || 0);
+    const tx = hx + Math.sin(wa) * 51;
+    const ty = hy + Math.cos(wa) * 51;
+    slashTrail.push({ x: tx, y: ty, age: 0 });
+  }
+  slashTrail = slashTrail.filter(p => p.age < 10);
+  slashTrail.forEach(p => p.age++);
+}
+
+function drawSlashTrail() {
+  if (slashTrail.length < 2) return;
+  for (let i = 1; i < slashTrail.length; i++) {
+    const a = slashTrail[i-1], b = slashTrail[i];
+    const pct = 1 - b.age / 10;
+    cx.strokeStyle = `rgba(220,220,255,${pct * 0.55})`;
+    cx.lineWidth   = pct * 4;
+    cx.lineCap     = 'round';
+    cx.beginPath(); cx.moveTo(a.x, a.y); cx.lineTo(b.x, b.y); cx.stroke();
   }
 }
 
-// ── limbs ────────────────────────────────────────────────────
+// ── Main loop ─────────────────────────────────────────────────────────────
+function frame() {
+  requestAnimationFrame(frame);
+  const DT = 1/60;
+  gt += DT; modeT += DT;
 
-// kneeBend: how much the knee bends (0 = straight, 0.9 = very bent)
-// shinA = thighA - kneeBend  →  shin sweeps backward = knee bends forward (natural human gait)
-function drawLeg(hx, hy, thighA, kneeBend, dim) {
-  const THIGH = 26, SHIN = 24;
+  cx.clearRect(0, 0, C.width, C.height);
 
-  const kx = hx + Math.sin(thighA) * THIGH;
-  const ky = hy + Math.cos(thighA) * THIGH;
+  // background
+  const bg = cx.createLinearGradient(0, 0, 0, C.height);
+  bg.addColorStop(0, '#060010'); bg.addColorStop(1, '#120822');
+  cx.fillStyle = bg; cx.fillRect(0, 0, C.width, C.height);
 
-  const shinA = thighA - kneeBend;
-  const ax = kx + Math.sin(shinA) * SHIN;
-  const ay = ky + Math.cos(shinA) * SHIN;
+  // torches glow
+  [[100,290],[520,290]].forEach(([tx,ty]) => {
+    const flk = 0.92 + Math.sin(gt*7 + tx) * 0.08;
+    const gl = cx.createRadialGradient(tx, ty, 0, tx, ty, 80 * flk);
+    gl.addColorStop(0, 'rgba(255,140,20,0.22)');
+    gl.addColorStop(1, 'rgba(255,80,0,0)');
+    cx.fillStyle = gl; cx.fillRect(0, 0, C.width, C.height);
+    // stick
+    cx.fillStyle = '#5a3010'; cx.fillRect(tx-3, ty-18, 6, 22);
+    // flame
+    cx.fillStyle = `rgba(255,${Math.round(120+Math.sin(gt*9+tx)*40)},20,0.92)`;
+    cx.beginPath();
+    cx.ellipse(tx, ty-22, 5*flk, 9*flk, 0, 0, Math.PI*2); cx.fill();
+    cx.fillStyle = `rgba(255,220,60,0.7)`;
+    cx.beginPath();
+    cx.ellipse(tx, ty-24, 2.5*flk, 5*flk, 0, 0, Math.PI*2); cx.fill();
+  });
 
-  bone(hx, hy, kx, ky, 5,   dim);
-  jnt (kx, ky, 4,            dim);
-  bone(kx, ky, ax, ay, 4,   dim);
-  jnt (ax, ay, 3.2,          dim);
-
-  // foot: follows ankle, more horizontal than shin
-  const footA = shinA * 0.4;
-  const fx = ax + Math.cos(footA) * 11;
-  const fy = ay + Math.abs(Math.sin(footA)) * 2 + 2;
-  bone(ax, ay, fx,      fy,     3,   dim);
-  bone(fx, fy, fx + 4,  fy + 1, 1.8, dim);
-}
-
-// elbowBend: how much the elbow bends
-// elbA = upperA + elbowBend  →  forearm hangs forward/down from elbow naturally
-function drawArm(sx, sy, upperA, elbowBend, dim) {
-  const UA = 19, FA = 16;
-
-  const ex = sx + Math.sin(upperA) * UA;
-  const ey = sy + Math.cos(upperA) * UA;
-  const elbA = upperA + elbowBend;
-  const wx = ex + Math.sin(elbA) * FA;
-  const wy = ey + Math.cos(elbA) * FA;
-
-  bone(sx, sy, ex, ey, 3.5, dim);
-  jnt (ex, ey, 2.8,          dim);
-  bone(ex, ey, wx, wy, 2.8, dim);
-
-  // 3 bony fingers
-  for (const [da, len] of [[-0.32, 6], [0, 7], [0.32, 6]]) {
-    const fa = elbA + da;
-    bone(wx, wy, wx + Math.sin(fa)*len, wy + Math.cos(fa)*len, 1.4, dim);
+  // floor
+  const floorY = 295;
+  cx.fillStyle = '#1c0e30'; cx.fillRect(0, floorY, C.width, C.height - floorY);
+  cx.strokeStyle = '#3a1f54'; cx.lineWidth = 2;
+  cx.beginPath(); cx.moveTo(0, floorY); cx.lineTo(C.width, floorY); cx.stroke();
+  // floor tiles
+  cx.strokeStyle = '#251240'; cx.lineWidth = 1;
+  for (let i = 0; i < 8; i++) {
+    const tx = i * 80; const ty = floorY;
+    cx.beginPath(); cx.moveTo(tx, ty); cx.lineTo(tx, ty + 50); cx.stroke();
   }
+
+  // current pose
+  let pose;
+  if      (mode === 'idle')   pose = poseIdle(modeT);
+  else if (mode === 'walk')   pose = poseWalk(modeT);
+  else if (mode === 'run')    pose = poseRun(modeT);
+  else                        pose = poseAttack(modeT);
+
+  updateSlashTrail(pose, 310, floorY);
+  drawSlashTrail();
+  drawSkeleton(310, floorY, pose);
+
+  // mode label
+  cx.fillStyle = 'rgba(0,0,0,0.5)';
+  cx.fillRect(10, 8, 180, 26);
+  cx.fillStyle = '#cc99ff'; cx.font = '14px monospace';
+  cx.fillText('Mode: ' + mode.toUpperCase(), 18, 26);
 }
-
-// ── full skeleton ────────────────────────────────────────────
-
-function drawSkeleton(ctx_, x, y, t, dir = 1) {
-  const spd   = 2.2;
-  const wc    = Math.sin(t * spd);          // -1..1  primary walk phase
-  const wc_c  = Math.cos(t * spd);          // cosine — quadrature phase
-  const bob   = (1 - Math.abs(wc)) * 3.5;  // body highest at mid-stride
-  const hipT  = wc_c * 0.035 * dir;        // hip side-tilt (subtle)
-  const jawOpen = Math.abs(Math.sin(t * 1.1)) * 0.28;
-
-  // ── leg angles (thigh from vertical, + = forward) ──
-  const legA_F = wc * 0.52 * dir;   // front leg
-  const legA_B = -legA_F;           // back leg (opposite)
-
-  // ── knee bend: maximum during mid-swing, minimum at contact/push-off ──
-  //    front leg swings forward when wc is increasing → wc_c > 0
-  const knee_F = 0.08 + Math.max(0,  wc_c) * 0.85;
-  //    back leg swings forward when wc is decreasing → wc_c < 0
-  const knee_B = 0.08 + Math.max(0, -wc_c) * 0.85;
-
-  // ── arm angles (opposite to legs) ──
-  const armA_F = -wc * 0.40 * dir;
-  const armA_B = -armA_F;
-
-  // ── elbow bend: bends more when arm is swinging forward ──
-  //    front arm swings forward when wc_c < 0  (wc decreasing)
-  const elbow_F = 0.20 + Math.max(0, -wc_c) * 0.40;
-  //    back arm swings forward when wc_c > 0
-  const elbow_B = 0.20 + Math.max(0,  wc_c) * 0.40;
-
-  // Anatomy landmarks
-  const HX = 0, HY = 0;
-  const SPINE_TOP = -40;
-  const RIB_Y    = SPINE_TOP - 2;
-  const SHL_Y    = SPINE_TOP + 4;
-  const SHL_X    = 12;
-  const NECK_Y   = SPINE_TOP - 10;
-  const HEAD_Y   = NECK_Y - 18;
-
-  ctx_.save();
-  ctx_.translate(x, y - bob);
-  ctx_.rotate(0.05 * dir + hipT);  // forward lean + hip rock
-  ctx_.scale(1.45, 1.45);
-
-  // ── back limbs ────────────────────────────────────
-  drawLeg( 4, HY,         legA_B, knee_B, true);
-  drawArm(-SHL_X, SHL_Y,  armA_B, elbow_B, true);
-
-  // ── pelvis ────────────────────────────────────────
-  bone(-10, HY - 2, 10, HY - 2, 5.5);
-
-  // ── spine (slight S-curve) ────────────────────────
-  const smid = SPINE_TOP * 0.5;
-  bone(HX,     HY - 3,  HX + 1, smid,      3.2);
-  bone(HX + 1, smid,    HX,     SPINE_TOP, 3.0);
-
-  // ── ribcage ───────────────────────────────────────
-  drawRibcage(HX, RIB_Y);
-
-  // ── front arm ─────────────────────────────────────
-  drawArm(SHL_X, SHL_Y, armA_F, elbow_F, false);
-
-  // ── front leg ─────────────────────────────────────
-  drawLeg(-4, HY, legA_F, knee_F, false);
-
-  // ── neck ──────────────────────────────────────────
-  bone(HX, SPINE_TOP, HX, NECK_Y, 2.8);
-
-  // ── skull ─────────────────────────────────────────
-  drawSkull(HX, HEAD_Y, wc * 0.06 * dir, jawOpen);
-
-  ctx_.restore();
-}
-
-// ═══════════════════════════════════════════════════════════
-//  Preview — background + animation loop
-// ═══════════════════════════════════════════════════════════
-
-const cvs = document.getElementById('c');
-const ctx  = cvs.getContext('2d');
-
-// pre-draw ground texture once
-function drawBg() {
-  // distant fog
-  const fog = ctx.createRadialGradient(170, 200, 10, 170, 200, 160);
-  fog.addColorStop(0, 'rgba(40,15,80,0.35)');
-  fog.addColorStop(1, 'rgba(0,0,0,0)');
-  ctx.fillStyle = fog;
-  ctx.fillRect(0, 0, 340, 310);
-
-  // ground line + subtle dirt
-  ctx.strokeStyle = '#221640';
-  ctx.lineWidth   = 1.5;
-  ctx.beginPath();
-  ctx.moveTo(20, 238); ctx.lineTo(320, 238);
-  ctx.stroke();
-
-  // ground surface gradient
-  const gr = ctx.createLinearGradient(0, 235, 0, 260);
-  gr.addColorStop(0, 'rgba(30,18,50,0.5)');
-  gr.addColorStop(1, 'rgba(0,0,0,0)');
-  ctx.fillStyle = gr;
-  ctx.fillRect(0, 235, 340, 30);
-}
-
-let t0 = null;
-
-function loop(ts) {
-  if (!t0) t0 = ts;
-  const t = (ts - t0) / 1000;
-
-  ctx.clearRect(0, 0, 340, 310);
-  drawBg();
-
-  // ground shadow (stretches with walk cycle)
-  const sw  = 28 + Math.abs(Math.sin(t * 2.2)) * 6;
-  const sox = 170 + Math.sin(t * 2.2) * 8;
-  ctx.beginPath();
-  ctx.ellipse(sox, 238, sw, 6, 0, 0, Math.PI * 2);
-  ctx.fillStyle = 'rgba(0,0,0,0.4)';
-  ctx.fill();
-
-  // HIP is at y=222 (feet reach ground at ~238)
-  drawSkeleton(ctx, 170, 222, t, 1);
-
-  requestAnimationFrame(loop);
-}
-requestAnimationFrame(loop);
+frame();
 </script>
 </body>
 </html>
