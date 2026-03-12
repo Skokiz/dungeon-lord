@@ -2437,27 +2437,115 @@ class Unit {
         ctx.shadowColor = '#000';
         ctx.shadowBlur  = 6;
         if (this.type === 'monster' && this.monsterKind === 'slime') {
-            // Слизь — кругла, напівпрозора, желеподібна
-            let t = Date.now() / 600;
-            let wobble = Math.sin(t) * 2;
-            let rg = ctx.createRadialGradient(this.x - 4, dy + 6, 2, this.x, dy + this.size/2, this.size/2 + 2);
-            rg.addColorStop(0,   'rgba(150,255,150,0.95)');
-            rg.addColorStop(0.5, 'rgba(60,200,60,0.85)');
-            rg.addColorStop(1,   'rgba(20,120,20,0.7)');
+            const _R       = this.size / 2;
+            const _cx      = this.x;
+            const _floorY  = this.y - camY;
+            const _DT      = 1 / 60;
+
+            // ── Per-unit animation state ────────────────────────────────
+            if (this._sDir === undefined) {
+                this._sDir = 1; this._sHopPh = 0; this._sAtkT = 0;
+                this._sPrevAtkCd = this.attackCooldown; this._sPrevX = this.x;
+            }
+            if (Math.abs(this.x - this._sPrevX) > 0.2)
+                this._sDir = this.x > this._sPrevX ? 1 : -1;
+            this._sPrevX = this.x;
+
+            // Detect attack fired: cooldown jumped up (just reset)
+            const _acd = this.attackCooldown || 0;
+            if (_acd > (this._sPrevAtkCd || 0) + 3) this._sAtkT = 1.0;
+            this._sPrevAtkCd = _acd;
+
+            // Advance hop phase while moving
+            if (this.state === 'move')
+                this._sHopPh = (this._sHopPh + _DT / 0.48) % 1;
+            else
+                this._sHopPh = Math.max(0, this._sHopPh - _DT * 5);
+
+            // Advance attack timer (1→0 over 0.65 s)
+            if (this._sAtkT > 0) this._sAtkT = Math.max(0, this._sAtkT - _DT / 0.65);
+
+            // ── Compute squish/stretch ──────────────────────────────────
+            let _sx = 1, _sy = 1, _yOff = 0, _eyeDir = this._sDir, _blink = 0;
+
+            if (this._sAtkT > 0) {
+                const t = 1 - this._sAtkT; // 0=just fired → 1=done
+                if (t < 0.14) {
+                    const f = t / 0.14;
+                    _sx = 1 + 0.55 * f;  _sy = 1 - 0.35 * f;
+                    _yOff = -_R * 0.25 * f;
+                } else if (t < 0.30) {
+                    const f = (t - 0.14) / 0.16;
+                    _sx = 1.55 - 0.55 * f;  _sy = 0.65 + 0.35 * f;
+                    // green flash
+                    ctx.shadowBlur = 0;
+                    ctx.fillStyle = `rgba(100,255,80,${(1 - f) * 0.18})`;
+                    ctx.fillRect(_cx - _R * 2.5, _floorY - _R * 3, _R * 5, _R * 3.2);
+                } else if (t < 0.75) {
+                    const f = (t - 0.30) / 0.45;
+                    const spring = Math.exp(-f * 7) * Math.cos(f * 22) * 0.11;
+                    _sx = 1 + spring;  _sy = 1 - spring;
+                }
+            } else if (this.state === 'move') {
+                const air = Math.max(0, Math.sin(this._sHopPh * Math.PI));
+                _sx = 1 + (1 - air) * 0.28 - air * 0.16;
+                _sy = 1 - (1 - air) * 0.20 + air * 0.20;
+                if (this._sHopPh > 0.80) {
+                    const spike = Math.sin((this._sHopPh - 0.80) / 0.20 * Math.PI) * 0.17;
+                    _sx += spike;  _sy -= spike * 0.75;
+                }
+                _yOff = air * _R * 0.80;
+            } else {
+                const _wob = Math.sin(Date.now() / 650) * 1.5;
+                _sx = 1 + _wob * 0.004;  _sy = 1 - _wob * 0.004;
+            }
+
+            // Occasional blink
+            const _bc = (Date.now() / 1000) % 3.6;
+            if (_bc > 3.3) _blink = Math.max(0, Math.sin((_bc - 3.3) / 0.15 * Math.PI));
+
+            const _cy = _floorY - _yOff - _R * _sy;
+
+            // ── Dust puff on landing ────────────────────────────────────
+            if (this.state === 'move' && this._sHopPh > 0.81 && this._sHopPh < 0.97) {
+                ctx.shadowBlur = 0;
+                const _da = Math.sin((this._sHopPh - 0.81) / 0.16 * Math.PI) * 0.38;
+                ctx.fillStyle = `rgba(80,50,110,${_da})`;
+                ctx.beginPath(); ctx.ellipse(_cx, _floorY, _R * _sx * 1.2, _R * 0.22, 0, 0, Math.PI * 2); ctx.fill();
+            }
+
+            // ── Body ────────────────────────────────────────────────────
+            ctx.shadowColor = '#000'; ctx.shadowBlur = 7;
+            const rg = ctx.createRadialGradient(
+                _cx - _R*0.3*_sx, _cy - _R*0.25*_sy, _R*0.08,
+                _cx, _cy, _R * Math.max(_sx, _sy) + 2);
+            rg.addColorStop(0,    'rgba(160,255,160,0.97)');
+            rg.addColorStop(0.45, 'rgba(60,200,60,0.90)');
+            rg.addColorStop(1,    'rgba(20,120,20,0.75)');
             ctx.fillStyle = rg;
-            ctx.beginPath();
-            ctx.ellipse(this.x, dy + this.size/2 + wobble*0.3, this.size/2 + wobble*0.4, this.size/2 - wobble*0.3, 0, 0, Math.PI*2);
-            ctx.fill();
-            // Очі
-            ctx.fillStyle = '#000';
-            ctx.beginPath(); ctx.arc(this.x - 5, dy + this.size/2 - 2, 2.5, 0, Math.PI*2); ctx.fill();
-            ctx.beginPath(); ctx.arc(this.x + 5, dy + this.size/2 - 2, 2.5, 0, Math.PI*2); ctx.fill();
-            ctx.fillStyle = '#fff';
-            ctx.beginPath(); ctx.arc(this.x - 4, dy + this.size/2 - 3, 1, 0, Math.PI*2); ctx.fill();
-            ctx.beginPath(); ctx.arc(this.x + 6, dy + this.size/2 - 3, 1, 0, Math.PI*2); ctx.fill();
-            // Блиск
-            ctx.fillStyle = 'rgba(255,255,255,0.35)';
-            ctx.beginPath(); ctx.ellipse(this.x - 6, dy + 7, 4, 2.5, -0.5, 0, Math.PI*2); ctx.fill();
+            ctx.beginPath(); ctx.ellipse(_cx, _cy, _R*_sx, _R*_sy, 0, 0, Math.PI*2); ctx.fill();
+            ctx.shadowBlur = 0;
+
+            // ── Eyes ────────────────────────────────────────────────────
+            const _er       = _R * 0.21;
+            const _eyeSprX  = _R * 0.37 * _sx;
+            const _eyeBaseY = _cy - _R * 0.08 * _sy;
+            const _blinkH   = _er * Math.max(0.04, 1 - _blink);
+            [-1, 1].forEach(side => {
+                const ex = _cx + side * _eyeSprX + _eyeDir * _er * 0.25;
+                ctx.fillStyle = '#e6ffe6';
+                ctx.beginPath(); ctx.ellipse(ex, _eyeBaseY, _er, _blinkH, 0, 0, Math.PI*2); ctx.fill();
+                if (_blink < 0.8) {
+                    ctx.fillStyle = '#0d1a0d';
+                    ctx.beginPath(); ctx.ellipse(ex + _eyeDir*_er*0.28, _eyeBaseY, _er*0.55, _er*0.55*(1-_blink*0.7), 0, 0, Math.PI*2); ctx.fill();
+                    ctx.fillStyle = 'rgba(255,255,255,0.72)';
+                    ctx.beginPath(); ctx.arc(ex - _er*0.2, _eyeBaseY - _blinkH*0.28, _er*0.17, 0, Math.PI*2); ctx.fill();
+                }
+            });
+
+            // ── Specular highlight ──────────────────────────────────────
+            ctx.fillStyle = 'rgba(255,255,255,0.37)';
+            ctx.beginPath(); ctx.ellipse(_cx - _R*0.28*_sx, _cy - _R*0.33*_sy, _R*0.27*_sx, _R*0.14*_sy, -0.4, 0, Math.PI*2); ctx.fill();
 
         } else if (this.type === 'monster' && this.monsterKind === 'skeleton') {
             // Скелет — кістяний, сірувато-жовтий, з черепом
