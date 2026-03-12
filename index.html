@@ -2514,11 +2514,14 @@ class Unit {
             // Windup: how close to next attack (0=fresh, 1=about to fire)
             const _windup = 1 - Math.min(1, _acd / (_atkBase * 0.30));
 
-            // Hop: advance only while moving, speed ~0.85 s per hop
-            if (this.state === 'move')
-                this._sHopPh = (this._sHopPh + _DT / 0.90) % 1;
-            else
+            // Hop: walk=1.1s (patrol, no enemy), run=0.9s (enemy on floor)
+            if (this.state === 'move') {
+                const _hasEnemy = units.some(u => u.type === 'hero' && u.floorIdx === this.floorIdx && u.hp > 0);
+                const _hopDur   = _hasEnemy ? 0.90 : 1.10;
+                this._sHopPh = (this._sHopPh + _DT / _hopDur) % 1;
+            } else {
                 this._sHopPh = Math.max(0, this._sHopPh - _DT * 4);
+            }
 
             // Advance timers
             const _atkDur = Math.min(0.55, _atkBase / 60 * 0.7);
