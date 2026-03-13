@@ -931,31 +931,34 @@ function _skBone(x1,y1,x2,y2,r,dim=false){
   ctx.beginPath(); ctx.arc(x1,y1,r,a+Math.PI/2,a-Math.PI/2); ctx.arc(x2,y2,r,a-Math.PI/2,a+Math.PI/2); ctx.closePath();
   ctx.strokeStyle=_SK.outline; ctx.lineWidth=2.8; ctx.stroke(); ctx.fillStyle=fill; ctx.fill();
   const hr=r*0.28, ox=px*r*0.42-1, oy=py*r*0.42-1;
-  ctx.save(); ctx.globalAlpha=0.52;
+  ctx.globalAlpha=0.52;
   ctx.beginPath(); ctx.arc(x1+ox,y1+oy,hr,a+Math.PI/2,a-Math.PI/2); ctx.arc(x2+ox,y2+oy,hr,a-Math.PI/2,a+Math.PI/2); ctx.closePath();
-  ctx.fillStyle=hl; ctx.fill(); ctx.restore();
+  ctx.fillStyle=hl; ctx.fill();
+  ctx.globalAlpha=1;
 }
 function _skJnt(x,y,r,dim=false){
   ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2);
   ctx.strokeStyle=_SK.outline; ctx.lineWidth=1.8; ctx.stroke(); ctx.fillStyle=dim?_SK.dim:_SK.joint; ctx.fill();
-  ctx.save(); ctx.globalAlpha=0.5;
+  ctx.globalAlpha=0.5;
   ctx.beginPath(); ctx.arc(x-r*0.3,y-r*0.35,r*0.32,0,Math.PI*2);
-  ctx.fillStyle=dim?_SK.dimHL:_SK.boneHL; ctx.fill(); ctx.restore();
+  ctx.fillStyle=dim?_SK.dimHL:_SK.boneHL; ctx.fill();
+  ctx.globalAlpha=1;
 }
 function _skSkull(x,y,tilt,jawOpen){
   ctx.save(); ctx.translate(x,y); ctx.rotate(tilt);
   ctx.beginPath(); ctx.ellipse(0,-5,14,16,0,0,Math.PI*2);
   ctx.strokeStyle=_SK.outline; ctx.lineWidth=2.8; ctx.stroke(); ctx.fillStyle=_SK.bone; ctx.fill();
-  ctx.save(); ctx.globalAlpha=0.38; ctx.beginPath(); ctx.ellipse(-4,-10,8,9,-0.3,0,Math.PI*2);
-  ctx.fillStyle=_SK.boneHL; ctx.fill(); ctx.restore();
-  ctx.save(); ctx.globalAlpha=0.25; ctx.strokeStyle=_SK.outline; ctx.lineWidth=1.2;
-  ctx.beginPath(); ctx.ellipse(0,-5,12,14,0,Math.PI*1.15,Math.PI*1.6); ctx.stroke(); ctx.restore();
+  ctx.globalAlpha=0.38; ctx.beginPath(); ctx.ellipse(-4,-10,8,9,-0.3,0,Math.PI*2);
+  ctx.fillStyle=_SK.boneHL; ctx.fill();
+  ctx.globalAlpha=0.25; ctx.strokeStyle=_SK.outline; ctx.lineWidth=1.2;
+  ctx.beginPath(); ctx.ellipse(0,-5,12,14,0,Math.PI*1.15,Math.PI*1.6); ctx.stroke();
+  ctx.globalAlpha=1;
   const jy=jawOpen*2.5;
   ctx.save(); ctx.translate(0,jy);
   ctx.beginPath(); ctx.ellipse(0,8,10,6.5,0,0.08,Math.PI-0.08);
   ctx.strokeStyle=_SK.outline; ctx.lineWidth=2.4; ctx.stroke(); ctx.fillStyle=_SK.bone; ctx.fill();
-  ctx.save(); ctx.globalAlpha=0.35; ctx.beginPath(); ctx.ellipse(-3,7,5,3,-0.2,0,Math.PI*2);
-  ctx.fillStyle=_SK.boneHL; ctx.fill(); ctx.restore();
+  ctx.globalAlpha=0.35; ctx.beginPath(); ctx.ellipse(-3,7,5,3,-0.2,0,Math.PI*2);
+  ctx.fillStyle=_SK.boneHL; ctx.fill(); ctx.globalAlpha=1;
   for(let i=0;i<4;i++){
     const tx=(i-1.5)*4.6;
     ctxRoundRect(ctx, tx-1.8,4.5,3.4,5,0.8);
@@ -964,15 +967,16 @@ function _skSkull(x,y,tilt,jawOpen){
   ctx.restore();
   for(const sx of[-5,5]){
     ctx.beginPath(); ctx.ellipse(sx,-7,4.5,3.8,sx<0?-0.12:0.12,0,Math.PI*2); ctx.fillStyle=_SK.eye; ctx.fill();
-    ctx.save(); ctx.globalAlpha=0.55; ctx.beginPath(); ctx.ellipse(sx,-7.5,2.6,2.0,sx<0?-0.12:0.12,0,Math.PI*2);
-    ctx.fillStyle=_SK.eyeGlow; ctx.fill(); ctx.restore();
-    ctx.save(); ctx.globalAlpha=0.7; ctx.beginPath(); ctx.arc(sx,-7.5,0.9,0,Math.PI*2);
-    ctx.fillStyle='rgba(160,255,180,0.9)'; ctx.fill(); ctx.restore();
+    ctx.globalAlpha=0.55; ctx.beginPath(); ctx.ellipse(sx,-7.5,2.6,2.0,sx<0?-0.12:0.12,0,Math.PI*2);
+    ctx.fillStyle=_SK.eyeGlow; ctx.fill();
+    ctx.globalAlpha=0.7; ctx.beginPath(); ctx.arc(sx,-7.5,0.9,0,Math.PI*2);
+    ctx.fillStyle='rgba(160,255,180,0.9)'; ctx.fill(); ctx.globalAlpha=1;
   }
   ctx.beginPath(); ctx.moveTo(0,-0.5); ctx.lineTo(-2.8,3.5); ctx.lineTo(2.8,3.5);
   ctx.closePath(); ctx.fillStyle=_SK.eye; ctx.fill();
-  ctx.save(); ctx.strokeStyle=_SK.crack; ctx.lineWidth=1.1; ctx.globalAlpha=0.7;
-  ctx.beginPath(); ctx.moveTo(2,-18); ctx.lineTo(1,-13); ctx.lineTo(3,-9); ctx.lineTo(1,-5); ctx.stroke(); ctx.restore();
+  ctx.globalAlpha=0.7; ctx.strokeStyle=_SK.crack; ctx.lineWidth=1.1;
+  ctx.beginPath(); ctx.moveTo(2,-18); ctx.lineTo(1,-13); ctx.lineTo(3,-9); ctx.lineTo(1,-5); ctx.stroke();
+  ctx.globalAlpha=1;
   ctx.restore();
 }
 function _skRibcage(x,y){
@@ -1053,9 +1057,7 @@ function drawSkeleton(ctx_,x,y,t,dir=1,sc=0.38,atk=0){
     ctx_.strokeStyle='#9a7838'; ctx_.lineWidth=8;
     ctx_.beginPath(); ctx_.moveTo(gx-Math.cos(swa)*9,gy+Math.sin(swa)*9); ctx_.lineTo(gx+Math.cos(swa)*9,gy-Math.sin(swa)*9); ctx_.stroke();
     const bEnd={x:wx+Math.sin(swa)*56,y:wy+Math.cos(swa)*56};
-    const bg=ctx_.createLinearGradient(gx,gy,bEnd.x,bEnd.y);
-    bg.addColorStop(0,'#d8d8ee'); bg.addColorStop(1,'rgba(180,180,200,0.3)');
-    ctx_.strokeStyle=bg; ctx_.lineWidth=5;
+    ctx_.strokeStyle='#c8c8da'; ctx_.lineWidth=5;
     ctx_.beginPath(); ctx_.moveTo(gx,gy); ctx_.lineTo(bEnd.x,bEnd.y); ctx_.stroke();
     ctx_.strokeStyle='rgba(255,255,255,0.40)'; ctx_.lineWidth=1.5;
     ctx_.beginPath(); ctx_.moveTo(gx,gy); ctx_.lineTo(bEnd.x+Math.cos(swa),bEnd.y-Math.sin(swa)); ctx_.stroke();
@@ -1441,7 +1443,7 @@ class Floor {
             ctx.closePath(); ctx.fill();
             // Крапля
             if (pseudo(3) === 0) {
-                let dropAlpha = 0.4 + 0.4 * Math.sin(Date.now()/800 + s);
+                let dropAlpha = 0.4 + 0.4 * Math.sin(_frameNow/800 + s);
                 ctx.fillStyle = `rgba(100,180,255,${dropAlpha})`;
                 ctx.beginPath(); ctx.arc(sx, fty + 8 + sh + 3, 2, 0, Math.PI*2); ctx.fill();
             }
@@ -1455,7 +1457,7 @@ class Floor {
             ctx.fillStyle = '#6b4c1e';
             ctx.fillRect(tx - 3, torchY, 6, 14);
             // вогонь (анімований)
-            let t = Date.now() / 200 + ti * 3.7;
+            let t = _frameNow / 200 + ti * 3.7;
             let flicker = Math.sin(t) * 3;
             let fg = ctx.createRadialGradient(tx, torchY - 4 + flicker*0.3, 1, tx, torchY, 12);
             fg.addColorStop(0,   'rgba(255,240,100,0.95)');
@@ -1474,7 +1476,7 @@ class Floor {
 
             // ── Дим над факелом ───────────────────────────────────────────
             {
-                let ts = Date.now() / 1400 + ti * 1.57;
+                let ts = _frameNow / 1400 + ti * 1.57;
                 for (let sm = 0; sm < 3; sm++) {
                     let phase = (ts + sm * 0.33) % 1;          // 0 → 1 (цикл)
                     let sox   = tx + Math.sin(ts * 2.5 + sm * 2.1) * 5;
@@ -1492,7 +1494,7 @@ class Floor {
 
         // ── 5б. Підземний пил (атмосфера) ───────────────────────────────
         {
-            let t  = Date.now() / 1000;
+            let t  = _frameNow / 1000;
             let ds = this.depth * 89 + 17;
             let dp = (n) => { ds = (ds * 1664525 + 1013904223) & 0xffffffff; return Math.abs(ds % n); };
             ctx.shadowBlur = 0;
@@ -1555,7 +1557,7 @@ class Floor {
                     ctx.closePath(); ctx.fill();
                 }
             } else if (this.trapType === 'teleport') {
-                let alpha = 0.5 + 0.5 * Math.sin(Date.now() / 400);
+                let alpha = 0.5 + 0.5 * Math.sin(_frameNow / 400);
                 let rg = ctx.createRadialGradient(ladX, fy - 6, 2, ladX, fy - 6, 22);
                 rg.addColorStop(0,   `rgba(120,180,255,${alpha})`);
                 rg.addColorStop(0.6, `rgba(60,80,220,${alpha * 0.5})`);
@@ -1567,7 +1569,7 @@ class Floor {
                 ctx.beginPath(); ctx.arc(ladX, fy - 6, 18, 0, Math.PI*2); ctx.stroke();
             } else if (this.trapType === 'summon') {
                 // ── Портал виклику: магічне коло зі спалахами ────────────────
-                let t   = Date.now() / 1000;
+                let t   = _frameNow / 1000;
                 let cx2 = ladX, cy2 = fy - 14;
                 let pulse = 0.55 + 0.45 * Math.sin(t * 2.2);
                 // Зовнішнє зарево
@@ -1652,7 +1654,7 @@ class Floor {
                     ctx.strokeStyle = '#ff5500'; ctx.lineWidth = 1;
                     ctx.beginPath(); ctx.moveTo(featherX, dartY); ctx.lineTo(featherX - dartDir*5, dartY-3); ctx.stroke();
                     ctx.beginPath(); ctx.moveTo(featherX, dartY); ctx.lineTo(featherX - dartDir*5, dartY+3); ctx.stroke();
-                    let pulse = 0.5 + 0.5 * Math.sin(Date.now() / 300 + this.depth);
+                    let pulse = 0.5 + 0.5 * Math.sin(_frameNow / 300 + this.depth);
                     ctx.globalAlpha = 0.7 * pulse;
                     ctx.fillStyle = '#00ff88';
                     ctx.beginPath(); ctx.arc(dartEnd + dartDir*8, dartY+2, 2, 0, Math.PI*2); ctx.fill();
@@ -1698,7 +1700,7 @@ class Floor {
 
         // ── 8. Підсвічування вибору пастки ──────────────────────────────
         if (pendingTrapType !== null && !isLordFloor && !this.hasTrap) {
-            let pulse = 0.12 + 0.08 * Math.sin(Date.now() / 250);
+            let pulse = 0.12 + 0.08 * Math.sin(_frameNow / 250);
             ctx.fillStyle = `rgba(255,204,0,${pulse})`;
             ctx.fillRect(fx, fty, fw, fh);
             ctx.strokeStyle = '#ffcc00'; ctx.lineWidth = 2;
@@ -2536,7 +2538,7 @@ class Unit {
         this._hpBarY = undefined; // скинути — буде перераховано нижче для слайма/скелета
 
         // ── Жива анімація погойдування ────────────────────────────────────
-        let _bt  = Date.now() / 600 + this.x * 0.009;
+        let _bt  = _frameNow / 600 + this.x * 0.009;
         let _bob = this.state === 'move'
             ? Math.abs(Math.sin(_bt * 1.5)) * 3
             : (this.type === 'lord' ? Math.sin(_bt * 0.38) * 2 : Math.sin(_bt * 0.55) * 1.2);
@@ -2545,7 +2547,7 @@ class Unit {
 
         // Обводки для рангів — тільки для боса (еліти без квадратів)
         if (this.type === 'hero' && this.heroRank === 'boss') {
-            let pulse = 0.6 + 0.4 * Math.sin(Date.now() / 200);
+            let pulse = 0.6 + 0.4 * Math.sin(_frameNow / 200);
             ctx.strokeStyle = `rgba(255,0,255,${pulse})`; ctx.lineWidth = 4;
             ctx.beginPath(); ctx.arc(this.x, dy + this.size/2, this.size/2 + 6, 0, Math.PI*2); ctx.stroke();
         }
@@ -2563,9 +2565,8 @@ class Unit {
             ctx.fill();
         }
 
-        // ── Відмальовка тіла юніта (чорний контур через shadow) ──────────
-        ctx.shadowColor = '#000';
-        ctx.shadowBlur  = 6;
+        // ── Відмальовка тіла юніта ────────────────────────────────────────
+        ctx.shadowBlur = 0;
         if (this.type === 'monster' && this.monsterKind === 'slime') {
             const _R      = this.size / 2;
             const _cx     = this.x;
@@ -2652,12 +2653,12 @@ class Unit {
                 _yOff = air * _R * 0.75;
             } else {
                 // Idle breathe
-                const w = Math.sin(Date.now() / 680) * 1.5;
+                const w = Math.sin(_frameNow / 680) * 1.5;
                 _sx = 1 + w * 0.004;  _sy = 1 - w * 0.004;
             }
 
             // Blink
-            const _bc = (Date.now() / 1000) % 3.8;
+            const _bc = (_frameNow / 1000) % 3.8;
             if (_bc > 3.5) _blink = Math.max(0, Math.sin((_bc - 3.5) / 0.14 * Math.PI));
 
             const _cy = _floorY - _yOff - _R * _sy;
@@ -2745,11 +2746,10 @@ class Unit {
                 this._skAtkP      = 0;
                 this._skPrevAtkCd = this.attackCooldown || 0;
                 this._skPrevX     = this.x;
-                this._skLastT     = Date.now();
+                this._skLastT     = _frameNow;
             }
-            const _skNow = Date.now();
-            const _skDt  = Math.min((_skNow - this._skLastT) / 1000, 0.05);
-            this._skLastT = _skNow;
+            const _skDt  = Math.min((_frameNow - this._skLastT) / 1000, 0.05);
+            this._skLastT = _frameNow;
 
             // напрямок — до героя або за рухом
             if (this.state === 'fight') {
@@ -2827,7 +2827,7 @@ class Unit {
             ctx.fillStyle='#804520'; ctx.fillRect(dx+s*0.12,dy+s*0.8,s*0.14,s*0.2); ctx.fillRect(dx+s*0.3,dy+s*0.8,s*0.14,s*0.2); ctx.fillRect(dx+s*0.48,dy+s*0.8,s*0.14,s*0.2); ctx.fillRect(dx+s*0.66,dy+s*0.8,s*0.14,s*0.2);
 
         } else if (this.type === 'monster' && this.monsterKind === 'spirit') {
-            let s = this.size, t2=Date.now()/400;
+            let s = this.size, t2=_frameNow/400;
             let origAlpha = ctx.globalAlpha;
             ctx.globalAlpha *= (0.6+0.2*Math.sin(t2));
             ctx.fillStyle='#aabbff';
@@ -2868,7 +2868,7 @@ class Unit {
             ctx.fillStyle='#663311'; ctx.fillRect(dx+s*0.18,dy+s*0.9,s*0.24,s*0.1); ctx.fillRect(dx+s*0.58,dy+s*0.9,s*0.24,s*0.1);
 
         } else if (this.type === 'monster' && this.monsterKind === 'shadow') {
-            let s = this.size, tp=Date.now()/250;
+            let s = this.size, tp=_frameNow/250;
             let alf = this.invisActive ? 0.15 : (0.5+0.25*Math.sin(tp));
             ctx.fillStyle='rgba(20,30,50,'+alf+')';
             ctx.beginPath(); ctx.ellipse(this.x,dy+s*0.5,s*0.45,s*0.55,0,0,Math.PI*2); ctx.fill();
@@ -2883,7 +2883,7 @@ class Unit {
             ctx.fillStyle='#553388'; ctx.beginPath(); ctx.arc(this.x,dy+s*0.22,s*0.24,0,Math.PI*2); ctx.fill();
             ctx.strokeStyle='#886644'; ctx.lineWidth=3;
             ctx.beginPath();ctx.moveTo(dx+s*0.1,dy+s*0.4);ctx.lineTo(dx-s*0.05,dy);ctx.stroke();
-            let orbP=0.4+0.3*Math.sin(Date.now()/200);
+            let orbP=0.4+0.3*Math.sin(_frameNow/200);
             ctx.fillStyle='rgba(200,50,255,'+orbP+')'; ctx.beginPath(); ctx.arc(dx-s*0.05,dy,s*0.14,0,Math.PI*2); ctx.fill();
             ctx.fillStyle='#cc44ff'; ctx.beginPath(); ctx.arc(this.x-s*0.1,dy+s*0.2,s*0.08,0,Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.arc(this.x+s*0.1,dy+s*0.2,s*0.08,0,Math.PI*2); ctx.fill();
 
@@ -2894,7 +2894,7 @@ class Unit {
             for(let wi=0;wi<3;wi++){
                 ctx.beginPath();
                 let pts=[-0.3,-0.2,-0.1,0,0.1,0.2,0.3];
-                pts.forEach((wx,pi)=>{if(pi===0)ctx.moveTo(this.x+s*wx,dy+s*(0.3+wi*0.12));else ctx.lineTo(this.x+s*wx,dy+s*(0.3+wi*0.12+0.06*Math.sin(Date.now()/300+wx*8)));});
+                pts.forEach((wx,pi)=>{if(pi===0)ctx.moveTo(this.x+s*wx,dy+s*(0.3+wi*0.12));else ctx.lineTo(this.x+s*wx,dy+s*(0.3+wi*0.12+0.06*Math.sin(_frameNow/300+wx*8)));});
                 ctx.stroke();
             }
             ctx.fillStyle='#00ddff'; ctx.beginPath(); ctx.arc(this.x-s*0.12,dy+s*0.35,s*0.08,0,Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.arc(this.x+s*0.12,dy+s*0.35,s*0.08,0,Math.PI*2); ctx.fill();
@@ -2908,7 +2908,7 @@ class Unit {
             ctx.fillStyle='#ff6600'; ctx.beginPath(); ctx.arc(this.x-s*0.14,dy+s*0.28,s*0.1,0,Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.arc(this.x+s*0.14,dy+s*0.28,s*0.1,0,Math.PI*2); ctx.fill();
 
         } else if (this.type === 'monster' && this.monsterKind === 'air_ele') {
-            let s = this.size, ta=Date.now()/200;
+            let s = this.size, ta=_frameNow/200;
             let origA2 = ctx.globalAlpha;
             ctx.globalAlpha *= 0.75;
             ctx.save(); ctx.translate(this.x, dy+s*0.5); ctx.rotate(ta);
@@ -2920,7 +2920,7 @@ class Unit {
             ctx.fillStyle='rgba(200,240,255,0.5)'; ctx.beginPath(); ctx.arc(this.x,dy+s*0.5,s*0.15,0,Math.PI*2); ctx.fill();
 
         } else if (this.type === 'monster' && this.monsterKind === 'fire_ele') {
-            let s = this.size, tf=Date.now()/150;
+            let s = this.size, tf=_frameNow/150;
             ctx.fillStyle='#cc3300'; ctx.beginPath(); ctx.ellipse(this.x,dy+s*0.65,s*0.38,s*0.42,0,0,Math.PI*2); ctx.fill();
             for(let fi=0;fi<4;fi++){
                 let fx2=this.x+s*(0.25*Math.cos(fi*Math.PI/2)+0.08*Math.sin(tf+fi));
@@ -2931,7 +2931,7 @@ class Unit {
             ctx.fillStyle='#ffdd00'; ctx.beginPath(); ctx.arc(this.x,dy+s*0.12,s*0.12,0,Math.PI*2); ctx.fill();
 
         } else if (this.type === 'monster' && this.monsterKind === 'lightning') {
-            let s = this.size, tl=Date.now()/100;
+            let s = this.size, tl=_frameNow/100;
             ctx.fillStyle='rgba(50,50,200,0.75)'; ctx.beginPath(); ctx.arc(this.x,dy+s*0.5,s*0.4,0,Math.PI*2); ctx.fill();
             ctx.strokeStyle='#ffff44'; ctx.lineWidth=2;
             for(let zi=0;zi<3;zi++){
@@ -2956,7 +2956,7 @@ class Unit {
             ctx.fillStyle='#ffdd00'; ctx.beginPath(); ctx.arc(this.x-s*0.1,dy+s*0.25,s*0.06,0,Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.arc(this.x+s*0.1,dy+s*0.25,s*0.06,0,Math.PI*2); ctx.fill();
 
         } else if (this.type === 'monster' && this.monsterKind === 'banshee') {
-            let s = this.size, tb=Date.now()/350, pulseb=0.6+0.3*Math.sin(tb);
+            let s = this.size, tb=_frameNow/350, pulseb=0.6+0.3*Math.sin(tb);
             ctx.fillStyle='rgba(120,160,200,'+pulseb+')';
             ctx.beginPath(); ctx.arc(this.x,dy+s*0.3,s*0.3,0,Math.PI*2); ctx.fill();
             ctx.fillStyle='rgba(100,140,180,0.4)';
@@ -2972,11 +2972,11 @@ class Unit {
             ctx.fillStyle='#aa8800';
             ctx.beginPath();ctx.moveTo(this.x-s*0.22,dy+s*0.08);ctx.lineTo(this.x-s*0.22,dy-s*0.06);ctx.lineTo(this.x-s*0.1,dy+s*0.02);ctx.lineTo(this.x,dy-s*0.1);ctx.lineTo(this.x+s*0.1,dy+s*0.02);ctx.lineTo(this.x+s*0.22,dy-s*0.06);ctx.lineTo(this.x+s*0.22,dy+s*0.08);ctx.closePath();ctx.fill();
             ctx.fillStyle='#ee44ff'; ctx.beginPath(); ctx.arc(this.x-s*0.1,dy+s*0.22,s*0.09,0,Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.arc(this.x+s*0.1,dy+s*0.22,s*0.09,0,Math.PI*2); ctx.fill();
-            let lp=0.5+0.4*Math.sin(Date.now()/180);
+            let lp=0.5+0.4*Math.sin(_frameNow/180);
             ctx.fillStyle='rgba(200,0,255,'+lp+')'; ctx.beginPath(); ctx.arc(this.x,dy+s*0.7,s*0.18,0,Math.PI*2); ctx.fill();
 
         } else if (this.type === 'monster' && this.monsterKind === 'abyss') {
-            let s = this.size, tap2=Date.now()/400;
+            let s = this.size, tap2=_frameNow/400;
             ctx.fillStyle='rgba(5,0,15,0.95)'; ctx.beginPath(); ctx.arc(this.x,dy+s*0.5,s*0.48,0,Math.PI*2); ctx.fill();
             for(let ri=0;ri<3;ri++){
                 ctx.strokeStyle='rgba(80,0,150,'+(0.6-ri*0.15)+')'; ctx.lineWidth=2;
@@ -2988,7 +2988,7 @@ class Unit {
             }
 
         } else if (this.type === 'monster' && this.monsterKind === 'dragon') {
-            let s = this.size, td=Date.now()/300;
+            let s = this.size, td=_frameNow/300;
             ctx.fillStyle='rgba(110,0,0,0.75)';
             ctx.beginPath();ctx.moveTo(this.x,dy+s*0.45);ctx.quadraticCurveTo(this.x-s*1.1,dy,this.x-s*0.65,dy+s*0.8);ctx.closePath();ctx.fill();
             ctx.beginPath();ctx.moveTo(this.x,dy+s*0.45);ctx.quadraticCurveTo(this.x+s*1.1,dy,this.x+s*0.65,dy+s*0.8);ctx.closePath();ctx.fill();
@@ -3022,11 +3022,10 @@ class Unit {
                     this._rkAtkP      = 0;
                     this._rkPrevAktCd = this.attackCooldown || 0;
                     this._rkPrevX     = this.x;
-                    this._rkLastT     = Date.now();
+                    this._rkLastT     = _frameNow;
                 }
-                const _rkNow = Date.now();
-                const _rkDt  = Math.min((_rkNow - this._rkLastT) / 1000, 0.05);
-                this._rkLastT = _rkNow;
+                const _rkDt  = Math.min((_frameNow - this._rkLastT) / 1000, 0.05);
+                this._rkLastT = _frameNow;
                 // direction toward enemy
                 if (this.state === 'fight') {
                     const _rkE = units.find(u => u.type === 'monster' && u.floorIdx === this.floorIdx && u.hp > 0);
@@ -3091,7 +3090,7 @@ class Unit {
             } else if (wpn === 'staff') {
                 ctx.strokeStyle = '#cc88ff'; ctx.lineWidth = 2;
                 ctx.beginPath(); ctx.moveTo(dx + s*1.0, dy + s*0.15); ctx.lineTo(dx + s*0.85, dy + s*0.85); ctx.stroke();
-                let glow2 = 0.5 + 0.5*Math.sin(Date.now()/300);
+                let glow2 = 0.5 + 0.5*Math.sin(_frameNow/300);
                 ctx.fillStyle = `rgba(180,100,255,${glow2})`;
                 ctx.beginPath(); ctx.arc(dx + s*1.0, dy + s*0.1, s*0.1, 0, Math.PI*2); ctx.fill();
             } else if (wpn === 'axe') {
@@ -3182,7 +3181,7 @@ class Unit {
             // Посох
             ctx.strokeStyle = '#cc8800'; ctx.lineWidth = 3;
             ctx.beginPath(); ctx.moveTo(this.x + s*0.65, dy + s*0.4); ctx.lineTo(this.x + s*0.65, dy + s*1.05); ctx.stroke();
-            let gemGlow = 0.5 + 0.5*Math.sin(Date.now()/400);
+            let gemGlow = 0.5 + 0.5*Math.sin(_frameNow/400);
             ctx.fillStyle = 'rgba(200,100,255,' + gemGlow + ')';
             ctx.beginPath(); ctx.arc(this.x + s*0.65, dy + s*0.3, s*0.13, 0, Math.PI*2); ctx.fill();
             ctx.strokeStyle = '#ffaaff'; ctx.lineWidth = 1.5;
@@ -3203,7 +3202,7 @@ class Unit {
         if (this.type === 'monster' && this.heroRank && this.heroRank.startsWith('elite')) {
             let isHp   = this.heroRank === 'elite_hp';
             let eCol   = isHp ? '#33ff88' : '#ff3322';
-            let ePulse = 0.55 + 0.45 * Math.sin(Date.now() / 280 + this.x * 0.01);
+            let ePulse = 0.55 + 0.45 * Math.sin(_frameNow / 280 + this.x * 0.01);
             ctx.shadowColor = eCol;
             ctx.shadowBlur  = 8 + 5 * ePulse;
             ctx.strokeStyle = eCol;
@@ -3228,14 +3227,10 @@ class Unit {
         let _barTop = this._hpBarY !== undefined ? this._hpBarY : dy - 13;
         // Фон
         ctx.fillStyle = '#220000'; ctx.fillRect(_bx, _barTop, _bw, _bh);
-        // Заповнення з градієнтом (зелений→жовтий→червоний)
+        // Заповнення (суцільний колір)
         if (pct > 0) {
-            let _hg = ctx.createLinearGradient(_bx, 0, _bx + _bw, 0);
-            if (pct > 0.55) { _hg.addColorStop(0,'#1a9e1a'); _hg.addColorStop(1,'#44ff44'); }
-            else if (pct > 0.28) { _hg.addColorStop(0,'#bb7700'); _hg.addColorStop(1,'#ffcc00'); }
-            else { _hg.addColorStop(0,'#bb1100'); _hg.addColorStop(1,'#ff3300'); }
-            if (_isLord) { _hg = ctx.createLinearGradient(_bx,0,_bx+_bw,0); _hg.addColorStop(0,'#7700bb'); _hg.addColorStop(1,pct>0.5?'#cc44ff':'#ff44cc'); }
-            ctx.fillStyle = _hg;
+            ctx.fillStyle = _isLord ? (pct>0.5?'#aa44ff':'#ff44cc')
+                : pct > 0.55 ? '#2ec02e' : pct > 0.28 ? '#ddaa00' : '#dd2200';
             ctx.fillRect(_bx, _barTop, _bw * pct, _bh);
         }
         // Відблиск зверху
@@ -3269,7 +3264,7 @@ class Unit {
 
         // СТАН (Golem): іконка ⚡ над заглушеним героєм
         if (this.type === 'hero' && (this._stunTimer||0) > 0) {
-            let _sp = 0.6 + 0.4 * Math.sin(Date.now() / 120);
+            let _sp = 0.6 + 0.4 * Math.sin(_frameNow / 120);
             ctx.globalAlpha = _sp;
             ctx.font = 'bold 13px Arial';
             ctx.fillText('⚡', this.x, dy - 14);
@@ -3561,8 +3556,10 @@ let heroScaleTimer = 0;
 let _dt = 1;          // delta-time: 1.0 = 60fps, 0.5 = 120fps, 2.0 = 30fps
 let _dt_lastTs = 0;   // мітка часу попереднього кадру
 
+let _frameNow = 0; // cached Date.now() for this frame — use instead of Date.now() in draw code
 function loop(ts) {
     if (GAME_PAUSED || GAME.gameOver) return;
+    _frameNow = Date.now();
     // ── Delta-time: нормалізуємо швидкість гри до 60fps ──────────────────
     let _dtElapsed = _dt_lastTs ? Math.min(ts - _dt_lastTs, 50) : 16.667;
     _dt_lastTs = ts;
@@ -3613,7 +3610,7 @@ function loop(ts) {
 
     // ── Нічне небо ──────────────────────────────────────────────────────
     let groundY = CFG.surfaceY - GAME.cameraY;
-    let _t = Date.now();
+    let _t = _frameNow;
     let skyGrad = ctx.createLinearGradient(0, -200 - GAME.cameraY, 0, groundY);
     skyGrad.addColorStop(0,    '#010108');
     skyGrad.addColorStop(0.25, '#030210');
@@ -4167,7 +4164,7 @@ function loop(ts) {
     ctx.scale(_cityScale, _cityScale);
     let _cy = -140;
     let _diffType = GAME.difficultyType || 1;
-    let _fl = Date.now() / 300; // flame flicker time
+    let _fl = _frameNow / 300; // flame flicker time
 
     // ─── Допоміжні функції малювання ────────────────────────────────────────
     // Намалювати цеглу (горизонтальні ряди з перев'язкою)
@@ -4609,7 +4606,7 @@ function loop(ts) {
         let _lordFloor = floors[floors.length - 1];
         let _ax = centerX + 46;
         let _ay = _lordFloor.y - GAME.cameraY; // screen Y поверхні підлоги лорда
-        let _t3 = Date.now();
+        let _t3 = _frameNow;
         let _pulse = 0.5 + 0.5 * Math.sin(_t3 / 600);
         let _canAfford = GAME.souls >= GAME.soulBonusCost;
 
@@ -4907,7 +4904,7 @@ function loop(ts) {
         ctx.translate(a.x, a.y - GAME.cameraY);
         if (a.kind === 'necro_orb') {
             // Куля некроманта — пульсуюча фіолетова сфера з черепом
-            let op = 0.7 + 0.3 * Math.sin(Date.now() / 120 + i);
+            let op = 0.7 + 0.3 * Math.sin(_frameNow / 120 + i);
             let rg = ctx.createRadialGradient(0, 0, 1, 0, 0, 8);
             rg.addColorStop(0, `rgba(255,200,255,${op})`);
             rg.addColorStop(0.5, `rgba(160,50,255,${op * 0.85})`);
