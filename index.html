@@ -3003,12 +3003,6 @@ class Unit {
                 ctx.fillText(PASSIVE_ICONS[this.heroPassive], this.x + s*0.55, dy + s*0.08);
             }
 
-            // Назва типу (маленька, над головою)
-            if (this.heroLabel) {
-                ctx.fillStyle = 'rgba(255,220,180,0.85)';
-                ctx.font = '7px Arial'; ctx.textAlign = 'center';
-                ctx.fillText(this.heroLabel, this.x, dy - 2);
-            }
 
         } else if (this.type === 'lord') {
             // Повна текстура Лорда
