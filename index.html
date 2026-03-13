@@ -2674,18 +2674,14 @@ class Unit {
 
             // ── Body ────────────────────────────────────────────────────
             ctx.shadowColor = '#000'; ctx.shadowBlur = 7;
-            // Tint body slightly yellow/angry during windup/attack
-            const g0 = Math.round(160 + _angry * 30);
-            const g1 = Math.round(200 - _angry * 40);
-            const rg = ctx.createRadialGradient(
-                _cx + _xOff - _R*0.3*_sx, _cy - _R*0.25*_sy, _R*0.08,
-                _cx + _xOff, _cy, _R * Math.max(_sx, _sy) + 2);
-            rg.addColorStop(0,    `rgba(${g0},255,${g0},0.97)`);
-            rg.addColorStop(0.45, `rgba(50,${g1},40,0.92)`);
-            rg.addColorStop(1,    'rgba(20,120,20,0.76)');
-            ctx.fillStyle = rg;
-            ctx.beginPath(); ctx.ellipse(_cx + _xOff, _cy, _R*_sx, _R*_sy, 0, 0, Math.PI*2); ctx.fill();
+            const _angry30 = _angry * 30;
+            ctx.fillStyle = _angry > 0
+                ? `rgba(${Math.round(40+_angry30)},${Math.round(190-_angry*40)},${Math.round(36-_angry30)},0.92)`
+                : 'rgba(40,190,36,0.92)';
+            ctx.beginPath(); ctx.ellipse(_cx+_xOff, _cy, _R*_sx, _R*_sy, 0, 0, Math.PI*2); ctx.fill();
             ctx.shadowBlur = 0;
+            ctx.fillStyle = _angry > 0 ? 'rgba(180,255,140,0.42)' : 'rgba(120,255,100,0.42)';
+            ctx.beginPath(); ctx.ellipse(_cx+_xOff-_R*0.22*_sx, _cy-_R*0.20*_sy, _R*0.56*_sx, _R*0.56*_sy, 0, 0, Math.PI*2); ctx.fill();
 
             // ── Eyes ────────────────────────────────────────────────────
             const _er       = _R * 0.21;
