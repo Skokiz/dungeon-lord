@@ -3104,7 +3104,8 @@ class Unit {
         }
 
 
-        // ── HP бар з градієнтом ──────────────────────────────────────────
+        // ── HP бар з градієнтом (тільки якщо HP не повне) ────────────────
+        if (this.hp >= this.maxHp) return;
         ctx.shadowBlur = 0;
         let pct = Math.max(0, this.hp / this.maxHp);
         let _isLord = this.type === 'lord';
