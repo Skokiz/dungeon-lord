@@ -1073,10 +1073,11 @@ function _rcBE(ox,oy,a,len){return[ox+Math.sin(a)*len,oy+Math.cos(a)*len];}
 function _rcLimb(c,x1,y1,x2,y2,w1,w2,col){
   const dx=x2-x1,dy=y2-y1,len=Math.hypot(dx,dy);
   if(len<0.01)return;
-  c.save();c.translate(x1,y1);c.rotate(Math.atan2(dx,dy));
+  const nx=-dy/len,ny=dx/len;
   c.fillStyle=col;c.beginPath();
-  c.moveTo(-w1/2,0);c.lineTo(w1/2,0);c.lineTo(w2/2,len);c.lineTo(-w2/2,len);
-  c.closePath();c.fill();c.restore();
+  c.moveTo(x1+nx*w1/2,y1+ny*w1/2);c.lineTo(x1-nx*w1/2,y1-ny*w1/2);
+  c.lineTo(x2-nx*w2/2,y2-ny*w2/2);c.lineTo(x2+nx*w2/2,y2+ny*w2/2);
+  c.closePath();c.fill();
 }
 function _rcJnt(c,jx,jy,r,col){c.fillStyle=col;c.beginPath();c.arc(jx,jy,r,0,Math.PI*2);c.fill();}
 const _rcE =p=>p*p*(3-2*p);
@@ -1137,8 +1138,7 @@ function drawRecruit(c,x,y,t,dir=1,sc=0.38,atk=0,run=false){
    const gx=faEx+Math.sin(swa)*13,gy=faEy+Math.cos(swa)*13;
    c.strokeStyle='#7a5818';c.lineWidth=9;c.beginPath();c.moveTo(gx-Math.cos(swa)*10,gy+Math.sin(swa)*10);c.lineTo(gx+Math.cos(swa)*10,gy-Math.sin(swa)*10);c.stroke();
    const bTX=gx+Math.sin(swa)*52,bTY=gy+Math.cos(swa)*52;
-   const bg=c.createLinearGradient(gx,gy,bTX,bTY);bg.addColorStop(0,'#d8d8ee');bg.addColorStop(1,'rgba(190,190,220,0.25)');
-   c.strokeStyle=bg;c.lineWidth=5;c.lineCap='butt';c.beginPath();c.moveTo(gx,gy);c.lineTo(bTX,bTY);c.stroke();
+   c.strokeStyle='#c8c8da';c.lineWidth=5;c.lineCap='butt';c.beginPath();c.moveTo(gx,gy);c.lineTo(bTX,bTY);c.stroke();
    c.strokeStyle='rgba(255,255,255,0.55)';c.lineWidth=1.5;c.beginPath();c.moveTo(gx+Math.cos(swa),gy-Math.sin(swa));c.lineTo(bTX+Math.cos(swa),bTY-Math.sin(swa));c.stroke();}
   // head
   c.fillStyle=RC.sk;c.fillRect(-3,HCY+HR-4,6,8);
