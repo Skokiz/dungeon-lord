@@ -1177,12 +1177,12 @@ function _slGloss(pathFn,alpha=0.38){
 }
 function _slTrail(x,y,len){
   ctx.save(); ctx.translate(x,y);
-  const grad=ctx.createLinearGradient(-len,0,0,0);
-  grad.addColorStop(0,'rgba(120,190,30,0)'); grad.addColorStop(0.4,'rgba(120,190,30,0.15)'); grad.addColorStop(1,'rgba(120,190,30,0.4)');
+  ctx.globalAlpha=0.28;
   ctx.beginPath(); ctx.moveTo(0,5); ctx.quadraticCurveTo(-len*0.5,8,-len,5); ctx.quadraticCurveTo(-len*0.5,2,0,5);
-  ctx.fillStyle=grad; ctx.fill();
+  ctx.fillStyle='#78be1e'; ctx.fill();
+  ctx.globalAlpha=0.45;
   ctx.beginPath(); ctx.moveTo(-4,5); ctx.quadraticCurveTo(-len*0.5,5.5,-len+4,5);
-  _slLine('rgba(180,240,60,0.45)',1.5); ctx.stroke(); ctx.restore();
+  _slLine('#b4f03c',1.5); ctx.stroke(); ctx.restore();
 }
 function _slEyestalk(bx,by,angle,len,eyeR){
   const tx=bx+Math.sin(angle)*len, ty=by-Math.cos(angle)*len;
@@ -1233,12 +1233,13 @@ function drawSlug(ctx_,x,y,t,dir=1,atk={phase:0,t:0},sc=1.0){
     ctx.bezierCurveTo(bL*0.3,-bH*0.2,bL*0.5,-bH*0.22,bL*0.55,-bH*0.3); ctx.closePath();
   },_SL.mantle,2.2);
   _slGloss(()=>{ctx.ellipse(bL*0.22,-bH*0.72,bL*0.14,bH*0.18,-0.3,0,Math.PI*2);},0.28);
+  ctx.save(); ctx.globalAlpha=0.22;
   for(let i=0;i<4;i++){
     const px=bL*0.55-i*bL*0.32, rp=Math.sin(t*spd*2+i*1.1)*1.5*crawlDamp;
-    ctx.save(); ctx.globalAlpha=0.22;
     ctx.beginPath(); ctx.moveTo(px,bH*0.28+rp); ctx.quadraticCurveTo(px-bL*0.08,bH*0.45+rp,px-bL*0.16,bH*0.28+rp);
-    _slLine(_SL.outline,1.2); ctx.stroke(); ctx.restore();
+    _slLine(_SL.outline,1.2); ctx.stroke();
   }
+  ctx.restore();
   const sbx=bL*0.6+hfx, sby=-bH*0.55+hfy;
   const stalkLen=1-stalkRet*0.82, sway=Math.sin(t*0.9)*0.14*(1-stalkRet), sway2=Math.sin(t*0.9+0.8)*0.14*(1-stalkRet);
   _slEyestalk(sbx-5*sc,sby,sway,18*stalkLen*sc,5.5*(0.4+0.6*stalkLen)*sc);
@@ -1376,24 +1377,13 @@ class Floor {
         let isLordFloor  = this.depth === lordFloorIdx;
 
         // ── 1. Заповнення кімнати (кам'яна порода) ──────────────────────
-        let roomGrad = ctx.createLinearGradient(fx, fty, fx, fy);
-        roomGrad.addColorStop(0,   '#1a1218');
-        roomGrad.addColorStop(0.5, '#231828');
-        roomGrad.addColorStop(1,   '#1a1218');
-        ctx.fillStyle = roomGrad;
+        ctx.fillStyle = '#1e1520';
         ctx.fillRect(fx, fty, fw, fh);
 
         // ── 2. Кам'яні стіни (ліва і права) ────────────────────────────
         let wallW = 22;
-        // ліва стіна
-        let wgL = ctx.createLinearGradient(fx - wallW, 0, fx, 0);
-        wgL.addColorStop(0, '#0d0a10'); wgL.addColorStop(1, '#2e2040');
-        ctx.fillStyle = wgL;
+        ctx.fillStyle = '#1d1528';
         ctx.fillRect(fx - wallW, fty, wallW, fh + 15);
-        // права стіна
-        let wgR = ctx.createLinearGradient(fx + fw, 0, fx + fw + wallW, 0);
-        wgR.addColorStop(0, '#2e2040'); wgR.addColorStop(1, '#0d0a10');
-        ctx.fillStyle = wgR;
         ctx.fillRect(fx + fw, fty, wallW, fh + 15);
 
         // кам'яна текстура — горизонтальні тріщини
@@ -1410,9 +1400,7 @@ class Floor {
         }
 
         // ── 3. Підлога — кам'яні плити ──────────────────────────────────
-        let floorGrad = ctx.createLinearGradient(0, fy, 0, fy + 14);
-        floorGrad.addColorStop(0, '#4a3060'); floorGrad.addColorStop(1, '#2a1840');
-        ctx.fillStyle = floorGrad;
+        ctx.fillStyle = '#3a2450';
         ctx.fillRect(fx, fy, fw, 14);
         // плиткові лінії на підлозі
         ctx.strokeStyle = 'rgba(0,0,0,0.5)'; ctx.lineWidth = 1;
@@ -3112,13 +3100,10 @@ class Unit {
             } // end else (non-recruit hero drawing)
 
             // Іконка пасиву (всі герої)
-            const PASSIVE_ICONS = {
-                toughness:'🛡', swift:'💨', armor:'⚔', spellburn:'🔥',
-                holyaura:'✨', rage:'💢', firstblood:'🗡', warcry:'📯', unstoppable:'👁'
-            };
-            if (this.heroPassive && PASSIVE_ICONS[this.heroPassive]) {
+            const _pIcon = this.heroPassive ? PASSIVE_ICONS[this.heroPassive] : '';
+            if (_pIcon) {
                 ctx.font = '8px Arial'; ctx.textAlign = 'center';
-                ctx.fillText(PASSIVE_ICONS[this.heroPassive], this.x + s*0.55, dy + s*0.08);
+                ctx.fillText(_pIcon, this.x + s*0.55, dy + s*0.08);
             }
 
 
@@ -3269,6 +3254,12 @@ class Unit {
             ctx.font = 'bold 13px Arial';
             ctx.fillText('⚡', this.x, dy - 14);
             ctx.globalAlpha = 1;
+        }
+
+        // Іконка здібності монстра під HP-баром
+        if (this.type === 'monster' && this.ability && ABILITY_ICONS[this.ability]) {
+            ctx.font = '9px Arial'; ctx.textAlign = 'center';
+            ctx.fillText(ABILITY_ICONS[this.ability], this.x, _barTop + _bh + 9);
         }
 
         // WATER_ELE: щит-бар під HP-баром
@@ -3557,6 +3548,20 @@ let _dt = 1;          // delta-time: 1.0 = 60fps, 0.5 = 120fps, 2.0 = 30fps
 let _dt_lastTs = 0;   // мітка часу попереднього кадру
 
 let _frameNow = 0; // cached Date.now() for this frame — use instead of Date.now() in draw code
+
+// ── Іконки пасивів героїв та здібностей монстрів (module-level, not recreated per frame) ──
+const PASSIVE_ICONS = {
+    none:'', hardened:'🛡', toughness:'🛡', veteran:'⚔', swift:'💨', hunter:'🎯',
+    armor:'🛡', guardian:'🛡', spellburn:'🔥', arcane:'✨', holyaura:'✝', divine:'✝',
+    rage:'💢', fury:'💢', firstblood:'🗡', shadowstrike:'🗡', warcry:'📯', warcry2:'📯',
+    unstoppable:'👁', conqueror:'👑'
+};
+const ABILITY_ICONS = {
+    atk_slow:'❄', rebirth:'♻', bleed:'🩸', infect:'☣', scare:'👻', dodge:'💨',
+    stun:'⚡', aoe4th:'💥', invis:'👁', raise_dead:'💀', absorb:'🛡', knockback:'↩',
+    no_die:'🔄', explode:'💣', chain:'⚡⚡', reflect:'↔', scream:'😱',
+    armor_pierce:'🗡', absorb_hero:'🕳', breath:'🔥'
+};
 function loop(ts) {
     if (GAME_PAUSED || GAME.gameOver) return;
     _frameNow = Date.now();
