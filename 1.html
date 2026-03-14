@@ -1069,90 +1069,7 @@ function drawSkeleton(ctx_,x,y,t,dir=1,sc=0.38,atk=0){
 }
 
 // ═══════════════════════════════════════════════════════════
-//  drawRecruit — FK-based animated soldier (Рекрут I / II)
-// ═══════════════════════════════════════════════════════════
-function _rcBE(ox,oy,a,len){return[ox+Math.sin(a)*len,oy+Math.cos(a)*len];}
-function _rcLimb(c,x1,y1,x2,y2,w1,w2,col){
-  const dx=x2-x1,dy=y2-y1,len=Math.hypot(dx,dy);
-  if(len<0.01)return;
-  const nx=-dy/len,ny=dx/len;
-  c.fillStyle=col;c.beginPath();
-  c.moveTo(x1+nx*w1/2,y1+ny*w1/2);c.lineTo(x1-nx*w1/2,y1-ny*w1/2);
-  c.lineTo(x2-nx*w2/2,y2-ny*w2/2);c.lineTo(x2+nx*w2/2,y2+ny*w2/2);
-  c.closePath();c.fill();
-}
-function _rcJnt(c,jx,jy,r,col){c.fillStyle=col;c.beginPath();c.arc(jx,jy,r,0,Math.PI*2);c.fill();}
-const _rcE =p=>p*p*(3-2*p);
-const _rcLP=(a,b,f)=>a+(b-a)*f;
-
-function drawRecruit(c,x,y,t,dir=1,sc=0.38,atk=0,run=false){
-  const spd=run?3.2:2.4,wc=Math.sin(t*spd),wc_c=Math.cos(t*spd);
-  const bob=run?(1-Math.abs(wc))*4.2:(1-Math.abs(wc))*2.6;
-  const lean=run?0.10:0.03;
-  const ap=atk||0,legFade=ap>0?Math.max(0,1-ap*3.5):1;
-  const lgS=(run?0.60:0.46)*legFade;
-  const legF=wc*lgS,legB=-legF;
-  const knF=0.10+Math.max(0,wc_c)*(run?0.85:0.65)*legFade;
-  const knB=0.10+Math.max(0,-wc_c)*(run?0.85:0.65)*legFade;
-  const arS=(run?0.40:0.28)*legFade;
-  let swA=-wc*arS,swEl=0.15+Math.max(0,-wc_c)*0.36;
-  let shA= wc*arS,shEl=0.15+Math.max(0, wc_c)*0.42,atkT=0;
-  if(ap>0){
-    if(ap<0.22){const f=_rcE(ap/0.22);swA=_rcLP(-wc*arS,-0.85,f);swEl=_rcLP(swEl,0.20,f);shA=_rcLP(wc*arS,-0.15,f);shEl=_rcLP(shEl,0.65,f);atkT=_rcLP(0,-0.13,f);}
-    else if(ap<0.46){const f=_rcE((ap-0.22)/0.24);swA=_rcLP(-0.85,1.25,f);swEl=_rcLP(0.20,0.88,f);shA=_rcLP(-0.15,-0.42,f);shEl=_rcLP(0.65,0.80,f);atkT=_rcLP(-0.13,0.22,f);}
-    else if(ap<0.65){const f=_rcE((ap-0.46)/0.19);swA=_rcLP(1.25,0.78,f);swEl=_rcLP(0.88,0.42,f);atkT=_rcLP(0.22,0.08,f);}
-    else{const f=_rcE((ap-0.65)/0.35);swA=_rcLP(0.78,-wc*arS,f);swEl=_rcLP(0.42,0.15+Math.max(0,-wc_c)*0.36,f);shA=_rcLP(-0.42,wc*arS,f);shEl=_rcLP(0.80,0.15+Math.max(0,wc_c)*0.42,f);atkT=_rcLP(0.08,0,f);}
-  }
-  const HY=0,TT=-36,SX=10,SY=-34,HCY=-58,HR=13,UA=16,FA=13,UL=18,LL=16;
-  const RC={am:'#7e8fa4',ad:'#3a4a58',hi:'#9bb0c4',cl:'#7a1520',cd:'#4a0c10',sk:'#c49868',bt:'#251d0f',sh:'#8a1020',sb:'#c84040',pl:'#cc2030',pl2:'#cc6020'};
-  c.save();c.translate(x,y-bob*sc);c.scale(dir*sc,sc);c.rotate(lean+atkT);
-  // back leg
-  const[blKx,blKy]=_rcBE(3,HY,legB,UL);const[blEx,blEy]=_rcBE(blKx,blKy,legB+knB,LL);
-  _rcLimb(c,3,HY,blKx,blKy,10,8,RC.ad);_rcLimb(c,blKx,blKy,blEx,blEy,8,5,RC.ad);_rcJnt(c,blKx,blKy,4,'#283848');
-  c.save();c.translate(blEx,blEy);c.rotate(legB+knB);c.fillStyle=RC.bt;c.fillRect(-5,-2,13,5);c.restore();
-  // back arm + shield
-  const[baKx,baKy]=_rcBE(-SX,SY,shA,UA);const[baEx,baEy]=_rcBE(baKx,baKy,shA+shEl,FA);
-  _rcLimb(c,-SX,SY,baKx,baKy,10,8,RC.ad);_rcLimb(c,baKx,baKy,baEx,baEy,8,5,RC.ad);
-  c.save();c.translate(baEx,baEy);c.rotate(shA+shEl-0.25);
-  c.fillStyle=RC.sh;c.fillRect(-8,-14,16,28);c.strokeStyle=RC.sb;c.lineWidth=1.8;c.strokeRect(-8,-14,16,28);
-  c.strokeStyle='#cc4040';c.lineWidth=1.3;c.beginPath();c.moveTo(0,-14);c.lineTo(0,14);c.stroke();c.beginPath();c.moveTo(-8,-1);c.lineTo(8,-1);c.stroke();
-  c.fillStyle='#aa2828';c.beginPath();c.arc(0,-1,3.5,0,Math.PI*2);c.fill();c.restore();
-  // cloak
-  c.fillStyle=RC.cd;c.beginPath();c.moveTo(-8,TT+5);c.lineTo(-13,HY+2);c.lineTo(11,HY+2);c.lineTo(8,TT+5);c.closePath();c.fill();
-  c.fillStyle=RC.cl;c.beginPath();c.moveTo(-6,TT+5);c.lineTo(-10,HY+1);c.lineTo(9,HY+1);c.lineTo(6,TT+5);c.closePath();c.fill();
-  // torso + shoulder pads
-  c.fillStyle=RC.am;c.beginPath();c.arc(-SX,SY,8,0,Math.PI*2);c.fill();c.beginPath();c.arc(SX,SY,8,0,Math.PI*2);c.fill();
-  c.fillStyle=RC.am;c.fillRect(-8,TT+2,16,34);c.fillStyle=RC.hi;c.fillRect(-7,TT+3,4,8);
-  c.fillStyle=RC.ad;c.fillRect(-9,-6,18,8);c.fillStyle='#5a4010';c.fillRect(-3,-5,6,6);
-  c.strokeStyle=RC.ad;c.lineWidth=1.6;c.beginPath();c.moveTo(0,TT+2);c.lineTo(0,-6);c.stroke();
-  c.lineWidth=1;for(let i=1;i<=3;i++){c.beginPath();c.moveTo(-8,TT+2+i*8);c.lineTo(8,TT+2+i*8);c.stroke();}
-  c.strokeStyle='#283848';c.lineWidth=1;c.beginPath();c.arc(-SX,SY,8,0,Math.PI*2);c.stroke();c.beginPath();c.arc(SX,SY,8,0,Math.PI*2);c.stroke();
-  // front leg (before sword arm — correct depth)
-  const[flKx,flKy]=_rcBE(-3,HY,legF,UL);const[flEx,flEy]=_rcBE(flKx,flKy,legF+knF,LL);
-  _rcLimb(c,-3,HY,flKx,flKy,10,8,RC.am);_rcLimb(c,flKx,flKy,flEx,flEy,8,5,RC.am);_rcJnt(c,flKx,flKy,4,RC.ad);
-  c.save();c.translate(flEx,flEy);c.rotate(legF+knF);c.fillStyle=RC.bt;c.fillRect(-5,-2,14,5);c.restore();
-  // front arm + sword
-  const[faKx,faKy]=_rcBE(SX,SY,swA,UA);const[faEx,faEy]=_rcBE(faKx,faKy,swA+swEl,FA);
-  _rcLimb(c,SX,SY,faKx,faKy,10,8,RC.am);_rcLimb(c,faKx,faKy,faEx,faEy,8,5,RC.am);
-  _rcJnt(c,faKx,faKy,4.5,RC.ad);_rcJnt(c,faEx,faEy,5,RC.ad);
-  {const swa=swA+swEl;
-   c.strokeStyle='#3a2812';c.lineWidth=7;c.lineCap='round';c.beginPath();c.moveTo(faEx,faEy);c.lineTo(faEx+Math.sin(swa)*12,faEy+Math.cos(swa)*12);c.stroke();
-   const gx=faEx+Math.sin(swa)*13,gy=faEy+Math.cos(swa)*13;
-   c.strokeStyle='#7a5818';c.lineWidth=9;c.beginPath();c.moveTo(gx-Math.cos(swa)*10,gy+Math.sin(swa)*10);c.lineTo(gx+Math.cos(swa)*10,gy-Math.sin(swa)*10);c.stroke();
-   const bTX=gx+Math.sin(swa)*52,bTY=gy+Math.cos(swa)*52;
-   c.strokeStyle='#c8c8da';c.lineWidth=5;c.lineCap='butt';c.beginPath();c.moveTo(gx,gy);c.lineTo(bTX,bTY);c.stroke();
-   c.strokeStyle='rgba(255,255,255,0.55)';c.lineWidth=1.5;c.beginPath();c.moveTo(gx+Math.cos(swa),gy-Math.sin(swa));c.lineTo(bTX+Math.cos(swa),bTY-Math.sin(swa));c.stroke();}
-  // head
-  c.fillStyle=RC.sk;c.fillRect(-3,HCY+HR-4,6,8);
-  c.fillStyle=RC.am;c.beginPath();c.arc(0,HCY,HR,0,Math.PI*2);c.fill();
-  c.fillStyle='#18202e';c.fillRect(-HR-1,HCY-4,HR*2+2,7);c.fillStyle='#22334a';c.fillRect(-HR,HCY-3,HR*2,5);
-  c.fillStyle='rgba(180,220,255,0.65)';c.fillRect(-7,HCY-0.5,14,2);
-  c.fillStyle='#6a7a8e';c.fillRect(-HR-5,HCY-4,6,12);c.fillRect(HR-1,HCY-4,6,12);
-  c.fillStyle='#788898';c.fillRect(-1.5,HCY-4,3,8);
-  for(let pi=0;pi<7;pi++){const px=-4+pi*1.4,pW=Math.sin(t*3.8+pi*0.9)*2.2;c.fillStyle=pi<4?RC.pl:RC.pl2;c.fillRect(px,HCY-HR-5+pW,2.5,10);}
-  c.strokeStyle='#304050';c.lineWidth=0.8;c.beginPath();c.arc(0,HCY,HR,0,Math.PI*2);c.stroke();
-  c.restore();
-}
+// (drawRecruit FK removed — old sprite model used directly in draw())
 
 // ═══════════════════════════════════════════════════════════
 //  drawSlug — Don't Starve style animated slug
@@ -3036,36 +2953,124 @@ class Unit {
             let s = this.size;
 
             if (this.heroType === 'recruit' || this.heroType === 'recruit2') {
-                // ── FK animated recruit ───────────────────────────────────────
-                if (this._rkT === undefined) {
-                    this._rkT         = Math.random() * Math.PI * 2;
-                    this._rkDir       = 1;
-                    this._rkAtkP      = 0;
-                    this._rkPrevAktCd = this.attackCooldown || 0;
-                    this._rkPrevX     = this.x;
-                    this._rkLastT     = _frameNow;
+                // ── Animated old-style recruit ────────────────────────────────
+                if (this._roT === undefined) {
+                    this._roT = Math.random() * Math.PI * 2;
+                    this._roDir = 1; this._roAtkP = 0;
+                    this._roPrevAktCd = this.attackCooldown || 0;
+                    this._roPrevX = this.x; this._roLastT = _frameNow;
                 }
-                const _rkDt  = Math.min((_frameNow - this._rkLastT) / 1000, 0.05);
-                this._rkLastT = _frameNow;
-                // direction toward enemy
+                const _roDt = Math.min((_frameNow - this._roLastT) / 1000, 0.05);
+                this._roLastT = _frameNow;
+                // direction
                 if (this.state === 'fight') {
-                    const _rkE = units.find(u => u.type === 'monster' && u.floorIdx === this.floorIdx && u.hp > 0);
-                    if (_rkE) this._rkDir = _rkE.x > this.x ? 1 : -1;
-                } else if (Math.abs(this.x - this._rkPrevX) > 0.2) {
-                    this._rkDir = this.x > this._rkPrevX ? 1 : -1;
+                    const _roe = units.find(u => u.type === 'monster' && u.floorIdx === this.floorIdx && u.hp > 0);
+                    if (_roe) this._roDir = _roe.x > this.x ? 1 : -1;
+                } else if (Math.abs(this.x - this._roPrevX) > 0.2) {
+                    this._roDir = this.x > this._roPrevX ? 1 : -1;
                 }
-                this._rkPrevX = this.x;
+                this._roPrevX = this.x;
                 // attack detection
-                const _rkAcd = this.attackCooldown || 0;
-                if (_rkAcd > (this._rkPrevAktCd || 0) + 3) this._rkAtkP = 0.01;
-                this._rkPrevAktCd = _rkAcd;
-                if (this._rkAtkP > 0) { this._rkAtkP += _rkDt / 1.0; if (this._rkAtkP >= 1) this._rkAtkP = 0; }
-                this._rkT += _rkDt * (this.state === 'idle' ? 0.6 : 2.2);
-                const _rkSc   = this.size * 0.015;
-                const _rkHipY = (this.y - camY) - 30 * _rkSc;
-                const _rkRun  = this.state === 'move' && units.some(u => u.type === 'monster' && u.floorIdx === this.floorIdx && u.hp > 0);
-                drawRecruit(ctx, this.x, _rkHipY, this._rkT, this._rkDir, _rkSc, this._rkAtkP || 0, _rkRun);
-                this._hpBarY = _rkHipY - 71 * _rkSc - 8;
+                const _roAcd = this.attackCooldown || 0;
+                if (_roAcd > (this._roPrevAktCd || 0) + 3) this._roAtkP = 0.01;
+                this._roPrevAktCd = _roAcd;
+                if (this._roAtkP > 0) { this._roAtkP += _roDt / 0.65; if (this._roAtkP >= 1) this._roAtkP = 0; }
+                this._roT += _roDt * (this.state === 'idle' ? 1.5 : 3.5);
+                // vertical bob
+                const _roBob = this.state === 'move'  ? Math.abs(Math.sin(this._roT)) * 3.5
+                             : this.state === 'idle'  ? Math.sin(this._roT * 0.5) * 1.0
+                             :                          Math.abs(Math.sin(this._roT)) * 1.5;
+                // weapon swing 0→1→0 during attack
+                const _roSwing = this._roAtkP > 0 ? Math.sin(this._roAtkP * Math.PI) : 0;
+                const _roD = this._roDir;
+
+                let rank = this.heroRank || 'normal';
+                let lv   = this.level || 1;
+                let cloakCol  = this.heroCloakCol  || '#661122';
+                let bodyCol   = this.heroBodyCol   || '#cc2233';
+                let helmetCol = this.heroHelmetCol || '#666677';
+                if (rank === 'elite_hp')  { cloakCol='#115533'; bodyCol='#22aa66'; helmetCol='#44cc88'; }
+                if (rank === 'elite_atk') { cloakCol='#883300'; bodyCol='#ee6600'; helmetCol='#ffaa44'; }
+                if (rank === 'boss')      { cloakCol='#550066'; bodyCol='#aa00cc'; helmetCol='#cc88ff'; }
+
+                const _roTY = dy - _roBob;   // animated top-y (dy already = this.y-camY-s)
+                const _roDX = this.x - s/2;
+
+                // Cloak
+                ctx.fillStyle = cloakCol;
+                ctx.beginPath();
+                ctx.moveTo(this.x, _roTY + s*0.3);
+                ctx.lineTo(this.x - s*0.45, _roTY + s);
+                ctx.lineTo(this.x + s*0.45, _roTY + s);
+                ctx.closePath(); ctx.fill();
+                // Body
+                ctx.fillStyle = bodyCol;
+                ctx.fillRect(_roDX + s*0.22, _roTY + s*0.42, s*0.56, s*0.42);
+                // Helmet
+                ctx.fillStyle = helmetCol;
+                ctx.beginPath(); ctx.arc(this.x, _roTY + s*0.27, s*0.27, 0, Math.PI*2); ctx.fill();
+                ctx.fillStyle = '#333344';
+                ctx.fillRect(_roDX + s*0.08, _roTY + s*0.3, s*0.84, s*0.1);
+
+                // Weapon — direction-aware, swings on attack
+                let wpn = this.heroWeapon || 'sword';
+                ctx.lineWidth = lv >= 7 ? 3 : 2;
+                const _roHx = this.x + _roD * s * 0.32;              // hand (pommel) X
+                const _roHy = _roTY + s * 0.64;                       // hand Y
+                const _roTpx = _roHx + _roD * s * (0.13 + _roSwing * 0.30); // tip X
+                const _roTpy = _roHy - s * (0.52 + _roSwing * 0.10); // tip Y (swings fwd)
+                if (wpn === 'sword') {
+                    ctx.strokeStyle = lv >= 8 ? '#aaeeff' : '#aaaaaa';
+                    ctx.beginPath(); ctx.moveTo(_roTpx, _roTpy); ctx.lineTo(_roHx, _roHy); ctx.stroke();
+                    // Guard (perpendicular crosspiece)
+                    ctx.strokeStyle = '#888'; ctx.lineWidth = 2;
+                    const _gf = 0.40;
+                    const _roGx = _roTpx + (_roHx - _roTpx) * _gf, _roGy = _roTpy + (_roHy - _roTpy) * _gf;
+                    const _bdx = _roHx - _roTpx, _bdy = _roHy - _roTpy, _bln = Math.hypot(_bdx, _bdy);
+                    const _rpx = -_bdy / _bln, _rpy = _bdx / _bln;
+                    ctx.beginPath();
+                    ctx.moveTo(_roGx - _rpx * s*0.12, _roGy - _rpy * s*0.12);
+                    ctx.lineTo(_roGx + _rpx * s*0.12, _roGy + _rpy * s*0.12);
+                    ctx.stroke();
+                } else if (wpn === 'spear') {
+                    ctx.strokeStyle = '#88ccff';
+                    ctx.beginPath(); ctx.moveTo(_roTpx, _roTpy); ctx.lineTo(_roHx, _roHy); ctx.stroke();
+                    ctx.fillStyle = '#cceeff';
+                    ctx.beginPath();
+                    ctx.moveTo(_roTpx, _roTpy);
+                    ctx.lineTo(_roTpx - _roD * s*0.09, _roTpy + s*0.13);
+                    ctx.lineTo(_roTpx + _roD * s*0.09, _roTpy + s*0.13);
+                    ctx.closePath(); ctx.fill();
+                } else if (wpn === 'staff') {
+                    ctx.strokeStyle = '#cc88ff'; ctx.lineWidth = 2;
+                    ctx.beginPath(); ctx.moveTo(_roTpx, _roTpy); ctx.lineTo(_roHx, _roHy); ctx.stroke();
+                    const _glow = 0.5 + 0.5 * Math.sin(_frameNow / 300);
+                    ctx.fillStyle = `rgba(180,100,255,${_glow})`;
+                    ctx.beginPath(); ctx.arc(_roTpx, _roTpy, s*0.10, 0, Math.PI*2); ctx.fill();
+                } else if (wpn === 'axe') {
+                    ctx.strokeStyle = '#ff6644'; ctx.lineWidth = 2;
+                    ctx.beginPath(); ctx.moveTo(_roTpx, _roTpy); ctx.lineTo(_roHx, _roHy); ctx.stroke();
+                    ctx.fillStyle = '#cc4422';
+                    ctx.beginPath();
+                    ctx.moveTo(_roTpx, _roTpy);
+                    ctx.lineTo(_roTpx + _roD * s*0.18, _roTpy - s*0.08);
+                    ctx.lineTo(_roTpx + _roD * s*0.12, _roTpy + s*0.18);
+                    ctx.closePath(); ctx.fill();
+                } else if (wpn === 'dagger') {
+                    ctx.strokeStyle = '#88ffcc'; ctx.lineWidth = 1.5;
+                    ctx.beginPath(); ctx.moveTo(_roTpx, _roTpy); ctx.lineTo(_roHx, _roHy); ctx.stroke();
+                    const _gf2 = 0.55;
+                    const _roGx2 = _roTpx + (_roHx - _roTpx) * _gf2, _roGy2 = _roTpy + (_roHy - _roTpy) * _gf2;
+                    ctx.beginPath();
+                    ctx.moveTo(_roGx2 - _roD * s*0.10, _roGy2 + s*0.03);
+                    ctx.lineTo(_roGx2 + _roD * s*0.05, _roGy2 - s*0.03);
+                    ctx.stroke();
+                }
+                // Eyes
+                ctx.fillStyle = '#ffeecc';
+                ctx.fillRect(this.x - s*0.12, _roTY + s*0.27, s*0.08, s*0.07);
+                ctx.fillRect(this.x + s*0.04, _roTY + s*0.27, s*0.08, s*0.07);
+                this._hpBarY = _roTY - 8;
             } else {
 
             let rank = this.heroRank || 'normal';
