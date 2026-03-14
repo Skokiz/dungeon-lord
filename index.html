@@ -3092,74 +3092,9 @@ class Unit {
                     _tipY = _hndY - Math.cos(_wpA) * _wpnLen;
                 }
 
-                // arm segment
+                // arm segment (drawn before body parts — behind pauldrons/head)
                 ctx.strokeStyle = bodyCol; ctx.lineWidth = _W*0.95; ctx.lineCap = 'round';
                 ctx.beginPath(); ctx.moveTo(_shlX,_shlY); ctx.lineTo(_hndX,_hndY); ctx.stroke();
-
-                // slash/impact trail during strike
-                if (_strk > 0.05 && _strk < 0.95) {
-                    const _ta = _strk*(1-_strk)*4;
-                    ctx.save();
-                    ctx.globalAlpha = _ta * 0.55;
-                    ctx.strokeStyle = wpn==='axe'?'#ff8844':wpn==='staff'?'#cc88ff':'#e0f0ff';
-                    ctx.lineWidth = 5; ctx.lineCap = 'round';
-                    // arc sweep from windup to strike position
-                    const _a0 = _roD>0 ? -Math.PI*0.85 : -Math.PI*0.15;
-                    const _a1 = _roD>0 ? -Math.PI*0.15 : -Math.PI*0.85;
-                    ctx.beginPath(); ctx.arc(_shlX, _shlY, _armLen+_wpnLen*0.6, _a0, _a1); ctx.stroke();
-                    ctx.restore();
-                }
-
-                // weapon — draw with glow for visibility
-                ctx.save();
-                ctx.lineCap = 'butt';
-                const _wpGlow = wpn==='staff'?'#cc66ff':wpn==='axe'?'#ff7733':wpn==='dagger'?'#44ffaa':wpn==='spear'?'#aaddff':'#c8d8ff';
-                ctx.shadowColor = _wpGlow; ctx.shadowBlur = 7;
-                if (wpn === 'sword') {
-                    ctx.strokeStyle = lv>=8 ? '#bbeeff' : '#dde0f8'; ctx.lineWidth = 4;
-                    ctx.beginPath(); ctx.moveTo(_hndX,_hndY); ctx.lineTo(_tipX,_tipY); ctx.stroke();
-                    const _gf=0.18, _gx=_hndX+(_tipX-_hndX)*_gf, _gy=_hndY+(_tipY-_hndY)*_gf;
-                    const _dl=Math.hypot(_tipX-_hndX,_tipY-_hndY);
-                    const _px=-((_tipY-_hndY)/_dl), _py=(_tipX-_hndX)/_dl;
-                    ctx.shadowBlur=0; ctx.strokeStyle='#998877'; ctx.lineWidth=2.5;
-                    ctx.beginPath(); ctx.moveTo(_gx-_px*_H*0.10,_gy-_py*_H*0.10); ctx.lineTo(_gx+_px*_H*0.10,_gy+_py*_H*0.10); ctx.stroke();
-                } else if (wpn === 'dagger') {
-                    ctx.strokeStyle='#99ffdd'; ctx.lineWidth=3;
-                    ctx.beginPath(); ctx.moveTo(_hndX,_hndY); ctx.lineTo(_tipX,_tipY); ctx.stroke();
-                    const _dl2=Math.hypot(_tipX-_hndX,_tipY-_hndY);
-                    const _px2=-((_tipY-_hndY)/_dl2), _py2=(_tipX-_hndX)/_dl2;
-                    const _gx2=_hndX+(_tipX-_hndX)*0.25, _gy2=_hndY+(_tipY-_hndY)*0.25;
-                    ctx.shadowBlur=0; ctx.strokeStyle='#667755'; ctx.lineWidth=2;
-                    ctx.beginPath(); ctx.moveTo(_gx2-_px2*_H*0.07,_gy2-_py2*_H*0.07); ctx.lineTo(_gx2+_px2*_H*0.07,_gy2+_py2*_H*0.07); ctx.stroke();
-                } else if (wpn === 'spear') {
-                    ctx.strokeStyle='#aaccee'; ctx.lineWidth=3;
-                    ctx.beginPath(); ctx.moveTo(_hndX,_hndY); ctx.lineTo(_tipX,_tipY); ctx.stroke();
-                    const _dl3=Math.hypot(_tipX-_hndX,_tipY-_hndY);
-                    const _nx3=(_tipX-_hndX)/_dl3, _ny3=(_tipY-_hndY)/_dl3;
-                    const _px3=-_ny3, _py3=_nx3;
-                    ctx.fillStyle='#ddeeff';
-                    ctx.beginPath(); ctx.moveTo(_tipX,_tipY);
-                    ctx.lineTo(_tipX-_px3*_H*0.065-_nx3*_H*0.13,_tipY-_py3*_H*0.065-_ny3*_H*0.13);
-                    ctx.lineTo(_tipX+_px3*_H*0.065-_nx3*_H*0.13,_tipY+_py3*_H*0.065-_ny3*_H*0.13);
-                    ctx.closePath(); ctx.fill();
-                } else if (wpn === 'staff') {
-                    ctx.strokeStyle='#aa55dd'; ctx.lineWidth=3.5; ctx.lineCap='round';
-                    ctx.beginPath(); ctx.moveTo(_hndX,_hndY); ctx.lineTo(_tipX,_tipY); ctx.stroke();
-                    const _gw=0.55+0.45*Math.sin(_frameNow/300);
-                    ctx.shadowBlur=12; ctx.fillStyle=`rgba(210,90,255,${_gw})`; ctx.beginPath(); ctx.arc(_tipX,_tipY,_H*0.072,0,Math.PI*2); ctx.fill();
-                } else if (wpn === 'axe') {
-                    ctx.strokeStyle='#cc5533'; ctx.lineWidth=3;
-                    ctx.beginPath(); ctx.moveTo(_hndX,_hndY); ctx.lineTo(_tipX,_tipY); ctx.stroke();
-                    const _dl4=Math.hypot(_tipX-_hndX,_tipY-_hndY);
-                    const _px4=-((_tipY-_hndY)/_dl4), _py4=(_tipX-_hndX)/_dl4;
-                    ctx.fillStyle='#dd4422';
-                    ctx.beginPath(); ctx.moveTo(_tipX,_tipY);
-                    ctx.lineTo(_tipX+_px4*_H*0.14,_tipY+_py4*_H*0.14);
-                    ctx.lineTo(_tipX+_px4*_H*0.06+(_tipX-_hndX)*0.22,_tipY+_py4*_H*0.06+(_tipY-_hndY)*0.22);
-                    ctx.lineTo(_tipX-_px4*_H*0.10,_tipY-_py4*_H*0.10);
-                    ctx.closePath(); ctx.fill();
-                }
-                ctx.restore(); // end weapon glow
 
                 // ── type flags ────────────────────────────────────────────────
                 const _isSoldier = this.heroType==='soldier'||this.heroType==='soldier2';
@@ -3297,6 +3232,70 @@ class Unit {
                     ctx.fillRect(_CX+_hdR*0.17,_hdCY-_hdR*0.02, _hdR*0.38,_hdR*0.28);
                     this._hpBarY = _hdCY - _hdR * (_isSoldier ? 1.6 : 1.0) - 8;
                 }
+
+                // ── WEAPON BLADE — drawn on top of all body parts ─────────────
+                // slash/impact trail during strike
+                if (_strk > 0.05 && _strk < 0.95) {
+                    const _ta = _strk*(1-_strk)*4;
+                    ctx.save();
+                    ctx.globalAlpha = _ta * 0.55;
+                    ctx.strokeStyle = wpn==='axe'?'#ff8844':wpn==='staff'?'#cc88ff':'#e0f0ff';
+                    ctx.lineWidth = 5; ctx.lineCap = 'round';
+                    const _a0 = _roD>0 ? -Math.PI*0.85 : -Math.PI*0.15;
+                    const _a1 = _roD>0 ? -Math.PI*0.15 : -Math.PI*0.85;
+                    ctx.beginPath(); ctx.arc(_shlX, _shlY, _armLen+_wpnLen*0.6, _a0, _a1); ctx.stroke();
+                    ctx.restore();
+                }
+                ctx.save();
+                ctx.lineCap = 'butt';
+                const _wpGlow = wpn==='staff'?'#cc66ff':wpn==='axe'?'#ff7733':wpn==='dagger'?'#44ffaa':wpn==='spear'?'#aaddff':'#c8d8ff';
+                ctx.shadowColor = _wpGlow; ctx.shadowBlur = 7;
+                if (wpn === 'sword') {
+                    ctx.strokeStyle = lv>=8 ? '#bbeeff' : '#dde0f8'; ctx.lineWidth = 4;
+                    ctx.beginPath(); ctx.moveTo(_hndX,_hndY); ctx.lineTo(_tipX,_tipY); ctx.stroke();
+                    const _gf=0.18, _gx=_hndX+(_tipX-_hndX)*_gf, _gy=_hndY+(_tipY-_hndY)*_gf;
+                    const _dl=Math.hypot(_tipX-_hndX,_tipY-_hndY);
+                    const _px=-((_tipY-_hndY)/_dl), _py=(_tipX-_hndX)/_dl;
+                    ctx.shadowBlur=0; ctx.strokeStyle='#998877'; ctx.lineWidth=2.5;
+                    ctx.beginPath(); ctx.moveTo(_gx-_px*_H*0.10,_gy-_py*_H*0.10); ctx.lineTo(_gx+_px*_H*0.10,_gy+_py*_H*0.10); ctx.stroke();
+                } else if (wpn === 'dagger') {
+                    ctx.strokeStyle='#99ffdd'; ctx.lineWidth=3;
+                    ctx.beginPath(); ctx.moveTo(_hndX,_hndY); ctx.lineTo(_tipX,_tipY); ctx.stroke();
+                    const _dl2=Math.hypot(_tipX-_hndX,_tipY-_hndY);
+                    const _px2=-((_tipY-_hndY)/_dl2), _py2=(_tipX-_hndX)/_dl2;
+                    const _gx2=_hndX+(_tipX-_hndX)*0.25, _gy2=_hndY+(_tipY-_hndY)*0.25;
+                    ctx.shadowBlur=0; ctx.strokeStyle='#667755'; ctx.lineWidth=2;
+                    ctx.beginPath(); ctx.moveTo(_gx2-_px2*_H*0.07,_gy2-_py2*_H*0.07); ctx.lineTo(_gx2+_px2*_H*0.07,_gy2+_py2*_H*0.07); ctx.stroke();
+                } else if (wpn === 'spear') {
+                    ctx.strokeStyle='#aaccee'; ctx.lineWidth=3;
+                    ctx.beginPath(); ctx.moveTo(_hndX,_hndY); ctx.lineTo(_tipX,_tipY); ctx.stroke();
+                    const _dl3=Math.hypot(_tipX-_hndX,_tipY-_hndY);
+                    const _nx3=(_tipX-_hndX)/_dl3, _ny3=(_tipY-_hndY)/_dl3;
+                    const _px3=-_ny3, _py3=_nx3;
+                    ctx.fillStyle='#ddeeff';
+                    ctx.beginPath(); ctx.moveTo(_tipX,_tipY);
+                    ctx.lineTo(_tipX-_px3*_H*0.065-_nx3*_H*0.13,_tipY-_py3*_H*0.065-_ny3*_H*0.13);
+                    ctx.lineTo(_tipX+_px3*_H*0.065-_nx3*_H*0.13,_tipY+_py3*_H*0.065-_ny3*_H*0.13);
+                    ctx.closePath(); ctx.fill();
+                } else if (wpn === 'staff') {
+                    ctx.strokeStyle='#aa55dd'; ctx.lineWidth=3.5; ctx.lineCap='round';
+                    ctx.beginPath(); ctx.moveTo(_hndX,_hndY); ctx.lineTo(_tipX,_tipY); ctx.stroke();
+                    const _gw=0.55+0.45*Math.sin(_frameNow/300);
+                    ctx.shadowBlur=12; ctx.fillStyle=`rgba(210,90,255,${_gw})`; ctx.beginPath(); ctx.arc(_tipX,_tipY,_H*0.072,0,Math.PI*2); ctx.fill();
+                } else if (wpn === 'axe') {
+                    ctx.strokeStyle='#cc5533'; ctx.lineWidth=3;
+                    ctx.beginPath(); ctx.moveTo(_hndX,_hndY); ctx.lineTo(_tipX,_tipY); ctx.stroke();
+                    const _dl4=Math.hypot(_tipX-_hndX,_tipY-_hndY);
+                    const _px4=-((_tipY-_hndY)/_dl4), _py4=(_tipX-_hndX)/_dl4;
+                    ctx.fillStyle='#dd4422';
+                    ctx.beginPath(); ctx.moveTo(_tipX,_tipY);
+                    ctx.lineTo(_tipX+_px4*_H*0.14,_tipY+_py4*_H*0.14);
+                    ctx.lineTo(_tipX+_px4*_H*0.06+(_tipX-_hndX)*0.22,_tipY+_py4*_H*0.06+(_tipY-_hndY)*0.22);
+                    ctx.lineTo(_tipX-_px4*_H*0.10,_tipY-_py4*_H*0.10);
+                    ctx.closePath(); ctx.fill();
+                }
+                ctx.restore(); // end weapon glow
+
             } else {
 
             let rank = this.heroRank || 'normal';
