@@ -2952,7 +2952,7 @@ class Unit {
         } else if (this.type === 'hero') {
             let s = this.size;
 
-            const _isAnimHero = this.heroType==='recruit'||this.heroType==='recruit2'||this.heroType==='soldier'||this.heroType==='soldier2';
+            const _isAnimHero = this.heroType==='recruit'||this.heroType==='recruit2'||this.heroType==='soldier'||this.heroType==='soldier2'||this.heroType==='scout'||this.heroType==='scout2';
             if (_isAnimHero) {
                 // ── Bigger hero: legs + dramatic attack animation ──────────────
                 if (this._roT === undefined) {
@@ -3142,8 +3142,9 @@ class Unit {
                     ctx.closePath(); ctx.fill();
                 }
 
-                // ── SHOULDER PAULDRONS (soldier only) ─────────────────────────
+                // ── type flags ────────────────────────────────────────────────
                 const _isSoldier = this.heroType==='soldier'||this.heroType==='soldier2';
+                const _isScout   = this.heroType==='scout'  ||this.heroType==='scout2';
                 if (_isSoldier) {
                     const _pR = _W * 0.95;
                     [-1,1].forEach(sd => {
@@ -3158,32 +3159,79 @@ class Unit {
                     });
                 }
 
-                // ── HELMET ────────────────────────────────────────────────────
-                ctx.fillStyle = helmetCol;
-                ctx.beginPath(); ctx.arc(_CX,_hdCY,_hdR,0,Math.PI*2); ctx.fill();
-
-                if (_isSoldier) {
-                    // більш кутастий шолом: бічні пластини + гребінь
-                    ctx.fillStyle = helmetCol;
-                    ctx.fillRect(_CX-_hdR*1.22, _hdCY-_hdR*0.30, _hdR*0.28, _hdR*0.75); // left plate
-                    ctx.fillRect(_CX+_hdR*0.94, _hdCY-_hdR*0.30, _hdR*0.28, _hdR*0.75); // right plate
-                    // гребінь
-                    ctx.fillStyle = this.heroCloakCol || '#661122';
+                // ── HEAD / HELMET ──────────────────────────────────────────────
+                if (_isScout) {
+                    // ── SCOUT: гостроверхий каптур + відкрите обличчя ─────────
+                    // шия / обличчя
+                    ctx.fillStyle = '#d4a878';
+                    ctx.beginPath(); ctx.arc(_CX, _hdCY, _hdR*0.82, 0, Math.PI*2); ctx.fill();
+                    // очі
+                    ctx.fillStyle = '#1a1008';
+                    ctx.beginPath(); ctx.arc(_CX-_hdR*0.28, _hdCY-_hdR*0.10, _hdR*0.18, 0, Math.PI*2); ctx.fill();
+                    ctx.beginPath(); ctx.arc(_CX+_hdR*0.28, _hdCY-_hdR*0.10, _hdR*0.18, 0, Math.PI*2); ctx.fill();
+                    // білки
+                    ctx.fillStyle = '#ffffffcc';
+                    ctx.beginPath(); ctx.arc(_CX-_hdR*0.28, _hdCY-_hdR*0.10, _hdR*0.10, 0, Math.PI*2); ctx.fill();
+                    ctx.beginPath(); ctx.arc(_CX+_hdR*0.28, _hdCY-_hdR*0.10, _hdR*0.10, 0, Math.PI*2); ctx.fill();
+                    // рот (вузька смужка)
+                    ctx.fillStyle = '#8b5e3c';
+                    ctx.fillRect(_CX-_hdR*0.22, _hdCY+_hdR*0.28, _hdR*0.44, _hdR*0.11);
+                    // каптур (гостра трикутна форма поверх голови)
+                    ctx.fillStyle = cloakCol;
                     ctx.beginPath();
-                    ctx.moveTo(_CX-_hdR*0.35, _hdCY-_hdR);
-                    ctx.lineTo(_CX+_hdR*0.35, _hdCY-_hdR);
-                    ctx.lineTo(_CX+_hdR*0.22, _hdCY-_hdR*1.55);
-                    ctx.lineTo(_CX-_hdR*0.22, _hdCY-_hdR*1.55);
+                    ctx.moveTo(_CX-_hdR*1.05, _hdCY+_hdR*0.30);  // ліво-низ
+                    ctx.lineTo(_CX+_hdR*1.05, _hdCY+_hdR*0.30);  // право-низ
+                    ctx.lineTo(_CX+_hdR*0.55, _hdCY-_hdR*0.70);  // право-середина
+                    ctx.lineTo(_CX,           _hdCY-_hdR*1.70);  // вершина
+                    ctx.lineTo(_CX-_hdR*0.55, _hdCY-_hdR*0.70);  // ліво-середина
                     ctx.closePath(); ctx.fill();
+                    // тінь каптура на обличчі
+                    ctx.fillStyle = 'rgba(0,0,0,0.18)';
+                    ctx.beginPath();
+                    ctx.moveTo(_CX-_hdR*0.90, _hdCY+_hdR*0.30);
+                    ctx.lineTo(_CX+_hdR*0.90, _hdCY+_hdR*0.30);
+                    ctx.lineTo(_CX+_hdR*0.45, _hdCY-_hdR*0.50);
+                    ctx.lineTo(_CX,           _hdCY-_hdR*0.10);
+                    ctx.lineTo(_CX-_hdR*0.45, _hdCY-_hdR*0.50);
+                    ctx.closePath(); ctx.fill();
+                    // scout2: перо у каптурі
+                    if (this.heroType==='scout2') {
+                        ctx.strokeStyle = '#88cc44'; ctx.lineWidth = 2; ctx.lineCap = 'round';
+                        ctx.beginPath();
+                        ctx.moveTo(_CX+_hdR*0.25, _hdCY-_hdR*0.75);
+                        ctx.quadraticCurveTo(_CX+_hdR*0.80, _hdCY-_hdR*1.50, _CX+_hdR*0.35, _hdCY-_hdR*2.10);
+                        ctx.stroke();
+                        ctx.strokeStyle = '#aae060'; ctx.lineWidth = 1;
+                        ctx.beginPath();
+                        ctx.moveTo(_CX+_hdR*0.30, _hdCY-_hdR*0.90);
+                        ctx.quadraticCurveTo(_CX+_hdR*0.75, _hdCY-_hdR*1.55, _CX+_hdR*0.38, _hdCY-_hdR*2.05);
+                        ctx.stroke();
+                    }
+                    this._hpBarY = _hdCY - _hdR*1.75 - 8;
+                } else {
+                    // ── RECRUIT / SOLDIER: металевий шолом ───────────────────
+                    ctx.fillStyle = helmetCol;
+                    ctx.beginPath(); ctx.arc(_CX,_hdCY,_hdR,0,Math.PI*2); ctx.fill();
+                    if (_isSoldier) {
+                        // бічні пластини + гребінь
+                        ctx.fillStyle = helmetCol;
+                        ctx.fillRect(_CX-_hdR*1.22, _hdCY-_hdR*0.30, _hdR*0.28, _hdR*0.75);
+                        ctx.fillRect(_CX+_hdR*0.94, _hdCY-_hdR*0.30, _hdR*0.28, _hdR*0.75);
+                        ctx.fillStyle = this.heroCloakCol || '#661122';
+                        ctx.beginPath();
+                        ctx.moveTo(_CX-_hdR*0.35, _hdCY-_hdR);
+                        ctx.lineTo(_CX+_hdR*0.35, _hdCY-_hdR);
+                        ctx.lineTo(_CX+_hdR*0.22, _hdCY-_hdR*1.55);
+                        ctx.lineTo(_CX-_hdR*0.22, _hdCY-_hdR*1.55);
+                        ctx.closePath(); ctx.fill();
+                    }
+                    ctx.fillStyle = '#1e2233'; // visor
+                    ctx.fillRect(_CX-_hdR, _hdCY-_hdR*0.05, _hdR*2, _hdR*0.52);
+                    ctx.fillStyle = 'rgba(255,235,180,0.88)';
+                    ctx.fillRect(_CX-_hdR*0.55,_hdCY-_hdR*0.02, _hdR*0.38,_hdR*0.28);
+                    ctx.fillRect(_CX+_hdR*0.17,_hdCY-_hdR*0.02, _hdR*0.38,_hdR*0.28);
+                    this._hpBarY = _hdCY - _hdR * (_isSoldier ? 1.6 : 1.0) - 8;
                 }
-
-                ctx.fillStyle = '#1e2233'; // visor
-                ctx.fillRect(_CX-_hdR, _hdCY-_hdR*0.05, _hdR*2, _hdR*0.52);
-                ctx.fillStyle = 'rgba(255,235,180,0.88)'; // eyes glow
-                ctx.fillRect(_CX-_hdR*0.55,_hdCY-_hdR*0.02, _hdR*0.38,_hdR*0.28);
-                ctx.fillRect(_CX+_hdR*0.17,_hdCY-_hdR*0.02, _hdR*0.38,_hdR*0.28);
-
-                this._hpBarY = _hdCY - _hdR * (_isSoldier ? 1.6 : 1.0) - 8;
             } else {
 
             let rank = this.heroRank || 'normal';
