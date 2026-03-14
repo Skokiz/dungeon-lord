@@ -3064,18 +3064,33 @@ class Unit {
                 const _shlY = _shdY + _H*0.05;
                 const _armLen  = _H * 0.210;
                 const _wpnLen  = wpn==='spear' ? _H*0.60 : wpn==='staff' ? _H*0.55 : _H*0.42;
+                const _isRecruit = this.heroType==='recruit'||this.heroType==='recruit2';
                 // arm rotation angle from shoulder: 0=down, positive=toward enemy
-                const _aNeutral = _roD * 0.28;
-                const _aWindup  = _roD * (-0.85); // pulled back
-                const _aStrike  = _roD * 1.55;    // lunge through
+                const _aNeutral = _isRecruit ? _roD*0.28  : _roD*0.18;
+                const _aWindup  = _isRecruit ? _roD*(-0.85) : _roD*(-0.25);
+                const _aStrike  = _isRecruit ? _roD*1.55  : _roD*0.80;
                 const _armA = _aNeutral
                     + (_aWindup - _aNeutral) * _wdup
                     + (_aStrike - _aNeutral) * _strk
                     - (_aStrike - _aNeutral) * _recv * 0.4;
                 const _hndX = _shlX + Math.sin(_armA)*_armLen;
                 const _hndY = _shlY + Math.cos(_armA)*_armLen;
-                const _tipX = _shlX + Math.sin(_armA)*(_armLen+_wpnLen);
-                const _tipY = _shlY + Math.cos(_armA)*(_armLen+_wpnLen);
+                let _tipX, _tipY;
+                if (_isRecruit) {
+                    _tipX = _shlX + Math.sin(_armA)*(_armLen+_wpnLen);
+                    _tipY = _shlY + Math.cos(_armA)*(_armLen+_wpnLen);
+                } else {
+                    // weapon held upward: neutral≈pointing up, strike sweeps forward on attack
+                    const _wpN = _roD * 0.18;
+                    const _wpW = _roD * (-0.55);
+                    const _wpS = _roD * 1.30;
+                    const _wpA = _wpN
+                        + (_wpW - _wpN) * _wdup
+                        + (_wpS - _wpN) * _strk
+                        - (_wpS - _wpN) * _recv * 0.4;
+                    _tipX = _hndX + Math.sin(_wpA) * _wpnLen;
+                    _tipY = _hndY - Math.cos(_wpA) * _wpnLen;
+                }
 
                 // arm segment
                 ctx.strokeStyle = bodyCol; ctx.lineWidth = _W*0.95; ctx.lineCap = 'round';
