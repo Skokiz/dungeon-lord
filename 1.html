@@ -3110,40 +3110,43 @@ class Unit {
                     ctx.restore();
                 }
 
-                // weapon
+                // weapon — draw with glow for visibility
+                ctx.save();
                 ctx.lineCap = 'butt';
+                const _wpGlow = wpn==='staff'?'#cc66ff':wpn==='axe'?'#ff7733':wpn==='dagger'?'#44ffaa':wpn==='spear'?'#aaddff':'#c8d8ff';
+                ctx.shadowColor = _wpGlow; ctx.shadowBlur = 7;
                 if (wpn === 'sword') {
-                    ctx.strokeStyle = lv>=8 ? '#aaeeff' : '#c8c8da'; ctx.lineWidth = 3.5;
+                    ctx.strokeStyle = lv>=8 ? '#bbeeff' : '#dde0f8'; ctx.lineWidth = 4;
                     ctx.beginPath(); ctx.moveTo(_hndX,_hndY); ctx.lineTo(_tipX,_tipY); ctx.stroke();
                     const _gf=0.18, _gx=_hndX+(_tipX-_hndX)*_gf, _gy=_hndY+(_tipY-_hndY)*_gf;
                     const _dl=Math.hypot(_tipX-_hndX,_tipY-_hndY);
                     const _px=-((_tipY-_hndY)/_dl), _py=(_tipX-_hndX)/_dl;
-                    ctx.strokeStyle='#887766'; ctx.lineWidth=2.5;
+                    ctx.shadowBlur=0; ctx.strokeStyle='#998877'; ctx.lineWidth=2.5;
                     ctx.beginPath(); ctx.moveTo(_gx-_px*_H*0.10,_gy-_py*_H*0.10); ctx.lineTo(_gx+_px*_H*0.10,_gy+_py*_H*0.10); ctx.stroke();
                 } else if (wpn === 'dagger') {
-                    ctx.strokeStyle='#88ffcc'; ctx.lineWidth=2.5;
+                    ctx.strokeStyle='#99ffdd'; ctx.lineWidth=3;
                     ctx.beginPath(); ctx.moveTo(_hndX,_hndY); ctx.lineTo(_tipX,_tipY); ctx.stroke();
                     const _dl2=Math.hypot(_tipX-_hndX,_tipY-_hndY);
                     const _px2=-((_tipY-_hndY)/_dl2), _py2=(_tipX-_hndX)/_dl2;
                     const _gx2=_hndX+(_tipX-_hndX)*0.25, _gy2=_hndY+(_tipY-_hndY)*0.25;
-                    ctx.strokeStyle='#667755'; ctx.lineWidth=2;
+                    ctx.shadowBlur=0; ctx.strokeStyle='#667755'; ctx.lineWidth=2;
                     ctx.beginPath(); ctx.moveTo(_gx2-_px2*_H*0.07,_gy2-_py2*_H*0.07); ctx.lineTo(_gx2+_px2*_H*0.07,_gy2+_py2*_H*0.07); ctx.stroke();
                 } else if (wpn === 'spear') {
-                    ctx.strokeStyle='#99bbdd'; ctx.lineWidth=2.5;
+                    ctx.strokeStyle='#aaccee'; ctx.lineWidth=3;
                     ctx.beginPath(); ctx.moveTo(_hndX,_hndY); ctx.lineTo(_tipX,_tipY); ctx.stroke();
                     const _dl3=Math.hypot(_tipX-_hndX,_tipY-_hndY);
                     const _nx3=(_tipX-_hndX)/_dl3, _ny3=(_tipY-_hndY)/_dl3;
                     const _px3=-_ny3, _py3=_nx3;
-                    ctx.fillStyle='#cceeff';
+                    ctx.fillStyle='#ddeeff';
                     ctx.beginPath(); ctx.moveTo(_tipX,_tipY);
                     ctx.lineTo(_tipX-_px3*_H*0.065-_nx3*_H*0.13,_tipY-_py3*_H*0.065-_ny3*_H*0.13);
                     ctx.lineTo(_tipX+_px3*_H*0.065-_nx3*_H*0.13,_tipY+_py3*_H*0.065-_ny3*_H*0.13);
                     ctx.closePath(); ctx.fill();
                 } else if (wpn === 'staff') {
-                    ctx.strokeStyle='#9944cc'; ctx.lineWidth=3; ctx.lineCap='round';
+                    ctx.strokeStyle='#aa55dd'; ctx.lineWidth=3.5; ctx.lineCap='round';
                     ctx.beginPath(); ctx.moveTo(_hndX,_hndY); ctx.lineTo(_tipX,_tipY); ctx.stroke();
-                    const _gw=0.5+0.5*Math.sin(_frameNow/300);
-                    ctx.fillStyle=`rgba(200,80,255,${_gw})`; ctx.beginPath(); ctx.arc(_tipX,_tipY,_H*0.065,0,Math.PI*2); ctx.fill();
+                    const _gw=0.55+0.45*Math.sin(_frameNow/300);
+                    ctx.shadowBlur=12; ctx.fillStyle=`rgba(210,90,255,${_gw})`; ctx.beginPath(); ctx.arc(_tipX,_tipY,_H*0.072,0,Math.PI*2); ctx.fill();
                 } else if (wpn === 'axe') {
                     ctx.strokeStyle='#cc5533'; ctx.lineWidth=3;
                     ctx.beginPath(); ctx.moveTo(_hndX,_hndY); ctx.lineTo(_tipX,_tipY); ctx.stroke();
@@ -3156,6 +3159,7 @@ class Unit {
                     ctx.lineTo(_tipX-_px4*_H*0.10,_tipY-_py4*_H*0.10);
                     ctx.closePath(); ctx.fill();
                 }
+                ctx.restore(); // end weapon glow
 
                 // ── type flags ────────────────────────────────────────────────
                 const _isSoldier = this.heroType==='soldier'||this.heroType==='soldier2';
