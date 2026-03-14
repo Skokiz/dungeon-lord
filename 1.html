@@ -6147,6 +6147,132 @@ setTimeout(function() {
         if (!localStorage.getItem('DL_help_seen')) showHelp();
     } catch(e) {}
 }, 800);
+
+// ── MODEL PREVIEW MODE (?preview in URL) ──────────────────────────────────────
+if (location.search.includes('preview')) { (function() {
+    // Hero definitions (mirrors HERO_TYPES above)
+    const PREVIEW_HEROES = [
+        { name:'recruit',    label:'Рекрут I',        cloak:'#551122', body:'#cc2233', helmet:'#555566', weapon:'sword'  },
+        { name:'recruit2',   label:'Рекрут II',       cloak:'#661122', body:'#dd2233', helmet:'#6a6a7a', weapon:'sword'  },
+        { name:'soldier',    label:'Солдат I',        cloak:'#772200', body:'#cc4400', helmet:'#778899', weapon:'sword'  },
+        { name:'soldier2',   label:'Солдат II',       cloak:'#883300', body:'#dd5500', helmet:'#99aabb', weapon:'spear'  },
+        { name:'scout',      label:'Розвідник I',     cloak:'#224400', body:'#448822', helmet:'#556655', weapon:'spear'  },
+        { name:'scout2',     label:'Розвідник II',    cloak:'#336600', body:'#559933', helmet:'#66aa55', weapon:'dagger' },
+        { name:'knight',     label:'Лицар I',         cloak:'#334455', body:'#446688', helmet:'#99aabb', weapon:'spear'  },
+        { name:'knight2',    label:'Лицар II',        cloak:'#445566', body:'#557799', helmet:'#aabbcc', weapon:'spear'  },
+        { name:'mage',       label:'Маг I',           cloak:'#330066', body:'#6600cc', helmet:'#aa66ff', weapon:'staff'  },
+        { name:'mage2',      label:'Маг II',          cloak:'#440077', body:'#7711dd', helmet:'#cc88ff', weapon:'staff'  },
+        { name:'paladin',    label:'Паладін I',       cloak:'#553300', body:'#bb6600', helmet:'#ddbb44', weapon:'spear'  },
+        { name:'paladin2',   label:'Паладін II',      cloak:'#664400', body:'#cc7700', helmet:'#eeccaa', weapon:'spear'  },
+        { name:'berserker',  label:'Берсерк I',       cloak:'#440000', body:'#aa0000', helmet:'#882222', weapon:'axe'    },
+        { name:'berserker2', label:'Берсерк II',      cloak:'#660000', body:'#cc0000', helmet:'#aa3333', weapon:'axe'    },
+        { name:'assassin',   label:'Асасін I',        cloak:'#111111', body:'#333344', helmet:'#224433', weapon:'dagger' },
+        { name:'assassin2',  label:'Асасін II',       cloak:'#222222', body:'#444455', helmet:'#335544', weapon:'dagger' },
+        { name:'warlord',    label:'Воєначальник I',  cloak:'#552200', body:'#884400', helmet:'#ccaa66', weapon:'sword'  },
+        { name:'warlord2',   label:'Воєначальник II', cloak:'#663300', body:'#995500', helmet:'#ddbb77', weapon:'sword'  },
+        { name:'champion',   label:'Чемпіон I',       cloak:'#550055', body:'#aa00aa', helmet:'#ff88ff', weapon:'staff'  },
+        { name:'champion2',  label:'Чемпіон II',      cloak:'#660066', body:'#bb00bb', helmet:'#ffaaff', weapon:'staff'  },
+    ];
+
+    // Build a mock Unit for each hero
+    function makeMockUnit(h, level) {
+        // Ensure floors[0] exists for constructor safety
+        if (!floors.length) floors.push({ y: 400, depth: 0 });
+        const u = new Unit('hero', 0, 400, 0, level);
+        // Override colors/weapon with exact preview values
+        u.heroType       = h.name;
+        u.heroLabel      = h.label;
+        u.heroCloakCol   = h.cloak;
+        u.heroBodyCol    = h.body;
+        u.heroHelmetCol  = h.helmet;
+        u.heroWeapon     = h.weapon;
+        u.hp = u.maxHp;
+        u.facing = 1;
+        u.state  = 'idle';
+        u.atkT   = 0;
+        return u;
+    }
+
+    // Ensure hero draw scale is reasonable for preview
+    GAME.heroScalePercent = Math.max(GAME.heroScalePercent, 20);
+
+    // Build overlay canvas
+    const ov = document.createElement('canvas');
+    ov.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;z-index:9999;background:#111';
+    document.body.appendChild(ov);
+    const oCtx = ov.getContext('2d');
+
+    // Label at top
+    const info = document.createElement('div');
+    info.style.cssText = 'position:fixed;top:8px;left:0;right:0;text-align:center;color:#fff;font:bold 14px monospace;z-index:10000;pointer-events:none;';
+    info.textContent = '🎨 Перегляд моделей — натисни будь-де для виходу';
+    document.body.appendChild(info);
+    ov.addEventListener('click', () => { ov.remove(); info.remove(); });
+
+    const COLS = 5, ROWS = 4;
+    const units = [];
+    PREVIEW_HEROES.forEach((h, i) => {
+        const lvl = i + 1;
+        try { units.push({ def: h, unit: makeMockUnit(h, lvl) }); }
+        catch(e) { units.push(null); }
+    });
+
+    // Atkward phase animation — each unit cycles independently
+    const ATK_PERIOD = 2200; // ms total cycle (idle + attack)
+    const ATK_WIN  = 0.32, ATK_STR = 0.62, ATK_END = 1.0;
+
+    function previewLoop() {
+        const W = ov.width  = ov.clientWidth;
+        const H = ov.height = ov.clientHeight;
+        _frameNow = Date.now();
+
+        oCtx.clearRect(0, 0, W, H);
+
+        const cellW = W / COLS;
+        const cellH = H / ROWS;
+
+        units.forEach((entry, i) => {
+            if (!entry) return;
+            const col = i % COLS, row = Math.floor(i / COLS);
+            const cx = col * cellW + cellW / 2;
+            const cy = row * cellH + cellH * 0.72;
+
+            // Cycle attack animation
+            const phase = (_frameNow % ATK_PERIOD) / ATK_PERIOD;
+            const IDLE_FRAC = 0.55; // first 55% of cycle is idle
+            entry.unit.atkT = 0;
+            entry.unit.state = 'idle';
+            if (phase > IDLE_FRAC) {
+                const ap = (phase - IDLE_FRAC) / (1 - IDLE_FRAC); // 0..1 within atk cycle
+                entry.unit.atkT = ap;
+                entry.unit.state = 'attack';
+            }
+
+            // Position unit at cell center (floor at cy)
+            entry.unit.x = cx;
+            entry.unit.y = cy;
+            entry.unit.facing = 1;
+
+            // Swap ctx globally (draw() uses module-level ctx)
+            const _prevCtx = window.ctx;
+            window.ctx = oCtx;
+            try { entry.unit.draw(0); } catch(e) {}
+            window.ctx = _prevCtx;
+
+            // Label
+            oCtx.save();
+            oCtx.font = 'bold 11px monospace';
+            oCtx.fillStyle = '#ffffff';
+            oCtx.textAlign = 'center';
+            oCtx.shadowColor = '#000'; oCtx.shadowBlur = 4;
+            oCtx.fillText(entry.def.label, cx, cy + 22);
+            oCtx.restore();
+        });
+
+        requestAnimationFrame(previewLoop);
+    }
+    requestAnimationFrame(previewLoop);
+}()); }
 </script>
 </body>
 </html>
