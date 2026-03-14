@@ -2952,7 +2952,7 @@ class Unit {
         } else if (this.type === 'hero') {
             let s = this.size;
 
-            const _isAnimHero = this.heroType==='recruit'||this.heroType==='recruit2'||this.heroType==='soldier'||this.heroType==='soldier2'||this.heroType==='scout'||this.heroType==='scout2';
+            const _isAnimHero = this.heroType==='recruit'||this.heroType==='recruit2'||this.heroType==='soldier'||this.heroType==='soldier2'||this.heroType==='scout'||this.heroType==='scout2'||this.heroType==='knight'||this.heroType==='knight2';
             if (_isAnimHero) {
                 // ── Bigger hero: legs + dramatic attack animation ──────────────
                 if (this._roT === undefined) {
@@ -3145,17 +3145,29 @@ class Unit {
                 // ── type flags ────────────────────────────────────────────────
                 const _isSoldier = this.heroType==='soldier'||this.heroType==='soldier2';
                 const _isScout   = this.heroType==='scout'  ||this.heroType==='scout2';
-                if (_isSoldier) {
-                    const _pR = _W * 0.95;
+                const _isKnight  = this.heroType==='knight' ||this.heroType==='knight2';
+                if (_isSoldier || _isKnight) {
                     [-1,1].forEach(sd => {
-                        ctx.fillStyle = helmetCol;
-                        ctx.beginPath(); ctx.arc(_CX+sd*_W*1.05, _shdY+_H*0.02, _pR, 0, Math.PI*2); ctx.fill();
-                        // rim
-                        ctx.strokeStyle = '#00000044'; ctx.lineWidth = 1.2;
-                        ctx.beginPath(); ctx.arc(_CX+sd*_W*1.05, _shdY+_H*0.02, _pR, 0, Math.PI*2); ctx.stroke();
-                        // highlight
-                        ctx.fillStyle = 'rgba(255,255,255,0.18)';
-                        ctx.beginPath(); ctx.arc(_CX+sd*_W*0.92, _shdY-_H*0.01, _pR*0.45, 0, Math.PI*2); ctx.fill();
+                        if (_isKnight) {
+                            // лицар: прямокутна пластина-основа + великий купол
+                            const _pR = _W * 1.25;
+                            ctx.fillStyle = helmetCol;
+                            ctx.fillRect(_CX + sd*_W*0.82, _shdY-_H*0.05, sd*_pR*0.95, _H*0.16);
+                            ctx.beginPath(); ctx.arc(_CX+sd*(_W*0.82+_pR*0.48), _shdY+_H*0.03, _pR*0.62, 0, Math.PI*2); ctx.fill();
+                            ctx.strokeStyle='#00000055'; ctx.lineWidth=1.4;
+                            ctx.beginPath(); ctx.arc(_CX+sd*(_W*0.82+_pR*0.48), _shdY+_H*0.03, _pR*0.62, 0, Math.PI*2); ctx.stroke();
+                            ctx.fillStyle='rgba(255,255,255,0.20)';
+                            ctx.beginPath(); ctx.arc(_CX+sd*(_W*0.72+_pR*0.48), _shdY-_H*0.02, _pR*0.26, 0, Math.PI*2); ctx.fill();
+                        } else {
+                            // солдат: скромне коло
+                            const _pR = _W * 0.95;
+                            ctx.fillStyle = helmetCol;
+                            ctx.beginPath(); ctx.arc(_CX+sd*_W*1.05, _shdY+_H*0.02, _pR, 0, Math.PI*2); ctx.fill();
+                            ctx.strokeStyle='#00000044'; ctx.lineWidth=1.2;
+                            ctx.beginPath(); ctx.arc(_CX+sd*_W*1.05, _shdY+_H*0.02, _pR, 0, Math.PI*2); ctx.stroke();
+                            ctx.fillStyle='rgba(255,255,255,0.18)';
+                            ctx.beginPath(); ctx.arc(_CX+sd*_W*0.92, _shdY-_H*0.01, _pR*0.45, 0, Math.PI*2); ctx.fill();
+                        }
                     });
                 }
 
@@ -3208,6 +3220,40 @@ class Unit {
                         ctx.stroke();
                     }
                     this._hpBarY = _hdCY - _hdR*1.75 - 8;
+                } else if (_isKnight) {
+                    // ── KNIGHT: закритий великий шолом з T-щілиною ───────────
+                    const _kHR = _hdR * 1.18; // трохи більший
+                    ctx.fillStyle = helmetCol;
+                    ctx.beginPath(); ctx.arc(_CX, _hdCY, _kHR, 0, Math.PI*2); ctx.fill();
+                    // бічні захисники щік
+                    ctx.fillRect(_CX-_kHR*1.18, _hdCY-_kHR*0.25, _kHR*0.28, _kHR*0.90);
+                    ctx.fillRect(_CX+_kHR*0.90, _hdCY-_kHR*0.25, _kHR*0.28, _kHR*0.90);
+                    // підборіддя
+                    ctx.fillRect(_CX-_kHR*0.70, _hdCY+_kHR*0.55, _kHR*1.40, _kHR*0.32);
+                    // T-подібна щілина (темна)
+                    ctx.fillStyle = '#0d0d18';
+                    ctx.fillRect(_CX-_kHR*0.08, _hdCY-_kHR*0.95, _kHR*0.16, _kHR*1.10); // вертикальна
+                    ctx.fillRect(_CX-_kHR*0.72, _hdCY-_kHR*0.12, _kHR*1.44, _kHR*0.22); // горизонтальна
+                    // мерехтіння очей за щілиною
+                    ctx.fillStyle = 'rgba(255,200,80,0.55)';
+                    ctx.fillRect(_CX-_kHR*0.60, _hdCY-_kHR*0.08, _kHR*0.48, _kHR*0.14);
+                    ctx.fillRect(_CX+_kHR*0.12, _hdCY-_kHR*0.08, _kHR*0.48, _kHR*0.14);
+                    // highlight
+                    ctx.fillStyle = 'rgba(255,255,255,0.16)';
+                    ctx.beginPath(); ctx.ellipse(_CX-_kHR*0.25, _hdCY-_kHR*0.55, _kHR*0.35, _kHR*0.20, -0.3, 0, Math.PI*2); ctx.fill();
+                    // knight2: золота корона-обідок
+                    if (this.heroType==='knight2') {
+                        ctx.fillStyle = '#ddaa00';
+                        ctx.fillRect(_CX-_kHR*0.90, _hdCY-_kHR*1.02, _kHR*1.80, _kHR*0.18);
+                        for (let ci=0; ci<5; ci++) {
+                            const cx2 = _CX - _kHR*0.72 + ci*_kHR*0.36;
+                            ctx.beginPath(); ctx.moveTo(cx2, _hdCY-_kHR*1.02);
+                            ctx.lineTo(cx2+_kHR*0.14, _hdCY-_kHR*1.44);
+                            ctx.lineTo(cx2+_kHR*0.28, _hdCY-_kHR*1.02);
+                            ctx.closePath(); ctx.fill();
+                        }
+                    }
+                    this._hpBarY = _hdCY - _kHR * (this.heroType==='knight2' ? 1.5 : 1.05) - 8;
                 } else {
                     // ── RECRUIT / SOLDIER: металевий шолом ───────────────────
                     ctx.fillStyle = helmetCol;
