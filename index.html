@@ -3013,14 +3013,19 @@ class Unit {
                 if (rank==='boss')      { cloakCol='#550066'; bodyCol='#aa00cc'; helmetCol='#cc88ff'; }
 
                 // ── LEGS ──────────────────────────────────────────────────────
-                const _UL = _H*0.220, _LL = _H*0.185, _LW = _H*0.090;
-                // walk swing angle (radians from vertical)
-                const _fSw = this.state==='move' ? _wc*0.42
-                           : this.state==='fight'? _wc*0.18 : 0;
-                const _bSw = -_fSw;
-                // knee bend (back leg bends more when swinging back)
-                const _kF = this.state==='move' ? Math.max(0, _wc)*0.38+0.05 : 0.06;
-                const _kB = this.state==='move' ? Math.max(0,-_wc)*0.38+0.05 : 0.06;
+                const _UL = _H*0.230, _LL = _H*0.195, _LW = _H*0.088;
+                // swing angle from vertical — both legs swing from hip center
+                // idle: small natural stance (front slightly forward, back slightly back)
+                const _idleSw = _roD * 0.10;
+                const _fSw = this.state==='move'  ? _wc*0.44
+                           : this.state==='fight' ? _roD*0.12 + _wc*0.15
+                           : _idleSw;
+                const _bSw = this.state==='move'  ? -_wc*0.44
+                           : this.state==='fight' ? -_roD*0.08
+                           : -_idleSw;
+                // knee bend
+                const _kF = this.state==='move' ? Math.max(0, _wc)*0.40+0.04 : 0.05;
+                const _kB = this.state==='move' ? Math.max(0,-_wc)*0.40+0.04 : 0.05;
 
                 const _drawLeg = (hx, hy, sw, kb, col) => {
                     const kx=hx+Math.sin(sw)*_UL, ky=hy+Math.cos(sw)*_UL;
@@ -3028,19 +3033,19 @@ class Unit {
                     ctx.fillStyle = col;
                     ctx.beginPath(); // upper leg
                     ctx.moveTo(hx-_LW,hy); ctx.lineTo(hx+_LW,hy);
-                    ctx.lineTo(kx+_LW*0.7,ky); ctx.lineTo(kx-_LW*0.7,ky); ctx.closePath(); ctx.fill();
+                    ctx.lineTo(kx+_LW*0.65,ky); ctx.lineTo(kx-_LW*0.65,ky); ctx.closePath(); ctx.fill();
                     ctx.beginPath(); // lower leg
-                    ctx.moveTo(kx-_LW*0.7,ky); ctx.lineTo(kx+_LW*0.7,ky);
-                    ctx.lineTo(fx+_LW*0.55,fy); ctx.lineTo(fx-_LW*0.55,fy); ctx.closePath(); ctx.fill();
-                    ctx.fillStyle = '#1a1008'; // boot
+                    ctx.moveTo(kx-_LW*0.65,ky); ctx.lineTo(kx+_LW*0.65,ky);
+                    ctx.lineTo(fx+_LW*0.50,fy); ctx.lineTo(fx-_LW*0.50,fy); ctx.closePath(); ctx.fill();
+                    ctx.fillStyle = '#18100a'; // boot
                     ctx.beginPath();
-                    ctx.moveTo(fx-_LW*0.65,fy); ctx.lineTo(fx+_LW*1.1+_roD*_LW*0.5,fy);
-                    ctx.lineTo(fx+_LW*1.1+_roD*_LW*0.5,fy+_H*0.048); ctx.lineTo(fx-_LW*0.7,fy+_H*0.048);
+                    ctx.moveTo(fx-_LW*0.70,fy); ctx.lineTo(fx+_LW*1.15+_roD*_LW*0.45,fy);
+                    ctx.lineTo(fx+_LW*1.15+_roD*_LW*0.45,fy+_H*0.05); ctx.lineTo(fx-_LW*0.75,fy+_H*0.05);
                     ctx.closePath(); ctx.fill();
                 };
 
-                // back leg (drawn first, behind cloak)
-                _drawLeg(_CX-_roD*_W*0.3, _hipY, _bSw, _kB, '#2e1808');
+                // back leg (drawn first — behind cloak), starts from hip center
+                _drawLeg(_CX, _hipY, _bSw, _kB, '#251208');
                 // ── CLOAK ─────────────────────────────────────────────────────
                 ctx.fillStyle = cloakCol;
                 ctx.beginPath();
@@ -3048,8 +3053,8 @@ class Unit {
                 ctx.lineTo(_CX-_W*1.65, _CY0-_H*0.03);
                 ctx.lineTo(_CX+_W*1.65, _CY0-_H*0.03);
                 ctx.closePath(); ctx.fill();
-                // front leg (in front of cloak, behind torso)
-                _drawLeg(_CX+_roD*_W*0.3, _hipY, _fSw, _kF, '#3a2010');
+                // front leg (in front of cloak, behind torso), starts from hip center
+                _drawLeg(_CX, _hipY, _fSw, _kF, '#3a2010');
                 // ── TORSO ─────────────────────────────────────────────────────
                 ctx.fillStyle = bodyCol;
                 ctx.fillRect(_CX-_W, _shdY, _W*2, _hipY-_shdY);
