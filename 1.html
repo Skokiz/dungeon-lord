@@ -6196,77 +6196,84 @@ if (location.search.includes('preview')) { (function() {
     // Ensure hero draw scale is reasonable for preview
     GAME.heroScalePercent = Math.max(GAME.heroScalePercent, 20);
 
-    // Build overlay canvas
-    const ov = document.createElement('canvas');
-    ov.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;z-index:9999;background:#111';
-    document.body.appendChild(ov);
-    const oCtx = ov.getContext('2d');
+    // Hide start screen, show game canvas
+    const _ss = document.getElementById('start-screen');
+    if (_ss) _ss.style.display = 'none';
+    canvas.style.display = 'block';
 
-    // Label at top
+    // Label
     const info = document.createElement('div');
-    info.style.cssText = 'position:fixed;top:8px;left:0;right:0;text-align:center;color:#fff;font:bold 14px monospace;z-index:10000;pointer-events:none;';
+    info.style.cssText = 'position:fixed;top:8px;left:0;right:0;text-align:center;color:#fff;font:bold 14px monospace;z-index:10000;pointer-events:none;text-shadow:0 1px 4px #000;';
     info.textContent = '🎨 Перегляд моделей — натисни будь-де для виходу';
     document.body.appendChild(info);
-    ov.addEventListener('click', () => { ov.remove(); info.remove(); });
+    canvas.addEventListener('click', () => { info.remove(); location.href = location.pathname; });
 
     const COLS = 5, ROWS = 4;
-    const units = [];
+    const pvUnits = [];
+    // Build mock units (ensure floors[0] exists)
+    if (!floors.length) floors.push({ y: 400, depth: 0 });
     PREVIEW_HEROES.forEach((h, i) => {
-        const lvl = i + 1;
-        try { units.push({ def: h, unit: makeMockUnit(h, lvl) }); }
-        catch(e) { units.push(null); }
+        try {
+            const u = new Unit('hero', 0, 400, 0, i + 1);
+            u.heroType      = h.name;
+            u.heroCloakCol  = h.cloak;
+            u.heroBodyCol   = h.body;
+            u.heroHelmetCol = h.helmet;
+            u.heroWeapon    = h.weapon;
+            u.hp = u.maxHp;
+            u.facing = 1;
+            u.state  = 'idle';
+            u.atkT   = 0;
+            pvUnits.push({ label: h.label, unit: u });
+        } catch(e) { pvUnits.push(null); }
     });
 
-    // Atkward phase animation — each unit cycles independently
-    const ATK_PERIOD = 2200; // ms total cycle (idle + attack)
-    const ATK_WIN  = 0.32, ATK_STR = 0.62, ATK_END = 1.0;
+    const ATK_PERIOD = 2400; // ms per cycle
 
     function previewLoop() {
-        const W = ov.width  = ov.clientWidth;
-        const H = ov.height = ov.clientHeight;
+        const W = canvas.width;
+        const H = canvas.height;
         _frameNow = Date.now();
 
-        oCtx.clearRect(0, 0, W, H);
+        ctx.fillStyle = '#111118';
+        ctx.fillRect(0, 0, W, H);
 
         const cellW = W / COLS;
         const cellH = H / ROWS;
 
-        units.forEach((entry, i) => {
+        pvUnits.forEach((entry, i) => {
             if (!entry) return;
             const col = i % COLS, row = Math.floor(i / COLS);
-            const cx = col * cellW + cellW / 2;
-            const cy = row * cellH + cellH * 0.72;
+            const cx  = col * cellW + cellW / 2;
+            const cy  = row * cellH + cellH * 0.72; // floor Y in screen space (camY=0)
 
-            // Cycle attack animation
-            const phase = (_frameNow % ATK_PERIOD) / ATK_PERIOD;
-            const IDLE_FRAC = 0.55; // first 55% of cycle is idle
-            entry.unit.atkT = 0;
-            entry.unit.state = 'idle';
+            // Stagger attack animation per column
+            const phase = ((_frameNow + col * 480) % ATK_PERIOD) / ATK_PERIOD;
+            const IDLE_FRAC = 0.50;
             if (phase > IDLE_FRAC) {
-                const ap = (phase - IDLE_FRAC) / (1 - IDLE_FRAC); // 0..1 within atk cycle
-                entry.unit.atkT = ap;
-                entry.unit.state = 'attack';
+                const ap = (phase - IDLE_FRAC) / (1 - IDLE_FRAC);
+                entry.unit.atkT  = ap;
+                entry.unit.state = 'fight';
+            } else {
+                entry.unit.atkT  = 0;
+                entry.unit.state = 'idle';
             }
 
-            // Position unit at cell center (floor at cy)
+            // Position: draw(camY) uses _flY = this.y - camY, so set y=cy, camY=0
             entry.unit.x = cx;
             entry.unit.y = cy;
             entry.unit.facing = 1;
 
-            // Swap ctx globally (draw() uses module-level ctx)
-            const _prevCtx = window.ctx;
-            window.ctx = oCtx;
             try { entry.unit.draw(0); } catch(e) {}
-            window.ctx = _prevCtx;
 
-            // Label
-            oCtx.save();
-            oCtx.font = 'bold 11px monospace';
-            oCtx.fillStyle = '#ffffff';
-            oCtx.textAlign = 'center';
-            oCtx.shadowColor = '#000'; oCtx.shadowBlur = 4;
-            oCtx.fillText(entry.def.label, cx, cy + 22);
-            oCtx.restore();
+            // Label below unit
+            ctx.save();
+            ctx.font = 'bold 11px monospace';
+            ctx.fillStyle = '#ddd';
+            ctx.textAlign = 'center';
+            ctx.shadowColor = '#000'; ctx.shadowBlur = 5;
+            ctx.fillText(entry.label, cx, cy + 26);
+            ctx.restore();
         });
 
         requestAnimationFrame(previewLoop);
