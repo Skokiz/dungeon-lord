@@ -2707,23 +2707,56 @@ class Unit {
             ctx.fillStyle = 'rgba(255,255,255,0.37)';
             ctx.beginPath(); ctx.ellipse(_cx+_xOff - _R*0.28*_sx, _cy - _R*0.33*_sy, _R*0.27*_sx, _R*0.14*_sy, -0.4, 0, Math.PI*2); ctx.fill();
 
-            // ── Чверть-дуга в сторону ворога (поверх тіла) ─────────────
+            // ── Кулак-псевдопод виростає з боку слизня ──────────────────
             if (this._sRingT > 0) {
-                const _ad   = this._sAtkDir || this._sDir; // напрямок зафіксований в момент удару
-                const rp    = 1 - this._sRingT;
-                const ringR = _R * (1.4 + rp * 3.0);      // стартує вже за межами тіла
-                const ringA = this._sRingT * 0.95;
-                const arcA  = _ad > 0 ? 0 : Math.PI;      // 0=вправо, π=вліво
-                const span  = Math.PI / 4;                 // рівно 90° (чверть кола)
-                ctx.shadowBlur  = 0;
-                ctx.lineCap     = 'round';
-                ctx.strokeStyle = `rgba(80,255,60,${ringA})`;
-                ctx.lineWidth   = 4.5 * this._sRingT;
-                ctx.beginPath(); ctx.arc(_cx + _xOff, _cy, ringR, arcA - span, arcA + span); ctx.stroke();
-                ctx.strokeStyle = `rgba(200,255,100,${ringA * 0.5})`;
-                ctx.lineWidth   = 2 * this._sRingT;
-                ctx.beginPath(); ctx.arc(_cx + _xOff, _cy, ringR * 0.60, arcA - span * 0.65, arcA + span * 0.65); ctx.stroke();
-                ctx.lineCap = 'butt';
+                const _ad  = this._sAtkDir || this._sDir;
+                const rp   = 1 - this._sRingT;            // 0=тільки вистрілив → 1=завершено
+                const alp  = this._sRingT * 0.95;
+
+                // ease in/out: виходить швидко, повертається плавно
+                const fistP = rp < 0.50 ? rp / 0.50 : (1 - rp) / 0.50;
+                const ease  = fistP * fistP * (3 - 2 * fistP);
+
+                const ext   = _R * 2.0 * ease;            // відстань виступу від краю тіла
+                const fR    = _R * 0.48 * ease;           // радіус кулака
+                const armW  = _R * 0.30 * (0.4 + 0.6 * ease); // ширина "руки"
+
+                const baseX = _cx + _xOff + _ad * _R * _sx * 0.88;
+                const fistX = baseX + _ad * ext;
+                const baseY = _cy;
+
+                const gr = _angry > 0 ? Math.round(190 - _angry * 40) : 190;
+                const gb = _angry > 0 ? Math.round(36  - _angry * 30) : 36;
+                const bodyCol = `rgba(40,${gr},${gb},${alp})`;
+
+                ctx.shadowBlur = 0;
+
+                if (ext > 0.5) {
+                    // Рука-з'єднання (трапеція від тіла до кулака)
+                    ctx.fillStyle = bodyCol;
+                    ctx.beginPath();
+                    ctx.moveTo(baseX,              baseY - armW);
+                    ctx.lineTo(fistX - _ad * fR * 0.6, baseY - armW * 0.65);
+                    ctx.lineTo(fistX - _ad * fR * 0.6, baseY + armW * 0.65);
+                    ctx.lineTo(baseX,              baseY + armW);
+                    ctx.closePath();
+                    ctx.fill();
+
+                    // Кулак (кругла голівка)
+                    ctx.fillStyle = bodyCol;
+                    ctx.beginPath(); ctx.arc(fistX, baseY, fR, 0, Math.PI * 2); ctx.fill();
+
+                    // Контур кулака
+                    ctx.strokeStyle = `rgba(20,120,10,${alp * 0.6})`;
+                    ctx.lineWidth = 1.4;
+                    ctx.beginPath(); ctx.arc(fistX, baseY, fR, 0, Math.PI * 2); ctx.stroke();
+
+                    // Блик на кулаку
+                    ctx.fillStyle = `rgba(180,255,140,${alp * 0.42})`;
+                    ctx.beginPath();
+                    ctx.arc(fistX - _ad * fR * 0.28, baseY - fR * 0.32, fR * 0.36, 0, Math.PI * 2);
+                    ctx.fill();
+                }
             }
 
         } else if (this.type === 'monster' && this.monsterKind === 'skeleton') {
