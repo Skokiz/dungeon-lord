@@ -3044,16 +3044,15 @@ class Unit {
                     ctx.closePath(); ctx.fill();
                 };
 
-                // back leg (drawn first — behind cloak), starts from hip center
-                _drawLeg(_CX, _hipY, _bSw, _kB, '#251208');
-                // ── CLOAK ─────────────────────────────────────────────────────
+                // ── CLOAK (drawn before legs so both legs appear on top) ──────
                 ctx.fillStyle = cloakCol;
                 ctx.beginPath();
                 ctx.moveTo(_CX, _shdY+_H*0.06);
                 ctx.lineTo(_CX-_W*1.65, _CY0-_H*0.03);
                 ctx.lineTo(_CX+_W*1.65, _CY0-_H*0.03);
                 ctx.closePath(); ctx.fill();
-                // front leg (in front of cloak, behind torso), starts from hip center
+                // both legs on top of cloak
+                _drawLeg(_CX, _hipY, _bSw, _kB, '#251208');
                 _drawLeg(_CX, _hipY, _fSw, _kF, '#3a2010');
                 // ── TORSO ─────────────────────────────────────────────────────
                 ctx.fillStyle = bodyCol;
