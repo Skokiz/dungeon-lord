@@ -2953,7 +2953,7 @@ class Unit {
             let s = this.size;
 
             if (this.heroType === 'recruit' || this.heroType === 'recruit2') {
-                // ── Animated old-style recruit ────────────────────────────────
+                // ── Bigger hero: legs + dramatic attack animation ──────────────
                 if (this._roT === undefined) {
                     this._roT = Math.random() * Math.PI * 2;
                     this._roDir = 1; this._roAtkP = 0;
@@ -2962,115 +2962,195 @@ class Unit {
                 }
                 const _roDt = Math.min((_frameNow - this._roLastT) / 1000, 0.05);
                 this._roLastT = _frameNow;
-                // direction
                 if (this.state === 'fight') {
-                    const _roe = units.find(u => u.type === 'monster' && u.floorIdx === this.floorIdx && u.hp > 0);
+                    const _roe = units.find(u => u.type==='monster' && u.floorIdx===this.floorIdx && u.hp>0);
                     if (_roe) this._roDir = _roe.x > this.x ? 1 : -1;
                 } else if (Math.abs(this.x - this._roPrevX) > 0.2) {
                     this._roDir = this.x > this._roPrevX ? 1 : -1;
                 }
                 this._roPrevX = this.x;
-                // attack detection
                 const _roAcd = this.attackCooldown || 0;
                 if (_roAcd > (this._roPrevAktCd || 0) + 3) this._roAtkP = 0.01;
                 this._roPrevAktCd = _roAcd;
-                if (this._roAtkP > 0) { this._roAtkP += _roDt / 0.65; if (this._roAtkP >= 1) this._roAtkP = 0; }
-                this._roT += _roDt * (this.state === 'idle' ? 1.5 : 3.5);
-                // vertical bob
-                const _roBob = this.state === 'move'  ? Math.abs(Math.sin(this._roT)) * 3.5
-                             : this.state === 'idle'  ? Math.sin(this._roT * 0.5) * 1.0
-                             :                          Math.abs(Math.sin(this._roT)) * 1.5;
-                // weapon swing 0→1→0 during attack
-                const _roSwing = this._roAtkP > 0 ? Math.sin(this._roAtkP * Math.PI) : 0;
-                const _roD = this._roDir;
+                if (this._roAtkP > 0) { this._roAtkP += _roDt / 0.75; if (this._roAtkP >= 1) this._roAtkP = 0; }
+                this._roT += _roDt * (this.state === 'idle' ? 1.2 : this.state === 'fight' ? 2.5 : 4.0);
 
-                let rank = this.heroRank || 'normal';
-                let lv   = this.level || 1;
+                const _ap = this._roAtkP, _roD = this._roDir;
+                const _ez = p => p*p*(3-2*p);
+                const _wc = Math.sin(this._roT);
+
+                // attack sub-phases: windup → strike → recovery
+                const _wdup = _ap>0 && _ap<0.32 ? _ez(_ap/0.32)          : 0;
+                const _strk = _ap>=0.32&&_ap<0.62? _ez((_ap-0.32)/0.30)  : 0;
+                const _recv = _ap>=0.62           ? _ez((_ap-0.62)/0.38)  : 0;
+
+                // sizes
+                const _H   = s * 1.85;            // total character height
+                const _flY = this.y - camY;        // screen floor Y
+                const _W   = _H * 0.155;           // half-torso width
+
+                // body offsets from attack
+                const _leanX = _roD * (-_wdup * 5 + _strk * 9 - _recv * 3);
+                const _squat = _wdup * 5;
+                const _bob   = this.state==='move' ? Math.abs(_wc)*5
+                             : this.state==='idle' ? Math.sin(this._roT*0.4)*1.5
+                             :                      Math.abs(_wc)*2.5;
+
+                const _CX   = this.x + _leanX;
+                const _CY0  = _flY - _bob - _squat;   // floor ref with bob
+                const _hipY = _CY0 - _H*0.36;
+                const _shdY = _CY0 - _H*0.67;
+                const _hdCY = _CY0 - _H*0.85;
+                const _hdR  = _H * 0.130;
+
+                let rank = this.heroRank || 'normal', lv = this.level || 1;
                 let cloakCol  = this.heroCloakCol  || '#661122';
                 let bodyCol   = this.heroBodyCol   || '#cc2233';
                 let helmetCol = this.heroHelmetCol || '#666677';
-                if (rank === 'elite_hp')  { cloakCol='#115533'; bodyCol='#22aa66'; helmetCol='#44cc88'; }
-                if (rank === 'elite_atk') { cloakCol='#883300'; bodyCol='#ee6600'; helmetCol='#ffaa44'; }
-                if (rank === 'boss')      { cloakCol='#550066'; bodyCol='#aa00cc'; helmetCol='#cc88ff'; }
+                if (rank==='elite_hp')  { cloakCol='#115533'; bodyCol='#22aa66'; helmetCol='#44cc88'; }
+                if (rank==='elite_atk') { cloakCol='#883300'; bodyCol='#ee6600'; helmetCol='#ffaa44'; }
+                if (rank==='boss')      { cloakCol='#550066'; bodyCol='#aa00cc'; helmetCol='#cc88ff'; }
 
-                const _roTY = dy - _roBob;   // animated top-y (dy already = this.y-camY-s)
-                const _roDX = this.x - s/2;
+                // ── LEGS ──────────────────────────────────────────────────────
+                const _UL = _H*0.220, _LL = _H*0.185, _LW = _H*0.090;
+                // walk swing angle (radians from vertical)
+                const _fSw = this.state==='move' ? _wc*0.42
+                           : this.state==='fight'? _wc*0.18 : 0;
+                const _bSw = -_fSw;
+                // knee bend (back leg bends more when swinging back)
+                const _kF = this.state==='move' ? Math.max(0, _wc)*0.38+0.05 : 0.06;
+                const _kB = this.state==='move' ? Math.max(0,-_wc)*0.38+0.05 : 0.06;
 
-                // Cloak
+                const _drawLeg = (hx, hy, sw, kb, col) => {
+                    const kx=hx+Math.sin(sw)*_UL, ky=hy+Math.cos(sw)*_UL;
+                    const fa=sw+kb, fx=kx+Math.sin(fa)*_LL, fy=ky+Math.cos(fa)*_LL;
+                    ctx.fillStyle = col;
+                    ctx.beginPath(); // upper leg
+                    ctx.moveTo(hx-_LW,hy); ctx.lineTo(hx+_LW,hy);
+                    ctx.lineTo(kx+_LW*0.7,ky); ctx.lineTo(kx-_LW*0.7,ky); ctx.closePath(); ctx.fill();
+                    ctx.beginPath(); // lower leg
+                    ctx.moveTo(kx-_LW*0.7,ky); ctx.lineTo(kx+_LW*0.7,ky);
+                    ctx.lineTo(fx+_LW*0.55,fy); ctx.lineTo(fx-_LW*0.55,fy); ctx.closePath(); ctx.fill();
+                    ctx.fillStyle = '#1a1008'; // boot
+                    ctx.beginPath();
+                    ctx.moveTo(fx-_LW*0.65,fy); ctx.lineTo(fx+_LW*1.1+_roD*_LW*0.5,fy);
+                    ctx.lineTo(fx+_LW*1.1+_roD*_LW*0.5,fy+_H*0.048); ctx.lineTo(fx-_LW*0.7,fy+_H*0.048);
+                    ctx.closePath(); ctx.fill();
+                };
+
+                // back leg (drawn first, behind cloak)
+                _drawLeg(_CX-_roD*_W*0.3, _hipY, _bSw, _kB, '#2e1808');
+                // ── CLOAK ─────────────────────────────────────────────────────
                 ctx.fillStyle = cloakCol;
                 ctx.beginPath();
-                ctx.moveTo(this.x, _roTY + s*0.3);
-                ctx.lineTo(this.x - s*0.45, _roTY + s);
-                ctx.lineTo(this.x + s*0.45, _roTY + s);
+                ctx.moveTo(_CX, _shdY+_H*0.06);
+                ctx.lineTo(_CX-_W*1.65, _CY0-_H*0.03);
+                ctx.lineTo(_CX+_W*1.65, _CY0-_H*0.03);
                 ctx.closePath(); ctx.fill();
-                // Body
+                // front leg (in front of cloak, behind torso)
+                _drawLeg(_CX+_roD*_W*0.3, _hipY, _fSw, _kF, '#3a2010');
+                // ── TORSO ─────────────────────────────────────────────────────
                 ctx.fillStyle = bodyCol;
-                ctx.fillRect(_roDX + s*0.22, _roTY + s*0.42, s*0.56, s*0.42);
-                // Helmet
-                ctx.fillStyle = helmetCol;
-                ctx.beginPath(); ctx.arc(this.x, _roTY + s*0.27, s*0.27, 0, Math.PI*2); ctx.fill();
-                ctx.fillStyle = '#333344';
-                ctx.fillRect(_roDX + s*0.08, _roTY + s*0.3, s*0.84, s*0.1);
+                ctx.fillRect(_CX-_W, _shdY, _W*2, _hipY-_shdY);
+                ctx.fillStyle = '#00000033'; // chest shadow line
+                ctx.fillRect(_CX-1, _shdY+2, 2, _hipY-_shdY-4);
+                ctx.fillStyle = '#1a1008'; // belt
+                ctx.fillRect(_CX-_W, _hipY-_H*0.045, _W*2, _H*0.045);
 
-                // Weapon — direction-aware, swings on attack
+                // ── WEAPON ARM (single rotating rod) ──────────────────────────
                 let wpn = this.heroWeapon || 'sword';
-                ctx.lineWidth = lv >= 7 ? 3 : 2;
-                const _roHx = this.x + _roD * s * 0.32;              // hand (pommel) X
-                const _roHy = _roTY + s * 0.64;                       // hand Y
-                const _roTpx = _roHx + _roD * s * (0.13 + _roSwing * 0.30); // tip X
-                const _roTpy = _roHy - s * (0.52 + _roSwing * 0.10); // tip Y (swings fwd)
+                const _shlX = _CX + _roD*_W*0.88;
+                const _shlY = _shdY + _H*0.05;
+                const _armLen  = _H * 0.210;
+                const _wpnLen  = wpn==='spear' ? _H*0.60 : wpn==='staff' ? _H*0.55 : _H*0.42;
+                // arm rotation angle from shoulder: 0=down, positive=toward enemy
+                const _aNeutral = _roD * 0.28;
+                const _aWindup  = _roD * (-0.85); // pulled back
+                const _aStrike  = _roD * 1.55;    // lunge through
+                const _armA = _aNeutral
+                    + (_aWindup - _aNeutral) * _wdup
+                    + (_aStrike - _aNeutral) * _strk
+                    - (_aStrike - _aNeutral) * _recv * 0.4;
+                const _hndX = _shlX + Math.sin(_armA)*_armLen;
+                const _hndY = _shlY + Math.cos(_armA)*_armLen;
+                const _tipX = _shlX + Math.sin(_armA)*(_armLen+_wpnLen);
+                const _tipY = _shlY + Math.cos(_armA)*(_armLen+_wpnLen);
+
+                // arm segment
+                ctx.strokeStyle = bodyCol; ctx.lineWidth = _W*0.95; ctx.lineCap = 'round';
+                ctx.beginPath(); ctx.moveTo(_shlX,_shlY); ctx.lineTo(_hndX,_hndY); ctx.stroke();
+
+                // slash/impact trail during strike
+                if (_strk > 0.05 && _strk < 0.95) {
+                    const _ta = _strk*(1-_strk)*4;
+                    ctx.save();
+                    ctx.globalAlpha = _ta * 0.55;
+                    ctx.strokeStyle = wpn==='axe'?'#ff8844':wpn==='staff'?'#cc88ff':'#e0f0ff';
+                    ctx.lineWidth = 5; ctx.lineCap = 'round';
+                    // arc sweep from windup to strike position
+                    const _a0 = _roD>0 ? -Math.PI*0.85 : -Math.PI*0.15;
+                    const _a1 = _roD>0 ? -Math.PI*0.15 : -Math.PI*0.85;
+                    ctx.beginPath(); ctx.arc(_shlX, _shlY, _armLen+_wpnLen*0.6, _a0, _a1); ctx.stroke();
+                    ctx.restore();
+                }
+
+                // weapon
+                ctx.lineCap = 'butt';
                 if (wpn === 'sword') {
-                    ctx.strokeStyle = lv >= 8 ? '#aaeeff' : '#aaaaaa';
-                    ctx.beginPath(); ctx.moveTo(_roTpx, _roTpy); ctx.lineTo(_roHx, _roHy); ctx.stroke();
-                    // Guard (perpendicular crosspiece)
-                    ctx.strokeStyle = '#888'; ctx.lineWidth = 2;
-                    const _gf = 0.40;
-                    const _roGx = _roTpx + (_roHx - _roTpx) * _gf, _roGy = _roTpy + (_roHy - _roTpy) * _gf;
-                    const _bdx = _roHx - _roTpx, _bdy = _roHy - _roTpy, _bln = Math.hypot(_bdx, _bdy);
-                    const _rpx = -_bdy / _bln, _rpy = _bdx / _bln;
-                    ctx.beginPath();
-                    ctx.moveTo(_roGx - _rpx * s*0.12, _roGy - _rpy * s*0.12);
-                    ctx.lineTo(_roGx + _rpx * s*0.12, _roGy + _rpy * s*0.12);
-                    ctx.stroke();
+                    ctx.strokeStyle = lv>=8 ? '#aaeeff' : '#c8c8da'; ctx.lineWidth = 3.5;
+                    ctx.beginPath(); ctx.moveTo(_hndX,_hndY); ctx.lineTo(_tipX,_tipY); ctx.stroke();
+                    const _gf=0.18, _gx=_hndX+(_tipX-_hndX)*_gf, _gy=_hndY+(_tipY-_hndY)*_gf;
+                    const _dl=Math.hypot(_tipX-_hndX,_tipY-_hndY);
+                    const _px=-((_tipY-_hndY)/_dl), _py=(_tipX-_hndX)/_dl;
+                    ctx.strokeStyle='#887766'; ctx.lineWidth=2.5;
+                    ctx.beginPath(); ctx.moveTo(_gx-_px*_H*0.10,_gy-_py*_H*0.10); ctx.lineTo(_gx+_px*_H*0.10,_gy+_py*_H*0.10); ctx.stroke();
+                } else if (wpn === 'dagger') {
+                    ctx.strokeStyle='#88ffcc'; ctx.lineWidth=2.5;
+                    ctx.beginPath(); ctx.moveTo(_hndX,_hndY); ctx.lineTo(_tipX,_tipY); ctx.stroke();
+                    const _dl2=Math.hypot(_tipX-_hndX,_tipY-_hndY);
+                    const _px2=-((_tipY-_hndY)/_dl2), _py2=(_tipX-_hndX)/_dl2;
+                    const _gx2=_hndX+(_tipX-_hndX)*0.25, _gy2=_hndY+(_tipY-_hndY)*0.25;
+                    ctx.strokeStyle='#667755'; ctx.lineWidth=2;
+                    ctx.beginPath(); ctx.moveTo(_gx2-_px2*_H*0.07,_gy2-_py2*_H*0.07); ctx.lineTo(_gx2+_px2*_H*0.07,_gy2+_py2*_H*0.07); ctx.stroke();
                 } else if (wpn === 'spear') {
-                    ctx.strokeStyle = '#88ccff';
-                    ctx.beginPath(); ctx.moveTo(_roTpx, _roTpy); ctx.lineTo(_roHx, _roHy); ctx.stroke();
-                    ctx.fillStyle = '#cceeff';
-                    ctx.beginPath();
-                    ctx.moveTo(_roTpx, _roTpy);
-                    ctx.lineTo(_roTpx - _roD * s*0.09, _roTpy + s*0.13);
-                    ctx.lineTo(_roTpx + _roD * s*0.09, _roTpy + s*0.13);
+                    ctx.strokeStyle='#99bbdd'; ctx.lineWidth=2.5;
+                    ctx.beginPath(); ctx.moveTo(_hndX,_hndY); ctx.lineTo(_tipX,_tipY); ctx.stroke();
+                    const _dl3=Math.hypot(_tipX-_hndX,_tipY-_hndY);
+                    const _nx3=(_tipX-_hndX)/_dl3, _ny3=(_tipY-_hndY)/_dl3;
+                    const _px3=-_ny3, _py3=_nx3;
+                    ctx.fillStyle='#cceeff';
+                    ctx.beginPath(); ctx.moveTo(_tipX,_tipY);
+                    ctx.lineTo(_tipX-_px3*_H*0.065-_nx3*_H*0.13,_tipY-_py3*_H*0.065-_ny3*_H*0.13);
+                    ctx.lineTo(_tipX+_px3*_H*0.065-_nx3*_H*0.13,_tipY+_py3*_H*0.065-_ny3*_H*0.13);
                     ctx.closePath(); ctx.fill();
                 } else if (wpn === 'staff') {
-                    ctx.strokeStyle = '#cc88ff'; ctx.lineWidth = 2;
-                    ctx.beginPath(); ctx.moveTo(_roTpx, _roTpy); ctx.lineTo(_roHx, _roHy); ctx.stroke();
-                    const _glow = 0.5 + 0.5 * Math.sin(_frameNow / 300);
-                    ctx.fillStyle = `rgba(180,100,255,${_glow})`;
-                    ctx.beginPath(); ctx.arc(_roTpx, _roTpy, s*0.10, 0, Math.PI*2); ctx.fill();
+                    ctx.strokeStyle='#9944cc'; ctx.lineWidth=3; ctx.lineCap='round';
+                    ctx.beginPath(); ctx.moveTo(_hndX,_hndY); ctx.lineTo(_tipX,_tipY); ctx.stroke();
+                    const _gw=0.5+0.5*Math.sin(_frameNow/300);
+                    ctx.fillStyle=`rgba(200,80,255,${_gw})`; ctx.beginPath(); ctx.arc(_tipX,_tipY,_H*0.065,0,Math.PI*2); ctx.fill();
                 } else if (wpn === 'axe') {
-                    ctx.strokeStyle = '#ff6644'; ctx.lineWidth = 2;
-                    ctx.beginPath(); ctx.moveTo(_roTpx, _roTpy); ctx.lineTo(_roHx, _roHy); ctx.stroke();
-                    ctx.fillStyle = '#cc4422';
-                    ctx.beginPath();
-                    ctx.moveTo(_roTpx, _roTpy);
-                    ctx.lineTo(_roTpx + _roD * s*0.18, _roTpy - s*0.08);
-                    ctx.lineTo(_roTpx + _roD * s*0.12, _roTpy + s*0.18);
+                    ctx.strokeStyle='#cc5533'; ctx.lineWidth=3;
+                    ctx.beginPath(); ctx.moveTo(_hndX,_hndY); ctx.lineTo(_tipX,_tipY); ctx.stroke();
+                    const _dl4=Math.hypot(_tipX-_hndX,_tipY-_hndY);
+                    const _px4=-((_tipY-_hndY)/_dl4), _py4=(_tipX-_hndX)/_dl4;
+                    ctx.fillStyle='#dd4422';
+                    ctx.beginPath(); ctx.moveTo(_tipX,_tipY);
+                    ctx.lineTo(_tipX+_px4*_H*0.14,_tipY+_py4*_H*0.14);
+                    ctx.lineTo(_tipX+_px4*_H*0.06+(_tipX-_hndX)*0.22,_tipY+_py4*_H*0.06+(_tipY-_hndY)*0.22);
+                    ctx.lineTo(_tipX-_px4*_H*0.10,_tipY-_py4*_H*0.10);
                     ctx.closePath(); ctx.fill();
-                } else if (wpn === 'dagger') {
-                    ctx.strokeStyle = '#88ffcc'; ctx.lineWidth = 1.5;
-                    ctx.beginPath(); ctx.moveTo(_roTpx, _roTpy); ctx.lineTo(_roHx, _roHy); ctx.stroke();
-                    const _gf2 = 0.55;
-                    const _roGx2 = _roTpx + (_roHx - _roTpx) * _gf2, _roGy2 = _roTpy + (_roHy - _roTpy) * _gf2;
-                    ctx.beginPath();
-                    ctx.moveTo(_roGx2 - _roD * s*0.10, _roGy2 + s*0.03);
-                    ctx.lineTo(_roGx2 + _roD * s*0.05, _roGy2 - s*0.03);
-                    ctx.stroke();
                 }
-                // Eyes
-                ctx.fillStyle = '#ffeecc';
-                ctx.fillRect(this.x - s*0.12, _roTY + s*0.27, s*0.08, s*0.07);
-                ctx.fillRect(this.x + s*0.04, _roTY + s*0.27, s*0.08, s*0.07);
-                this._hpBarY = _roTY - 8;
+
+                // ── HELMET ────────────────────────────────────────────────────
+                ctx.fillStyle = helmetCol;
+                ctx.beginPath(); ctx.arc(_CX,_hdCY,_hdR,0,Math.PI*2); ctx.fill();
+                ctx.fillStyle = '#1e2233'; // visor
+                ctx.fillRect(_CX-_hdR, _hdCY-_hdR*0.05, _hdR*2, _hdR*0.52);
+                ctx.fillStyle = 'rgba(255,235,180,0.88)'; // eyes glow
+                ctx.fillRect(_CX-_hdR*0.55,_hdCY-_hdR*0.02, _hdR*0.38,_hdR*0.28);
+                ctx.fillRect(_CX+_hdR*0.17,_hdCY-_hdR*0.02, _hdR*0.38,_hdR*0.28);
+
+                this._hpBarY = _hdCY - _hdR - 8;
             } else {
 
             let rank = this.heroRank || 'normal';
