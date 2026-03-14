@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dungeon Lord — Моделі персонажів</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: #0e0e16; color: #ddd; font-family: monospace; min-height: 100vh; }
+h1 { text-align: center; padding: 28px 16px 8px; font-size: 22px; color: #cc88ff; text-shadow: 0 0 20px #aa00ff; }
+.subtitle { text-align: center; color: #664488; font-size: 12px; margin-bottom: 28px; letter-spacing: 2px; }
+h2 { text-align: center; font-size: 13px; letter-spacing: 3px; padding: 18px 0 10px; text-transform: uppercase; }
+h2.heroes  { color: #ff9944; }
+h2.monsters{ color: #44dd88; }
+.grid { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; padding: 0 16px 28px; max-width: 960px; margin: 0 auto; }
+.card {
+    background: #181824;
+    border: 1px solid #2a2a3a;
+    border-radius: 8px;
+    width: 130px;
+    text-decoration: none;
+    color: inherit;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 14px 8px 10px;
+    transition: border-color .15s, background .15s;
+}
+.card:hover { background: #22223a; border-color: #6644aa; }
+.card .icon { font-size: 26px; margin-bottom: 8px; }
+.card .name { font-size: 11px; text-align: center; color: #bbb; line-height: 1.35; }
+.card .tier { font-size: 9px; color: #555; margin-top: 3px; }
+.sep { width: 100%; max-width: 480px; height: 1px; background: #222; margin: 4px auto 0; }
+footer { text-align: center; color: #333; font-size: 10px; padding: 20px 0 30px; }
+footer a { color: #555; }
+</style>
+</head>
+<body>
+<h1>👑 Dungeon Lord</h1>
+<div class="subtitle">ПЕРЕГЛЯД МОДЕЛЕЙ ПЕРСОНАЖІВ</div>
+
+<h2 class="heroes">⚔ Герої</h2>
+<div class="grid" id="hero-grid">
+  <a class="card" href="../index.html?preview=recruit">    <div class="icon">🗡</div><div class="name">Рекрут I</div>    <div class="tier">Рівень 1</div></a>
+  <a class="card" href="../index.html?preview=recruit2">   <div class="icon">🗡</div><div class="name">Рекрут II</div>   <div class="tier">Рівень 2</div></a>
+  <a class="card" href="../index.html?preview=soldier">    <div class="icon">🛡</div><div class="name">Солдат I</div>    <div class="tier">Рівень 3</div></a>
+  <a class="card" href="../index.html?preview=soldier2">   <div class="icon">🛡</div><div class="name">Солдат II</div>   <div class="tier">Рівень 4</div></a>
+  <a class="card" href="../index.html?preview=scout">      <div class="icon">🏹</div><div class="name">Розвідник I</div>  <div class="tier">Рівень 5</div></a>
+  <a class="card" href="../index.html?preview=scout2">     <div class="icon">🏹</div><div class="name">Розвідник II</div> <div class="tier">Рівень 6</div></a>
+  <a class="card" href="../index.html?preview=knight">     <div class="icon">⚜</div><div class="name">Лицар I</div>      <div class="tier">Рівень 7</div></a>
+  <a class="card" href="../index.html?preview=knight2">    <div class="icon">⚜</div><div class="name">Лицар II</div>     <div class="tier">Рівень 8</div></a>
+  <a class="card" href="../index.html?preview=mage">       <div class="icon">🔮</div><div class="name">Маг I</div>       <div class="tier">Рівень 9</div></a>
+  <a class="card" href="../index.html?preview=mage2">      <div class="icon">🔮</div><div class="name">Маг II</div>      <div class="tier">Рівень 10</div></a>
+  <a class="card" href="../index.html?preview=paladin">    <div class="icon">✝</div><div class="name">Паладін I</div>   <div class="tier">Рівень 11</div></a>
+  <a class="card" href="../index.html?preview=paladin2">   <div class="icon">✝</div><div class="name">Паладін II</div>  <div class="tier">Рівень 12</div></a>
+  <a class="card" href="../index.html?preview=berserker">  <div class="icon">🪓</div><div class="name">Берсерк I</div>   <div class="tier">Рівень 13</div></a>
+  <a class="card" href="../index.html?preview=berserker2"> <div class="icon">🪓</div><div class="name">Берсерк II</div>  <div class="tier">Рівень 14</div></a>
+  <a class="card" href="../index.html?preview=assassin">   <div class="icon">🗡</div><div class="name">Асасін I</div>    <div class="tier">Рівень 15</div></a>
+  <a class="card" href="../index.html?preview=assassin2">  <div class="icon">🗡</div><div class="name">Асасін II</div>   <div class="tier">Рівень 16</div></a>
+  <a class="card" href="../index.html?preview=warlord">    <div class="icon">👑</div><div class="name">Воєначальник I</div>  <div class="tier">Рівень 17</div></a>
+  <a class="card" href="../index.html?preview=warlord2">   <div class="icon">👑</div><div class="name">Воєначальник II</div> <div class="tier">Рівень 18</div></a>
+  <a class="card" href="../index.html?preview=champion">   <div class="icon">🏆</div><div class="name">Чемпіон I</div>   <div class="tier">Рівень 19</div></a>
+  <a class="card" href="../index.html?preview=champion2">  <div class="icon">🏆</div><div class="name">Чемпіон II</div>  <div class="tier">Рівень 20</div></a>
+</div>
+
+<div class="sep"></div>
+<h2 class="monsters">💀 Монстри</h2>
+<div class="grid" id="monster-grid">
+  <a class="card" href="../index.html?preview=slime">       <div class="icon">🟢</div><div class="name">Слиз</div>              <div class="tier">Рівень 1</div></a>
+  <a class="card" href="../index.html?preview=skeleton">    <div class="icon">💀</div><div class="name">Скелет</div>            <div class="tier">Рівень 2</div></a>
+  <a class="card" href="../index.html?preview=hounds">      <div class="icon">🐺</div><div class="name">Пес</div>               <div class="tier">Рівень 3</div></a>
+  <a class="card" href="../index.html?preview=zombie">      <div class="icon">🧟</div><div class="name">Зомбі</div>             <div class="tier">Рівень 4</div></a>
+  <a class="card" href="../index.html?preview=spirit">      <div class="icon">👻</div><div class="name">Дух</div>               <div class="tier">Рівень 5</div></a>
+  <a class="card" href="../index.html?preview=bat">         <div class="icon">🦇</div><div class="name">Кажан</div>             <div class="tier">Рівень 6</div></a>
+  <a class="card" href="../index.html?preview=golem">       <div class="icon">🪨</div><div class="name">Голем</div>             <div class="tier">Рівень 7</div></a>
+  <a class="card" href="../index.html?preview=minotaur">    <div class="icon">🐂</div><div class="name">Мінотавр</div>          <div class="tier">Рівень 8</div></a>
+  <a class="card" href="../index.html?preview=shadow">      <div class="icon">🌑</div><div class="name">Тінь</div>              <div class="tier">Рівень 9</div></a>
+  <a class="card" href="../index.html?preview=necromancer"> <div class="icon">☠</div><div class="name">Некромант</div>         <div class="tier">Рівень 10</div></a>
+  <a class="card" href="../index.html?preview=water_ele">   <div class="icon">💧</div><div class="name">Водна Стихія</div>      <div class="tier">Рівень 11</div></a>
+  <a class="card" href="../index.html?preview=earth_ele">   <div class="icon">🌍</div><div class="name">Земна Стихія</div>      <div class="tier">Рівень 12</div></a>
+  <a class="card" href="../index.html?preview=air_ele">     <div class="icon">🌪</div><div class="name">Повітряна Стихія</div>  <div class="tier">Рівень 13</div></a>
+  <a class="card" href="../index.html?preview=fire_ele">    <div class="icon">🔥</div><div class="name">Вогняна Стихія</div>   <div class="tier">Рівень 14</div></a>
+  <a class="card" href="../index.html?preview=lightning">   <div class="icon">⚡</div><div class="name">Блискавка</div>         <div class="tier">Рівень 15</div></a>
+  <a class="card" href="../index.html?preview=dark_knight"> <div class="icon">🖤</div><div class="name">Темний Лицар</div>      <div class="tier">Рівень 16</div></a>
+  <a class="card" href="../index.html?preview=banshee">     <div class="icon">👁</div><div class="name">Банши</div>             <div class="tier">Рівень 17</div></a>
+  <a class="card" href="../index.html?preview=lich">        <div class="icon">💜</div><div class="name">Ліч</div>               <div class="tier">Рівень 18</div></a>
+  <a class="card" href="../index.html?preview=abyss">       <div class="icon">🕳</div><div class="name">Безодня</div>           <div class="tier">Рівень 19</div></a>
+  <a class="card" href="../index.html?preview=dragon">      <div class="icon">🐉</div><div class="name">Дракон</div>            <div class="tier">Рівень 20</div></a>
+</div>
+
+<footer>
+  <a href="../index.html">← Назад у гру</a> &nbsp;|&nbsp;
+  <a href="../index.html?preview">Всі моделі разом</a>
+</footer>
+</body>
+</html>

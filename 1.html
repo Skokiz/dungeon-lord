@@ -6148,137 +6148,153 @@ setTimeout(function() {
     } catch(e) {}
 }, 800);
 
-// ── MODEL PREVIEW MODE (?preview in URL) ──────────────────────────────────────
+// ── MODEL PREVIEW MODE (?preview or ?preview=<name>) ─────────────────────────
 if (location.search.includes('preview')) { (function() {
-    // Hero definitions (mirrors HERO_TYPES above)
-    const PREVIEW_HEROES = [
-        { name:'recruit',    label:'Рекрут I',        cloak:'#551122', body:'#cc2233', helmet:'#555566', weapon:'sword'  },
-        { name:'recruit2',   label:'Рекрут II',       cloak:'#661122', body:'#dd2233', helmet:'#6a6a7a', weapon:'sword'  },
-        { name:'soldier',    label:'Солдат I',        cloak:'#772200', body:'#cc4400', helmet:'#778899', weapon:'sword'  },
-        { name:'soldier2',   label:'Солдат II',       cloak:'#883300', body:'#dd5500', helmet:'#99aabb', weapon:'spear'  },
-        { name:'scout',      label:'Розвідник I',     cloak:'#224400', body:'#448822', helmet:'#556655', weapon:'spear'  },
-        { name:'scout2',     label:'Розвідник II',    cloak:'#336600', body:'#559933', helmet:'#66aa55', weapon:'dagger' },
-        { name:'knight',     label:'Лицар I',         cloak:'#334455', body:'#446688', helmet:'#99aabb', weapon:'spear'  },
-        { name:'knight2',    label:'Лицар II',        cloak:'#445566', body:'#557799', helmet:'#aabbcc', weapon:'spear'  },
-        { name:'mage',       label:'Маг I',           cloak:'#330066', body:'#6600cc', helmet:'#aa66ff', weapon:'staff'  },
-        { name:'mage2',      label:'Маг II',          cloak:'#440077', body:'#7711dd', helmet:'#cc88ff', weapon:'staff'  },
-        { name:'paladin',    label:'Паладін I',       cloak:'#553300', body:'#bb6600', helmet:'#ddbb44', weapon:'spear'  },
-        { name:'paladin2',   label:'Паладін II',      cloak:'#664400', body:'#cc7700', helmet:'#eeccaa', weapon:'spear'  },
-        { name:'berserker',  label:'Берсерк I',       cloak:'#440000', body:'#aa0000', helmet:'#882222', weapon:'axe'    },
-        { name:'berserker2', label:'Берсерк II',      cloak:'#660000', body:'#cc0000', helmet:'#aa3333', weapon:'axe'    },
-        { name:'assassin',   label:'Асасін I',        cloak:'#111111', body:'#333344', helmet:'#224433', weapon:'dagger' },
-        { name:'assassin2',  label:'Асасін II',       cloak:'#222222', body:'#444455', helmet:'#335544', weapon:'dagger' },
-        { name:'warlord',    label:'Воєначальник I',  cloak:'#552200', body:'#884400', helmet:'#ccaa66', weapon:'sword'  },
-        { name:'warlord2',   label:'Воєначальник II', cloak:'#663300', body:'#995500', helmet:'#ddbb77', weapon:'sword'  },
-        { name:'champion',   label:'Чемпіон I',       cloak:'#550055', body:'#aa00aa', helmet:'#ff88ff', weapon:'staff'  },
-        { name:'champion2',  label:'Чемпіон II',      cloak:'#660066', body:'#bb00bb', helmet:'#ffaaff', weapon:'staff'  },
-    ];
+    const _pvParam = new URLSearchParams(location.search).get('preview') || '';
 
-    // Build a mock Unit for each hero
-    function makeMockUnit(h, level) {
-        // Ensure floors[0] exists for constructor safety
-        if (!floors.length) floors.push({ y: 400, depth: 0 });
-        const u = new Unit('hero', 0, 400, 0, level);
-        // Override colors/weapon with exact preview values
-        u.heroType       = h.name;
-        u.heroLabel      = h.label;
-        u.heroCloakCol   = h.cloak;
-        u.heroBodyCol    = h.body;
-        u.heroHelmetCol  = h.helmet;
-        u.heroWeapon     = h.weapon;
-        u.hp = u.maxHp;
-        u.facing = 1;
-        u.state  = 'idle';
-        u.atkT   = 0;
+    const PV_HEROES = [
+        { name:'recruit',    label:'Рекрут I',           cloak:'#551122', body:'#cc2233', helmet:'#555566', weapon:'sword',  type:'hero', level:1  },
+        { name:'recruit2',   label:'Рекрут II',          cloak:'#661122', body:'#dd2233', helmet:'#6a6a7a', weapon:'sword',  type:'hero', level:2  },
+        { name:'soldier',    label:'Солдат I',           cloak:'#772200', body:'#cc4400', helmet:'#778899', weapon:'sword',  type:'hero', level:3  },
+        { name:'soldier2',   label:'Солдат II',          cloak:'#883300', body:'#dd5500', helmet:'#99aabb', weapon:'spear',  type:'hero', level:4  },
+        { name:'scout',      label:'Розвідник I',        cloak:'#224400', body:'#448822', helmet:'#556655', weapon:'spear',  type:'hero', level:5  },
+        { name:'scout2',     label:'Розвідник II',       cloak:'#336600', body:'#559933', helmet:'#66aa55', weapon:'dagger', type:'hero', level:6  },
+        { name:'knight',     label:'Лицар I',            cloak:'#334455', body:'#446688', helmet:'#99aabb', weapon:'spear',  type:'hero', level:7  },
+        { name:'knight2',    label:'Лицар II',           cloak:'#445566', body:'#557799', helmet:'#aabbcc', weapon:'spear',  type:'hero', level:8  },
+        { name:'mage',       label:'Маг I',              cloak:'#330066', body:'#6600cc', helmet:'#aa66ff', weapon:'staff',  type:'hero', level:9  },
+        { name:'mage2',      label:'Маг II',             cloak:'#440077', body:'#7711dd', helmet:'#cc88ff', weapon:'staff',  type:'hero', level:10 },
+        { name:'paladin',    label:'Паладін I',          cloak:'#553300', body:'#bb6600', helmet:'#ddbb44', weapon:'spear',  type:'hero', level:11 },
+        { name:'paladin2',   label:'Паладін II',         cloak:'#664400', body:'#cc7700', helmet:'#eeccaa', weapon:'spear',  type:'hero', level:12 },
+        { name:'berserker',  label:'Берсерк I',          cloak:'#440000', body:'#aa0000', helmet:'#882222', weapon:'axe',    type:'hero', level:13 },
+        { name:'berserker2', label:'Берсерк II',         cloak:'#660000', body:'#cc0000', helmet:'#aa3333', weapon:'axe',    type:'hero', level:14 },
+        { name:'assassin',   label:'Асасін I',           cloak:'#111111', body:'#333344', helmet:'#224433', weapon:'dagger', type:'hero', level:15 },
+        { name:'assassin2',  label:'Асасін II',          cloak:'#222222', body:'#444455', helmet:'#335544', weapon:'dagger', type:'hero', level:16 },
+        { name:'warlord',    label:'Воєначальник I',     cloak:'#552200', body:'#884400', helmet:'#ccaa66', weapon:'sword',  type:'hero', level:17 },
+        { name:'warlord2',   label:'Воєначальник II',    cloak:'#663300', body:'#995500', helmet:'#ddbb77', weapon:'sword',  type:'hero', level:18 },
+        { name:'champion',   label:'Чемпіон I',          cloak:'#550055', body:'#aa00aa', helmet:'#ff88ff', weapon:'staff',  type:'hero', level:19 },
+        { name:'champion2',  label:'Чемпіон II',         cloak:'#660066', body:'#bb00bb', helmet:'#ffaaff', weapon:'staff',  type:'hero', level:20 },
+    ];
+    const PV_MONSTERS = [
+        { name:'slime',       label:'Слиз',              type:'monster', level:1  },
+        { name:'skeleton',    label:'Скелет',            type:'monster', level:2  },
+        { name:'hounds',      label:'Пес',               type:'monster', level:3  },
+        { name:'zombie',      label:'Зомбі',             type:'monster', level:4  },
+        { name:'spirit',      label:'Дух',               type:'monster', level:5  },
+        { name:'bat',         label:'Кажан',             type:'monster', level:6  },
+        { name:'golem',       label:'Голем',             type:'monster', level:7  },
+        { name:'minotaur',    label:'Мінотавр',          type:'monster', level:8  },
+        { name:'shadow',      label:'Тінь',              type:'monster', level:9  },
+        { name:'necromancer', label:'Некромант',         type:'monster', level:10 },
+        { name:'water_ele',   label:'Водна Стихія',      type:'monster', level:11 },
+        { name:'earth_ele',   label:'Земна Стихія',      type:'monster', level:12 },
+        { name:'air_ele',     label:'Повітряна Стихія',  type:'monster', level:13 },
+        { name:'fire_ele',    label:'Вогняна Стихія',    type:'monster', level:14 },
+        { name:'lightning',   label:'Блискавка',         type:'monster', level:15 },
+        { name:'dark_knight', label:'Темний Лицар',      type:'monster', level:16 },
+        { name:'banshee',     label:'Банши',             type:'monster', level:17 },
+        { name:'lich',        label:'Ліч',               type:'monster', level:18 },
+        { name:'abyss',       label:'Безодня',           type:'monster', level:19 },
+        { name:'dragon',      label:'Дракон',            type:'monster', level:20 },
+    ];
+    const PV_ALL = [...PV_HEROES, ...PV_MONSTERS];
+
+    if (!floors.length) floors.push({ y: 400, depth: 0 });
+    GAME.heroScalePercent = Math.max(GAME.heroScalePercent, 20);
+
+    function pvMakeUnit(e) {
+        let u;
+        if (e.type === 'hero') {
+            u = new Unit('hero', 0, 400, 0, e.level);
+            u.heroType      = e.name;
+            u.heroCloakCol  = e.cloak;
+            u.heroBodyCol   = e.body;
+            u.heroHelmetCol = e.helmet;
+            u.heroWeapon    = e.weapon;
+        } else {
+            u = new Unit('monster', 0, 400, 0, e.level);
+        }
+        u.hp = u.maxHp; u.facing = 1; u.state = 'idle'; u.atkT = 0;
         return u;
     }
 
-    // Ensure hero draw scale is reasonable for preview
-    GAME.heroScalePercent = Math.max(GAME.heroScalePercent, 20);
-
-    // Hide start screen, show game canvas
-    const _ss = document.getElementById('start-screen');
-    if (_ss) _ss.style.display = 'none';
+    // Hide start screen, show canvas
+    const _ss2 = document.getElementById('start-screen');
+    if (_ss2) _ss2.style.display = 'none';
     canvas.style.display = 'block';
 
-    // Label
-    const info = document.createElement('div');
-    info.style.cssText = 'position:fixed;top:8px;left:0;right:0;text-align:center;color:#fff;font:bold 14px monospace;z-index:10000;pointer-events:none;text-shadow:0 1px 4px #000;';
-    info.textContent = '🎨 Перегляд моделей — натисни будь-де для виходу';
-    document.body.appendChild(info);
-    canvas.addEventListener('click', () => { info.remove(); location.href = location.pathname; });
+    const ATK_PERIOD = 2400;
 
-    const COLS = 5, ROWS = 4;
-    const pvUnits = [];
-    // Build mock units (ensure floors[0] exists)
-    if (!floors.length) floors.push({ y: 400, depth: 0 });
-    PREVIEW_HEROES.forEach((h, i) => {
-        try {
-            const u = new Unit('hero', 0, 400, 0, i + 1);
-            u.heroType      = h.name;
-            u.heroCloakCol  = h.cloak;
-            u.heroBodyCol   = h.body;
-            u.heroHelmetCol = h.helmet;
-            u.heroWeapon    = h.weapon;
-            u.hp = u.maxHp;
-            u.facing = 1;
-            u.state  = 'idle';
-            u.atkT   = 0;
-            pvUnits.push({ label: h.label, unit: u });
-        } catch(e) { pvUnits.push(null); }
-    });
+    function pvAnimState(unit, phase, offset) {
+        const p = ((_frameNow + offset) % ATK_PERIOD) / ATK_PERIOD;
+        if (p > 0.50) { unit.atkT = (p - 0.50) / 0.50; unit.state = 'fight'; }
+        else          { unit.atkT = 0;                  unit.state = 'idle';  }
+    }
 
-    const ATK_PERIOD = 2400; // ms per cycle
+    if (_pvParam) {
+        // ── SINGLE MODEL ─────────────────────────────────────────────────────
+        const entry = PV_ALL.find(e => e.name === _pvParam);
+        if (!entry) return;
 
-    function previewLoop() {
-        const W = canvas.width;
-        const H = canvas.height;
-        _frameNow = Date.now();
+        const backBtn = document.createElement('a');
+        backBtn.href = 'models/';
+        backBtn.style.cssText = 'position:fixed;top:12px;left:14px;color:#aaa;font:13px monospace;z-index:10000;text-decoration:none;background:#222a;padding:4px 10px;border-radius:4px;';
+        backBtn.textContent = '\u2190 Всі моделі';
+        document.body.appendChild(backBtn);
 
-        ctx.fillStyle = '#111118';
-        ctx.fillRect(0, 0, W, H);
+        const nameDiv = document.createElement('div');
+        nameDiv.style.cssText = 'position:fixed;top:14px;left:0;right:0;text-align:center;color:#fff;font:bold 16px monospace;z-index:10000;pointer-events:none;';
+        nameDiv.textContent = entry.label;
+        document.body.appendChild(nameDiv);
 
-        const cellW = W / COLS;
-        const cellH = H / ROWS;
+        let pvU; try { pvU = pvMakeUnit(entry); } catch(e) { return; }
 
-        pvUnits.forEach((entry, i) => {
-            if (!entry) return;
-            const col = i % COLS, row = Math.floor(i / COLS);
-            const cx  = col * cellW + cellW / 2;
-            const cy  = row * cellH + cellH * 0.72; // floor Y in screen space (camY=0)
+        (function singleLoop() {
+            _frameNow = Date.now();
+            const W = canvas.width, H = canvas.height;
+            ctx.fillStyle = '#111118'; ctx.fillRect(0, 0, W, H);
+            pvAnimState(pvU, null, 0);
+            pvU.x = W / 2; pvU.y = H * 0.62; pvU.facing = 1;
+            try { pvU.draw(0); } catch(e) {}
+            requestAnimationFrame(singleLoop);
+        }());
 
-            // Stagger attack animation per column
-            const phase = ((_frameNow + col * 480) % ATK_PERIOD) / ATK_PERIOD;
-            const IDLE_FRAC = 0.50;
-            if (phase > IDLE_FRAC) {
-                const ap = (phase - IDLE_FRAC) / (1 - IDLE_FRAC);
-                entry.unit.atkT  = ap;
-                entry.unit.state = 'fight';
-            } else {
-                entry.unit.atkT  = 0;
-                entry.unit.state = 'idle';
-            }
+    } else {
+        // ── ALL MODELS GRID ───────────────────────────────────────────────────
+        const info = document.createElement('div');
+        info.style.cssText = 'position:fixed;top:8px;left:0;right:0;text-align:center;color:#fff;font:bold 12px monospace;z-index:10000;pointer-events:none;text-shadow:0 1px 4px #000;';
+        info.textContent = '\uD83C\uDFA8 Перегляд моделей \u2014 натисни будь-де для виходу';
+        document.body.appendChild(info);
+        canvas.addEventListener('click', () => { info.remove(); location.href = location.pathname; });
 
-            // Position: draw(camY) uses _flY = this.y - camY, so set y=cy, camY=0
-            entry.unit.x = cx;
-            entry.unit.y = cy;
-            entry.unit.facing = 1;
-
-            try { entry.unit.draw(0); } catch(e) {}
-
-            // Label below unit
-            ctx.save();
-            ctx.font = 'bold 11px monospace';
-            ctx.fillStyle = '#ddd';
-            ctx.textAlign = 'center';
-            ctx.shadowColor = '#000'; ctx.shadowBlur = 5;
-            ctx.fillText(entry.label, cx, cy + 26);
-            ctx.restore();
+        const pvUnits = [];
+        PV_ALL.forEach(e => {
+            try { pvUnits.push({ label: e.label, unit: pvMakeUnit(e) }); }
+            catch(_) { pvUnits.push(null); }
         });
 
-        requestAnimationFrame(previewLoop);
+        const COLS = 8, ROWS = 5;
+        (function allLoop() {
+            _frameNow = Date.now();
+            const W = canvas.width, H = canvas.height;
+            ctx.fillStyle = '#111118'; ctx.fillRect(0, 0, W, H);
+            const cellW = W / COLS, cellH = H / ROWS;
+            pvUnits.forEach((entry, i) => {
+                if (!entry) return;
+                const col = i % COLS, row = Math.floor(i / COLS);
+                const cx = col * cellW + cellW / 2;
+                const cy = row * cellH + cellH * 0.70;
+                pvAnimState(entry.unit, null, col * 300);
+                entry.unit.x = cx; entry.unit.y = cy; entry.unit.facing = 1;
+                try { entry.unit.draw(0); } catch(_) {}
+                ctx.save();
+                ctx.font = 'bold 9px monospace'; ctx.fillStyle = '#ccc';
+                ctx.textAlign = 'center'; ctx.shadowColor = '#000'; ctx.shadowBlur = 4;
+                ctx.fillText(entry.label, cx, cy + 22);
+                ctx.restore();
+            });
+            requestAnimationFrame(allLoop);
+        }());
     }
-    requestAnimationFrame(previewLoop);
 }()); }
 </script>
 </body>
