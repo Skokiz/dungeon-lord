@@ -2952,7 +2952,8 @@ class Unit {
         } else if (this.type === 'hero') {
             let s = this.size;
 
-            if (this.heroType === 'recruit' || this.heroType === 'recruit2') {
+            const _isAnimHero = this.heroType==='recruit'||this.heroType==='recruit2'||this.heroType==='soldier'||this.heroType==='soldier2';
+            if (_isAnimHero) {
                 // ── Bigger hero: legs + dramatic attack animation ──────────────
                 if (this._roT === undefined) {
                     this._roT = Math.random() * Math.PI * 2;
@@ -3141,16 +3142,48 @@ class Unit {
                     ctx.closePath(); ctx.fill();
                 }
 
+                // ── SHOULDER PAULDRONS (soldier only) ─────────────────────────
+                const _isSoldier = this.heroType==='soldier'||this.heroType==='soldier2';
+                if (_isSoldier) {
+                    const _pR = _W * 0.95;
+                    [-1,1].forEach(sd => {
+                        ctx.fillStyle = helmetCol;
+                        ctx.beginPath(); ctx.arc(_CX+sd*_W*1.05, _shdY+_H*0.02, _pR, 0, Math.PI*2); ctx.fill();
+                        // rim
+                        ctx.strokeStyle = '#00000044'; ctx.lineWidth = 1.2;
+                        ctx.beginPath(); ctx.arc(_CX+sd*_W*1.05, _shdY+_H*0.02, _pR, 0, Math.PI*2); ctx.stroke();
+                        // highlight
+                        ctx.fillStyle = 'rgba(255,255,255,0.18)';
+                        ctx.beginPath(); ctx.arc(_CX+sd*_W*0.92, _shdY-_H*0.01, _pR*0.45, 0, Math.PI*2); ctx.fill();
+                    });
+                }
+
                 // ── HELMET ────────────────────────────────────────────────────
                 ctx.fillStyle = helmetCol;
                 ctx.beginPath(); ctx.arc(_CX,_hdCY,_hdR,0,Math.PI*2); ctx.fill();
+
+                if (_isSoldier) {
+                    // більш кутастий шолом: бічні пластини + гребінь
+                    ctx.fillStyle = helmetCol;
+                    ctx.fillRect(_CX-_hdR*1.22, _hdCY-_hdR*0.30, _hdR*0.28, _hdR*0.75); // left plate
+                    ctx.fillRect(_CX+_hdR*0.94, _hdCY-_hdR*0.30, _hdR*0.28, _hdR*0.75); // right plate
+                    // гребінь
+                    ctx.fillStyle = this.heroCloakCol || '#661122';
+                    ctx.beginPath();
+                    ctx.moveTo(_CX-_hdR*0.35, _hdCY-_hdR);
+                    ctx.lineTo(_CX+_hdR*0.35, _hdCY-_hdR);
+                    ctx.lineTo(_CX+_hdR*0.22, _hdCY-_hdR*1.55);
+                    ctx.lineTo(_CX-_hdR*0.22, _hdCY-_hdR*1.55);
+                    ctx.closePath(); ctx.fill();
+                }
+
                 ctx.fillStyle = '#1e2233'; // visor
                 ctx.fillRect(_CX-_hdR, _hdCY-_hdR*0.05, _hdR*2, _hdR*0.52);
                 ctx.fillStyle = 'rgba(255,235,180,0.88)'; // eyes glow
                 ctx.fillRect(_CX-_hdR*0.55,_hdCY-_hdR*0.02, _hdR*0.38,_hdR*0.28);
                 ctx.fillRect(_CX+_hdR*0.17,_hdCY-_hdR*0.02, _hdR*0.38,_hdR*0.28);
 
-                this._hpBarY = _hdCY - _hdR - 8;
+                this._hpBarY = _hdCY - _hdR * (_isSoldier ? 1.6 : 1.0) - 8;
             } else {
 
             let rank = this.heroRank || 'normal';
