@@ -2974,7 +2974,7 @@ class Unit {
                 if (_roAcd > (this._roPrevAktCd || 0) + 3) this._roAtkP = 0.01;
                 this._roPrevAktCd = _roAcd;
                 if (this._roAtkP > 0) { this._roAtkP += _roDt / 0.75; if (this._roAtkP >= 1) this._roAtkP = 0; }
-                this._roT += _roDt * (this.state === 'idle' ? 1.2 : this.state === 'fight' ? 2.5 : 4.0);
+                this._roT += _roDt * (this.state === 'idle' ? 1.2 : this.state === 'fight' ? 2.5 : 5.0);
 
                 const _ap = this._roAtkP, _roD = this._roDir;
                 const _ez = p => p*p*(3-2*p);
@@ -3013,23 +3013,26 @@ class Unit {
                 if (rank==='boss')      { cloakCol='#550066'; bodyCol='#aa00cc'; helmetCol='#cc88ff'; }
 
                 // ── LEGS ──────────────────────────────────────────────────────
-                const _UL = _H*0.230, _LL = _H*0.195, _LW = _H*0.088;
-                // swing angle from vertical — both legs swing from hip center
-                // idle: small natural stance (front slightly forward, back slightly back)
+                const _UL = _H*0.235, _LL = _H*0.200, _LW = _H*0.090;
+                // swing angle from vertical — positive = toward facing direction
                 const _idleSw = _roD * 0.10;
-                const _fSw = this.state==='move'  ? _wc*0.44
-                           : this.state==='fight' ? _roD*0.12 + _wc*0.15
+                const _fSw = this.state==='move'  ? _wc * 0.52
+                           : this.state==='fight' ? _roD*0.14 + _wc*0.14
                            : _idleSw;
-                const _bSw = this.state==='move'  ? -_wc*0.44
-                           : this.state==='fight' ? -_roD*0.08
+                const _bSw = this.state==='move'  ? -_wc * 0.52
+                           : this.state==='fight' ? -_roD*0.10
                            : -_idleSw;
-                // knee bend
-                const _kF = this.state==='move' ? Math.max(0, _wc)*0.40+0.04 : 0.05;
-                const _kB = this.state==='move' ? Math.max(0,-_wc)*0.40+0.04 : 0.05;
+                // knee bend magnitude (higher = more bent)
+                const _kF = this.state==='move' ? Math.max(0,  _wc)*0.50+0.05 : 0.06;
+                const _kB = this.state==='move' ? Math.max(0, -_wc)*0.50+0.05 : 0.06;
 
-                const _drawLeg = (hx, hy, sw, kb, col) => {
-                    const kx=hx+Math.sin(sw)*_UL, ky=hy+Math.cos(sw)*_UL;
-                    const fa=sw+kb, fx=kx+Math.sin(fa)*_LL, fy=ky+Math.cos(fa)*_LL;
+                // Draw one leg: knee bends BACK relative to swing (natural walk)
+                // fa = sw - sign(sw)*kb → lower leg hangs backward from knee when leg is forward
+                const _drawLeg = (hx, hy, sw, kb, col, bootCol) => {
+                    const kx = hx + Math.sin(sw)*_UL, ky = hy + Math.cos(sw)*_UL;
+                    const _swSign = sw > 0.01 ? 1 : sw < -0.01 ? -1 : 0;
+                    const fa = sw - _swSign * kb;
+                    const fx = kx + Math.sin(fa)*_LL, fy = ky + Math.cos(fa)*_LL;
                     ctx.fillStyle = col;
                     ctx.beginPath(); // upper leg
                     ctx.moveTo(hx-_LW,hy); ctx.lineTo(hx+_LW,hy);
@@ -3037,10 +3040,10 @@ class Unit {
                     ctx.beginPath(); // lower leg
                     ctx.moveTo(kx-_LW*0.65,ky); ctx.lineTo(kx+_LW*0.65,ky);
                     ctx.lineTo(fx+_LW*0.50,fy); ctx.lineTo(fx-_LW*0.50,fy); ctx.closePath(); ctx.fill();
-                    ctx.fillStyle = '#18100a'; // boot
+                    ctx.fillStyle = bootCol || '#18100a'; // boot
                     ctx.beginPath();
-                    ctx.moveTo(fx-_LW*0.70,fy); ctx.lineTo(fx+_LW*1.15+_roD*_LW*0.45,fy);
-                    ctx.lineTo(fx+_LW*1.15+_roD*_LW*0.45,fy+_H*0.05); ctx.lineTo(fx-_LW*0.75,fy+_H*0.05);
+                    ctx.moveTo(fx-_LW*0.70,fy); ctx.lineTo(fx+_LW*1.20+_roD*_LW*0.40,fy);
+                    ctx.lineTo(fx+_LW*1.20+_roD*_LW*0.40,fy+_H*0.052); ctx.lineTo(fx-_LW*0.75,fy+_H*0.052);
                     ctx.closePath(); ctx.fill();
                 };
 
@@ -3051,9 +3054,9 @@ class Unit {
                 ctx.lineTo(_CX-_W*1.65, _CY0-_H*0.03);
                 ctx.lineTo(_CX+_W*1.65, _CY0-_H*0.03);
                 ctx.closePath(); ctx.fill();
-                // both legs on top of cloak
-                _drawLeg(_CX, _hipY, _bSw, _kB, '#251208');
-                _drawLeg(_CX, _hipY, _fSw, _kF, '#3a2010');
+                // back leg (darker), front leg (lighter) — both on top of cloak
+                _drawLeg(_CX, _hipY, _bSw, _kB, '#221006', '#111008');
+                _drawLeg(_CX, _hipY, _fSw, _kF, '#4a2a12', '#201410');
                 // ── TORSO ─────────────────────────────────────────────────────
                 ctx.fillStyle = bodyCol;
                 ctx.fillRect(_CX-_W, _shdY, _W*2, _hipY-_shdY);
