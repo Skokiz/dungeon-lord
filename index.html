@@ -780,7 +780,7 @@
     <button id="btn-continue" onclick="continueGame()">▶ Почати гру</button>
     <button id="btn-soul-dungeon" onclick="openSoulDungeon()">💜 Душа Підземелля</button>
     <button id="btn-instructions" onclick="openInstructions()">📖 Інструкція</button>
-    <button id="btn-reset-progress" onclick="confirmResetProgress()" style="display:none">↺ Почати заново</button>
+    <button id="btn-reset-progress" onclick="confirmResetProgress()">↺ Скинути все</button>
 </div>
 
 <!-- ── ДУША ПІДЗЕМЕЛЛЯ ── -->
@@ -3717,7 +3717,7 @@ function init() {
     const _contBtn = document.getElementById('btn-continue');
     if (_contBtn) _contBtn.textContent = _savedLvl === 1 ? '▶ Почати гру' : `▶ Рівень ${_savedLvl}`;
     const _resetBtn = document.getElementById('btn-reset-progress');
-    if (_resetBtn) _resetBtn.style.display = _savedLvl > 1 ? '' : 'none';
+    if (_resetBtn) _resetBtn.style.display = '';
     // Показуємо баланс елітних душ
     const _eNum = document.getElementById('start-elite-num');
     if (_eNum) _eNum.innerText = getStoredEliteSouls();
@@ -5980,8 +5980,13 @@ function continueGame() {
 }
 
 function confirmResetProgress() {
-    if (confirm('Скинути весь прогрес? Ви повернетесь до Рівня 1.')) {
-        resetProgress();
+    if (confirm('Скинути ВСЕ? Рівень, елітні душі, прокачки та сюжет повернуться до початку.')) {
+        // Повне очищення кешу
+        _store.del('DLSiege_lvl');
+        _store.del('DLSiege_elite');
+        _store.del('DLSiege_perma2');
+        _store.del('DLSiege_v3');
+        try { localStorage.removeItem('DL_StoryDone'); } catch(_) {}
         hardReset();
     }
 }
