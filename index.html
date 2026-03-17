@@ -657,6 +657,116 @@
 
         /* ── game-over ── */
         #go-elite-earned { color:#ff88ff; font-size:14px; text-align:center; }
+
+        /* ══════════════════════════════════════════════════════════
+           STORY MANAGER — сюжетний оверлей
+        ══════════════════════════════════════════════════════════ */
+        #story-screen {
+            position:fixed; top:0; left:0; width:100%; height:100%;
+            background:rgba(4,2,12,0.96);
+            display:none; flex-direction:column; align-items:center;
+            justify-content:flex-end; padding:0 0 28px;
+            z-index:500; gap:0; }
+
+        /* Лорд аватар (знизу ліворуч, виходить за межі бульки) */
+        .story-lord-wrap {
+            position:absolute; left:12px; bottom:80px;
+            display:flex; flex-direction:column; align-items:center; gap:4px;
+            pointer-events:none; }
+        #story-lord-canvas { width:90px; height:130px; }
+        .story-lord-name {
+            font-size:10px; color:#cc88ff; text-transform:uppercase;
+            letter-spacing:1px; text-shadow:0 0 8px #9900ff; }
+
+        /* Мовна бульбашка (комікс-стиль) */
+        .story-bubble-wrap {
+            width:calc(100% - 32px); max-width:500px;
+            margin-left:80px; /* зсув щоб не перекривати лорда */
+            position:relative; }
+        .story-bubble {
+            background:#f5f0ff;
+            border:2px solid #bb88ff;
+            border-radius:18px;
+            padding:16px 18px 12px;
+            position:relative;
+            box-shadow:0 0 20px rgba(170,0,255,0.35); }
+        /* трикутник бульбашки — вказує на лорда зліва-знизу */
+        .story-bubble::after {
+            content:''; position:absolute;
+            left:-18px; bottom:18px;
+            border:9px solid transparent;
+            border-right-color:#bb88ff; }
+        .story-bubble::before {
+            content:''; position:absolute;
+            left:-14px; bottom:19px;
+            border:8px solid transparent;
+            border-right-color:#f5f0ff;
+            z-index:1; }
+        #story-text {
+            color:#1a0030; font-size:14px; line-height:1.6;
+            min-height:52px; font-family:inherit; }
+        #story-tap-hint {
+            color:#9966cc; font-size:11px; text-align:right;
+            margin-top:8px; animation:storyBlink 1.2s infinite; }
+        @keyframes storyBlink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+        /* Варіанти вибору */
+        #story-choices {
+            display:none; grid-template-columns:1fr 1fr;
+            gap:8px; margin-top:10px; }
+        .story-choice-btn {
+            background:rgba(80,0,140,0.85);
+            border:1.5px solid #9944cc;
+            border-radius:12px; color:#ffddff;
+            font-size:12px; padding:10px 12px;
+            cursor:pointer; text-align:left; line-height:1.4;
+            -webkit-appearance:none; touch-action:manipulation;
+            transition:background 0.15s, border-color 0.15s; }
+        .story-choice-btn:active, .story-choice-btn:hover {
+            background:rgba(140,0,220,0.9); border-color:#cc88ff; }
+
+        /* Завантаження (API дзвінок) */
+        #story-loading {
+            display:none; flex-direction:column; align-items:center;
+            gap:12px; padding:16px 0; }
+        .story-spinner {
+            width:32px; height:32px;
+            border:3px solid rgba(170,0,255,0.3);
+            border-top-color:#cc88ff;
+            border-radius:50%;
+            animation:storySpin 0.8s linear infinite; }
+        @keyframes storySpin { to { transform:rotate(360deg); } }
+        #story-loading-text { color:#9966cc; font-size:12px; text-align:center; }
+
+        /* Кнопка пропуску */
+        #story-skip-btn {
+            position:absolute; top:14px; right:14px;
+            background:transparent; border:1px solid #442266;
+            border-radius:8px; color:#664488;
+            font-size:11px; padding:5px 12px;
+            cursor:pointer; -webkit-appearance:none; touch-action:manipulation; }
+        #story-skip-btn:active { color:#cc88ff; border-color:#cc88ff; }
+
+        /* Кнопка налаштування API-ключа в паузі */
+        #pause-api-key-btn {
+            background:rgba(40,20,60,0.85); border:1px solid #553366;
+            border-radius:10px; color:#aa77cc; font-size:11px;
+            padding:6px 16px; cursor:pointer; margin-top:6px;
+            -webkit-appearance:none; touch-action:manipulation; }
+
+        /* Toast коментарі лорда під час гри */
+        #story-toast {
+            position:fixed; bottom:130px; left:50%; transform:translateX(-50%);
+            background:rgba(30,10,50,0.93); border:1.5px solid #7733bb;
+            border-radius:16px; padding:10px 16px;
+            display:flex; align-items:flex-start; gap:10px;
+            max-width:calc(100% - 32px); width:340px;
+            z-index:400; pointer-events:none;
+            opacity:0; transition:opacity 0.3s; }
+        #story-toast.story-toast-show { opacity:1; }
+        #story-toast.story-toast-hide { opacity:0; }
+        .story-toast-lord { font-size:22px; line-height:1; flex-shrink:0; }
+        .story-toast-text { color:#ffddff; font-size:12px; line-height:1.5; }
     </style>
 </head>
 <body>
@@ -716,12 +826,35 @@
     <button id="btn-close-instructions" onclick="closeInstructions()">← Назад</button>
 </div>
 
+<!-- ── СЮЖЕТ ЛОРДА ── -->
+<div id="story-screen">
+    <!-- Аватар лорда (ліво-знизу) -->
+    <div class="story-lord-wrap">
+        <canvas id="story-lord-canvas" width="90" height="130"></canvas>
+        <div class="story-lord-name">👑 Лорд</div>
+    </div>
+    <!-- Мовна бульбашка -->
+    <div class="story-bubble-wrap">
+        <div class="story-bubble">
+            <div id="story-text"></div>
+            <div id="story-tap-hint">Натисни щоб продовжити ▼</div>
+            <div id="story-choices"></div>
+            <div id="story-loading">
+                <div class="story-spinner"></div>
+                <div id="story-loading-text">Лорд думає... що само по собі вже підозріло</div>
+            </div>
+        </div>
+    </div>
+    <button id="story-skip-btn">Пропустити →</button>
+</div>
+
 <!-- ── ПАУЗА ── -->
 <div id="pause-overlay" class="overlay-base">
     <h2>⏸ ПАУЗА</h2>
     <div id="pause-quote"></div>
     <button class="pause-btn" id="pause-resume-btn" onclick="togglePause()">▶ Продовжити</button>
     <button class="pause-btn" id="pause-restart-btn" onclick="hardReset()" style="margin-top:8px;background:rgba(180,30,30,0.85);border-color:#ff4444;">🔄 Рестарт</button>
+    <button id="pause-api-key-btn" onclick="StoryManager.promptApiKey()">🤖 Claude API-ключ</button>
 </div>
 
 <!-- ── GAME OVER ── -->
@@ -2180,7 +2313,14 @@ class Unit {
                 } else {
                     enemy.hp -= dmgDealt;
                     // Лорд отримав удар — мале тремтіння
-                    if (enemy.type === 'lord') triggerScreenShake(3);
+                    if (enemy.type === 'lord') {
+                        triggerScreenShake(3);
+                        if (Math.random() < 0.12) StoryManager.showComment('lordHit');
+                        if (enemy.hp / enemy.maxHp < 0.25 && !GAME._lowHpCommented) {
+                            GAME._lowHpCommented = true;
+                            StoryManager.showComment('lowHP');
+                        }
+                    }
                 }
 
                 // ── On-hit здібності атакуючого ───────────────────────────
@@ -2389,7 +2529,7 @@ class Unit {
             if (this.floorIdx < 0) {
                 this.y = CFG.surfaceY;
                 if (this.x > CITY_GATE_X) { this.x -= this.speed * 2 * _dt; }
-                else { GAME.cityHP -= this.dmg * 5; this.hp = 0; spawnParticle(this.x, this.y, 'red'); }
+                else { GAME.cityHP -= this.dmg * 5; this.hp = 0; spawnParticle(this.x, this.y, 'red'); StoryManager.showComment('heroEscaped'); }
                 return;
             }
             // Поверх 0 — до виходу (CAVE_X)
@@ -3597,6 +3737,7 @@ function startGame(level) {
     GAME.difficultyType = level;
     GAME.currentLevel = level;
     GAME.eliteSouls = 0; // скидаємо сесійні елітні душі
+    GAME._lowHpCommented = false; // скидаємо флаг low-HP коментаря
 
     // ── Завантаження постійних прокачок ────────────────────────────────────
     _permaData = _loadPerma();
@@ -5094,7 +5235,7 @@ function loop(ts) {
                         size: 1.5 + Math.random() * 2, life: 40 + Math.random() * 20
                     });
                 }
-                if (u.heroRank === 'boss')            triggerScreenShake(10);
+                if (u.heroRank === 'boss')            { triggerScreenShake(10); StoryManager.showComment('bigKill'); }
                 else if (u.heroRank.startsWith('elite')) triggerScreenShake(5);
                 spawnDmgText(u.x, u.y - u.size, '+' + reward + '💀', '#ffcc00', u.heroRank !== 'normal');
                 updateUI();
@@ -5831,7 +5972,11 @@ function getLevelConfig(lvl) {
 }
 
 function continueGame() {
-    startGame(loadProgress());
+    const level = loadProgress();
+    const ss = document.getElementById('start-screen');
+    if (ss) ss.style.display = 'none';
+    StoryManager.init();
+    StoryManager.showIntro(level).then(function() { startGame(level); });
 }
 
 function confirmResetProgress() {
@@ -6306,6 +6451,456 @@ if (location.search.includes('preview')) { (function() {
         }());
     }
 }()); }
+
+// ══════════════════════════════════════════════════════════════════
+//  STORY MANAGER — сюжет, навчання, персоналізація через Claude API
+// ══════════════════════════════════════════════════════════════════
+const StoryManager = (function() {
+
+    let _active      = false;
+    let _steps       = [];
+    let _stepIdx     = 0;
+    let _resolve     = null;
+    let _typing      = false;
+    let _typingTimer = null;
+    let _lordRaf     = null;
+    let _toastTimer  = null;
+
+    const playerChoices = [];
+
+    // ── DOM shortcuts ─────────────────────────────────────────────
+    const $screen  = () => document.getElementById('story-screen');
+    const $text    = () => document.getElementById('story-text');
+    const $hint    = () => document.getElementById('story-tap-hint');
+    const $choices = () => document.getElementById('story-choices');
+    const $loading = () => document.getElementById('story-loading');
+    const $skip    = () => document.getElementById('story-skip-btn');
+
+    // ── Init ──────────────────────────────────────────────────────
+    function init() {
+        const scr = $screen();
+        if (!scr) return;
+        scr.addEventListener('click', function(e) {
+            if (e.target.closest('.story-choice-btn')) return;
+            if (e.target.closest('#story-skip-btn'))   return;
+            tapToContinue();
+        });
+        $skip().addEventListener('click', skip);
+    }
+
+    // ── Public: show a sequence of steps ─────────────────────────
+    function showSteps(steps) {
+        return new Promise(function(res) {
+            _active  = true;
+            _steps   = steps;
+            _stepIdx = 0;
+            _resolve = res;
+            $screen().style.display = 'flex';
+            _startLordAnim();
+            _renderStep();
+        });
+    }
+
+    // ── Public: show intro (first play vs returning player) ───────
+    function showIntro(level) {
+        const done = _safeGet('DL_StoryDone');
+        if (!done) {
+            return showSteps(_introSteps());
+        }
+        return showSteps(_levelIntroSteps(level));
+    }
+
+    // ── Public: prompt for Claude API key ────────────────────────
+    function promptApiKey() {
+        const cur = _safeGet('DL_ApiKey') || '';
+        const val = prompt('Введи Claude API-ключ (залиш порожнім щоб скинути):', cur);
+        if (val === null) return; // cancelled
+        if (val.trim() === '') {
+            _safeSet('DL_ApiKey', '');
+            alert('API-ключ видалено. Буде використано вбудований сюжет.');
+        } else {
+            _safeSet('DL_ApiKey', val.trim());
+            alert('API-ключ збережено! ✓ Лорд тепер підключений до нейромережі.');
+        }
+    }
+
+    // ── Internal: render current step ────────────────────────────
+    function _renderStep() {
+        if (_stepIdx >= _steps.length) { _hide(); return; }
+
+        const step = _steps[_stepIdx];
+
+        $choices().innerHTML = '';
+        $choices().style.display = 'none';
+        $loading().style.display = 'none';
+        $hint().style.display    = 'block';
+
+        if (step.type === 'loading') {
+            $hint().style.display   = 'none';
+            $loading().style.display = 'flex';
+            if (step.loadingText) document.getElementById('story-loading-text').textContent = step.loadingText;
+            $text().textContent = step.text || '';
+            step.loadFn().then(function(extra) {
+                if (extra && extra.length) {
+                    _steps.splice(_stepIdx + 1, 0, ...extra);
+                }
+                _stepIdx++;
+                _renderStep();
+            });
+            return;
+        }
+
+        if (step.choices) $hint().style.display = 'none';
+
+        _typeText(step.text, function() {
+            if (step.choices) _renderChoices(step.choices);
+        });
+    }
+
+    // ── Internal: typewriter ──────────────────────────────────────
+    function _typeText(text, onDone) {
+        const el = $text();
+        el.textContent = '';
+        let i = 0;
+        _typing = true;
+        clearInterval(_typingTimer);
+        _typingTimer = setInterval(function() {
+            if (i < text.length) {
+                el.textContent += text[i++];
+            } else {
+                clearInterval(_typingTimer);
+                _typing = false;
+                if (onDone) onDone();
+            }
+        }, 26);
+    }
+
+    // ── Internal: render choice buttons ──────────────────────────
+    function _renderChoices(choices) {
+        const el = $choices();
+        el.innerHTML = '';
+        el.style.display = 'grid';
+        choices.forEach(function(c) {
+            const btn = document.createElement('button');
+            btn.className = 'story-choice-btn';
+            btn.textContent = c.text;
+            btn.addEventListener('click', function() {
+                playerChoices.push({ q: _steps[_stepIdx].text, a: c.text });
+                el.style.display = 'none';
+                _stepIdx++;
+                _renderStep();
+            });
+            el.appendChild(btn);
+        });
+    }
+
+    // ── Internal: tap to continue ─────────────────────────────────
+    function tapToContinue() {
+        if (!_active) return;
+        const step = _steps[_stepIdx];
+        if (!step) return;
+        if (step.type === 'loading') return;
+        if (_typing) {
+            // Skip typewriter — show all text immediately
+            clearInterval(_typingTimer);
+            _typing = false;
+            $text().textContent = step.text;
+            if (step.choices) _renderChoices(step.choices);
+            return;
+        }
+        if (step.choices) return; // wait for choice
+        _stepIdx++;
+        _renderStep();
+    }
+
+    // ── Internal: hide overlay ────────────────────────────────────
+    function _hide() {
+        $screen().style.display = 'none';
+        _stopLordAnim();
+        _active = false;
+        if (_resolve) { const r = _resolve; _resolve = null; r(); }
+    }
+
+    // ── Internal: skip entire story ───────────────────────────────
+    function skip() {
+        clearInterval(_typingTimer);
+        _safeSet('DL_StoryDone', '1');
+        _hide();
+    }
+
+    // ── Lord avatar animation on story canvas ─────────────────────
+    function _startLordAnim() {
+        const canvas = document.getElementById('story-lord-canvas');
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        function frame() {
+            if (!_active) return;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            _drawLord(ctx, canvas.width / 2, canvas.height * 0.48, canvas.height * 0.36);
+            _lordRaf = requestAnimationFrame(frame);
+        }
+        frame();
+    }
+
+    function _stopLordAnim() {
+        if (_lordRaf) { cancelAnimationFrame(_lordRaf); _lordRaf = null; }
+    }
+
+    // ── Draw Lord (standalone, no global state) ───────────────────
+    function _drawLord(ctx, cx, cy, s) {
+        const t   = Date.now();
+        const bob = Math.sin(t / 800) * 3;
+        const talk= _typing ? Math.abs(Math.sin(t / 180)) * s * 0.06 : 0; // рот рухається коли "говорить"
+        const dy  = cy - s * 0.5 + bob;
+
+        // Аура
+        const aura = ctx.createRadialGradient(cx, dy + s*0.5, 4, cx, dy + s*0.5, s*1.05);
+        aura.addColorStop(0, 'rgba(160,0,255,0.30)');
+        aura.addColorStop(1, 'rgba(80,0,160,0)');
+        ctx.fillStyle = aura;
+        ctx.beginPath(); ctx.arc(cx, dy + s*0.5, s*1.05, 0, Math.PI*2); ctx.fill();
+
+        // Мантія
+        ctx.fillStyle = '#3d0066';
+        ctx.beginPath(); ctx.moveTo(cx, dy + s*0.3); ctx.lineTo(cx - s*0.7, dy + s*1.05); ctx.lineTo(cx + s*0.7, dy + s*1.05); ctx.closePath(); ctx.fill();
+        ctx.fillStyle = '#280044';
+        ctx.beginPath(); ctx.moveTo(cx - s*0.25, dy + s*0.55); ctx.lineTo(cx - s*0.7, dy + s*1.05); ctx.lineTo(cx, dy + s*1.05); ctx.closePath(); ctx.fill();
+
+        // Обладунок
+        ctx.fillStyle = '#551188';
+        ctx.fillRect(cx - s*0.28, dy + s*0.42, s*0.56, s*0.46);
+        const ag = ctx.createLinearGradient(cx - s*0.25, dy + s*0.45, cx + s*0.25, dy + s*0.45);
+        ag.addColorStop(0, '#7700cc'); ag.addColorStop(0.4, '#aa44ff'); ag.addColorStop(1, '#6600bb');
+        ctx.fillStyle = ag;
+        ctx.fillRect(cx - s*0.24, dy + s*0.44, s*0.48, s*0.38);
+        ctx.strokeStyle = '#cc88ff'; ctx.lineWidth = 1;
+        ctx.strokeRect(cx - s*0.2, dy + s*0.47, s*0.4, s*0.28);
+        ctx.beginPath(); ctx.moveTo(cx, dy + s*0.47); ctx.lineTo(cx, dy + s*0.75); ctx.stroke();
+
+        // Голова
+        const hg = ctx.createRadialGradient(cx - s*0.05, dy + s*0.2, 2, cx, dy + s*0.27, s*0.3);
+        hg.addColorStop(0, '#cc66ff'); hg.addColorStop(1, '#660099');
+        ctx.fillStyle = hg;
+        ctx.beginPath(); ctx.arc(cx, dy + s*0.27, s*0.29, 0, Math.PI*2); ctx.fill();
+
+        // Корона
+        ctx.fillStyle = '#ffcc00';
+        ctx.fillRect(cx - s*0.28, dy + s*0.06, s*0.56, s*0.1);
+        for (let c = 0; c < 5; c++) {
+            const bx = cx - s*0.26 + c * s*0.13;
+            const bh = (c % 2 === 0) ? s*0.16 : s*0.1;
+            ctx.fillRect(bx, dy + s*0.06 - bh, s*0.1, bh);
+        }
+        ctx.fillStyle = '#ff2244'; ctx.beginPath(); ctx.arc(cx, dy + s*0.06 - s*0.11, s*0.05, 0, Math.PI*2); ctx.fill();
+        ctx.fillStyle = '#44aaff';
+        ctx.beginPath(); ctx.arc(cx - s*0.26, dy + s*0.06 - s*0.11, s*0.04, 0, Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.arc(cx + s*0.26, dy + s*0.06 - s*0.11, s*0.04, 0, Math.PI*2); ctx.fill();
+
+        // Очі (з мерготінням)
+        const blink = (Math.sin(t / 3200) > 0.88) ? 0.15 : 1;
+        ctx.fillStyle = '#ddaaff';
+        ctx.beginPath(); ctx.ellipse(cx - s*0.12, dy + s*0.24, s*0.09, s*0.09 * blink, 0, 0, Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.ellipse(cx + s*0.12, dy + s*0.24, s*0.09, s*0.09 * blink, 0, 0, Math.PI*2); ctx.fill();
+        ctx.fillStyle = '#aa00ff';
+        ctx.beginPath(); ctx.arc(cx - s*0.12, dy + s*0.24, s*0.05, 0, Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.arc(cx + s*0.12, dy + s*0.24, s*0.05, 0, Math.PI*2); ctx.fill();
+
+        // Борода
+        ctx.fillStyle = '#8844aa';
+        ctx.beginPath(); ctx.moveTo(cx - s*0.18, dy + s*0.37);
+        ctx.quadraticCurveTo(cx, dy + s*0.55, cx + s*0.18, dy + s*0.37);
+        ctx.quadraticCurveTo(cx, dy + s*0.48, cx - s*0.18, dy + s*0.37);
+        ctx.closePath(); ctx.fill();
+
+        // Рот (рухається під час тексту)
+        if (talk > 0) {
+            ctx.fillStyle = '#1a0030';
+            ctx.beginPath(); ctx.ellipse(cx, dy + s*0.38, s*0.07, talk, 0, 0, Math.PI*2); ctx.fill();
+        }
+
+        // Посох
+        ctx.strokeStyle = '#cc8800'; ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.moveTo(cx + s*0.65, dy + s*0.4); ctx.lineTo(cx + s*0.65, dy + s*1.05); ctx.stroke();
+        const gem = 0.5 + 0.5 * Math.sin(t / 400);
+        ctx.fillStyle = 'rgba(200,100,255,' + gem + ')';
+        ctx.beginPath(); ctx.arc(cx + s*0.65, dy + s*0.3, s*0.13, 0, Math.PI*2); ctx.fill();
+        ctx.strokeStyle = '#ffaaff'; ctx.lineWidth = 1.5; ctx.stroke();
+        ctx.shadowBlur = 0;
+    }
+
+    // ── Gameplay toast notifications (з кулдауном 12 сек) ─────────
+    let _lastComment = 0;
+    function showComment(type) {
+        const now = Date.now();
+        if (now - _lastComment < 12000) return;
+        _lastComment = now;
+        const map = {
+            waveSurvived: [
+                '...Непогано. Для початківця. Або для тебе. Знак рівності.',
+                '⚔️ Всі мертві! Тимчасово. Наступні вже купують квитки.',
+                'Відбили хвилю! Я навіть трохи хвилювався. Трохи.',
+                '🎉 Хвиля відбита! Розробник запевняє — так і задумано.',
+            ],
+            heroEscaped: [
+                '...Один герой дістався міста. Це — стратегічна жертва. Мій план.',
+                '🏃 Він пішов. Технічно це "туристична екскурсія до міста".',
+                'Бачиш того героя що втік? Я відпустив його. Навмисно. Майже.',
+            ],
+            lordHit: [
+                'АУ! Я тут! Хтось мене захищає?! Питаю теоретично!',
+                '💜 Мене вдарили! Цього не було в сценарії... хоча...',
+                'БОЛИТЬ! Хто дозволив їм так близько?! Це ти! Точно ти!',
+            ],
+            lowHP: [
+                '💜 HP падає! Якщо я помру — офіційно твоя вина.',
+                'Потрібен лікар! Або значно менше героїв! Обидва варіанти!',
+                '...Тут в мене є план. Він поганий, але він є.',
+            ],
+            bigKill: [
+                '👑 О! Боса вбили! Я так і знав що він дурень.',
+                'ВІДМІННО! Хоча я б і сам впорався. Але ти швидший. Трохи.',
+                '💀 Ще один "герой" пішов до легенд. Або на смітник. Різниця мала.',
+            ],
+        };
+        const list = map[type];
+        if (!list) return;
+        _showToast(list[Math.floor(Math.random() * list.length)]);
+    }
+
+    function _showToast(text) {
+        let toast = document.getElementById('story-toast');
+        if (!toast) {
+            toast = document.createElement('div');
+            toast.id = 'story-toast';
+            document.body.appendChild(toast);
+        }
+        toast.innerHTML = '<div class="story-toast-lord">👑</div><div class="story-toast-text">' + text + '</div>';
+        toast.className = 'story-toast-show';
+        clearTimeout(_toastTimer);
+        _toastTimer = setTimeout(function() { toast.className = 'story-toast-hide'; }, 5000);
+    }
+
+    // ── Story scripts ─────────────────────────────────────────────
+    function _introSteps() {
+        return [
+            { text: '…О. Ти прийшов. Я — Лорд Підземелля. Не той, якого всі чекали, але той, на якого всі наразились. Ласкаво просимо.' },
+            { text: 'Це МОЄ підземелля. Герої, що постійно ломляться сюди — «незапрошені гості». В лапках «герої», бо назвати героями людей, що вломлюються в чужі домівки — це як назвати злодія «гостем без попередження».' },
+            {
+                text: 'Але спершу... хто ти такий? Це важливо. Або не дуже. Головне — я питаю.',
+                choices: [
+                    { text: '🎮 Ветеран. Пройшов Dark Souls із зав\'язаними очима.' },
+                    { text: '☕ Казуал. Граю поки чекаю на каву.' },
+                    { text: '🚪 Натиснув не ту кнопку і опинився тут.' },
+                    { text: '📺 Взагалі шукав YouTube.' },
+                ]
+            },
+            {
+                text: 'Зрозуміло... Цікаво. А як ти зазвичай вирішуєш складні ситуації?',
+                choices: [
+                    { text: '⚔️ Кидаю в проблему все що є і сподіваюсь.' },
+                    { text: '🪤 Розставляю пастки і чекаю в кущах.' },
+                    { text: '⏳ Ігнорую — саме вирішиться.' },
+                    { text: '🆘 Кличу на допомогу і прикидаюсь.' },
+                ]
+            },
+            {
+                text: 'Останнє питання. Що для тебе головне в підземеллі?',
+                choices: [
+                    { text: '📊 Ефективність. Максимум монстрів на метр.' },
+                    { text: '💜 Стиль. Навіть дракон має виглядати красиво.' },
+                    { text: '🛡️ Виживання. Поки живий — все добре.' },
+                    { text: '🎲 Хаос. Нехай вирішує рандом.' },
+                ]
+            },
+            {
+                type: 'loading',
+                text: '',
+                loadingText: 'Лорд консультується з темними силами... дивно що вони підняли трубку',
+                loadFn: _generatePersonalizedStory,
+            },
+            // Навчання — органічно вплетене в монолог лорда
+            { text: '⚔️ До ділу. Зліва з\'являються герої. Вони йдуть убити мене та розграбувати підземелля. Так, безжальні. Принаймні намагаються.' },
+            { text: '🏙️ Справа — місто. Твоя мета: знизити HP міста ❤️ до нуля, поки герої не вб\'ють мого Лорда 💜. Тобто мене. Якщо мене вб\'ють — гра скінчена. Це погано. Для мене особисто.' },
+            { text: '💀 За вбитих героїв отримуєш Душі 💀. На них купляй монстрів, нові поверхи і пастки. Не витрачай все одразу — якщо не любиш жити небезпечно. Хоча судячи з того, що ти тут...' },
+            { text: '🏗️ Будуй нові поверхи — більше рівнів, більше монстрів-захисників. Кожен поверх можна покращити. Чим глибше — тим страшніші сусіди.' },
+            { text: '🌀 Пастки — найкращі друзі ледаря. Шипи 🗡️ — миттєвий удар, Дротик 🪃 — отруйний, Телепорт 🌀 — відправляє героя назад (чемно), Монстр 👾 — виклик підсиленого захисника.' },
+            { text: '⚔️ Кнопка ХВИЛЯ дає буст усім монстрам на 8 секунд. Є й кнопка «Покращити Лорда» — це мені дуже подобається. Натискай частіше. Наполягаю.' },
+            { text: '👑 Ну що ж. Готовий? Не бійся помилок — тут кожна поразка «спланована розробником для покращення ігрового досвіду». Офіційна позиція. Так і запиши.' },
+        ];
+    }
+
+    function _levelIntroSteps(level) {
+        const lines = {
+            1:  '👑 Рівень 1. Найлегший у грі. Якщо провалиш — є куди рости. Вгору. В теорії.',
+            2:  '😏 Рівень 2. Трохи складніше. Але ти впораєшся. Може.',
+            3:  '⚔️ Рівень 3. Герої вже пам\'ятають дорогу. Погана новина для нас.',
+            5:  '😤 Рівень 5. Вже звикаєш до поразок? Відмінно — попереду їх більше.',
+            10: '🏆 Рівень 10! Двозначна цифра. Чесно — я не очікував.',
+            15: '⚡ Рівень 15. Герої серйозніші. Ти теж, мабуть. Мабуть.',
+            20: '💀 Рівень 20. Половина шляху. Чи чверть... залежить від оптимізму.',
+            25: '🌑 Рівень 25. Темніє. В прямому та переносному сенсі.',
+            30: '🔥 Рівень 30! Тридцять рівнів. Витримка або мазохізм — я не суджу.',
+            35: '💎 Рівень 35. Обрані доходять сюди. Або впертиві. Теж добре.',
+            40: '👁️ Рівень 40. Мало хто бачить це. Ти або геній, або не знаєш коли зупинитись.',
+            45: '🌌 Рівень 45. Майже кінець. Або початок кінця. Звучить однаково.',
+            50: '🐉 РІВЕНЬ 50! Якщо ти тут — ти переможець. Або шахрай. Поважаю обох.',
+        };
+        const text = lines[level] || ('⚔️ Рівень ' + level + '. Герої готуються. Ти теж. Я — вже давно.');
+        return [{ text: text }];
+    }
+
+    async function _generatePersonalizedStory() {
+        const key = _safeGet('DL_ApiKey');
+        if (!key) return _fallbackStory();
+
+        const choicesStr = playerChoices.map(function(c) { return '• ' + c.a; }).join('\n');
+        const prompt = 'Ти — Лорд Підземелля з темного фентезі-казуального мобільного геймплею. Говориш з гравцем перед початком гри. Стиль: саркастичний, самовпевнений, чорний гумор, але доброзичливий. Інколи некомпетентний, але ніколи не визнаєш цього.\n\nВідповіді гравця:\n' + choicesStr + '\n\nНапиши ОДИН абзац (3-4 речення) — персоналізований сюжетний вступ. Встанови унікальну «місію» для цього гравця. Будь смішним, вживай сатиру. Відповідай ТІЛЬКИ абзацем без зайвих слів. Мова: українська.';
+
+        try {
+            const resp = await fetch('https://api.anthropic.com/v1/messages', {
+                method: 'POST',
+                headers: {
+                    'x-api-key': key,
+                    'anthropic-version': '2023-06-01',
+                    'content-type': 'application/json',
+                    'anthropic-dangerous-direct-browser-access': 'true',
+                },
+                body: JSON.stringify({
+                    model: 'claude-haiku-4-5-20251001',
+                    max_tokens: 280,
+                    messages: [{ role: 'user', content: prompt }]
+                })
+            });
+            if (!resp.ok) throw new Error('api');
+            const data = await resp.json();
+            const txt  = data.content[0].text.trim();
+            _safeSet('DL_StoryDone', '1');
+            return [{ text: '✨ ' + txt }];
+        } catch(_e) {
+            return _fallbackStory();
+        }
+    }
+
+    function _fallbackStory() {
+        _safeSet('DL_StoryDone', '1');
+        const options = [
+            '🌀 Хтось явно натиснув не ту кнопку в меню долі, але я не скаржуся — мені потрібен хтось, хто клацатиме кнопки. Ласкаво просимо, незапрошений союзнику!',
+            '📜 Легенди кажуть: прийде той, хто врятує підземелля. Легенди також кажуть багато дурниць, але цього разу, схоже, вони мали рацію. Поки що.',
+            '👑 Значить, ти — мій новий стратег? Чудово. Попередній був... звільнений. Обставини не важливі. Підземелля не захищатиме себе само — я перевіряв.',
+        ];
+        return [{ text: options[Math.floor(Math.random() * options.length)] }];
+    }
+
+    // ── localStorage helpers (Telegram-safe) ─────────────────────
+    function _safeGet(key) {
+        try { return localStorage.getItem(key); } catch(_) { return null; }
+    }
+    function _safeSet(key, val) {
+        try { localStorage.setItem(key, val); } catch(_) {}
+    }
+
+    return { init: init, showIntro: showIntro, showComment: showComment, promptApiKey: promptApiKey };
+}());
 </script>
 </body>
 </html>
