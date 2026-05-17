@@ -1521,7 +1521,7 @@
         /* ── Картка (базова) ── */
         .bc-card {
             width: 100%;
-            min-height: 112px;
+            min-height: 124px;
             border-radius: 14px;
             border: 1px solid;
             display: flex;
@@ -1554,7 +1554,7 @@
 
         /* ── Аватар ── */
         .bc-avatar {
-            width: 120px;
+            width: 124px;
             flex-shrink: 0;
             display: flex;
             align-items: center;
@@ -1563,8 +1563,8 @@
             position: relative;
         }
         .bc-mon-canvas {
-            width: 120px;
-            height: 112px;
+            width: 124px;
+            height: 124px;
             display: block;
         }
         /* Бейдж поверху на аватарі */
@@ -1600,24 +1600,24 @@
             display: flex;
             flex-direction: column;
             justify-content: center;
-            padding: 9px 14px 9px 11px;
+            padding: 11px 16px 11px 13px;
             gap: 0;
             min-width: 0;
             border-left: 1px solid rgba(100,60,180,0.1);
         }
         /* Рядок: назва + тип пошкодження */
         .bc-head-row {
-            display: flex; align-items: center; gap: 6px;
-            margin-bottom: 7px;
+            display: flex; align-items: center; gap: 7px;
+            margin-bottom: 9px;
         }
         .bc-stat-name {
-            font-size: 14px; font-weight: 700; color: #f0ecff;
+            font-size: 15px; font-weight: 700; color: #f0ecff;
             line-height: 1; flex: 1; min-width: 0;
             white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
         }
         .bc-dmg-badge {
-            font-size: 8.5px; font-weight: 700; letter-spacing: 0.5px;
-            padding: 2px 6px; border-radius: 4px;
+            font-size: 9px; font-weight: 700; letter-spacing: 0.5px;
+            padding: 2px 7px; border-radius: 4px;
             border: 1px solid; flex-shrink: 0;
         }
         .bc-dmg-phys { color: #ffaa55; border-color: rgba(255,160,60,0.35); background: rgba(255,140,40,0.12); }
@@ -1627,18 +1627,18 @@
         .bc-stats-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 0;
+            gap: 1px 8px;
         }
         .bc-stat-cell {
-            display: flex; align-items: center; gap: 5px;
-            padding: 3px 4px 3px 0;
-            border-bottom: 1px solid rgba(100,60,180,0.07);
+            display: flex; align-items: center; gap: 6px;
+            padding: 4px 4px 4px 0;
+            border-bottom: 1px solid rgba(100,60,180,0.08);
         }
         .bc-stat-cell:nth-last-child(-n+2) { border-bottom: none; }
         .bc-stat-cell.bc-full { grid-column: 1 / -1; }
-        .bc-sc-icon { font-size: 10px; width: 12px; text-align: center; flex-shrink: 0; }
-        .bc-sc-lbl  { font-size: 9px; color: #7766aa; flex: 1; }
-        .bc-sc-val  { font-size: 10px; font-weight: 700; color: #dde0ff; }
+        .bc-sc-icon { font-size: 11px; width: 14px; text-align: center; flex-shrink: 0; }
+        .bc-sc-lbl  { font-size: 10.5px; color: #7766aa; flex: 1; }
+        .bc-sc-val  { font-size: 12px; font-weight: 700; color: #dde0ff; }
         .bc-sc-val.cv-atk  { color: #ffbb66; }
         .bc-sc-val.cv-hp   { color: #ff7788; }
         .bc-sc-val.cv-arm  { color: #66ccff; }
@@ -1647,7 +1647,7 @@
         .bc-sc-val.cv-reg  { color: #88ffcc; }
         /* Бейдж рівня апгрейду */
         .bc-upg-dot {
-            font-size: 8px; padding: 0 4px 1px;
+            font-size: 9px; padding: 0 4px 1px;
             border-radius: 3px;
             background: rgba(150,80,255,0.18);
             border: 1px solid rgba(150,80,255,0.25);
@@ -1656,19 +1656,19 @@
         }
         /* Рядок еволюції */
         .bc-evo-row {
-            display: flex; align-items: center; gap: 5px;
-            padding: 4px 0 0;
-            margin-top: 3px;
+            display: flex; align-items: center; gap: 6px;
+            padding: 5px 0 0;
+            margin-top: 4px;
             border-top: 1px solid rgba(255,200,60,0.12);
         }
         .bc-evo-row .bc-sc-icon { color: #ffcc44; }
         .bc-evo-row .bc-sc-lbl  { color: #998822; }
-        .bc-evo-row .bc-sc-val  { color: #ffdd55; font-size: 9.5px; }
+        .bc-evo-row .bc-sc-val  { color: #ffdd55; font-size: 11px; }
 
         /* Підказка переходу в розвиток */
         .bc-dev-hint {
-            font-size: 8px; color: rgba(180,130,255,0.35);
-            text-align: right; margin-top: 4px; letter-spacing: 0.3px;
+            font-size: 9px; color: rgba(180,130,255,0.35);
+            text-align: right; margin-top: 5px; letter-spacing: 0.3px;
         }
 
         /* Locked stats */
@@ -11352,6 +11352,32 @@ const _MON_DRAW_FN = {
 let _bestiaryRAF = null;
 let _bestiaryCvs = [];
 
+// Розмір і позиція кожного монстра в аватарі бестіарію.
+// s: множник на cssW для unit.size; yOff: зсув по Y від низу (від'ємний = вгору)
+const _BC_MON_FIT = {
+    slime:       { s: 0.55, yOff:  0 },
+    skeleton:    { s: 0.40, yOff:  0 },
+    hounds:      { s: 0.31, yOff:  0 },
+    zombie:      { s: 0.40, yOff:  0 },
+    spirit:      { s: 0.44, yOff: -8 },
+    bat:         { s: 0.38, yOff:-10 },
+    golem:       { s: 0.36, yOff:  0 },
+    minotaur:    { s: 0.34, yOff:  0 },
+    shadow:      { s: 0.40, yOff:  0 },
+    necromancer: { s: 0.40, yOff:  0 },
+    water_ele:   { s: 0.38, yOff:  0 },
+    earth_ele:   { s: 0.36, yOff:  0 },
+    air_ele:     { s: 0.38, yOff: -6 },
+    fire_ele:    { s: 0.36, yOff:  0 },
+    lightning:   { s: 0.38, yOff: -4 },
+    dark_knight: { s: 0.36, yOff:  0 },
+    banshee:     { s: 0.40, yOff: -8 },
+    lich:        { s: 0.40, yOff:  0 },
+    dragon:      { s: 0.30, yOff:  0 },
+    arachne:     { s: 0.30, yOff:  0 },
+    abyss:       { s: 0.34, yOff:-10 },
+};
+
 function _initBestiaryPortraits() {
     _bestiaryCvs = [];
     document.querySelectorAll('.bc-avatar[data-kind]').forEach(function(av) {
@@ -11360,18 +11386,19 @@ function _initBestiaryPortraits() {
         if (!drawFn) return;
         av.innerHTML = '';
         let dpr  = window.devicePixelRatio || 1;
-        let cssW = av.clientWidth  || 96;
-        let cssH = av.clientHeight || 112;
+        let cssW = av.clientWidth  || 124;
+        let cssH = av.clientHeight || 124;
         let cv   = document.createElement('canvas');
         cv.width  = Math.round(cssW * dpr);
         cv.height = Math.round(cssH * dpr);
         cv.style.cssText = 'display:block;width:' + cssW + 'px;height:' + cssH + 'px;';
         av.appendChild(cv);
         let kindCol = (MON_INFO[kindName] || {}).color || '#aa88cc';
+        let fit = _BC_MON_FIT[kindName] || { s: 0.40, yOff: 0 };
         let unit = {
             type:'monster', monsterKind:kindName, level:1, ability:'none',
-            x: cssW / 2, y: cssH - 16,
-            size: Math.round(cssW * 0.40),
+            x: cssW / 2, y: cssH - 14 + fit.yOff,
+            size: Math.round(cssW * fit.s),
             hp:100, maxHp:100, dmg:5, color:kindCol, dir:1, state:'idle',
             attackCooldown:60, attackCooldownBase:60, speed:1, floorIdx:0,
             baseAtkSpeed:0.7, atkSpeedBonus:0, atkSlowStacks:0,
