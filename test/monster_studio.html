@@ -1,0 +1,429 @@
+<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<title>Monster Studio — Dungeon Lord</title>
+<style>
+  html, body { margin: 0; min-height: 100%; background: #1a1230; }
+  body { display: grid; place-items: center; padding: 20px; font-family: system-ui, sans-serif; color: #ddd; box-sizing: border-box; }
+  .studio { display: flex; flex-direction: column; align-items: center; gap: 16px; max-width: 1100px; }
+  .studio h1 { font-size: 18px; font-weight: 600; letter-spacing: 0.08em; margin: 0; opacity: 0.9; }
+  header { display: flex; gap: 16px; align-items: center; padding: 8px 0; flex-wrap: wrap; justify-content: center; }
+  .grid { display: flex; gap: 24px; flex-wrap: wrap; justify-content: center; }
+  .card {
+    display: flex; flex-direction: column; align-items: center; gap: 8px;
+    background: #221840; border: 1px solid #3d2a66; border-radius: 8px; padding: 12px;
+    transition: border-color 0.2s;
+  }
+  .card.selected { border-color: #8a6aaa; background: #2a1e50; }
+  .card canvas { background: #0d0820; border-radius: 6px; cursor: pointer; }
+  .card .name { font-size: 13px; font-weight: 600; color: #c8b8e0; }
+  .card .info { font-size: 11px; opacity: 0.6; }
+
+  .detail {
+    display: flex; gap: 24px; align-items: flex-start; flex-wrap: wrap; justify-content: center;
+    background: #221840; border: 1px solid #3d2a66; border-radius: 8px; padding: 16px;
+    min-height: 300px;
+  }
+  .detail canvas { background: #0d0820; border-radius: 6px; }
+  .detail-label { font-size: 12px; opacity: 0.55; text-align: center; margin-top: 4px; }
+  .detail-col { display: flex; flex-direction: column; align-items: center; }
+  .detail-info { font-size: 13px; line-height: 1.6; max-width: 220px; }
+  .detail-info .stat { color: #aa88cc; font-weight: 600; }
+  .detail-info .ability { color: #e0b060; }
+
+  select, button {
+    background: #2a1a4a; color: #ddd; border: 1px solid #3d2a66;
+    padding: 8px 14px; font: inherit; cursor: pointer; border-radius: 4px;
+    transition: background 0.15s;
+  }
+  select:hover, button:hover { background: #3d2a66; }
+  button.active { background: #5a3a8a; border-color: #8a6aaa; }
+  .controls { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+</style>
+</head>
+<body>
+  <div class="studio">
+    <h1>MONSTER STUDIO — Dungeon Lord</h1>
+
+    <div class="controls">
+      <button data-state="idle" class="active">спокій</button>
+      <button data-state="move">рух</button>
+      <button data-state="fight">бій</button>
+      <span style="opacity:0.35;margin:0 4px">│</span>
+      <button data-branch="" class="active">база</button>
+      <button data-branch="A">гілка A</button>
+      <button data-branch="B">гілка B</button>
+    </div>
+
+    <div class="grid" id="grid"></div>
+
+    <div class="detail" id="detail">
+      <div class="detail-col">
+        <canvas id="bigCanvas" width="320" height="320"></canvas>
+        <div class="detail-label">320 x 320</div>
+      </div>
+      <div class="detail-col">
+        <canvas id="midCanvas" width="128" height="128"></canvas>
+        <div class="detail-label">128 x 128 (ігровий)</div>
+      </div>
+      <div class="detail-col">
+        <canvas id="smallCanvas" width="64" height="64"></canvas>
+        <div class="detail-label">64 x 64</div>
+      </div>
+      <div class="detail-info" id="detailInfo"></div>
+    </div>
+  </div>
+
+<!-- Stubs for globals -->
+<script>
+var _hCtx, _hOL = 1.5;
+var _frameNow = 0;
+var units = [];
+var ctx;
+var isPC = true;
+
+function ctxRoundRect(c, x, y, w, h, r) {
+  r = Math.min(r, w/2, h/2);
+  c.beginPath();
+  c.moveTo(x+r,y); c.lineTo(x+w-r,y); c.arcTo(x+w,y,x+w,y+r,r);
+  c.lineTo(x+w,y+h-r); c.arcTo(x+w,y+h,x+w-r,y+h,r);
+  c.lineTo(x+r,y+h); c.arcTo(x,y+h,x,y+h-r,r);
+  c.lineTo(x,y+r); c.arcTo(x,y,x+r,y,r);
+  c.closePath();
+}
+</script>
+<script src="../models/hero_flat.js?v=14"></script>
+<script src="../models/draw_slime.js?v=1"></script>
+<script src="../models/draw_skeleton.js?v=1"></script>
+<script src="../models/draw_monsters.js?v=24"></script>
+<script src="../models/draw_shadow.js?v=2"></script>
+<script src="../models/draw_minotaur.js?v=6"></script>
+<script src="../models/draw_necromancer.js?v=2"></script>
+<script src="../models/draw_water_ele.js?v=7"></script>
+<script src="../models/draw_earth_ele.js?v=2"></script>
+<script src="../models/draw_arachne.js?v=5"></script>
+<script src="../models/draw_web.js?v=1"></script>
+<script src="../models/draw_air_ele.js?v=2"></script>
+<script src="../models/draw_fire_ele.js?v=2"></script>
+<script src="../models/draw_lightning.js?v=2"></script>
+<script src="../models/draw_dark_knight.js?v=7"></script>
+<script src="../models/draw_banshee.js?v=3"></script>
+<script src="../models/draw_lich.js?v=2"></script>
+<script src="../models/draw_abyss.js?v=3"></script>
+<script src="../models/draw_dragon.js?v=3"></script>
+<script>
+
+// ═══════════════════════════════════════════════════════════════
+//  Monster definitions
+// ═══════════════════════════════════════════════════════════════
+const MONSTERS = [
+  {
+    level: 1, kind: 'slime', name: 'Слизень',
+    color: '#44dd44', ability: 'atk_slow', abilityName: 'Сповільнення атаки',
+    baseAtk: 6, baseSpd: 0.7, hpMult: 1.0, armor: 1,
+    draw: (u, camY) => drawSlimeMonster(u, camY),
+  },
+  {
+    level: 2, kind: 'skeleton', name: 'Скелет',
+    color: '#d4c89a', ability: 'rebirth', abilityName: 'Відродження',
+    baseAtk: 7, baseSpd: 1.0, hpMult: 0.85, armor: 2,
+    draw: (u, camY) => drawSkeletonMonster(u, camY),
+  },
+  {
+    level: 3, kind: 'hounds', name: 'Гончак',
+    color: '#c87040', ability: 'bleed', abilityName: 'Кровотеча',
+    baseAtk: 6, baseSpd: 1.3, hpMult: 0.75, armor: 1,
+    draw: (u, camY) => drawHoundsMonster(u, camY),
+  },
+  {
+    level: 4, kind: 'zombie', name: 'Зомбі',
+    color: '#5a8c3a', ability: 'infect', abilityName: 'Зараження',
+    baseAtk: 9, baseSpd: 0.55, hpMult: 1.5, armor: 3,
+    draw: (u, camY) => drawZombieMonster(u, camY),
+  },
+  {
+    level: 5, kind: 'spirit', name: 'Дух',
+    color: '#aabbff', ability: 'scare', abilityName: 'Переляк',
+    baseAtk: 7, baseSpd: 1.1, hpMult: 0.9, armor: 2,
+    draw: (u, camY) => drawSpiritMonster(u, camY),
+  },
+  {
+    level: 6, kind: 'bat', name: 'Кажан',
+    color: '#553366', ability: 'dodge', abilityName: 'Ухилення',
+    baseAtk: 3, baseSpd: 1.4, hpMult: 0.33, armor: 0,
+    draw: (u, camY) => drawBatMonster(u, camY),
+  },
+  {
+    level: 7, kind: 'arachne', name: 'Арахна',
+    color: '#6a2068', ability: 'web', abilityName: 'Павутина (5%)',
+    baseAtk: 12, baseSpd: 0.5, hpMult: 2.0, armor: 8,
+    draw: (u, camY) => drawArachneMonster(u, camY),
+  },
+  {
+    level: 9, kind: 'shadow', name: 'Тінь',
+    color: '#334455', ability: 'invis', abilityName: 'Невидимість',
+    baseAtk: 9, baseSpd: 1.2, hpMult: 1.0, armor: 4,
+    draw: (u, camY) => drawShadowMonster(u, camY),
+  },
+  {
+    level: 11, kind: 'water_ele', name: 'Водяний елементаль',
+    color: '#4488ff', ability: 'absorb', abilityName: 'Поглинання',
+    baseAtk: 9, baseSpd: 0.9, hpMult: 1.2, armor: 4,
+    draw: (u, camY) => drawWaterEleMonster(u, camY),
+  },
+  {
+    level: 12, kind: 'earth_ele', name: 'Земний елементаль',
+    color: '#887733', ability: 'knockback', abilityName: 'Відкидання',
+    baseAtk: 11, baseSpd: 0.6, hpMult: 1.8, armor: 9,
+    draw: (u, camY) => drawEarthEleMonster(u, camY),
+  },
+  {
+    level: 13, kind: 'air_ele', name: 'Повітряний елементаль',
+    color: '#ccddff', ability: 'no_die', abilityName: 'Безсмертя',
+    baseAtk: 8, baseSpd: 1.5, hpMult: 0.8, armor: 2,
+    draw: (u, camY) => drawAirEleMonster(u, camY),
+  },
+  {
+    level: 14, kind: 'fire_ele', name: 'Вогняний елементаль',
+    color: '#ff5500', ability: 'explode', abilityName: 'Вибух при смерті',
+    baseAtk: 10, baseSpd: 0.85, hpMult: 1.3, armor: 4,
+    draw: (u, camY) => drawFireEleMonster(u, camY),
+  },
+  {
+    level: 15, kind: 'lightning', name: 'Блискавка',
+    color: '#ffee44', ability: 'chain', abilityName: 'Ланцюгова блискавка',
+    baseAtk: 10, baseSpd: 1.1, hpMult: 1.0, armor: 3,
+    draw: (u, camY) => drawLightningMonster(u, camY),
+  },
+  {
+    level: 16, kind: 'dark_knight', name: 'Темний Лицар',
+    color: '#223355', ability: 'reflect', abilityName: 'Відбиття магії',
+    baseAtk: 13, baseSpd: 0.75, hpMult: 1.4, armor: 10,
+    draw: (u, camY) => drawDarkKnightMonster(u, camY),
+  },
+  {
+    level: 17, kind: 'banshee', name: 'Банши',
+    color: '#88aacc', ability: 'scream', abilityName: 'Крик страху',
+    baseAtk: 9, baseSpd: 1.0, hpMult: 1.1, armor: 4,
+    draw: (u, camY) => drawBansheeMonster(u, camY),
+  },
+  {
+    level: 18, kind: 'lich', name: 'Ліч',
+    color: '#aa44cc', ability: 'armor_pierce', abilityName: 'Пробивання броні',
+    baseAtk: 12, baseSpd: 0.9, hpMult: 1.2, armor: 5,
+    draw: (u, camY) => drawLichMonster(u, camY),
+  },
+  {
+    level: 19, kind: 'abyss', name: 'Безодня',
+    color: '#110022', ability: 'absorb_hero', abilityName: 'Поглинання героя',
+    baseAtk: 14, baseSpd: 0.8, hpMult: 1.5, armor: 7,
+    draw: (u, camY) => drawAbyssMonster(u, camY),
+  },
+  {
+    level: 20, kind: 'dragon', name: 'Дракон',
+    color: '#cc2200', ability: 'breath', abilityName: 'Вогняне дихання',
+    baseAtk: 18, baseSpd: 0.7, hpMult: 2.5, armor: 12,
+    draw: (u, camY) => drawDragonMonster(u, camY),
+  },
+  {
+    level: 10, kind: 'necromancer', name: 'Некромант',
+    color: '#6622aa', ability: 'raise_dead', abilityName: 'Підйом мертвих',
+    baseAtk: 9, baseSpd: 0.8, hpMult: 1.4, armor: 4,
+    draw: (u, camY) => drawNecromancerMonster(u, camY),
+  },
+  {
+    level: 8, kind: 'minotaur', name: 'Мінотавр',
+    color: '#885522', ability: 'aoe4th', abilityName: 'AoE кожен 4-й',
+    baseAtk: 10, baseSpd: 0.7, hpMult: 1.6, armor: 5,
+    draw: (u, camY) => drawMinotaurMonster(u, camY),
+  },
+];
+
+let currentState = 'idle';
+let currentBranch = '';
+let selectedIdx = 0;
+
+// ═══════════════════════════════════════════════════════════════
+//  Create fake unit for rendering
+// ═══════════════════════════════════════════════════════════════
+function makeUnit(def, x, floorY, state, size, branch) {
+  return {
+    type: 'monster',
+    monsterKind: def.kind,
+    x, y: floorY,
+    size: size || 34,
+    floorIdx: 0,
+    hp: 100, maxHp: 100,
+    attackCooldown: state === 'fight' ? 5 : 60,
+    attackCooldownBase: 60,
+    speed: def.baseSpd,
+    state,
+    dmg: def.baseAtk,
+    ability: def.ability,
+    color: def.color,
+    level: def.level,
+    _branch: branch || '',
+    _hpBarY: 0
+  };
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  Build grid thumbnails
+// ═══════════════════════════════════════════════════════════════
+const grid = document.getElementById('grid');
+const cards = [];
+
+MONSTERS.forEach((def, i) => {
+  const card = document.createElement('div');
+  card.className = 'card' + (i === 0 ? ' selected' : '');
+  card.innerHTML = `
+    <canvas width="120" height="120"></canvas>
+    <div class="name">${def.level}. ${def.name}</div>
+    <div class="info">${def.abilityName}</div>
+  `;
+  card.addEventListener('click', () => selectMonster(i));
+  grid.appendChild(card);
+  cards.push({
+    el: card,
+    canvas: card.querySelector('canvas'),
+    ctx: card.querySelector('canvas').getContext('2d'),
+    unit: makeUnit(def, 60, 95, currentState, 28)
+  });
+});
+
+function selectMonster(idx) {
+  selectedIdx = idx;
+  cards.forEach((c, i) => c.el.classList.toggle('selected', i === idx));
+  updateDetailInfo();
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  State buttons
+// ═══════════════════════════════════════════════════════════════
+document.querySelectorAll('[data-state]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    currentState = btn.dataset.state;
+    document.querySelectorAll('[data-state]').forEach(b => b.classList.toggle('active', b === btn));
+    resetUnits();
+  });
+});
+
+document.querySelectorAll('[data-branch]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    currentBranch = btn.dataset.branch;
+    document.querySelectorAll('[data-branch]').forEach(b => b.classList.toggle('active', b === btn));
+    resetUnits();
+  });
+});
+
+function resetUnits() {
+  // Thumbnail units
+  cards.forEach((c, i) => {
+    c.unit = makeUnit(MONSTERS[i], 60, 95, currentState, 28, currentBranch);
+  });
+  // Detail units
+  bigUnit = makeUnit(MONSTERS[selectedIdx], 160, 265, currentState, 70, currentBranch);
+  midUnit = makeUnit(MONSTERS[selectedIdx], 64, 105, currentState, 34, currentBranch);
+  smallUnit = makeUnit(MONSTERS[selectedIdx], 32, 52, currentState, 18, currentBranch);
+  units = [bigUnit, midUnit, smallUnit, ...cards.map(c => c.unit)];
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  Detail canvases
+// ═══════════════════════════════════════════════════════════════
+const bigCanvas = document.getElementById('bigCanvas');
+const midCanvas = document.getElementById('midCanvas');
+const smallCanvas = document.getElementById('smallCanvas');
+const bigCtx = bigCanvas.getContext('2d');
+const midCtx = midCanvas.getContext('2d');
+const smallCtx = smallCanvas.getContext('2d');
+const detailInfo = document.getElementById('detailInfo');
+
+let bigUnit = makeUnit(MONSTERS[0], 160, 265, currentState, 70, currentBranch);
+let midUnit = makeUnit(MONSTERS[0], 64, 105, currentState, 34, currentBranch);
+let smallUnit = makeUnit(MONSTERS[0], 32, 52, currentState, 18, currentBranch);
+units = [bigUnit, midUnit, smallUnit, ...cards.map(c => c.unit)];
+
+function updateDetailInfo() {
+  const def = MONSTERS[selectedIdx];
+  detailInfo.innerHTML = `
+    <div><span class="stat">Рівень:</span> ${def.level}</div>
+    <div><span class="stat">Вид:</span> ${def.name}</div>
+    <div><span class="stat">Здібність:</span> <span class="ability">${def.abilityName}</span></div>
+    <div><span class="stat">Атака:</span> ${def.baseAtk}</div>
+    <div><span class="stat">Швидкість:</span> ${def.baseSpd}</div>
+    <div><span class="stat">HP множник:</span> x${def.hpMult}</div>
+    <div><span class="stat">Броня:</span> ${def.armor}</div>
+  `;
+  // Recreate detail units
+  bigUnit = makeUnit(def, 160, 265, currentState, 70, currentBranch);
+  midUnit = makeUnit(def, 64, 105, currentState, 34, currentBranch);
+  smallUnit = makeUnit(def, 32, 52, currentState, 18, currentBranch);
+  units = [bigUnit, midUnit, smallUnit, ...cards.map(c => c.unit)];
+}
+updateDetailInfo();
+
+// ═══════════════════════════════════════════════════════════════
+//  Render loop
+// ═══════════════════════════════════════════════════════════════
+let prevSelected = -1;
+
+function drawMonster(targetCtx, unit, def, w, h, camY) {
+  ctx = targetCtx;
+  targetCtx.clearRect(0, 0, w, h);
+
+  // Floor line
+  targetCtx.strokeStyle = '#2a1848';
+  targetCtx.lineWidth = 1;
+  targetCtx.beginPath();
+  targetCtx.moveTo(0, unit.y - camY);
+  targetCtx.lineTo(w, unit.y - camY);
+  targetCtx.stroke();
+
+  // Simulate movement
+  if (unit.state === 'move') {
+    unit.x = w / 2 + Math.sin(_frameNow / 800) * w * 0.15;
+  }
+
+  // Simulate attack cooldown for fight state
+  if (unit.state === 'fight') {
+    unit.attackCooldown = 60 - (_frameNow / 16.67) % 60;
+    if (unit.attackCooldown < 3) unit.attackCooldown = 60;
+  }
+
+  def.draw(unit, camY);
+}
+
+function frame(t) {
+  _frameNow = t;
+
+  // If selection changed, reset detail units
+  if (prevSelected !== selectedIdx) {
+    prevSelected = selectedIdx;
+    updateDetailInfo();
+  }
+
+  const def = MONSTERS[selectedIdx];
+
+  // Detail: big
+  drawMonster(bigCtx, bigUnit, def, 320, 320, 0);
+
+  // Detail: mid
+  drawMonster(midCtx, midUnit, def, 128, 128, 0);
+
+  // Detail: small
+  drawMonster(smallCtx, smallUnit, def, 64, 64, 0);
+
+  // Thumbnails
+  cards.forEach((c, i) => {
+    drawMonster(c.ctx, c.unit, MONSTERS[i], 120, 120, 0);
+  });
+
+  requestAnimationFrame(frame);
+}
+
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
