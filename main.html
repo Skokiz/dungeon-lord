@@ -227,6 +227,14 @@
         .btn-wave:hover  { background: #74222e; }
         .btn-bestiary { background: #1a3020; border-color: #3a7048; flex: 0.8; }
         .btn-bestiary:hover { background: #243e2a; }
+        @keyframes atk-ready {
+            0%,100% { box-shadow: 0 0 5px #cc3344; background: #6a1e2a; }
+            50%      { box-shadow: 0 0 16px #ff5566, 0 0 32px rgba(255,60,80,0.35); background: #852030; }
+        }
+        .btn-wave.atk-ready {
+            border-color: #cc4455;
+            animation: atk-ready 1.5s ease-in-out infinite;
+        }
         @keyframes can-afford {
             0%,100% { border-color: rgba(220,180,60,0.4); }
             50%     { border-color: rgba(255,220,90,0.95); }
@@ -244,9 +252,14 @@
             justify-content: center; align-items: center;
             pointer-events: none;
         }
-        /* Коли оверлей показаний — відновлюємо pointer-events */
+        /* Коли оверлей показаний — відновлюємо pointer-events і fade-in */
+        @keyframes overlayFadeIn {
+            from { opacity: 0; transform: scale(0.975); }
+            to   { opacity: 1; transform: scale(1); }
+        }
         .overlay-base[style*="flex"] {
             pointer-events: auto;
+            animation: overlayFadeIn 0.18s ease-out;
         }
 
         #game-over {
@@ -335,6 +348,12 @@
             -webkit-appearance: none; touch-action: manipulation;
         }
         #btn-reset-progress:active { opacity: 0.7; }
+
+        #start-canvas {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; z-index: 0;
+        }
+        #start-screen > *:not(#start-canvas) { position: relative; z-index: 1; }
 
         /* ═══════════════════════════════════════════════════
            МЕДІАЗАПИТИ — розміри під кожен екран
@@ -1690,6 +1709,7 @@
 
 <!-- ── СТАРТОВИЙ ЕКРАН ── -->
 <div id="start-screen">
+    <canvas id="start-canvas"></canvas>
     <h1>👑 Dungeon Lord</h1>
     <div class="subtitle">Siege Defense</div>
     <div id="lvl-progress-label">Рівень <span id="lvl-num">1</span> <span id="lvl-total">/ 50</span></div>
@@ -1970,7 +1990,7 @@
             <button class="rect-btn btn-bestiary" id="btn-bestiary" onclick="openBestiary()">
                 🐾 Бестіарій
             </button>
-            <button class="rect-btn btn-wave" id="btn-wave" onclick="triggerWave()"
+            <button class="rect-btn btn-wave atk-ready" id="btn-wave" onclick="triggerWave()"
                 title="Викликати наступну хвилю атакуючих героїв. Чим раніше — тим більше бонусних душ!">
                 АТАКА
             </button>
@@ -2323,6 +2343,7 @@ let units = [];
 let particles = [];
 let dmgTexts = [];        // плаваючі числа пошкоджень
 let screenShake = 0;      // кадри тремтіння екрану
+let _killFlash = { alpha: 0, col: '#ffffff' }; // короткий спалах при вбивстві
 let axeProjectiles = []; // снаряди гоблінів
 let centerX = gW / 2;
 let CAVE_X = centerX + CFG.floorW * 0.35; // точка виходу монстрів з підземелля
@@ -3783,6 +3804,18 @@ class Unit {
                     if (enemy.type === 'hero' && dmgDealt > 0) {
                         enemy._lastHitBy = this.type;
                         if (this.type === 'lord' && _psyTrack) _psyTrack.combat.lordAttacks++;
+                        // Іскри при ударі по герою
+                        if (dmgDealt >= 2) {
+                            let _sc = (this.dmgType === 'mag') ? 'blue' : 'orange';
+                            for (let _si = 0; _si < 3; _si++) {
+                                let _sa = Math.random() * Math.PI * 2;
+                                let _ss = 1.5 + Math.random() * 2.5;
+                                spawnParticle(enemy.x, enemy.y - enemy.size * 0.5, _sc, {
+                                    vx: Math.cos(_sa)*_ss, vy: Math.sin(_sa)*_ss - 2.5,
+                                    size: 1.5 + Math.random()*1.5, life: 18+Math.random()*14, glow: true
+                                });
+                            }
+                        }
                     }
                     // ABYSS B8: контратака 15% при отриманні удару від героя
                     if (enemy.monsterKind === 'abyss' && enemy._evoCounterAtk
@@ -4800,6 +4833,8 @@ function init() {
     if (_eNum) _eNum.innerText = getStoredEliteSouls();
     // Завантажуємо perma-дані глобально
     _permaData = _loadPerma();
+    // Анімований старт-екран
+    _initStartScreen();
 }
 
 function startGame(level) {
@@ -7880,10 +7915,37 @@ function loop(ts) {
         }
     }
 
+    // Ореол під ногами монстрів — допомагає розрізнити темні силуети (Shadow/Zombie/Necro)
+    const _MGC = {
+        slime:'#4499ff', skeleton:'#ffeecc', hounds:'#ff8833', zombie:'#66ee44',
+        spirit:'#99ccff', bat:'#ff55cc', golem:'#99aacc', minotaur:'#ff6633',
+        shadow:'#9988ee', necromancer:'#dd55ff', water_ele:'#44ddff',
+        earth_ele:'#99dd55', air_ele:'#ddfff0', fire_ele:'#ff9944',
+        lightning:'#ffff55', dark_knight:'#5577dd', banshee:'#aaffdd',
+        lich:'#77aaff', dragon:'#ff5522', arachne:'#ddaa55', abyss:'#bb44ee',
+    };
+
     // Юніти
     for (let i = units.length - 1; i >= 0; i--) {
         let u = units[i];
-        u.update(); u.draw(GAME.cameraY);
+        u.update();
+        // Кольоровий ореол під ногами монстра
+        if (u.type === 'monster' && u.hp > 0) {
+            const _gc = _MGC[u.monsterKind];
+            if (_gc) {
+                const _fy = u.y - GAME.cameraY;
+                ctx.save();
+                ctx.globalAlpha = 0.22;
+                ctx.shadowColor = _gc;
+                ctx.shadowBlur  = u.size * 0.55;
+                ctx.fillStyle   = _gc;
+                ctx.beginPath();
+                ctx.ellipse(u.x, _fy, u.size * 0.62, u.size * 0.16, 0, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            }
+        }
+        u.draw(GAME.cameraY);
         if (u.hp <= 0) {
             // ── SKELETON: 30% відродження при першій смерті (при ≤30% HP) ──
             if (u.type === 'monster' && u.ability === 'rebirth' && !u.rebirthUsed) {
@@ -8042,17 +8104,24 @@ function loop(ts) {
                     spawnDmgText(u.x, u.y - u.size - 18, '+1 💀', '#ffd700', false);
                 }
                 let pcol = u.heroRank === 'boss' ? 'purple' : u.heroRank.startsWith('elite') ? 'orange' : 'gold';
-                let pcount = u.heroRank === 'boss' ? 16 : u.heroRank.startsWith('elite') ? 9 : 5;
-                for (let p = 0; p < pcount; p++) {
-                    let ang = (p / pcount) * Math.PI * 2;
-                    let spd = 1.5 + Math.random() * 2.5;
-                    spawnParticle(u.x, u.y - u.size * 0.4, pcol, {
-                        vx: Math.cos(ang) * spd, vy: Math.sin(ang) * spd - 1.5,
-                        size: 1.5 + Math.random() * 2, life: 40 + Math.random() * 20
+                let ppower = u.heroRank === 'boss' ? 1.8 : u.heroRank.startsWith('elite') ? 1.3 : 1.0;
+                let pcount = u.heroRank === 'boss' ? 18 : u.heroRank.startsWith('elite') ? 12 : 7;
+                spawnHitBurst(u.x, u.y - u.size * 0.4, pcol, pcount, ppower);
+                // Додаткові частинки що летять вгору (soul drift)
+                let soulN = u.heroRank === 'boss' ? 7 : u.heroRank.startsWith('elite') ? 4 : 2;
+                for (let s = 0; s < soulN; s++) {
+                    spawnParticle(u.x + (Math.random()-0.5)*18, u.y - u.size * 0.5, pcol, {
+                        vx: (Math.random()-0.5)*1.8, vy: -(3.5+Math.random()*3.5),
+                        size: 2.5 + Math.random() * 2.5, life: 55 + Math.random() * 35, glow: true
                     });
                 }
-                if (u.heroRank === 'boss')            { triggerScreenShake(10); StoryManager.showComment('bigKill'); }
-                else if (u.heroRank.startsWith('elite')) triggerScreenShake(5);
+                if (u.heroRank === 'boss') {
+                    triggerScreenShake(10); StoryManager.showComment('bigKill');
+                    _killFlash.alpha = 0.22; _killFlash.col = '#bb33ff';
+                } else if (u.heroRank.startsWith('elite')) {
+                    triggerScreenShake(5);
+                    _killFlash.alpha = 0.10; _killFlash.col = '#ff8800';
+                }
                 spawnDmgText(u.x, u.y - u.size, '+' + reward + '💀', '#ffcc00', u.heroRank !== 'normal');
                 updateUI();
             } else if (u.type === 'lord') { gameOver(); }
@@ -8081,10 +8150,20 @@ function loop(ts) {
         let col = _PC[p.color] || p.color;
         ctx.globalAlpha = a;
         ctx.fillStyle = col;
+        if (p.glow) { ctx.shadowColor = col; ctx.shadowBlur = p.size * 3.5; }
         ctx.beginPath(); ctx.arc(p.x, p.y - GAME.cameraY, p.size, 0, Math.PI * 2); ctx.fill();
+        if (p.glow) ctx.shadowBlur = 0;
         if (p.life <= 0) particles.splice(i, 1);
     }
     ctx.globalAlpha = 1;
+    // Kill flash overlay
+    if (_killFlash.alpha > 0) {
+        ctx.globalAlpha = _killFlash.alpha;
+        ctx.fillStyle = _killFlash.col;
+        ctx.fillRect(0, 0, gW, gH);
+        ctx.globalAlpha = 1;
+        _killFlash.alpha = Math.max(0, _killFlash.alpha - 0.018 * _dt);
+    }
 
     // ── Числа пошкоджень ────────────────────────────────────────────────
     for (let i = dmgTexts.length - 1; i >= 0; i--) {
@@ -8673,9 +8752,7 @@ per_rivnovaha: {
 
 function _psyReset() {
     _psyTrack = {
-        // кількість рішень-покупок по категоріях (не суми)
         buys:     { lord:0, monster:0, floor:0, trap:0, total:0 },
-        // бонус ×0.5 за першу покупку після хвилі (пріоритет)
         priority: { lord:0, monster:0, floor:0, trap:0 },
         firstBuyDone: false,
         decisions: { dom:0, pom:0, zna:0, vyj:0, kha:0, per:0 },
@@ -8683,7 +8760,18 @@ function _psyReset() {
         rounds:    0,
         shown:     [],
         pending:   false,
+        memory:    {}, // { eventId: choiceIndex } — пам'ять минулих виборів
     };
+}
+
+// Перевірка чи подія доступна з урахуванням пам'яті
+function _psyCheckRequires(ev) {
+    if (!ev.requires) return true;
+    const mem = _psyTrack.memory;
+    const r = ev.requires;
+    if (!(r.id in mem)) return false; // батьківська подія ще не була
+    if (r.choice !== undefined && mem[r.id] !== r.choice) return false;
+    return true;
 }
 
 function _psyBuy(cat) {
@@ -8819,6 +8907,215 @@ const _DECISION_EVENTS = [
         { text:'→ Нехай горить — відволікає героїв', tags:['kha'], buff:{ soulBonus:3 } },
         { text:'→ Перетворити на контрольований вогонь-пастку', tags:['zna','per'], buff:{ eliteChance:2 } },
       ]},
+
+    // ── CONTINUATION: prisoner_knight:0 → відпустили ──
+    { id:'prisoner_return', trigger:'wave_start', minRound:4, weight:2,
+      requires: { id:'prisoner_knight', choice:0 },
+      badge:'⚔️ Повернення', title:'Лицар повернувся',
+      text:'Той лицар якого відпустили — прийшов знову. Але не зі зброєю. Із розгорнутим сувоєм і пропозицією стати інформатором. Каже що воює за монети, не за ідею.',
+      choices:[
+        { text:'→ Взяти в інформатори. Дворушник хоч і ненадійний, але корисний', tags:['zna','kha'], buff:{ heroThreatPct:-1 } },
+        { text:'→ Відмовитись. Хто легко здається — легко зрадить', tags:['per','dom'], buff:{} },
+        { text:'→ Взяти і таємно повідомити місту. Хай воно тепер вирішує', tags:['kha'], buff:{ soulBonus:10 } },
+      ]},
+
+    // ── CONTINUATION: prisoner_knight:2 → стратили ──
+    { id:'prisoner_revenge', trigger:'wave_start', minRound:4, weight:2,
+      requires: { id:'prisoner_knight', choice:1 },
+      badge:'🩸 Кровна помста', title:'Брат лицаря',
+      text:'Брат страченого лицаря взяв командування наступною хвилею. Він не просто б\'ється — він іде прямо до твого поверху. Гінці кажуть: у нього є ім\'я для тебе, і воно не лестиве.',
+      choices:[
+        { text:'→ Готуватися окремо: він злий, але злість робить людей передбачуваними', tags:['per','vyj'], buff:{ heroThreatPct:1.5 } },
+        { text:'→ Спробувати переговори. Гроші гасять навіть вогонь помсти', tags:['zna','vyj'], buff:{ heroThreatPct:0.5 } },
+        { text:'→ Оголосити нагороду за його голову серед самих героїв', tags:['kha','dom'], buff:{ eliteChance:3 } },
+      ]},
+
+    // ── CONTINUATION: village_revolt:0 → взяли під захист ──
+    { id:'village_supply', trigger:'wave_end', minRound:5, weight:2,
+      requires: { id:'village_revolt', choice:0 },
+      badge:'📜 Донесення з сіл', title:'Борг повернули',
+      text:'Селяни прислали сімох добровольців — людей які не хочуть під владу міста. Вони не монстри, але готові допомагати: перекривати дороги, доносити інформацію, ховати поранених.',
+      choices:[
+        { text:'→ Прийняти. Союзники бувають різних видів', tags:['vyj'], buff:{ heroThreatPct:-1, soulBonus:4 } },
+        { text:'→ Взяти тільки розвідку, без людей у підземеллі', tags:['zna'], buff:{ heroThreatPct:-0.5 } },
+        { text:'→ Відмовитись. Люди у підземеллі — це слабке місце', tags:['per'], buff:{} },
+      ]},
+
+    // ── CONTINUATION: village_revolt:2 → залякали ──
+    { id:'village_occupied', trigger:'wave_start', minRound:5, weight:2,
+      requires: { id:'village_revolt', choice:2 },
+      badge:'⚠️ Ситуація', title:'Місто окупувало село',
+      text:'Почувши про "залякування", місто ввело гарнізон. Тепер ці люди озлоблені і на тебе, і на місто. Незручно для всіх.',
+      choices:[
+        { text:'→ Надіслати їм зброю. Хай воюють проти гарнізону', tags:['kha','dom'], buff:{ heroThreatPct:1, soulBonus:8 } },
+        { text:'→ Зробити вигляд що це все не моя ідея', tags:['kha'], buff:{} },
+        { text:'→ Послати монстрів прогнати гарнізон — відкрито', tags:['dom','pom'], buff:{ heroThreatPct:2, eliteChance:4 } },
+      ]},
+
+    // ── CONTINUATION: traitor:1 → зробили шпигуном ──
+    { id:'spy_news', trigger:'wave_start', minRound:6, weight:2,
+      requires: { id:'traitor', choice:1 },
+      badge:'🔍 Донесення шпигуна', title:'Розвідка зсередини',
+      text:'Твій шпигун прислав шифрований сувій. Міська рада планує підкуп двох твоїх капітанів. Один, схоже, вже погодився.',
+      choices:[
+        { text:'→ Вичистити зрадника публічно — дисципліна важливіша за таємницю', tags:['dom','pom'], buff:{ soulBonus:5, heroThreatPct:0.5 } },
+        { text:'→ Зробити вигляд що не знаєш — і стежити далі', tags:['zna','kha'], buff:{ heroThreatPct:-0.5 } },
+        { text:'→ Підставити зрадника через дезінформацію міській раді', tags:['kha','per'], buff:{ captainChance:-5 } },
+      ]},
+
+    // ── CONTINUATION: guild_pact:2 → порушили пакт ──
+    { id:'guild_war', trigger:'wave_start', minRound:7, weight:2,
+      requires: { id:'guild_pact', choice:2 },
+      badge:'⚠️ Наслідки', title:'Гільдія оголосила полювання',
+      text:'Гільдія авантюристів офіційно оголосила відкрите полювання на твого лорда. Тепер кожна хвиля містить двох-трьох їхніх найманців. Репутація — жорстока річ.',
+      choices:[
+        { text:'→ Виплатити компенсацію. Зупинити ескалацію поки не пізно', tags:['vyj'], buff:{ soulBonus:-15 } },
+        { text:'→ Відповісти полюванням на їхнього гільдмайстра', tags:['pom','dom'], buff:{ heroThreatPct:2, eliteChance:5 } },
+        { text:'→ Найняти конкуруючу гільдію підкинути їм клопотів', tags:['kha'], buff:{ heroThreatPct:0.5, soulBonus:5 } },
+      ]},
+
+    // ── CONTINUATION: dark_relic:2 → поглинули силу ──
+    { id:'relic_awakens', trigger:'wave_end', minRound:7, weight:2,
+      requires: { id:'dark_relic', choice:2 },
+      badge:'🔮 Пробудження', title:'Реліквія говорить',
+      text:'Вночі — голос. Не знаєш чий. Голос каже що "хоче більше". Монстри нервуються. Навіть голем.',
+      choices:[
+        { text:'→ Зміцнити волю. Ти лорд тут, не шматок каменю', tags:['dom','per'], buff:{ lordDmg:5 } },
+        { text:'→ Дати що просить. Поки що', tags:['kha'], buff:{ lordDmg:10, heroThreatPct:1 } },
+        { text:'→ Покликати відьму — хай займеться', tags:['zna','vyj'], buff:{} },
+      ]},
+
+    // ── МОНСТРИ: тепліший/гумористичний тон ──
+
+    { id:'slime_petition', trigger:'wave_end', minRound:2, weight:2,
+      badge:'💙 Петиція', title:'Слайми вимагають поваги',
+      text:'Делегація слаймів з\'явилась у тронному залі. Вони принесли сувій — на диво рівно написаний, враховуючи що в них немає рук. Основні вимоги: більше темряви, менше факелів, і офіційно припинити называти їх "ці зелені кульки".',
+      choices:[
+        { text:'→ Задовольнити. Вони справді заслужили повагу', tags:['vyj'], buff:{ soulBonus:3 } },
+        { text:'→ Компроміс: нові назви є, факели лишаються', tags:['kha','zna'], buff:{} },
+        { text:'→ Оголосити офіційну назву "Бойові Слизові Воїни"', tags:['per'], buff:{ eliteChance:2 } },
+      ]},
+
+    { id:'bat_strike', trigger:'wave_start', minRound:3, weight:2,
+      badge:'🦇 Виробничий конфлікт', title:'Страйк кажанів',
+      text:'Кажани оголосили страйк. Після перебудови третього коридору їхня ехолокація дає збої і двоє влетіли в стіну. Вони хочуть або перебудови, або компенсації за "виробничу травму". У делегата перев\'язаний ніс.',
+      choices:[
+        { text:'→ Погодитись на компенсацію. Дати їм... мух', tags:['vyj'], buff:{} },
+        { text:'→ Перебудувати коридор. Здорові монстри — ефективніші монстри', tags:['zna','per'], buff:{ heroThreatPct:-0.3 } },
+        { text:'→ Нагадати що "страйк" не є терміном у їхньому контракті', tags:['dom'], buff:{ soulBonus:2 } },
+      ]},
+
+    { id:'golem_poet', trigger:'wave_end', minRound:4, weight:2,
+      badge:'🗿 Культурна подія', title:'Голем написав вірш',
+      text:'Голем приніс кам\'яну плиту з висіченим текстом. Ода до підземелля. Один рядок про тебе: "Лорд великий. Лорд темний. Лорд іноді не пояснює навіщо ми це робимо. Але ми все одно йдемо." Автор не підписався — але різець є тільки в одного.',
+      choices:[
+        { text:'→ Оголосити це "Поемою Підземелля". Офіційно', tags:['per'], buff:{ soulBonus:3 } },
+        { text:'→ Наказати висікти ще одну плиту — з відповіддю лорда', tags:['dom','per'], buff:{} },
+        { text:'→ Нічого не говорити. Тихо зберегти плиту', tags:['vyj'], buff:{ lordDmg:2 } },
+      ]},
+
+    { id:'skeleton_law', trigger:'wave_start', minRound:5, weight:2,
+      badge:'💀 Юридична суперечка', title:'Скелет і податковий статус',
+      text:'Один скелет прийшов з питанням після того як герої кричали "Ти вже мертвий!". Він хоче юридичну ясність: якщо він офіційно мертвий — чи мусить платити замковий податок? І хто взагалі буде його спадкоємцем.',
+      choices:[
+        { text:'→ Пояснити: "нежить" — окрема юридична категорія. З пільгами', tags:['zna','kha'], buff:{} },
+        { text:'→ Призначити його "Живим-Для-Цілей-Підземелля". Є печатка', tags:['per','dom'], buff:{ soulBonus:4 } },
+        { text:'→ Сказати що за такі питання він заборгував ще раунд служби', tags:['dom'], buff:{ heroThreatPct:-0.2 } },
+      ]},
+
+    { id:'zombie_menu', trigger:'wave_end', minRound:3, weight:2,
+      badge:'🧟 Скарга', title:'Зомбі незадоволені меню',
+      text:'Зомбі надіслали скаргу. Анонімно, але почерк впізнаваний. Суть: нас годують тільки тими героями що "охолонули". Хочемо свіжого. Орфографічних помилок не рахувати — для нежиті написано непогано.',
+      choices:[
+        { text:'→ Пояснити логістику: "свіжі" — це ті що ще живі', tags:['zna'], buff:{} },
+        { text:'→ Ввести "преміальне меню" для відзначених у бою', tags:['kha','per'], buff:{ eliteChance:2 } },
+        { text:'→ Поставити на перші лінії — хай самі вирішують питання свіжості', tags:['dom'], buff:{ heroThreatPct:-0.5, soulBonus:3 } },
+      ]},
+
+    { id:'minotaur_mirror', trigger:'wave_end', minRound:6, weight:1,
+      badge:'🐂 Особиста справа', title:'Мінотавр і дзеркало',
+      text:'Мінотавр знайшов у трофейній кімнаті срібне дзеркало і не відходить від нього третій день. Нікого не чіпає. Просто дивиться. Іноді зітхає. Монстри обходять стороною і говорять пошепки.',
+      choices:[
+        { text:'→ Прибрати дзеркало. Сентиментальність — не для бійців', tags:['dom','per'], buff:{} },
+        { text:'→ Залишити. Кожному потрібно своє', tags:['vyj'], buff:{ soulBonus:3 } },
+        { text:'→ Дати йому ще одне дзеркало. Нехай розбереться сам', tags:['kha'], buff:{ captainChance:3 } },
+      ]},
+
+    // ── ЛОР МІСТА І ПІДЗЕМЕЛЛЯ ──
+
+    { id:'city_legend', trigger:'wave_end', minRound:4, weight:2,
+      badge:'📜 Міські новини', title:'Нова назва',
+      text:'Місто офіційно перейменувало твоє підземелля на картах. Тепер воно — "Прокляте Серце". Туристам заборонено наближатись. Батьки лякають дітей. Барди пишуть балади. Іронічно, але це краще ніж було.',
+      choices:[
+        { text:'→ Розіслати власну карту з правильною назвою', tags:['pom','per'], buff:{ eliteChance:2 } },
+        { text:'→ Прийняти назву. Звучить солідно', tags:['kha','dom'], buff:{} },
+        { text:'→ Знайти бардів і запропонувати "технічні уточнення" до пісень', tags:['zna'], buff:{ soulBonus:4 } },
+      ]},
+
+    { id:'historian_visit', trigger:'wave_start', minRound:6, weight:1,
+      badge:'📖 Несподіваний гість', title:'Мандрівний хроніст',
+      text:'Старий у мантії з пером пройшов повз охорону — вона просто оторопіла. Каже що пише "Правдиву Хроніку Темних Місць" і хоче почути твою версію подій. Наполегливо. Дуже.',
+      choices:[
+        { text:'→ Дати інтерв\'ю. Перший шанс на власну оповідь', tags:['per','pom'], buff:{ eliteChance:3 } },
+        { text:'→ Вигнати. Незапрошені зі сувоями — це завжди ризик', tags:['dom','per'], buff:{} },
+        { text:'→ Тримати в підземеллі. Може стати корисним — або заручником', tags:['kha','zna'], buff:{ heroThreatPct:-0.5 } },
+      ]},
+
+    { id:'ancient_dungeon', trigger:'wave_end', minRound:8, weight:1,
+      badge:'🗝️ Відкриття', title:'400 років підземелля',
+      text:'Монстри прорили нову кімнату і знайшли стіни з написами. По датах — підземелля існує понад 400 років. Є імена попередніх лордів. Останній запис обривається на середині фрази.',
+      choices:[
+        { text:'→ Дослідити ретельно. Минуле завжди має чомусь навчити', tags:['zna'], buff:{ lordDmg:4, heroThreatPct:-0.5 } },
+        { text:'→ Замурувати. Чужа спадщина — зайвий тягар', tags:['per'], buff:{} },
+        { text:'→ Використати для пропаганди: "400 років непереможності"', tags:['kha','pom'], buff:{ eliteChance:3 } },
+      ]},
+
+    { id:'hero_memorial', trigger:'wave_start', minRound:5, weight:2,
+      badge:'📜 Міські новини', title:'Пам\'ятник полеглим',
+      text:'Місто відкрило пам\'ятник 50 відомим героям що загинули тут. Урочиста промова. Натовп плаче. Твоє підземелля не згадали — тільки "ворожі сили". Зате фотографи є.',
+      choices:[
+        { text:'→ Відправити анонімний вінок. Іронічно і стримано', tags:['kha'], buff:{ soulBonus:5 } },
+        { text:'→ Готуватися: після таких церемоній завжди іде сплеск мотивації у героїв', tags:['vyj','per'], buff:{ heroThreatPct:0.5 } },
+        { text:'→ Знищити пам\'ятник нічним рейдом. Символічно і цілком зрозуміло', tags:['pom','dom'], buff:{ heroThreatPct:2, eliteChance:5 } },
+      ]},
+
+    // ── ПІЗНЯ ГРА ──
+
+    { id:'legendary_hero', trigger:'wave_start', minRound:9, weight:1,
+      badge:'⚔️ Загроза', title:'Герой з іменем',
+      text:'До міста прийшов Кіндред Сонячний — паладин з легендою. Він вижив у п\'яти підземеллях. Місто платить втричі. Він уже вивчає карту.',
+      choices:[
+        { text:'→ Перебудувати захист повністю. Інший рівень загрози — інший рівень відповіді', tags:['per','vyj'], buff:{ heroThreatPct:1, soulBonus:10 } },
+        { text:'→ Розіслати дезінформацію про підземелля', tags:['kha','zna'], buff:{ captainChance:-3 } },
+        { text:'→ Чекати. Легенди теж гинуть від пасток і стріл', tags:['dom','kha'], buff:{} },
+      ]},
+
+    { id:'dark_lord_message', trigger:'wave_end', minRound:10, weight:1,
+      badge:'🏰 Дипломатія темряви', title:'Листа від сусіда',
+      text:'Ворон приніс листа з чорною пломбою. Тобі пишуть з іншого підземелля. Пропонує "пакт між темними". Обмін інформацією, можливо — спільні дії. Підписано: "Морт Безіменний". Підозріло скромно для лорда.',
+      choices:[
+        { text:'→ Прийняти пакт. Більше інформації — більше виживання', tags:['zna','kha'], buff:{ heroThreatPct:-1 } },
+        { text:'→ Відмовитись. Союзники в темряві — завжди майбутні суперники', tags:['dom','per'], buff:{} },
+        { text:'→ Прийняти і таємно доносити про нього місту. Вищий рівень хитрості', tags:['kha'], buff:{ soulBonus:12 } },
+      ]},
+
+    { id:'oracle_prophecy', trigger:'wave_end', minRound:7, weight:1,
+      badge:'🔮 Знамення', title:'Оракул сказав п\'ять слів',
+      text:'Сліпий оракул прийшов без запрошення. Зупинився перед тобою і сказав рівно п\'ять слів: "Твій кінець прийде через прийняте." Потім пішов. Охорона питає що їй робити.',
+      choices:[
+        { text:'→ Проігнорувати. Пророцтва завжди двозначні', tags:['kha','dom'], buff:{} },
+        { text:'→ Переосмислити останні рішення. Що саме "прийняте" могло бути зайвим', tags:['zna','vyj'], buff:{ heroThreatPct:-0.5 } },
+        { text:'→ Покарати оракула. Погані новини не потрібні в підземеллі', tags:['pom','dom'], buff:{ lordDmg:5, heroThreatPct:0.5 } },
+      ]},
+
+    { id:'mercenary_offer', trigger:'wave_start', minRound:4, weight:2,
+      badge:'💰 Пропозиція', title:'Найманці без принципів',
+      text:'Загін "Залізні Зуби" пропонує свої послуги. Ціна: 20 душ за хвилю. Вони добрі, але не лояльні. І їх можна найняти і проти тебе.',
+      choices:[
+        { text:'→ Найняти. Ефективність понад лояльність', tags:['kha','zna'], buff:{ soulBonus:-10, heroThreatPct:-1.5 } },
+        { text:'→ Відмовити. Своя армія надійніша', tags:['dom','per'], buff:{} },
+        { text:'→ Найняти і підставити місту — хай воно платить їм далі', tags:['kha'], buff:{ eliteChance:-2, heroThreatPct:-0.5 } },
+      ]},
 ];
 
 // ── Вибір і показ рішення ───────────────────────────────────────────────────
@@ -8828,7 +9125,8 @@ function _psyPickEvent(trigger) {
     let pool = _DECISION_EVENTS.filter(e =>
         e.trigger === trigger &&
         e.minRound <= _psyTrack.rounds &&
-        !_psyTrack.shown.includes(e.id)
+        !_psyTrack.shown.includes(e.id) &&
+        _psyCheckRequires(e)
     );
     if (!pool.length) return null;
     let totalW = pool.reduce((s, e) => s + (e.weight || 1), 0);
@@ -8864,6 +9162,8 @@ function _showDecision(ev) {
 
 function _resolveDecisionIdx(idx) {
     if (!_psyTrack || !_psyCurrentEv) return;
+    // Зберігаємо вибір у пам'ять для continuation-подій
+    _psyTrack.memory[_psyCurrentEv.id] = idx;
     const choice = _psyCurrentEv.choices[idx];
     (choice.tags || []).forEach(tag => {
         _psyTrack.decisions[tag] = (_psyTrack.decisions[tag] || 0) + 1;
@@ -9377,7 +9677,7 @@ function triggerWave() {
     // КД 60 сек: блокуємо кнопку і показуємо зворотній відлік
     let btn = document.getElementById('btn-wave');
     let remaining = 60;
-    if (btn) { btn.disabled = true; btn.innerHTML = `⚔️ АТАКА (${remaining}с)`; }
+    if (btn) { btn.disabled = true; btn.classList.remove('atk-ready'); btn.innerHTML = `⚔️ АТАКА (${remaining}с)`; }
     let cdInterval = setInterval(() => {
         if (GAME.gameOver) { clearInterval(cdInterval); return; }
         remaining--;
@@ -9385,7 +9685,7 @@ function triggerWave() {
         if (remaining <= 0) {
             clearInterval(cdInterval);
             GAME.waveCooldownActive = false;
-            if (btn) { btn.disabled = false; btn.innerHTML = '⚔️ АТАКА'; }
+            if (btn) { btn.disabled = false; btn.innerHTML = '⚔️ АТАКА'; btn.classList.add('atk-ready'); }
         }
     }, 1000);
 }
@@ -9497,7 +9797,22 @@ function spawnParticle(x, y, color, opts = {}) {
         size: opts.size || (0.8 + Math.random() * 1.2),
         life: opts.life || 35,
         maxLife: opts.life || 35,
+        glow: opts.glow || false,
     });
+}
+function spawnHitBurst(x, y, color, n, power) {
+    power = power || 1.0;
+    for (let i = 0; i < n; i++) {
+        let ang = (i / n) * Math.PI * 2 + Math.random() * 0.9;
+        let spd = (2.5 + Math.random() * 3.5) * power;
+        spawnParticle(x, y, color, {
+            vx: Math.cos(ang) * spd,
+            vy: Math.sin(ang) * spd - 2.2 * power,
+            size: 2.5 + Math.random() * 3.0 * power,
+            life: 28 + Math.random() * 28,
+            glow: true,
+        });
+    }
 }
 function spawnDmgText(x, y, text, color = '#ffffff', big = false) {
     dmgTexts.push({ x, y, text, color, big, life: 50, maxLife: 50,
@@ -9808,6 +10123,7 @@ function getLevelConfig(lvl) {
 }
 
 function continueGame() {
+    _stopStartScreen();
     const level = loadProgress();
     const ss = document.getElementById('start-screen');
     if (ss) ss.style.display = 'none';
@@ -9825,6 +10141,148 @@ function confirmResetProgress() {
         try { localStorage.removeItem('DL_StoryDone'); } catch(_) {}
         hardReset();
     }
+}
+
+// =================== СТАРТОВИЙ ЕКРАН (анімований canvas) ===================
+
+let _startRAF = null;
+let _startCvs = null;
+let _startC   = null;
+let _startEmbers = [];
+let _startStars  = [];
+
+function _initStartScreen() {
+    _startCvs = document.getElementById('start-canvas');
+    if (!_startCvs) return;
+    _startC = _startCvs.getContext('2d');
+    _resizeStartCvs();
+    window.addEventListener('resize', _resizeStartCvs);
+
+    _startStars = [];
+    for (let i = 0; i < 100; i++) {
+        _startStars.push({
+            nx: Math.random(),
+            ny: Math.random() * 0.70,
+            r:  0.4 + Math.random() * 1.6,
+            phase: Math.random() * Math.PI * 2,
+            spd:   0.5 + Math.random() * 1.5
+        });
+    }
+    _startEmbers = [];
+    for (let i = 0; i < 32; i++) {
+        let em = _mkEmber();
+        em.ny = Math.random(); // розкидати при старті
+        _startEmbers.push(em);
+    }
+    _startRAF = requestAnimationFrame(_drawStartCvs);
+}
+
+function _resizeStartCvs() {
+    if (!_startCvs) return;
+    _startCvs.width  = window.innerWidth;
+    _startCvs.height = window.innerHeight;
+}
+
+function _mkEmber() {
+    return {
+        nx:    0.2 + Math.random() * 0.6,
+        ny:    0.75 + Math.random() * 0.25,
+        vy:    -(0.00028 + Math.random() * 0.00055),
+        vx:    (Math.random() - 0.5) * 0.00018,
+        r:     1.0 + Math.random() * 2.2,
+        alpha: 0.35 + Math.random() * 0.55,
+        col:   Math.random() < 0.58 ? '#ff6600' : '#cc44ff',
+        life:  0,
+        maxL:  160 + Math.random() * 220
+    };
+}
+
+function _drawStartCvs(ts) {
+    if (!_startC || !_startCvs) return;
+    const W = _startCvs.width;
+    const H = _startCvs.height;
+    const c = _startC;
+    const now = ts * 0.001;
+
+    c.clearRect(0, 0, W, H);
+
+    // Зірки
+    for (let s of _startStars) {
+        const a = 0.35 + 0.55 * (0.5 + 0.5 * Math.sin(now * s.spd + s.phase));
+        c.globalAlpha = a;
+        c.fillStyle = '#ddc8ff';
+        c.beginPath();
+        c.arc(s.nx * W, s.ny * H, s.r, 0, 6.2832);
+        c.fill();
+    }
+    c.globalAlpha = 1;
+
+    // Жарини
+    for (let em of _startEmbers) {
+        em.life++;
+        em.nx += em.vx;
+        em.ny += em.vy;
+        if (em.life > em.maxL || em.ny < 0.02) { Object.assign(em, _mkEmber()); }
+        const fade = em.alpha * (1 - Math.pow(em.life / em.maxL, 1.8));
+        c.globalAlpha = Math.max(0, fade);
+        c.fillStyle = em.col;
+        c.beginPath();
+        c.arc(em.nx * W, em.ny * H, em.r, 0, 6.2832);
+        c.fill();
+    }
+    c.globalAlpha = 1;
+
+    // Лорд
+    if (typeof drawLordStudio === 'function') {
+        const lordH  = Math.max(100, Math.min(W * 0.28, 240, H * 0.38));
+        const lordCX = W * 0.80;
+        const lordCY = H * 0.82;
+        c.save();
+        // Фіолетовий ореол під лордом
+        const glowR = lordH * 0.65;
+        const glowGrad = c.createRadialGradient(lordCX, lordCY - lordH * 0.3, 0, lordCX, lordCY - lordH * 0.3, glowR);
+        glowGrad.addColorStop(0,   'rgba(140,40,220,0.32)');
+        glowGrad.addColorStop(0.5, 'rgba(100,20,180,0.16)');
+        glowGrad.addColorStop(1,   'rgba(80,0,140,0)');
+        c.fillStyle = glowGrad;
+        c.beginPath();
+        c.ellipse(lordCX, lordCY - lordH * 0.3, glowR * 0.9, glowR * 1.1, 0, 0, 6.2832);
+        c.fill();
+        c.restore();
+
+        c.save();
+        c.shadowColor = '#9922dd';
+        c.shadowBlur  = 18;
+        drawLordStudio(c, {
+            CX: lordCX, CY0: lordCY, H: lordH,
+            roD: 1, roT: ts,
+            ap: 0, wdup: 0, strk: 0, recv: 0, atkVar: 0,
+            state: 'idle', tgtX: null, tgtY: null
+        });
+        c.restore();
+    }
+
+    // Туман (внизу)
+    const fogGrd = c.createLinearGradient(0, H * 0.70, 0, H);
+    fogGrd.addColorStop(0,    'rgba(8,3,22,0)');
+    fogGrd.addColorStop(0.45, 'rgba(8,3,22,0.35)');
+    fogGrd.addColorStop(1,    'rgba(8,3,22,0.78)');
+    c.fillStyle = fogGrd;
+    c.fillRect(0, H * 0.70, W, H * 0.30);
+
+    // Віньєтка по краях
+    const vigGrd = c.createRadialGradient(W/2, H/2, H * 0.20, W/2, H/2, H * 0.72);
+    vigGrd.addColorStop(0, 'rgba(0,0,0,0)');
+    vigGrd.addColorStop(1, 'rgba(0,0,0,0.60)');
+    c.fillStyle = vigGrd;
+    c.fillRect(0, 0, W, H);
+
+    _startRAF = requestAnimationFrame(_drawStartCvs);
+}
+
+function _stopStartScreen() {
+    if (_startRAF) { cancelAnimationFrame(_startRAF); _startRAF = null; }
+    window.removeEventListener('resize', _resizeStartCvs);
 }
 
 function resize() {
