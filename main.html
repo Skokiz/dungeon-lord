@@ -1462,7 +1462,7 @@
         #bestiary-overlay {
             display: none;
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(6,3,14,0.92);
+            background: rgba(4,2,12,0.94);
             z-index: 215;
             justify-content: center;
             align-items: center;
@@ -1471,69 +1471,90 @@
         }
         #bestiary-panel {
             width: 100%;
-            max-width: 560px;
-            height: 82vh;
-            background: linear-gradient(180deg, #1a1030 0%, #0d0820 100%);
-            border: 1px solid rgba(100,60,180,0.4);
-            border-radius: 18px;
+            max-width: 540px;
+            height: 84vh;
+            background: linear-gradient(175deg, #1c1238 0%, #0e0820 60%, #090614 100%);
+            border: 1px solid rgba(120,70,220,0.45);
+            border-radius: 20px;
             overflow: hidden;
             display: flex;
             flex-direction: column;
+            box-shadow: 0 0 60px rgba(80,30,160,0.25), inset 0 1px 0 rgba(160,100,255,0.1);
         }
         #bestiary-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 14px 18px 12px;
+            padding: 14px 18px 13px;
             border-bottom: 1px solid rgba(100,60,180,0.2);
             flex-shrink: 0;
+            background: linear-gradient(90deg, rgba(80,30,160,0.15) 0%, transparent 100%);
         }
-        #bestiary-header span { color: #cc88ff; font-weight: 700; font-size: 15px; letter-spacing: 0.5px; }
+        #bestiary-header-left { display: flex; flex-direction: column; gap: 2px; }
+        #bestiary-header-left .bh-title { color: #cc88ff; font-weight: 700; font-size: 14px; letter-spacing: 0.8px; }
+        #bestiary-header-left .bh-progress { font-size: 10px; color: #7755aa; letter-spacing: 0.3px; }
+        #bestiary-header-left .bh-progress span { color: #aa77ee; font-weight: 600; }
         #bestiary-close-btn {
-            background: rgba(80,40,140,0.5); border: 1px solid rgba(140,80,220,0.4);
-            color: #cc88ff; border-radius: 8px; font-size: 14px;
-            padding: 5px 14px; cursor: pointer;
+            background: rgba(80,40,140,0.4); border: 1px solid rgba(140,80,220,0.35);
+            color: #cc88ff; border-radius: 9px; font-size: 13px;
+            padding: 6px 14px; cursor: pointer;
             -webkit-appearance: none; touch-action: manipulation;
+            transition: background 0.12s;
         }
-        #bestiary-close-btn:hover { background: rgba(100,50,180,0.7); }
+        #bestiary-close-btn:hover { background: rgba(110,55,200,0.65); }
         #bestiary-grid {
             display: flex;
             flex-direction: column;
-            gap: 10px;
-            padding: 14px 16px 18px;
+            gap: 9px;
+            padding: 13px 14px 18px;
             overflow-y: auto;
             overflow-x: hidden;
             flex: 1;
             -webkit-overflow-scrolling: touch;
             scrollbar-width: thin;
-            scrollbar-color: rgba(100,60,180,0.3) transparent;
+            scrollbar-color: rgba(100,60,180,0.25) transparent;
         }
-        #bestiary-grid::-webkit-scrollbar { width: 4px; }
+        #bestiary-grid::-webkit-scrollbar { width: 3px; }
         #bestiary-grid::-webkit-scrollbar-track { background: transparent; }
-        #bestiary-grid::-webkit-scrollbar-thumb { background: rgba(100,60,180,0.35); border-radius: 4px; }
+        #bestiary-grid::-webkit-scrollbar-thumb { background: rgba(120,70,220,0.3); border-radius: 3px; }
+
+        /* ── Картка (базова) ── */
         .bc-card {
             width: 100%;
-            height: 128px;
+            min-height: 112px;
             border-radius: 14px;
             border: 1px solid;
             display: flex;
             flex-direction: row;
             align-items: stretch;
             cursor: pointer;
-            transition: transform 0.08s, box-shadow 0.12s;
+            transition: transform 0.1s, box-shadow 0.14s, border-color 0.14s;
             overflow: hidden;
             flex-shrink: 0;
             box-sizing: border-box;
+            position: relative;
         }
-        .bc-card:active { transform: scale(0.98); }
+        .bc-card:active { transform: scale(0.985); }
+        /* Лінія-акцент зліва */
+        .bc-card::before {
+            content: '';
+            position: absolute; left: 0; top: 0; bottom: 0; width: 3px;
+            background: var(--bc-accent, rgba(150,80,255,0.6));
+            opacity: 0.7;
+        }
         .bc-card.bc-locked {
-            border-color: rgba(60,40,90,0.35) !important;
+            border-color: rgba(50,35,75,0.4) !important;
             cursor: default;
-            opacity: 0.45;
         }
-        .bc-card.bc-unlocked:hover { box-shadow: 0 0 16px rgba(150,80,255,0.35); transform: translateY(-1px); }
+        .bc-card.bc-locked::before { opacity: 0.15; }
+        .bc-card.bc-unlocked:hover {
+            box-shadow: 0 4px 24px var(--bc-glow, rgba(120,60,240,0.28)), 0 0 0 1px rgba(160,100,255,0.15);
+            transform: translateY(-2px);
+        }
+
+        /* ── Аватар ── */
         .bc-avatar {
-            width: 134px;
+            width: 120px;
             flex-shrink: 0;
             display: flex;
             align-items: center;
@@ -1542,35 +1563,125 @@
             position: relative;
         }
         .bc-mon-canvas {
-            width: 134px;
-            height: 128px;
+            width: 120px;
+            height: 112px;
             display: block;
         }
+        /* Бейдж поверху на аватарі */
+        .bc-floor-badge {
+            position: absolute; bottom: 5px; left: 50%; transform: translateX(-50%);
+            background: rgba(0,0,0,0.55);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 5px;
+            padding: 1px 6px;
+            font-size: 9px; color: rgba(255,255,255,0.45); white-space: nowrap;
+            backdrop-filter: blur(4px);
+        }
+        /* Locked: emoji силует */
+        .bc-locked-silhouette {
+            font-size: 38px;
+            opacity: 0.12;
+            filter: grayscale(1);
+            pointer-events: none;
+        }
+        .bc-locked-floor {
+            position: absolute; bottom: 5px; left: 50%; transform: translateX(-50%);
+            background: rgba(60,30,100,0.7);
+            border: 1px solid rgba(120,70,200,0.2);
+            border-radius: 5px;
+            padding: 2px 7px;
+            font-size: 9px; color: #9966cc; white-space: nowrap;
+            letter-spacing: 0.3px;
+        }
+
+        /* ── Права панель статів ── */
         .bc-stats {
             flex: 1;
             display: flex;
             flex-direction: column;
             justify-content: center;
-            padding: 10px 16px 10px 10px;
+            padding: 9px 14px 9px 11px;
             gap: 0;
             min-width: 0;
-            border-left: 1px solid rgba(100,60,180,0.12);
+            border-left: 1px solid rgba(100,60,180,0.1);
+        }
+        /* Рядок: назва + тип пошкодження */
+        .bc-head-row {
+            display: flex; align-items: center; gap: 6px;
+            margin-bottom: 7px;
         }
         .bc-stat-name {
-            font-size: 14px; font-weight: 700; color: #fff;
-            margin-bottom: 6px; line-height: 1;
+            font-size: 14px; font-weight: 700; color: #f0ecff;
+            line-height: 1; flex: 1; min-width: 0;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
         }
-        .bc-row {
-            display: flex; align-items: center;
-            padding: 3px 0;
-            border-bottom: 1px solid rgba(100,60,180,0.08);
-            gap: 7px;
+        .bc-dmg-badge {
+            font-size: 8.5px; font-weight: 700; letter-spacing: 0.5px;
+            padding: 2px 6px; border-radius: 4px;
+            border: 1px solid; flex-shrink: 0;
         }
-        .bc-row:last-child { border-bottom: none; }
-        .bc-row-icon  { font-size: 11px; width: 14px; text-align: center; flex-shrink: 0; opacity: 0.85; }
-        .bc-row-label { font-size: 10px; color: #9988bb; flex: 1; }
-        .bc-row-val   { font-size: 10px; color: #dde0ff; font-weight: 600; }
-        .bc-row-val.bc-evo-val { color: #ffcc44; }
+        .bc-dmg-phys { color: #ffaa55; border-color: rgba(255,160,60,0.35); background: rgba(255,140,40,0.12); }
+        .bc-dmg-mag  { color: #88aaff; border-color: rgba(100,140,255,0.35); background: rgba(80,120,255,0.1); }
+
+        /* Сітка статів 2×2 */
+        .bc-stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0;
+        }
+        .bc-stat-cell {
+            display: flex; align-items: center; gap: 5px;
+            padding: 3px 4px 3px 0;
+            border-bottom: 1px solid rgba(100,60,180,0.07);
+        }
+        .bc-stat-cell:nth-last-child(-n+2) { border-bottom: none; }
+        .bc-stat-cell.bc-full { grid-column: 1 / -1; }
+        .bc-sc-icon { font-size: 10px; width: 12px; text-align: center; flex-shrink: 0; }
+        .bc-sc-lbl  { font-size: 9px; color: #7766aa; flex: 1; }
+        .bc-sc-val  { font-size: 10px; font-weight: 700; color: #dde0ff; }
+        .bc-sc-val.cv-atk  { color: #ffbb66; }
+        .bc-sc-val.cv-hp   { color: #ff7788; }
+        .bc-sc-val.cv-arm  { color: #66ccff; }
+        .bc-sc-val.cv-mag  { color: #99aaff; }
+        .bc-sc-val.cv-spd  { color: #aaffbb; }
+        .bc-sc-val.cv-reg  { color: #88ffcc; }
+        /* Бейдж рівня апгрейду */
+        .bc-upg-dot {
+            font-size: 8px; padding: 0 4px 1px;
+            border-radius: 3px;
+            background: rgba(150,80,255,0.18);
+            border: 1px solid rgba(150,80,255,0.25);
+            color: #bb88ff;
+            margin-left: 3px; flex-shrink: 0;
+        }
+        /* Рядок еволюції */
+        .bc-evo-row {
+            display: flex; align-items: center; gap: 5px;
+            padding: 4px 0 0;
+            margin-top: 3px;
+            border-top: 1px solid rgba(255,200,60,0.12);
+        }
+        .bc-evo-row .bc-sc-icon { color: #ffcc44; }
+        .bc-evo-row .bc-sc-lbl  { color: #998822; }
+        .bc-evo-row .bc-sc-val  { color: #ffdd55; font-size: 9.5px; }
+
+        /* Підказка переходу в розвиток */
+        .bc-dev-hint {
+            font-size: 8px; color: rgba(180,130,255,0.35);
+            text-align: right; margin-top: 4px; letter-spacing: 0.3px;
+        }
+
+        /* Locked stats */
+        .bc-locked-stats {
+            display: flex; flex-direction: column; gap: 3px;
+            justify-content: center;
+        }
+        .bc-locked-label { font-size: 15px; font-weight: 700; color: #2d1e45; margin-bottom: 4px; }
+        .bc-locked-line {
+            display: flex; align-items: center; gap: 5px;
+            opacity: 0.2;
+        }
+        .bc-locked-line span { font-size: 9px; color: #5540aa; }
         .cmain-bestiary { background: #0f2418; border-color: #2a6044; }
         .cmain-bestiary:hover { background: #163625; }
     </style>
@@ -1745,7 +1856,10 @@
 <div id="bestiary-overlay" onclick="if(event.target===this)closeBestiary()">
     <div id="bestiary-panel" onclick="event.stopPropagation()">
         <div id="bestiary-header">
-            <span>🐾 БЕСТІАРІЙ ПІДЗЕМЕЛЛЯ</span>
+            <div id="bestiary-header-left">
+                <div class="bh-title">🐾 БЕСТІАРІЙ ПІДЗЕМЕЛЛЯ</div>
+                <div class="bh-progress" id="bestiary-progress-lbl"></div>
+            </div>
             <button id="bestiary-close-btn" onclick="closeBestiary()">✕</button>
         </div>
         <div id="bestiary-grid"></div>
@@ -11306,52 +11420,146 @@ function _renderBestiary() {
     let grid = document.getElementById('bestiary-grid');
     if (!grid) return;
     let unlockedCount = Math.max(0, floors.length - 1);
+    let total = MONSTER_KIND_NAMES.length;
+
+    // Оновлюємо прогрес у хедері
+    let progLbl = document.getElementById('bestiary-progress-lbl');
+    if (progLbl) {
+        progLbl.innerHTML = 'Відкрито <span>' + unlockedCount + '</span> / ' + total;
+    }
+
     let html = '';
     MONSTER_KIND_NAMES.forEach(function(kindName, i) {
         let unlocked = i < unlockedCount;
         let info     = MON_INFO[kindName] || {};
-        let emoji    = MON_DEV_EMOJI[kindName]  || '?';
+        let emoji    = MON_DEV_EMOJI[kindName] || '?';
         let label    = MON_DEV_LABELS[kindName] || kindName;
         let color    = info.color || '#aa88cc';
+        let floorNeeded = i + 2; // поверх необхідний для розблокування
+
         if (unlocked) {
-            let atkLvl  = getMonStatLvl(kindName, 'atk');
-            let hpLvl   = getMonStatLvl(kindName, 'hp');
-            let evoLvl  = (typeof getEvoLevel === 'function') ? getEvoLevel(kindName) : 0;
-            let branch  = (typeof getActiveBranch === 'function') ? getActiveBranch(kindName) : null;
-            let dmgIcon = info.mag ? '✦' : '⚔';
-            let dmgTag  = info.mag ? 'Магічна' : 'Фізика';
-            // Реальні стати (без perma-бонусів глобального рівня, але з per-kind апгрейдами)
-            let depth = i;
-            let scaledAtk = (info.baseAtk || 0) + (depth < 5 ? depth : 4 + (depth - 4) * 2);
-            let atkVal = Math.round(scaledAtk * (1 + atkLvl * 0.10));
-            let hpVal  = Math.round((80 + depth * 20) * (info.hpMult || 1) * (1 + hpLvl * 0.10));
-            // Еволюція: зрозуміла назва
-            let evoLabel = evoLvl > 0
-                ? (branch ? 'Гілка ' + branch + ' · ' + evoLvl + '/10' : evoLvl + ' / 10 навиків')
-                : '';
-            let evoRow = evoLvl > 0
-                ? '<div class="bc-row"><span class="bc-row-icon">★</span><span class="bc-row-label">Еволюція</span><span class="bc-row-val bc-evo-val">' + evoLabel + '</span></div>'
-                : '';
+            let atkLvl = getMonStatLvl(kindName, 'atk');
+            let hpLvl  = getMonStatLvl(kindName, 'hp');
+            let evoLvl = (typeof getEvoLevel === 'function') ? getEvoLevel(kindName) : 0;
+            let branch = (typeof getActiveBranch === 'function') ? getActiveBranch(kindName) : null;
+            let isMag  = !!info.mag;
+
+            // Стати з масштабуванням та апгрейдами
+            let baseInfo = _monDevBaseInfoFor(i + 1);
+            let atkVal   = Math.round(baseInfo.atk * (1 + atkLvl * 0.10));
+            let hpVal    = Math.round(baseInfo.hp  * (1 + hpLvl  * 0.10));
+            let armor    = baseInfo.armor;
+            let magArmor = baseInfo.magArmor;
+            let regen    = baseInfo.regen;
+            let atkSpd   = baseInfo.atkSpd;
+
+            // Бейджі рівня апгрейду
+            let atkUpg = atkLvl > 0 ? '<span class="bc-upg-dot">+' + atkLvl + '</span>' : '';
+            let hpUpg  = hpLvl  > 0 ? '<span class="bc-upg-dot">+' + hpLvl  + '</span>' : '';
+
+            // Тип пошкодження
+            let dmgBadge = isMag
+                ? '<span class="bc-dmg-badge bc-dmg-mag">МАГ</span>'
+                : '<span class="bc-dmg-badge bc-dmg-phys">ФІЗ</span>';
+
+            // Третя клітинка: броня (фіз + маг через "/", або одна)
+            let armorStr = '';
+            let armorIcon = '🛡';
+            let armorClass = 'cv-arm';
+            if (armor > 0 && magArmor > 0) {
+                armorStr = armor + ' / ' + magArmor;
+                armorIcon = '🛡'; armorClass = 'cv-arm';
+            } else if (armor > 0) {
+                armorStr = String(armor);
+            } else if (magArmor > 0) {
+                armorStr = String(magArmor);
+                armorIcon = '✦'; armorClass = 'cv-mag';
+            } else {
+                armorStr = '—'; armorClass = '';
+            }
+            let armorLbl = (armor > 0 && magArmor > 0) ? 'Броня / Маг' : (magArmor > 0 ? 'Маг.броня' : 'Броня');
+            let cell3 = '<div class="bc-stat-cell">'
+                + '<span class="bc-sc-icon">' + armorIcon + '</span>'
+                + '<span class="bc-sc-lbl">' + armorLbl + '</span>'
+                + '<span class="bc-sc-val ' + armorClass + '">' + armorStr + '</span>'
+                + '</div>';
+
+            // Четверта клітинка: реген якщо є, інакше швидкість атаки
+            let cell4 = regen > 0
+                ? '<div class="bc-stat-cell">'
+                    + '<span class="bc-sc-icon">⟳</span>'
+                    + '<span class="bc-sc-lbl">Реген</span>'
+                    + '<span class="bc-sc-val cv-reg">' + regen.toFixed(1) + '/с</span>'
+                    + '</div>'
+                : '<div class="bc-stat-cell">'
+                    + '<span class="bc-sc-icon">⚡</span>'
+                    + '<span class="bc-sc-lbl">Швидк.</span>'
+                    + '<span class="bc-sc-val cv-spd">' + atkSpd.toFixed(2) + '/с</span>'
+                    + '</div>';
+
+            // Завжди рівно 4 клітинки (2×2)
+            let statsGrid = '<div class="bc-stats-grid">'
+                + '<div class="bc-stat-cell">'
+                    + '<span class="bc-sc-icon">⚔</span>'
+                    + '<span class="bc-sc-lbl">Атака</span>'
+                    + '<span class="bc-sc-val cv-atk">' + atkVal + '</span>' + atkUpg
+                + '</div>'
+                + '<div class="bc-stat-cell">'
+                    + '<span class="bc-sc-icon">♥</span>'
+                    + '<span class="bc-sc-lbl">ХП</span>'
+                    + '<span class="bc-sc-val cv-hp">' + hpVal + '</span>' + hpUpg
+                + '</div>'
+                + cell3
+                + cell4
+                + '</div>';
+
+            // Еволюція
+            let evoRow = '';
+            if (evoLvl > 0) {
+                let evoLabel = branch ? 'Гілка ' + branch + ' · ' + evoLvl + '/10' : evoLvl + ' / 10 навиків';
+                evoRow = '<div class="bc-evo-row">'
+                    + '<span class="bc-sc-icon">★</span>'
+                    + '<span class="bc-sc-lbl">Еволюція</span>'
+                    + '<span class="bc-sc-val">' + evoLabel + '</span>'
+                    + '</div>';
+            }
+
+            // Бейдж рівня у аватарі
+            let floorBadge = '<div class="bc-floor-badge">Рів. ' + floorNeeded + '</div>';
+
             html += '<div class="bc-card bc-unlocked"'
-                  + ' style="border-color:' + color + '55;background:linear-gradient(135deg,' + color + '1a 0%,' + color + '06 100%)"'
+                  + ' style="--bc-accent:' + color + ';--bc-glow:' + color + '44;'
+                  + 'border-color:' + color + '44;'
+                  + 'background:linear-gradient(135deg,' + color + '16 0%,' + color + '06 60%,rgba(8,4,18,0.95) 100%)"'
                   + ' onclick="closeBestiary();openMonsterDev(\'' + kindName + '\')">'
-                  + '<div class="bc-avatar" style="background:' + color + '18" data-kind="' + kindName + '"></div>'
+                  + '<div class="bc-avatar" style="background:linear-gradient(180deg,' + color + '20 0%,transparent 100%)" data-kind="' + kindName + '">'
+                  + floorBadge
+                  + '</div>'
                   + '<div class="bc-stats">'
+                  + '<div class="bc-head-row">'
                   + '<div class="bc-stat-name">' + label + '</div>'
-                  + '<div class="bc-row"><span class="bc-row-icon">⚔</span><span class="bc-row-label">Атака</span><span class="bc-row-val">' + atkVal + '</span></div>'
-                  + '<div class="bc-row"><span class="bc-row-icon">♥</span><span class="bc-row-label">ХП</span><span class="bc-row-val">' + hpVal + '</span></div>'
-                  + '<div class="bc-row"><span class="bc-row-icon">' + dmgIcon + '</span><span class="bc-row-label">Тип атаки</span><span class="bc-row-val">' + dmgTag + '</span></div>'
+                  + dmgBadge
+                  + '</div>'
+                  + statsGrid
                   + evoRow
+                  + '<div class="bc-dev-hint">→ Розвиток</div>'
                   + '</div>'
                   + '</div>';
         } else {
-            html += '<div class="bc-card bc-locked" style="background:rgba(14,8,26,0.7)">'
-                  + '<div class="bc-avatar" style="background:rgba(40,20,60,0.3);display:flex;align-items:center;justify-content:center;font-size:36px;opacity:.22">' + emoji + '</div>'
+            // Locked
+            html += '<div class="bc-card bc-locked"'
+                  + ' style="background:rgba(12,7,22,0.8)">'
+                  + '<div class="bc-avatar" style="background:rgba(30,15,55,0.4);position:relative">'
+                  + '<span class="bc-locked-silhouette">' + emoji + '</span>'
+                  + '<div class="bc-locked-floor">Поверх ' + floorNeeded + '</div>'
+                  + '</div>'
                   + '<div class="bc-stats">'
-                  + '<div class="bc-stat-name" style="color:#443355">???</div>'
-                  + '<div class="bc-row"><span class="bc-row-icon" style="opacity:.25">⚔</span><span class="bc-row-label" style="color:#2a1d40">—</span><span class="bc-row-val" style="color:#2a1d40">—</span></div>'
-                  + '<div class="bc-row"><span class="bc-row-icon" style="opacity:.25">♥</span><span class="bc-row-label" style="color:#2a1d40">—</span><span class="bc-row-val" style="color:#2a1d40">—</span></div>'
-                  + '<div class="bc-row"><span class="bc-row-icon" style="opacity:.25">✦</span><span class="bc-row-label" style="color:#2a1d40">—</span><span class="bc-row-val" style="color:#2a1d40">—</span></div>'
+                  + '<div class="bc-locked-stats">'
+                  + '<div class="bc-locked-label">???</div>'
+                  + '<div class="bc-locked-line"><span>⚔ Атака</span><span>— — —</span></div>'
+                  + '<div class="bc-locked-line"><span>♥ ХП</span><span>— — —</span></div>'
+                  + '<div class="bc-locked-line"><span>🛡 Броня</span><span>— — —</span></div>'
+                  + '</div>'
                   + '</div>'
                   + '</div>';
         }
