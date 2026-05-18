@@ -223,10 +223,10 @@
         .rect-btn small  { font-weight: 400; opacity: 0.75; }
         .btn-floor { background: #1a3658; border-color: #3a6098; }
         .btn-floor:hover { background: #244470; }
-        .btn-wave  { background: #5a1a28; border-color: #993848; }
+        .btn-wave  { background: #5a1a28; border-color: #993848; flex: 1.4; }
         .btn-wave:hover  { background: #74222e; }
-        .btn-bestiary { background: #1a3020; border-color: #3a7048; flex: 0.8; }
-        .btn-bestiary:hover { background: #243e2a; }
+        .cmain-bestiary { background: #1a3020; border-color: #3a7048; }
+        .cmain-bestiary:hover { background: #243e2a; }
         @keyframes atk-ready {
             0%,100% { box-shadow: 0 0 5px #cc3344; background: #6a1e2a; }
             50%      { box-shadow: 0 0 16px #ff5566, 0 0 32px rgba(255,60,80,0.35); background: #852030; }
@@ -2012,20 +2012,25 @@
                 <button class="circle-main-btn cmain-trap" id="btn-menu-trap" onclick="toggleMenu('trap')"
                     title="Купити пастку і встановити на поверсі">
                     <span class="icon">🪤</span>
-                    <span>Побудувати ловушку</span>
+                    <span>Пастки</span>
+                </button>
+            </div>
+
+            <div class="circle-menu" id="menu-bestiary">
+                <button class="circle-main-btn cmain-bestiary" id="btn-bestiary" onclick="openBestiary()"
+                    title="Бестіарій — перегляд і прокачка монстрів">
+                    <span class="icon">🐾</span>
+                    <span>Бестіарій</span>
                 </button>
             </div>
 
         </div>
 
-        <!-- Ряд 2: Поверх + Хвиля + Бестіарій -->
+        <!-- Ряд 2: Поверх + АТАКА -->
         <div class="ctrl-rects">
             <button class="rect-btn btn-floor" id="btn-floor" onclick="buyFloor()"
                 title="Побудувати новий підземний поверх для монстрів і пасток">
                 Побудувати поверх<br><small id="floor-cost-lbl">100💀</small>
-            </button>
-            <button class="rect-btn btn-bestiary" id="btn-bestiary" onclick="openBestiary()">
-                🐾 Бестіарій
             </button>
             <button class="rect-btn btn-wave atk-ready" id="btn-wave" onclick="triggerWave()"
                 title="Викликати наступну хвилю атакуючих героїв. Чим раніше — тим більше бонусних душ!">
@@ -9524,6 +9529,7 @@ function buyLordGrid(id) {
     const cost = _LORD_GRID_COSTS[lvl + 1];
     const avail = getStoredEliteSouls();
     if (avail < cost) return;
+    _haptic(20);
     _psyBuy('lord');
     _store.set('DLSiege_elite', String(avail - cost));
     g[id] = lvl + 1;
@@ -9676,6 +9682,7 @@ function buyTrap(type) {
     let available = floors.slice(0, floors.length - 1).filter(f => !f.hasTrap);
     if (available.length === 0) return;
 
+    _haptic(20);
     _psyBuy('trap');
     // Якщо тільки один поверх доступний — ставимо одразу
     if (available.length === 1) {
@@ -9694,6 +9701,7 @@ function buyTrap(type) {
 // =================== ПОВЕРХ / ХВИЛЯ ===================
 function buyFloor() {
     if (GAME.souls < GAME.floorCost) return;
+    _haptic(25);
     _psyBuy('floor');
     GAME.souls -= GAME.floorCost;
     floors.push(new Floor(floors.length));
@@ -9712,6 +9720,7 @@ function buyFloor() {
 
 function triggerWave() {
     if (GAME.isWave || GAME.waveCooldownActive) return;
+    _haptic([15, 30, 40]);
     GAME.isWave = true;
     GAME.waveCooldownActive = true;
     if (_psyTrack) { _psyTrack.rounds++; _psyTrack.firstBuyDone = false; }
@@ -10676,6 +10685,11 @@ document.addEventListener('keydown', e => {
 const _TAP_PAD = isMobile ? 12 : (isPC ? 6 : 0);
 
 init();
+
+// ── HAPTICS ────────────────────────────────────────────────────────────────
+function _haptic(pattern) {
+    try { if (navigator.vibrate) navigator.vibrate(pattern); } catch(e) {}
+}
 
 // ── TUTORIAL ────────────────────────────────────────────────────────────────
 const _TUT_STEPS = [
@@ -12617,6 +12631,7 @@ function buyMonStat(kindName, stat) {
     let cost = monStatPrice(stat, nextLvl, kindName);
     let cur = dev[key] || 0;
     if (GAME.souls < cost) return;
+    _haptic(20);
     let prevSpent = dev.soulsSpent || 0;
     _psyBuy('monster');
     GAME.souls -= cost;
