@@ -4,6 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Dungeon Lord: Siege Defense</title>
+    <meta property="og:title" content="Dungeon Lord: Siege Defense">
+    <meta property="og:description" content="Ти — Повелитель Підземелля. Захищай підземелля від героїв монстрами, пастками і власними руками. Dark fantasy tower defense.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://github.com/Skokiz/dungeon-lord">
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="Dungeon Lord: Siege Defense">
+    <meta name="twitter:description" content="Dark fantasy tower defense — граєш за Повелителя Підземелля проти героїв.">
     <style>
         /* ═══════════════════════════════════════════════════
            RESET + BASE
@@ -340,6 +347,34 @@
 
         /* ── TRAP SDESC ── */
         .sdesc { display: block; font-size: 0.65em; color: #8866aa; margin-top: 1px; line-height: 1.1; }
+
+        /* ── TOAST ── */
+        #toast-msg {
+            position: fixed; bottom: 115px; left: 50%; transform: translateX(-50%);
+            background: rgba(10,5,25,0.96); border: 1px solid #7744bb;
+            border-radius: 20px; padding: 7px 18px; color: #e8d0ff;
+            font-size: 13px; z-index: 9800; pointer-events: none;
+            opacity: 0; transition: opacity 0.35s ease; white-space: nowrap;
+        }
+
+        /* ── DAILY PANEL ── */
+        #daily-panel {
+            position: fixed; top: 115px; right: 8px; z-index: 500;
+            background: rgba(8,4,20,0.93); border: 1px solid #3a1a5a;
+            border-radius: 10px; padding: 7px 10px; min-width: 140px;
+            font-size: 11px; color: #c0a0e0; pointer-events: none;
+        }
+        .daily-title { font-size: 10px; color: #7744aa; margin-bottom: 4px; font-weight: 600; }
+        .daily-q { margin: 2px 0; line-height: 1.3; }
+        .daily-q.done { color: #55aa55; opacity: 0.7; }
+
+        /* ── SHARE BUTTON ── */
+        #btn-share {
+            background: #1a3a5a; border: 1px solid #4488bb; color: #99ccff;
+            border-radius: 10px; padding: 10px 22px; font-size: 15px; cursor: pointer;
+            margin-top: 8px;
+        }
+        #btn-share:hover { background: #244870; }
 
         /* ═══════════════════════════════════════════════════
            СТАРТОВИЙ ЕКРАН
@@ -1834,6 +1869,7 @@
     <p id="go-desc" style="color:#aaa;font-size:16px;margin-top:8px;">Володаря вбито...</p>
     <div id="go-elite-earned"></div>
     <div id="psy-result-panel"></div>
+    <button id="btn-share" onclick="_shareResult()">📤 Поділитись результатом</button>
     <button id="btn-try-again" onclick="hardReset()">🔄 Спробувати знову</button>
 </div>
 
@@ -2081,6 +2117,17 @@
 
         <button id="help-close-btn" onclick="closeHelp()">✅ Зрозуміло! Починаємо!</button>
     </div>
+</div>
+
+<!-- ── TOAST ── -->
+<div id="toast-msg"></div>
+
+<!-- ── DAILY QUESTS PANEL ── -->
+<div id="daily-panel" style="display:none">
+    <div class="daily-title">📋 Завдання дня</div>
+    <div id="dq-kills"   class="daily-q">○ Знищ 5 героїв +5💀</div>
+    <div id="dq-wave"    class="daily-q">○ Запусти хвилю +5💀</div>
+    <div id="dq-upgrade" class="daily-q">○ Апгрейдни +5💀</div>
 </div>
 
 <!-- ── TUTORIAL BUBBLE ── -->
@@ -4958,6 +5005,7 @@ function beginGame() {
     scheduleNextEnemy();
     setInterval(spawnMinions, 1000);
     setTimeout(function() { try { _tutStart(); } catch(e) {} }, 900);
+    try { _dailyInit(); } catch(e) {}
 }
 
 function spawnLord() {
@@ -8148,6 +8196,7 @@ function loop(ts) {
                 if (_psyTrack) {
                     _psyTrack.combat.totalKills++;
                     if (u._lastHitBy === 'lord') _psyTrack.combat.lordKills++;
+                    _dailyKillCheck();
                 }
                 // ── Елітні душі 💎 ──────────────────────────────────────
                 if (u.heroRank === 'boss') {
@@ -9530,6 +9579,7 @@ function buyLordGrid(id) {
     const avail = getStoredEliteSouls();
     if (avail < cost) return;
     _haptic(20);
+    _questDone('upgrade');
     _psyBuy('lord');
     _store.set('DLSiege_elite', String(avail - cost));
     g[id] = lvl + 1;
@@ -9724,6 +9774,8 @@ function triggerWave() {
     GAME.isWave = true;
     GAME.waveCooldownActive = true;
     if (_psyTrack) { _psyTrack.rounds++; _psyTrack.firstBuyDone = false; }
+    if (_psyTrack && _psyTrack.rounds >= 3) _dailyActivate();
+    _questDone('wave');
     _psyCheck('wave_start');
     // Тільки поточні монстри отримують waveActive — нові спавн не отримають
     units.forEach(u => { if (u.type === 'monster') u.waveActive = true; });
@@ -9734,7 +9786,7 @@ function triggerWave() {
 
     // КД 60 сек: блокуємо кнопку і показуємо зворотній відлік
     let btn = document.getElementById('btn-wave');
-    let remaining = 60;
+    let remaining = 30;
     if (btn) { btn.disabled = true; btn.classList.remove('atk-ready'); btn.innerHTML = `⚔️ АТАКА (${remaining}с)`; }
     let cdInterval = setInterval(() => {
         if (GAME.gameOver) { clearInterval(cdInterval); return; }
@@ -10689,6 +10741,113 @@ init();
 // ── HAPTICS ────────────────────────────────────────────────────────────────
 function _haptic(pattern) {
     try { if (navigator.vibrate) navigator.vibrate(pattern); } catch(e) {}
+}
+
+// ── TOAST ────────────────────────────────────────────────────────────────
+let _toastTid = null;
+function _showToast(msg) {
+    const t = document.getElementById('toast-msg');
+    if (!t) return;
+    t.textContent = msg;
+    t.style.opacity = '1';
+    clearTimeout(_toastTid);
+    _toastTid = setTimeout(function() { t.style.opacity = '0'; }, 3000);
+}
+
+// ── DAILY SYSTEM ────────────────────────────────────────────────────────────
+let _dailyState = null;
+
+function _dailyInit() {
+    const today = new Date().toISOString().slice(0, 10);
+    let lastDate = '', streak = 0;
+    try {
+        lastDate = localStorage.getItem('DL_streak_date') || '';
+        streak = parseInt(localStorage.getItem('DL_streak_count') || '0') || 0;
+    } catch(e) {}
+    let streakBonus = 0;
+    if (lastDate !== today) {
+        const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+        streak = (lastDate === yesterday) ? streak + 1 : 1;
+        streakBonus = Math.min(streak, 7);
+        try {
+            localStorage.setItem('DL_streak_date', today);
+            localStorage.setItem('DL_streak_count', String(streak));
+        } catch(e) {}
+    }
+    const questKey = 'DL_daily_' + today;
+    let quests = { kills: false, wave: false, upgrade: false };
+    try {
+        const saved = localStorage.getItem(questKey);
+        if (saved) quests = JSON.parse(saved);
+    } catch(e) {}
+    _dailyState = { today, questKey, streak, streakBonus, quests, activated: false };
+}
+
+function _dailyActivate() {
+    if (!_dailyState || _dailyState.activated) return;
+    _dailyState.activated = true;
+    if (_dailyState.streakBonus > 0) {
+        const b = _dailyState.streakBonus;
+        _store.set('DLSiege_elite', String(getStoredEliteSouls() + b));
+        GAME.eliteSouls = (GAME.eliteSouls || 0) + b;
+        setTimeout(function() {
+            _showToast('🔥 День ' + _dailyState.streak + ' підряд! +' + b + ' 💀 елітних');
+        }, 500);
+    }
+    _dailyRenderPanel();
+    const panel = document.getElementById('daily-panel');
+    if (panel) panel.style.display = 'block';
+}
+
+function _dailyRenderPanel() {
+    if (!_dailyState) return;
+    const q = _dailyState.quests;
+    function _dq(id, text, done) {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.textContent = (done ? '✓ ' : '○ ') + text + ' +5💀';
+        el.className = 'daily-q' + (done ? ' done' : '');
+    }
+    _dq('dq-kills',   'Знищ 5 героїв', q.kills);
+    _dq('dq-wave',    'Запусти хвилю',  q.wave);
+    _dq('dq-upgrade', 'Апгрейдни',      q.upgrade);
+}
+
+function _questDone(type) {
+    if (!_dailyState || !_dailyState.activated) return;
+    if (_dailyState.quests[type]) return;
+    _dailyState.quests[type] = true;
+    try { localStorage.setItem(_dailyState.questKey, JSON.stringify(_dailyState.quests)); } catch(e) {}
+    _store.set('DLSiege_elite', String(getStoredEliteSouls() + 5));
+    GAME.eliteSouls = (GAME.eliteSouls || 0) + 5;
+    _showToast('✅ Завдання виконано! +5 💀 елітних');
+    _dailyRenderPanel();
+}
+
+function _dailyKillCheck() {
+    if (!_dailyState || !_dailyState.activated || _dailyState.quests.kills) return;
+    if (_psyTrack && _psyTrack.combat.totalKills >= 5) _questDone('kills');
+}
+
+// ── SHARE ────────────────────────────────────────────────────────────────
+function _shareResult() {
+    const pt = (_psyTrack && _psyTrack.rounds > 0) ? _computePsychotype() : null;
+    const descKey = pt ? (pt.philKey + '_' + pt.stratKey) : '';
+    const archetype = pt ? ((_PSY_DESC[descKey] || {}).name || (pt.philName + '-' + pt.stratName)) : 'Лорд Підземелля';
+    const round = pt ? pt.rounds : 0;
+    const kills = pt ? pt.totalKills : 0;
+    const text = '👑 Я — ' + archetype + ' у Dungeon Lord!\nОбороняв ' + round + ' хвиль, знищив ' + kills + ' ворогів.\n🔗 github.com/Skokiz/dungeon-lord';
+    if (navigator.share) {
+        navigator.share({ title: 'Dungeon Lord', text: text }).catch(function() {});
+    } else if (navigator.clipboard) {
+        navigator.clipboard.writeText(text).then(function() {
+            _showToast('📋 Скопійовано!');
+        }).catch(function() {
+            window.open('https://t.me/share/url?url=https%3A%2F%2Fgithub.com%2FSkokiz%2Fdungeon-lord&text=' + encodeURIComponent(text));
+        });
+    } else {
+        window.open('https://t.me/share/url?url=https%3A%2F%2Fgithub.com%2FSkokiz%2Fdungeon-lord&text=' + encodeURIComponent(text));
+    }
 }
 
 // ── TUTORIAL ────────────────────────────────────────────────────────────────
@@ -12632,6 +12791,7 @@ function buyMonStat(kindName, stat) {
     let cur = dev[key] || 0;
     if (GAME.souls < cost) return;
     _haptic(20);
+    _questDone('upgrade');
     let prevSpent = dev.soulsSpent || 0;
     _psyBuy('monster');
     GAME.souls -= cost;
