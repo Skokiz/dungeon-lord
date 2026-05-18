@@ -1779,54 +1779,55 @@
     <canvas id="start-canvas"></canvas>
     <h1>👑 Dungeon Lord</h1>
     <div class="subtitle">Siege Defense</div>
-    <div id="lvl-progress-label">Рівень <span id="lvl-num">1</span> <span id="lvl-total">/ 50</span></div>
+    <button id="btn-lang" onclick="_setLang(_lang==='uk'?'en':'uk')" style="position:absolute;top:12px;right:12px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.2);color:#ccc;border-radius:8px;padding:5px 10px;font-size:13px;cursor:pointer;">🇬🇧 EN</button>
+    <div id="lvl-progress-label"><span data-i18n="lvl-label">Рівень</span> <span id="lvl-num">1</span> <span id="lvl-total">/ 50</span></div>
     <div id="start-elite-display"><span class="esoul-icon">💀</span> <span id="start-elite-num">0</span></div>
-    <button id="btn-continue" onclick="continueGame()">▶ Почати гру</button>
-    <button id="btn-instructions" onclick="openInstructions()">📖 Інструкція</button>
-    <button id="btn-reset-progress" onclick="confirmResetProgress()">↺ Скинути все</button>
+    <button id="btn-continue" onclick="continueGame()" data-i18n="btn-start">▶ Почати гру</button>
+    <button id="btn-instructions" onclick="openInstructions()" data-i18n="btn-instr">📖 Інструкція</button>
+    <button id="btn-reset-progress" onclick="confirmResetProgress()" data-i18n="btn-reset">↺ Скинути все</button>
 </div>
 
 <!-- ── ДУША ПІДЗЕМЕЛЛЯ ── -->
 <div id="soul-dungeon-screen">
-    <h2>💜 Душа Підземелля</h2>
+    <h2 data-i18n="sd-title">💜 Душа Підземелля</h2>
     <div id="soul-dungeon-elite"><span class="esoul-icon">💀</span> <span id="soul-dungeon-elite-num">0</span></div>
-    <div id="soul-dungeon-hint">Витрачай Елітні Душі на назавжди-покращення.<br>Ефект застосовується з наступного рівня.</div>
+    <div id="soul-dungeon-hint" data-i18n="sd-hint" data-i18n-html>Витрачай Елітні Душі на назавжди-покращення.<br>Ефект застосовується з наступного рівня.</div>
     <div id="soul-dungeon-cards"></div>
-    <button id="btn-close-soul-dungeon" onclick="closeSoulDungeon()">← Назад</button>
+    <button id="btn-close-soul-dungeon" onclick="closeSoulDungeon()" data-i18n="btn-back">← Назад</button>
 </div>
 
 <!-- ── ІНСТРУКЦІЯ ── -->
 <div id="instructions-screen">
-    <h2>📖 Інструкція</h2>
+    <h2 data-i18n="instr-title">📖 Інструкція</h2>
     <div class="instr-section">
-        <h3>🎯 Мета</h3>
-        <p>Захисти підземелля від героїв. Знищ місто ворогів (зменши ❤️ до 0), перш ніж герої вб'ють твого Лорда 💜.</p>
+        <h3 data-i18n="instr-goal-h">🎯 Мета</h3>
+        <p data-i18n="instr-goal">Захисти підземелля від героїв. Знищ місто ворогів (зменши ❤️ до 0), перш ніж герої вб'ють твого Лорда 💜.</p>
     </div>
     <div class="instr-section">
-        <h3>💀 Душі</h3>
-        <p>Вбивай героїв — отримуй Душі 💀. Купуй нові поверхи, монстрів, пастки, покращуй Лорда і монстрів.</p>
+        <h3 data-i18n="instr-souls-h">💀 Душі</h3>
+        <p data-i18n="instr-souls">Вбивай героїв — отримуй Душі 💀. Купуй нові поверхи, монстрів, пастки, покращуй Лорда і монстрів.</p>
     </div>
     <div class="instr-section">
-        <h3><span class="esoul-icon">💀</span> Елітні Душі</h3>
-        <p>З елітних героїв випадає 1<span class="esoul-icon">💀</span>, з босів — 3<span class="esoul-icon">💀</span>. Вони зберігаються між рівнями якщо ти переміг або програв. Використовуй їх у Душі Підземелля для назавжди-покращень.</p>
+        <h3><span class="esoul-icon">💀</span> <span data-i18n="instr-elite-h">Елітні Душі</span></h3>
+        <p data-i18n="instr-elite">З елітних героїв випадає 1💀, з босів — 3💀. Вони зберігаються між рівнями. Використовуй їх у Душі Підземелля для назавжди-покращень.</p>
     </div>
     <div class="instr-section">
-        <h3>🏗️ Поверхи</h3>
-        <p>Будуй нові поверхи кнопкою "Побудувати поверх". Кожен поверх може мати монстрів і пастки. Покращуй поверх щоб мати більше монстрів.</p>
+        <h3 data-i18n="instr-floor-h">🏗️ Поверхи</h3>
+        <p data-i18n="instr-floor">Будуй нові поверхи кнопкою "Побудувати поверх". Кожен поверх може мати монстрів і пастки.</p>
     </div>
     <div class="instr-section">
-        <h3>⚔️ Монстри</h3>
-        <p>Виклик монстра коштує душі. Покращуй атаку і HP монстрів глобально через меню. Монстри захищають поверхи від героїв.</p>
+        <h3 data-i18n="instr-mon-h">⚔️ Монстри</h3>
+        <p data-i18n="instr-mon">Виклик монстра коштує душі. Покращуй атаку і HP монстрів глобально через меню.</p>
     </div>
     <div class="instr-section">
-        <h3>🌀 Пастки</h3>
-        <p>Купи пастку → натисни на поверх щоб встановити. Шипи 🗡️ — миттєвий урон, Дротик 🪃 — постійний обстріл, Телепорт 🌀 — відправляє героя назад, Монстр 👾 — виклик збільшеного монстра.</p>
+        <h3 data-i18n="instr-trap-h">🌀 Пастки</h3>
+        <p data-i18n="instr-trap">Купи пастку → натисни на поверх щоб встановити. Шипи 🗡️ — урон, Дротик 🪃 — обстріл, Телепорт 🌀 — відправляє назад, Монстр 👾 — виклик захисника.</p>
     </div>
     <div class="instr-section">
-        <h3>📈 Рівні 1–50</h3>
-        <p>Кожен рівень місто стає сильнішим, а герої потужнішими. Пройди всі 50 рівнів!</p>
+        <h3 data-i18n="instr-lvl-h">📈 Рівні 1–50</h3>
+        <p data-i18n="instr-lvl">Кожен рівень місто стає сильнішим, а герої потужнішими. Пройди всі 50 рівнів!</p>
     </div>
-    <button id="btn-close-instructions" onclick="closeInstructions()">← Назад</button>
+    <button id="btn-close-instructions" onclick="closeInstructions()" data-i18n="btn-back">← Назад</button>
 </div>
 
 <!-- ── СЮЖЕТ ЛОРДА ── -->
@@ -1834,30 +1835,30 @@
     <!-- Аватар лорда (ліво-знизу) -->
     <div class="story-lord-wrap">
         <canvas id="story-lord-canvas" width="90" height="130"></canvas>
-        <div class="story-lord-name">👑 Лорд</div>
+        <div class="story-lord-name" data-i18n="lord-name">👑 Лорд</div>
     </div>
     <!-- Мовна бульбашка -->
     <div class="story-bubble-wrap">
         <div class="story-bubble">
             <div id="story-text"></div>
-            <div id="story-tap-hint">Натисни щоб продовжити ▼</div>
+            <div id="story-tap-hint" data-i18n="story-tap">Натисни щоб продовжити ▼</div>
             <div id="story-choices"></div>
             <div id="story-loading">
                 <div class="story-spinner"></div>
-                <div id="story-loading-text">Лорд думає... що само по собі вже підозріло</div>
+                <div id="story-loading-text" data-i18n="story-loading">Лорд думає... що само по собі вже підозріло</div>
             </div>
         </div>
     </div>
-    <button id="story-skip-btn">Пропустити →</button>
+    <button id="story-skip-btn" data-i18n="story-skip">Пропустити →</button>
 </div>
 
 <!-- ── ПАУЗА ── -->
 <div id="pause-overlay" class="overlay-base">
-    <h2>⏸ ПАУЗА</h2>
+    <h2 data-i18n="pause-title">⏸ ПАУЗА</h2>
     <div id="pause-quote"></div>
-    <button class="pause-btn" id="pause-resume-btn" onclick="togglePause()">Продовжити</button>
-    <button class="pause-btn" id="pause-restart-btn" onclick="hardReset()" style="margin-top:8px;background:rgba(180,30,30,0.85);border-color:#ff4444;">🔄 Рестарт</button>
-    <button id="pause-api-key-btn" onclick="StoryManager.promptApiKey()">🤖 Claude API-ключ</button>
+    <button class="pause-btn" id="pause-resume-btn" onclick="togglePause()" data-i18n="pause-resume">Продовжити</button>
+    <button class="pause-btn" id="pause-restart-btn" onclick="hardReset()" style="margin-top:8px;background:rgba(180,30,30,0.85);border-color:#ff4444;" data-i18n="pause-restart">🔄 Рестарт</button>
+    <button id="pause-api-key-btn" onclick="StoryManager.promptApiKey()" data-i18n="pause-api">🤖 Claude API-ключ</button>
 </div>
 
 <!-- ── ДОНЕСЕННЯ (наративні рішення) ── -->
@@ -1865,23 +1866,23 @@
 
 <!-- ── GAME OVER ── -->
 <div id="game-over" class="overlay-base">
-    <h1 id="go-title">ПОРАЗКА</h1>
-    <p id="go-desc" style="color:#aaa;font-size:16px;margin-top:8px;">Володаря вбито...</p>
+    <h1 id="go-title" data-i18n="go-defeat">ПОРАЗКА</h1>
+    <p id="go-desc" style="color:#aaa;font-size:16px;margin-top:8px;" data-i18n="go-dead">Володаря вбито...</p>
     <div id="go-elite-earned"></div>
     <div id="psy-result-panel"></div>
-    <button id="btn-share" onclick="_shareResult()">📤 Поділитись результатом</button>
-    <button id="btn-try-again" onclick="hardReset()">🔄 Спробувати знову</button>
+    <button id="btn-share" onclick="_shareResult()" data-i18n="btn-share">📤 Поділитись результатом</button>
+    <button id="btn-try-again" onclick="hardReset()" data-i18n="go-retry">🔄 Спробувати знову</button>
 </div>
 
 <!-- ── Модалка вибору гілки еволюції (Phase 4a) ── -->
 <div id="branch-choice-overlay" class="overlay-base">
     <div class="branch-choice-card">
         <div class="branch-choice-title" id="branch-choice-title">Слайм досяг 3-го рівня еволюції</div>
-        <div class="branch-choice-subtitle">Обери шлях розвитку — рішення невідворотне</div>
+        <div class="branch-choice-subtitle" data-i18n="branch-subtitle">Обери шлях розвитку — рішення невідворотне</div>
         <div class="branch-choice-options" id="branch-choice-options">
             <!-- заповнюється з JS -->
         </div>
-        <div class="branch-choice-warn">Після вибору інша гілка стане недоступною для цього монстра</div>
+        <div class="branch-choice-warn" data-i18n="branch-warn">Після вибору інша гілка стане недоступною для цього монстра</div>
     </div>
 </div>
 
@@ -1957,8 +1958,8 @@
 <!-- ── ПІДКАЗКА ПАСТКИ ── -->
 <div id="trap-hint">
     <div style="font-size:20px;margin-bottom:4px" id="trap-hint-icon">🌀</div>
-    <div style="font-size:13px;font-weight:bold;color:#ffcc00;">Натисни на поверх</div>
-    <div style="font-size:10px;color:#aaa;margin-top:3px;">для встановлення пастки</div>
+    <div style="font-size:13px;font-weight:bold;color:#ffcc00;" data-i18n="trap-hint-line1">Натисни на поверх</div>
+    <div style="font-size:10px;color:#aaa;margin-top:3px;" data-i18n="trap-hint-line2">для встановлення пастки</div>
 </div>
 
 <!-- ── ГОЛОВНИЙ LAYOUT ── -->
@@ -1975,18 +1976,18 @@
                 <div class="resource-box elite-box" id="elite-souls-box"><span class="esoul-icon">💀</span> <span id="elite-souls-display">0</span></div>
             </div>
             <div class="hud-right">
-                <div class="hp-label">Місто</div>
+                <div class="hp-label" data-i18n="hud-city">Місто</div>
                 <div class="hp-bar"><div id="city-hp" class="hp-fill" style="width:100%;background:#a83838"></div><span class="hp-num" id="city-hp-num">2000 / 2000</span></div>
-                <div class="hp-label-lord">Володар</div>
+                <div class="hp-label-lord" data-i18n="hud-lord">Володар</div>
                 <div class="hp-bar"><div id="lord-hp" class="hp-fill" style="width:100%;background:#7744bb"></div><span class="hp-num" id="lord-hp-num">500 / 500</span></div>
-                <div class="threat-line">Загроза — <span id="difficulty-level">0</span><span class="hud-max">/<span id="max-threat">5</span></span></div>
-                <div class="threat-line">Сила героїв — <span id="hero-scale">100</span>%<span class="hud-max">/<span id="max-hero-scale">100</span>%</span></div>
+                <div class="threat-line"><span data-i18n="hud-threat">Загроза — </span><span id="difficulty-level">0</span><span class="hud-max">/<span id="max-threat">5</span></span></div>
+                <div class="threat-line"><span data-i18n="hud-heroes">Сила героїв — </span><span id="hero-scale">100</span>%<span class="hud-max">/<span id="max-hero-scale">100</span>%</span></div>
                 <div id="psy-whisper"></div>
             </div>
         </div>
 
         <!-- Кнопка паузи -->
-        <button id="pause-toggle-btn" onclick="togglePause()">Пауза</button>
+        <button id="pause-toggle-btn" onclick="togglePause()" data-i18n="btn-pause">Пауза</button>
 
     </div>
 
@@ -2001,7 +2002,7 @@
                     <button class="sub-btn s-atk" id="btn-lord-upg-open" onclick="openLordUpgrade()"
                         title="Прокачка Лорда — 3×3 дерево апгрейдів">
                         <span class="sicon">⚗️</span>
-                        <span class="slabel">Прокачка</span>
+                        <span class="slabel" data-i18n="ctrl-lord-upg">Прокачка</span>
                         <span class="scost" id="lord-upg-badge">—</span>
                     </button>
 
@@ -2009,7 +2010,7 @@
                 <button class="circle-main-btn cmain-lord" id="btn-menu-lord" onclick="toggleMenu('lord')"
                     title="Прокачати Лорда Підземелля">
                     <span class="icon">👑</span>
-                    <span>Лорд</span>
+                    <span data-i18n="ctrl-lord">Лорд</span>
                 </button>
             </div>
 
@@ -2019,36 +2020,36 @@
                     <button class="sub-btn s-spike" id="btn-trap-spike" onclick="buyTrap('spike')"
                         title="Шипи: завдають шкоди герою при вході на поверх. Натисни поверх щоб встановити.">
                         <span class="sicon">🗡️</span>
-                        <span class="slabel">Шипи</span>
+                        <span class="slabel" data-i18n="trap-spike">Шипи</span>
                         <span class="scost">70💀</span>
-                        <span class="sdesc">фіз. шкода</span>
+                        <span class="sdesc" data-i18n="trap-spike-d">фіз. шкода</span>
                     </button>
                     <button class="sub-btn s-dart" id="btn-trap-dart" onclick="buyTrap('dart')"
                         title="Дротик: обстрілює героя що знаходиться на поверсі. Натисни поверх щоб встановити.">
                         <span class="sicon">🪃</span>
-                        <span class="slabel">Дротик</span>
+                        <span class="slabel" data-i18n="trap-dart">Дротик</span>
                         <span class="scost">80💀</span>
-                        <span class="sdesc">дальня атака</span>
+                        <span class="sdesc" data-i18n="trap-dart-d">дальня атака</span>
                     </button>
                     <button class="sub-btn s-tele" id="btn-trap-tele" onclick="buyTrap('teleport')"
                         title="Телепорт: повертає героя на початок підземелля. Натисни поверх щоб встановити.">
                         <span class="sicon">🌀</span>
-                        <span class="slabel">Телепорт</span>
+                        <span class="slabel" data-i18n="trap-tele">Телепорт</span>
                         <span class="scost">100💀</span>
-                        <span class="sdesc">відкидає назад</span>
+                        <span class="sdesc" data-i18n="trap-tele-d">відкидає назад</span>
                     </button>
                     <button class="sub-btn s-summon" id="btn-trap-summon" onclick="buyTrap('summon')"
                         title="Виклик: призиває монстра-захисника на поверсі. Натисни поверх щоб встановити.">
                         <span class="sicon">⭐</span>
-                        <span class="slabel">Виклик</span>
+                        <span class="slabel" data-i18n="trap-summon">Виклик</span>
                         <span class="scost">120💀</span>
-                        <span class="sdesc">спавн монстра</span>
+                        <span class="sdesc" data-i18n="trap-summon-d">спавн монстра</span>
                     </button>
                 </div>
                 <button class="circle-main-btn cmain-trap" id="btn-menu-trap" onclick="toggleMenu('trap')"
                     title="Купити пастку і встановити на поверсі">
                     <span class="icon">🪤</span>
-                    <span>Пастки</span>
+                    <span data-i18n="ctrl-trap">Пастки</span>
                 </button>
             </div>
 
@@ -2056,7 +2057,7 @@
                 <button class="circle-main-btn cmain-bestiary" id="btn-bestiary" onclick="openBestiary()"
                     title="Бестіарій — перегляд і прокачка монстрів">
                     <span class="icon">🐾</span>
-                    <span>Бестіарій</span>
+                    <span data-i18n="ctrl-bestiary">Бестіарій</span>
                 </button>
             </div>
 
@@ -2066,11 +2067,11 @@
         <div class="ctrl-rects">
             <button class="rect-btn btn-floor" id="btn-floor" onclick="buyFloor()"
                 title="Побудувати новий підземний поверх для монстрів і пасток">
-                Побудувати поверх<br><small id="floor-cost-lbl">100💀</small>
+                <span data-i18n="btn-floor">Побудувати поверх</span><br><small id="floor-cost-lbl">100💀</small>
             </button>
             <button class="rect-btn btn-wave atk-ready" id="btn-wave" onclick="triggerWave()"
                 title="Викликати наступну хвилю атакуючих героїв. Чим раніше — тим більше бонусних душ!">
-                АТАКА
+                <span data-i18n="btn-wave">АТАКА</span>
             </button>
         </div>
 
@@ -2083,39 +2084,39 @@
 <!-- ── МОДАЛКА ТУТОРІАЛУ ── -->
 <div id="help-modal" style="display:none" onclick="if(event.target===this)closeHelp()">
     <div id="help-box">
-        <h2>👑 Dungeon Lord: Siege Defense</h2>
-        <div class="help-sub">Ти — Повелитель Підземелля. Не дай героям дістатись до міста!</div>
+        <h2 data-i18n="help-title">👑 Dungeon Lord: Siege Defense</h2>
+        <div class="help-sub" data-i18n="help-sub">Ти — Повелитель Підземелля. Не дай героям дістатись до міста!</div>
 
         <div class="help-row">
             <span class="hi">💀</span>
-            <span><b>Душі</b> — твоя валюта. Збираєш їх убиваючи героїв, витрачаєш на розвиток.</span>
+            <span data-i18n="help-souls" data-i18n-html><b>Душі</b> — твоя валюта. Збираєш їх убиваючи героїв, витрачаєш на розвиток.</span>
         </div>
         <div class="help-row">
             <span class="hi">⚔️</span>
-            <span><b>АТАКА</b> — запускає наступну групу героїв-атакерів. <span class="hd">Чим раніше натиснеш — тим більше бонусних душ отримаєш!</span></span>
+            <span data-i18n="help-atk" data-i18n-html><b>АТАКА</b> — запускає наступну групу героїв. <span class="hd">Чим раніше натиснеш — тим більше бонусних душ!</span></span>
         </div>
         <div class="help-row">
             <span class="hi">🏗️</span>
-            <span><b>Поверх</b> — будує новий підземний поверх. <span class="hd">На поверхах стоять монстри і можна ставити пастки — чим глибше герой йде, тим важче йому вижити.</span></span>
+            <span data-i18n="help-floor" data-i18n-html><b>Поверх</b> — будує новий підземний поверх. <span class="hd">На поверхах стоять монстри і можна ставити пастки.</span></span>
         </div>
         <div class="help-row">
             <span class="hi">🪤</span>
-            <span><b>Пастки</b> — купи пастку, потім <span class="hd">натисни на поверх</span> щоб встановити. Шипи — шкода, Дротик — обстріл, Телепорт — повертає героя назад, Виклик — призиває монстра.</span>
+            <span data-i18n="help-trap" data-i18n-html><b>Пастки</b> — купи пастку, потім <span class="hd">натисни на поверх</span> щоб встановити.</span>
         </div>
         <div class="help-row">
             <span class="hi">👑</span>
-            <span><b>Володар</b> — твій персонаж що атакує героїв на поверхні. Прокачуй атаку і HP.</span>
+            <span data-i18n="help-lord-row" data-i18n-html><b>Володар</b> — твій персонаж що атакує героїв на поверхні.</span>
         </div>
         <div class="help-row">
             <span class="hi">🧟</span>
-            <span><b>Монстри</b> — покращуй атаку і витривалість усіх монстрів підземелля одночасно.</span>
+            <span data-i18n="help-monsters" data-i18n-html><b>Монстри</b> — покращуй атаку і витривалість усіх монстрів підземелля одночасно.</span>
         </div>
         <div class="help-row">
             <span class="hi">📷</span>
-            <span><span class="hd">Потягни камеру вгору/вниз</span> щоб побачити глибші поверхи.</span>
+            <span data-i18n="help-camera" data-i18n-html><span class="hd">Потягни камеру вгору/вниз</span> щоб побачити глибші поверхи.</span>
         </div>
 
-        <button id="help-close-btn" onclick="closeHelp()">✅ Зрозуміло! Починаємо!</button>
+        <button id="help-close-btn" onclick="closeHelp()" data-i18n="help-ok">✅ Зрозуміло! Починаємо!</button>
     </div>
 </div>
 
@@ -2124,10 +2125,10 @@
 
 <!-- ── DAILY QUESTS PANEL ── -->
 <div id="daily-panel" style="display:none">
-    <div class="daily-title">📋 Завдання дня</div>
-    <div id="dq-kills"   class="daily-q">○ Знищ 5 героїв +5💀</div>
-    <div id="dq-wave"    class="daily-q">○ Запусти хвилю +5💀</div>
-    <div id="dq-upgrade" class="daily-q">○ Апгрейдни +5💀</div>
+    <div class="daily-title" data-i18n="daily-title">📋 Завдання дня</div>
+    <div id="dq-kills"   class="daily-q" data-i18n="dq-kills">○ Знищ 5 героїв +5💀</div>
+    <div id="dq-wave"    class="daily-q" data-i18n="dq-wave">○ Запусти хвилю +5💀</div>
+    <div id="dq-upgrade" class="daily-q" data-i18n="dq-upgrade">○ Апгрейдни +5💀</div>
 </div>
 
 <!-- ── TUTORIAL BUBBLE ── -->
@@ -2135,11 +2136,12 @@
     <div id="tut-step-lbl">Підказка 1 / 4</div>
     <div id="tut-text"></div>
     <div id="tut-bubble-btns">
-        <button onclick="_tutEnd()">Пропустити</button>
-        <button id="tut-btn-next" onclick="_tutNext()">Далі →</button>
+        <button onclick="_tutEnd()" data-i18n="tut-skip">Пропустити</button>
+        <button id="tut-btn-next" onclick="_tutNext()" data-i18n="tut-next">Далі →</button>
     </div>
 </div>
 
+<script src="models/i18n.js?v=1"></script>
 <script src="models/draw_slime.js?v=4"></script>
 <script src="models/draw_skeleton.js?v=1"></script>
 <script src="models/hero_flat.js?v=24"></script>
@@ -4925,7 +4927,7 @@ function init() {
     const _lvlEl = document.getElementById('lvl-num');
     if (_lvlEl) _lvlEl.textContent = _savedLvl;
     const _contBtn = document.getElementById('btn-continue');
-    if (_contBtn) _contBtn.textContent = _savedLvl === 1 ? '▶ Почати гру' : `▶ Рівень ${_savedLvl}`;
+    if (_contBtn) _contBtn.textContent = _savedLvl === 1 ? _t('btn-start') : _t('btn-level', {n:_savedLvl});
     const _resetBtn = document.getElementById('btn-reset-progress');
     if (_resetBtn) _resetBtn.style.display = '';
     // Показуємо баланс елітних душ
@@ -4934,6 +4936,7 @@ function init() {
     // Завантажуємо perma-дані глобально
     _permaData = _loadPerma();
     // Анімований старт-екран
+    _applyLang();
     _initStartScreen();
 }
 
@@ -8413,13 +8416,13 @@ function loop(ts) {
         saveProgress(_nextLvl);
         commitEliteSouls(); // зберігаємо зароблені елітні душі
         const _isLast = _lvl >= 50;
-        document.getElementById('go-title').innerText = _isLast ? '🏆 ГРУ ПРОЙДЕНО!' : `Рівень ${_lvl} пройдено!`;
+        document.getElementById('go-title').innerText = _isLast ? _t('go-win-all') : _t('go-win-lvl', {n:_lvl});
         document.getElementById('go-title').style.color = 'lime';
-        document.getElementById('go-desc').innerText = _isLast ? 'Всі 50 рівнів пройдено! 🎉' : `Далі: Рівень ${_nextLvl} / 50`;
+        document.getElementById('go-desc').innerText = _isLast ? _t('go-all50') : _t('go-next', {n:_nextLvl});
         const _eEl = document.getElementById('go-elite-earned');
-        if (_eEl) _eEl.innerText = GAME.eliteSouls > 0 ? `+${GAME.eliteSouls} 💀 зароблено (всього: ${getStoredEliteSouls()})` : '';
+        if (_eEl) _eEl.innerText = GAME.eliteSouls > 0 ? _t('go-elite', {n:GAME.eliteSouls, t:getStoredEliteSouls()}) : '';
         const _tryBtn = document.getElementById('btn-try-again');
-        _tryBtn.textContent = _isLast ? '🔄 Грати заново' : `→ Рівень ${_nextLvl}`;
+        _tryBtn.textContent = _isLast ? _t('go-retry-all') : _t('go-next-btn', {n:_nextLvl});
         _tryBtn.onclick = () => hardReset();
         if (_isLast) _showPsychotypeResult();
         document.getElementById('game-over').style.display = 'flex';
@@ -8657,9 +8660,9 @@ let _psyCurrentEv = null;
 
 // ── Ω Рядок-налаштування тону (3 варіанти) ─────────────────────────────────
 const _PSY_TEMP_LINE = {
-    hot:  'Ти не спостерігав — ти сам стояв у перших рядах.',
-    cold: 'Поки підземелля горіло, ти знав що робити — і це не було "йти вперед".',
-    cyn:  'Ти бився тільки коли це мало сенс. Зазвичай мало.',
+    hot:  () => _t('psy-temp-hot'),
+    cold: () => _t('psy-temp-cold'),
+    cyn:  () => _t('psy-temp-cyn'),
 };
 
 // ── 36 описів (Φ × Σ) ────────────────────────────────────────────────────────
@@ -9225,7 +9228,7 @@ const _DECISION_EVENTS = [
 function _psyPickEvent(trigger) {
     if (!_psyTrack) return null;
     if (Math.random() > 0.40) return null;
-    let pool = _DECISION_EVENTS.filter(e =>
+    let pool = _getDecisionEvents().filter(e =>
         e.trigger === trigger &&
         e.minRound <= _psyTrack.rounds &&
         !_psyTrack.shown.includes(e.id) &&
@@ -9374,15 +9377,16 @@ function _showPsychotypeResult() {
     if (!pt || !el) return;
 
     const descKey = `${pt.philKey}_${pt.stratKey}`;
-    const desc    = _PSY_DESC[descKey];
+    const desc    = _getPsyDesc()[descKey];
     const title   = desc ? desc.name : `${pt.philName}-${pt.stratName}`;
-    const tempLine = _PSY_TEMP_LINE[pt.temp] || '';
+    const tempFn = _PSY_TEMP_LINE[pt.temp];
+    const tempLine = tempFn ? tempFn() : '';
 
     const scoreRows = [
-        { key:'syla',     ico:'💜', lbl:'Лорд',    val: pt.buys.lord,    score: pt.scores.syla },
-        { key:'lehion',   ico:'👾', lbl:'Монстри', val: pt.buys.monster, score: pt.scores.lehion },
-        { key:'fortress', ico:'🏰', lbl:'Поверхи', val: pt.buys.floor,   score: pt.scores.fortress },
-        { key:'trap',     ico:'🪤', lbl:'Пастки',  val: pt.buys.trap,    score: pt.scores.trap },
+        { key:'syla',     ico:'💜', lbl:_t('psy-lbl-lord'),  val: pt.buys.lord,    score: pt.scores.syla },
+        { key:'lehion',   ico:'👾', lbl:_t('psy-lbl-army'),  val: pt.buys.monster, score: pt.scores.lehion },
+        { key:'fortress', ico:'🏰', lbl:_t('psy-lbl-floor'), val: pt.buys.floor,   score: pt.scores.fortress },
+        { key:'trap',     ico:'🪤', lbl:_t('psy-lbl-trap'),  val: pt.buys.trap,    score: pt.scores.trap },
     ]
     .filter(r => r.val > 0)
     .sort((a, b) => b.score - a.score)
@@ -9390,30 +9394,33 @@ function _showPsychotypeResult() {
         const bar = Math.round(Math.min(r.score, 1) * 10);
         const filled = '█'.repeat(bar) + '░'.repeat(10 - bar);
         const dom = r.key === pt.stratKey ? ' ◄' : '';
-        return `<div>${r.ico} ${r.lbl}: ${r.val} рішень <span style="font-family:monospace;font-size:10px;color:#6a3a9a">${filled}</span>${dom}</div>`;
+        return `<div>${r.ico} ${r.lbl}: ${r.val} ${_t('psy-decisions')} <span style="font-family:monospace;font-size:10px;color:#6a3a9a">${filled}</span>${dom}</div>`;
     }).join('');
 
-    const L = { dom:'Влада', pom:'Помста', zna:'Знання', vyj:'Виживання', kha:'Хаос', per:'Архітектура' };
+    const L = {
+        dom: _t('psy-char-dom'), pom: _t('psy-char-pom'), zna: _t('psy-char-zna'),
+        vyj: _t('psy-char-vyj'), kha: _t('psy-char-kha'), per: _t('psy-char-per'),
+    };
     const philRows = Object.entries(pt.decisions).filter(([,v])=>v>0)
         .sort((a,b)=>b[1]-a[1]).map(([k,v])=>`${L[k]||k}:${v}`).join(' · ');
     const tempStat = 5 * pt.totalKills < pt.rounds
-        ? `замало даних (${pt.totalKills} вбивств, сер. ${(pt.lordAttacks/pt.rounds).toFixed(1)} атак/раунд)`
-        : `лорд особисто ${pt.lordRate}% з ${pt.totalKills} вбивств`;
+        ? _t('psy-few-data', {k: pt.totalKills, a: (pt.lordAttacks/pt.rounds).toFixed(1)})
+        : _t('psy-lord-kills', {r: pt.lordRate, k: pt.totalKills});
 
     el.innerHTML = `
         <div class="psy-prefix">${tempLine}</div>
-        <div class="psy-title">🔮 Ти зіграв як:</div>
+        <div class="psy-title">${_t('psy-played-as')}</div>
         <div class="psy-archetype">${title}</div>
         ${desc ? `
         <div class="psy-tag">"${desc.tag}"</div>
         <div class="psy-body">${desc.body}</div>` : ''}
         <hr class="psy-divider">
-        <div class="psy-stats-title">Статистика</div>
+        <div class="psy-stats-title">${_t('psy-stats')}</div>
         <div class="psy-stats">
             ${scoreRows}
             <div>⚔️ ${tempStat}</div>
-            <div>${pt.noDecisions ? '📜 Рішень не приймалось' : `📜 ${philRows}`}</div>
-            <div>📊 Раундів: ${pt.rounds}</div>
+            <div>${pt.noDecisions ? _t('psy-no-dec') : `📜 ${philRows}`}</div>
+            <div>${_t('psy-rounds', {n: pt.rounds})}</div>
         </div>`;
     el.style.display = 'block';
 }
@@ -9552,18 +9559,18 @@ function _lugRenderDetail(p, eliteSouls) {
             : isNext
                 ? `<span class="lud-lvl-tag cost">${nextCost}💀</span>`
                 : '<span class="lud-lvl-tag" style="color:#331155">🔒</span>';
-        lvlsHtml += `<div class="${cls}"><div class="lud-lvl-n">Рв${n}</div><div class="lud-lvl-desc">${lv.desc}</div>${tag}</div>`;
+        lvlsHtml += `<div class="${cls}"><div class="lud-lvl-n">${_t('lud-rv')}${n}</div><div class="lud-lvl-desc">${lv.desc}</div>${tag}</div>`;
     });
 
     let btnHtml = maxed
-        ? '<div class="lud-maxed">✨ Максимальний рівень</div>'
+        ? `<div class="lud-maxed">${_t('lud-maxed')}</div>`
         : `<button class="lud-buy-btn" ${canAfford ? '' : 'disabled'} onclick="buyLordGrid('${def.id}')">`
-          + (canAfford ? `Прокачати — ${nextCost} 💀` : `Потрібно ${nextCost} 💀 еліт`) + '</button>';
+          + (canAfford ? _t('lud-upgrade', {n: nextCost}) : _t('lud-need', {n: nextCost})) + '</button>';
 
     det.innerHTML = `
         <div style="--cc:${def.color}">
           <div class="lud-title">${def.icon} ${def.name}</div>
-          <div class="lud-sub">${def.rowLbl} · ${def.colLbl} · Рівень ${lvl}/5</div>
+          <div class="lud-sub">${def.rowLbl} · ${def.colLbl} · ${_t('lud-lvl-of', {n: lvl})}</div>
         </div>
         <div class="lud-sep"></div>
         <div class="lud-lvls">${lvlsHtml}</div>
@@ -9787,15 +9794,15 @@ function triggerWave() {
     // КД 60 сек: блокуємо кнопку і показуємо зворотній відлік
     let btn = document.getElementById('btn-wave');
     let remaining = 30;
-    if (btn) { btn.disabled = true; btn.classList.remove('atk-ready'); btn.innerHTML = `⚔️ АТАКА (${remaining}с)`; }
+    if (btn) { btn.disabled = true; btn.classList.remove('atk-ready'); btn.innerHTML = _t('btn-wave-cd', {n:remaining}); }
     let cdInterval = setInterval(() => {
         if (GAME.gameOver) { clearInterval(cdInterval); return; }
         remaining--;
-        if (btn) btn.innerHTML = `⚔️ АТАКА (${remaining}с)`;
+        if (btn) btn.innerHTML = _t('btn-wave-cd', {n:remaining});
         if (remaining <= 0) {
             clearInterval(cdInterval);
             GAME.waveCooldownActive = false;
-            if (btn) { btn.disabled = false; btn.innerHTML = '⚔️ АТАКА'; btn.classList.add('atk-ready'); }
+            if (btn) { btn.disabled = false; btn.innerHTML = _t('btn-wave-ready'); btn.classList.add('atk-ready'); }
         }
     }, 1000);
 }
@@ -9895,12 +9902,11 @@ function updateUI() {
             if (v > domV) { domV = v; domK = k; }
         }
         const _wh = {
-            lord:    'Лорд підіймає посох... сила зосереджена у владаря',
-            monster: 'Підземелля гуде від кроків легіону',
-            floor:   'Кожен поверх — ще один рубіж без дна',
-            trap:    'Хитрість — найдавніша зброя темряви',
+            uk: { lord: 'Лорд підіймає посох... сила зосереджена у владаря', monster: 'Підземелля гуде від кроків легіону', floor: 'Кожен поверх — ще один рубіж без дна', trap: 'Хитрість — найдавніша зброя темряви' },
+            en: { lord: 'The Lord raises his staff... power concentrated in the sovereign', monster: 'The dungeon rumbles with the march of the legion', floor: 'Each floor — another frontier without bottom', trap: 'Cunning — the oldest weapon of darkness' },
         };
-        el.psyWhisper.textContent = domV > 0.15 ? _wh[domK] : '';
+        const wh = (_wh[_lang] || _wh['uk']);
+        el.psyWhisper.textContent = domV > 0.15 ? wh[domK] : '';
     } else if (el.psyWhisper) {
         el.psyWhisper.textContent = '';
     }
@@ -10175,7 +10181,7 @@ function updateSoulDungeonUI() {
         card.innerHTML = `
             <div class="perma-card-icon">${c.icon}</div>
             <div class="perma-card-name">${c.name}</div>
-            <div class="perma-card-lvl">Рівень: <b>${lvl}</b></div>
+            <div class="perma-card-lvl">${_t('perma-lvl', {n: `<b>${lvl}</b>`})}</div>
             <div class="perma-card-desc">${c.desc}</div>
             <button class="perma-buy-btn ${can?'can-afford':'cannot-afford'}"
                 onclick="buyPerma('${c.type}')" ${can?'':'disabled'}>
@@ -10263,7 +10269,7 @@ function continueGame() {
 }
 
 function confirmResetProgress() {
-    if (confirm('Скинути ВСЕ? Рівень, елітні душі, прокачки та сюжет повернуться до початку.')) {
+    if (confirm(_t('confirm-reset'))) {
         // Повне очищення кешу
         _store.del('DLSiege_lvl');
         _store.del('DLSiege_elite');
@@ -10791,7 +10797,7 @@ function _dailyActivate() {
         _store.set('DLSiege_elite', String(getStoredEliteSouls() + b));
         GAME.eliteSouls = (GAME.eliteSouls || 0) + b;
         setTimeout(function() {
-            _showToast('🔥 День ' + _dailyState.streak + ' підряд! +' + b + ' 💀 елітних');
+            _showToast(_t('toast-streak', {n: _dailyState.streak, b: b}));
         }, 500);
     }
     _dailyRenderPanel();
@@ -10808,9 +10814,9 @@ function _dailyRenderPanel() {
         el.textContent = (done ? '✓ ' : '○ ') + text + ' +5💀';
         el.className = 'daily-q' + (done ? ' done' : '');
     }
-    _dq('dq-kills',   'Знищ 5 героїв', q.kills);
-    _dq('dq-wave',    'Запусти хвилю',  q.wave);
-    _dq('dq-upgrade', 'Апгрейдни',      q.upgrade);
+    _dq('dq-kills',   q.kills ? _t('dq-kills-done') : _t('dq-kills'), q.kills);
+    _dq('dq-wave',    q.wave  ? _t('dq-wave-done')  : _t('dq-wave'),  q.wave);
+    _dq('dq-upgrade', q.upgrade ? _t('dq-upgrade-done') : _t('dq-upgrade'), q.upgrade);
 }
 
 function _questDone(type) {
@@ -10820,7 +10826,7 @@ function _questDone(type) {
     try { localStorage.setItem(_dailyState.questKey, JSON.stringify(_dailyState.quests)); } catch(e) {}
     _store.set('DLSiege_elite', String(getStoredEliteSouls() + 5));
     GAME.eliteSouls = (GAME.eliteSouls || 0) + 5;
-    _showToast('✅ Завдання виконано! +5 💀 елітних');
+    _showToast(_t('toast-quest'));
     _dailyRenderPanel();
 }
 
@@ -10833,15 +10839,16 @@ function _dailyKillCheck() {
 function _shareResult() {
     const pt = (_psyTrack && _psyTrack.rounds > 0) ? _computePsychotype() : null;
     const descKey = pt ? (pt.philKey + '_' + pt.stratKey) : '';
-    const archetype = pt ? ((_PSY_DESC[descKey] || {}).name || (pt.philName + '-' + pt.stratName)) : 'Лорд Підземелля';
+    const _pDesc = _getPsyDesc();
+    const archetype = pt ? ((_pDesc[descKey] || {}).name || (pt.philName + '-' + pt.stratName)) : (_lang === 'en' ? 'Dungeon Lord' : 'Лорд Підземелля');
     const round = pt ? pt.rounds : 0;
     const kills = pt ? pt.totalKills : 0;
-    const text = '👑 Я — ' + archetype + ' у Dungeon Lord!\nОбороняв ' + round + ' хвиль, знищив ' + kills + ' ворогів.\n🔗 github.com/Skokiz/dungeon-lord';
+    const text = _t('share-text', {arch: archetype, r: round, k: kills});
     if (navigator.share) {
         navigator.share({ title: 'Dungeon Lord', text: text }).catch(function() {});
     } else if (navigator.clipboard) {
         navigator.clipboard.writeText(text).then(function() {
-            _showToast('📋 Скопійовано!');
+            _showToast(_t('toast-copied'));
         }).catch(function() {
             window.open('https://t.me/share/url?url=https%3A%2F%2Fgithub.com%2FSkokiz%2Fdungeon-lord&text=' + encodeURIComponent(text));
         });
@@ -10851,12 +10858,14 @@ function _shareResult() {
 }
 
 // ── TUTORIAL ────────────────────────────────────────────────────────────────
-const _TUT_STEPS = [
-    { text: '⚔️ Натисни <b>АТАКА</b> — відправ першу хвилю ворогів у підземелля!', target: 'btn-wave', pos: 'above' },
-    { text: '💀 За кожного вбитого героя отримуєш <b>Душі</b>. Трать їх між хвилями на монстрів, поверхи і пастки.', target: null },
-    { text: '🪤 <b>Пастки</b> добивають тих хто прорвався. Шипи — шкода, Телепорт — відкидає назад, Виклик — спавн монстра. Натисни поверх після покупки.', target: 'btn-menu-trap', pos: 'above' },
-    { text: '👑 <b>Лорд</b> б\'ється особисто на поверхні. Натисни на нього щоб відкрити апгрейди. Вдалого полювання!', target: 'btn-menu-lord', pos: 'above', last: true },
-];
+function _getTutSteps() {
+    return [
+        { text: _t('tut-step1'), target: 'btn-wave', pos: 'above' },
+        { text: _t('tut-step2'), target: null },
+        { text: _t('tut-step3'), target: 'btn-menu-trap', pos: 'above' },
+        { text: _t('tut-step4'), target: 'btn-menu-lord', pos: 'above', last: true },
+    ];
+}
 let _tutCur = 0;
 
 function _tutStart() {
@@ -10866,12 +10875,13 @@ function _tutStart() {
 }
 
 function _tutShow(step) {
-    const s = _TUT_STEPS[step];
+    const _steps = _getTutSteps();
+    const s = _steps[step];
     if (!s) { _tutEnd(); return; }
     const el = document.getElementById('tut-bubble');
     document.getElementById('tut-text').innerHTML = s.text;
-    document.getElementById('tut-step-lbl').textContent = 'Підказка ' + (step + 1) + ' / ' + _TUT_STEPS.length;
-    document.getElementById('tut-btn-next').textContent = s.last ? '✅ Зрозуміло!' : 'Далі →';
+    document.getElementById('tut-step-lbl').textContent = _t('tut-label', {n: step + 1, t: _steps.length});
+    document.getElementById('tut-btn-next').textContent = s.last ? _t('tut-done') : _t('tut-next');
     el.style.display = 'block';
     document.querySelectorAll('.tut-highlight').forEach(function(e) { e.classList.remove('tut-highlight'); });
     if (s.target) {
@@ -10897,7 +10907,7 @@ function _tutShow(step) {
 
 function _tutNext() {
     _tutCur++;
-    if (_tutCur >= _TUT_STEPS.length) { _tutEnd(); return; }
+    if (_tutCur >= _getTutSteps().length) { _tutEnd(); return; }
     _tutShow(_tutCur);
 }
 
