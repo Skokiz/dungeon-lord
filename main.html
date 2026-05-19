@@ -912,6 +912,36 @@
             font-size:15px; cursor:pointer;
             -webkit-appearance:none; touch-action:manipulation; }
 
+        /* ── Рун-модифікатори ── */
+        #run-mod-overlay {
+            position:fixed; inset:0; z-index:400;
+            background:rgba(4,1,14,0.95);
+            flex-direction:column; align-items:center; justify-content:center;
+            gap:22px; padding:24px 16px; }
+        #run-mod-title {
+            color:#c8a0ff; font-size:18px; letter-spacing:1px;
+            text-align:center; text-shadow:0 0 20px #8800ff; }
+        #run-mod-cards { display:flex; flex-wrap:wrap; gap:14px;
+            justify-content:center; max-width:700px; }
+        .run-mod-card {
+            background:rgba(30,8,60,0.95); border:1px solid #6633bb;
+            border-radius:16px; padding:18px 16px; width:160px; min-width:150px;
+            display:flex; flex-direction:column; align-items:center; gap:8px;
+            cursor:pointer; transition:transform 0.12s, border-color 0.12s, box-shadow 0.12s;
+            box-shadow:0 0 16px rgba(100,0,200,0.2);
+            -webkit-appearance:none; touch-action:manipulation; }
+        .run-mod-card:hover, .run-mod-card:active {
+            transform:scale(1.06); border-color:#cc66ff;
+            box-shadow:0 0 28px rgba(180,60,255,0.5); }
+        .run-mod-icon { font-size:32px; }
+        .run-mod-name { color:#eeddff; font-weight:bold; font-size:13px;
+            text-align:center; line-height:1.3; }
+        .run-mod-desc { color:#998899; font-size:11px; text-align:center; line-height:1.5; }
+
+        /* ── Milestone title ── */
+        #lord-title { font-size:11px; color:#7744aa; letter-spacing:2px;
+            text-transform:uppercase; margin:-2px 0 2px; text-align:center; }
+
         /* ── Інструкція ── */
         #instructions-screen {
             position:fixed; top:0; left:0; width:100%; height:100%;
@@ -1782,9 +1812,16 @@
     <button id="btn-lang" onclick="_setLang(_lang==='uk'?'en':'uk')" style="position:absolute;top:12px;right:12px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.2);color:#ccc;border-radius:8px;padding:5px 10px;font-size:13px;cursor:pointer;">🇬🇧 EN</button>
     <div id="lvl-progress-label"><span data-i18n="lvl-label">Рівень</span> <span id="lvl-num">1</span> <span id="lvl-total">/ 50</span></div>
     <div id="start-elite-display"><span class="esoul-icon">💀</span> <span id="start-elite-num">0</span></div>
+    <div id="lord-title"></div>
     <button id="btn-continue" onclick="continueGame()" data-i18n="btn-start">▶ Почати гру</button>
     <button id="btn-instructions" onclick="openInstructions()" data-i18n="btn-instr">📖 Інструкція</button>
     <button id="btn-reset-progress" onclick="confirmResetProgress()" data-i18n="btn-reset">↺ Скинути все</button>
+</div>
+
+<!-- ── РУН-МОДИФІКАТОРИ ── -->
+<div id="run-mod-overlay" style="display:none;">
+    <div id="run-mod-title">Оберіть благословення цього рану</div>
+    <div id="run-mod-cards"></div>
 </div>
 
 <!-- ── ДУША ПІДЗЕМЕЛЛЯ ── -->
@@ -4933,6 +4970,8 @@ function init() {
     // Показуємо баланс елітних душ
     const _eNum = document.getElementById('start-elite-num');
     if (_eNum) _eNum.innerText = getStoredEliteSouls();
+    const _titleEl = document.getElementById('lord-title');
+    if (_titleEl) _titleEl.textContent = _getTitleByElite(getStoredEliteSouls());
     // Завантажуємо perma-дані глобально
     _permaData = _loadPerma();
     // Анімований старт-екран
@@ -4978,6 +5017,10 @@ function startGame(level) {
     GAME.lordGlobalHpAura = 0;
     GAME.lordGlobalCountBonus = 0;
     _applyLordGridEffects(_permaData);
+
+    // ── Рун-модифікатор ──────────────────────────────────────────────────────
+    _runEliteMult = 1;
+    if (_currentRunMod) { _currentRunMod.apply(); _currentRunMod = null; }
 
     // Монстри: бонуси від perma
     GAME.monsterHpBonus       = _permaData.mobVitLvl * 25;
@@ -8203,11 +8246,13 @@ function loop(ts) {
                 }
                 // ── Елітні душі 💎 ──────────────────────────────────────
                 if (u.heroRank === 'boss') {
-                    GAME.eliteSouls += 3;
-                    spawnDmgText(u.x, u.y - u.size - 18, '+3 💀', '#ffd700', true);
+                    const _ge = 3 * _runEliteMult;
+                    GAME.eliteSouls += _ge;
+                    spawnDmgText(u.x, u.y - u.size - 18, '+' + _ge + ' 💀', '#ffd700', true);
                 } else if (u.heroRank && u.heroRank.startsWith('elite')) {
-                    GAME.eliteSouls += 1;
-                    spawnDmgText(u.x, u.y - u.size - 18, '+1 💀', '#ffd700', false);
+                    const _ge = 1 * _runEliteMult;
+                    GAME.eliteSouls += _ge;
+                    spawnDmgText(u.x, u.y - u.size - 18, '+' + _ge + ' 💀', '#ffd700', false);
                 }
                 let pcol = u.heroRank === 'boss' ? 'purple' : u.heroRank.startsWith('elite') ? 'orange' : 'gold';
                 let ppower = u.heroRank === 'boss' ? 1.8 : u.heroRank.startsWith('elite') ? 1.3 : 1.0;
@@ -8657,6 +8702,67 @@ function closeLordUpgrade() {
 
 let _psyTrack = null;
 let _psyCurrentEv = null;
+
+// ── Рун-модифікатори ─────────────────────────────────────────────────────────
+let _runEliteMult  = 1;    // множник елітних душ поточного рану
+let _currentRunMod = null; // обраний модифікатор
+
+const _RUN_MODS = [
+    { id:'blood_frenzy', icon:'💀',
+      name:()=>_t('mod-blood'),  desc:()=>_t('mod-blood-d'),
+      apply:() => { GAME.soulBonus = (GAME.soulBonus||0) + 3; } },
+    { id:'elite_surge',  icon:'⚡',
+      name:()=>_t('mod-elite'),  desc:()=>_t('mod-elite-d'),
+      apply:() => { _runEliteMult = 2; } },
+    { id:'lord_fury',    icon:'🔥',
+      name:()=>_t('mod-fury'),   desc:()=>_t('mod-fury-d'),
+      apply:() => { GAME.lordDmg = Math.round(GAME.lordDmg * 1.5); } },
+    { id:'iron_walls',   icon:'🏰',
+      name:()=>_t('mod-iron'),   desc:()=>_t('mod-iron-d'),
+      apply:() => { GAME.monsterHpBonus = (GAME.monsterHpBonus||0) + 120; } },
+    { id:'dark_pact',    icon:'🌑',
+      name:()=>_t('mod-pact'),   desc:()=>_t('mod-pact-d'),
+      apply:() => { GAME.eliteSouls += 5; GAME.heroScalePercent += 15; } },
+    { id:'soul_well',    icon:'💧',
+      name:()=>_t('mod-well'),   desc:()=>_t('mod-well-d'),
+      apply:() => { GAME.souls += 200; } },
+    { id:'warlord_aura', icon:'👹',
+      name:()=>_t('mod-aura'),   desc:()=>_t('mod-aura-d'),
+      apply:() => { GAME.lordGlobalAtkAura = (GAME.lordGlobalAtkAura||0) + 10; } },
+    { id:'undying',      icon:'💜',
+      name:()=>_t('mod-regen'),  desc:()=>_t('mod-regen-d'),
+      apply:() => { GAME.maxLordHP += 200; GAME.lordRegen = (GAME.lordRegen||0) + 2; } },
+];
+
+function _pickRunMods() {
+    return [..._RUN_MODS].sort(() => Math.random() - 0.5).slice(0, 3);
+}
+
+function _showRunModPicker(level) {
+    const mods = _pickRunMods();
+    const overlay = document.getElementById('run-mod-overlay');
+    const title   = document.getElementById('run-mod-title');
+    const cards   = document.getElementById('run-mod-cards');
+    if (title) title.textContent = _t('mod-pick-title');
+    cards.innerHTML = mods.map((m, i) => `
+        <div class="run-mod-card" onclick="_selectRunMod(${i})">
+            <div class="run-mod-icon">${m.icon}</div>
+            <div class="run-mod-name">${m.name()}</div>
+            <div class="run-mod-desc">${m.desc()}</div>
+        </div>`).join('');
+    overlay._pendingMods  = mods;
+    overlay._pendingLevel = level;
+    overlay.style.display = 'flex';
+}
+
+function _selectRunMod(idx) {
+    const overlay = document.getElementById('run-mod-overlay');
+    _currentRunMod = overlay._pendingMods[idx];
+    const level = overlay._pendingLevel;
+    overlay.style.display = 'none';
+    StoryManager.init();
+    StoryManager.showIntro(level).then(function() { startGame(level); });
+}
 
 // ── Ω Рядок-налаштування тону (3 варіанти) ─────────────────────────────────
 const _PSY_TEMP_LINE = {
@@ -10239,16 +10345,13 @@ function getLevelConfig(lvl) {
     else if (lvl === 7)  heroBase = -10; // 90%
     else if (lvl <= 10)  heroBase =  -5; // 95%
     else if (lvl === 11) heroBase =   0; // 100%
-    else                 heroBase = lvl - 11; // 12→1%, 13→2%, ..., 50→39%
+    else                 heroBase = Math.round((lvl - 11) * 0.65); // 12→1%, 20→6%, 30→12%, 50→25%
 
     // maxThreat: +5 на рівнях 4,9,14,19,24,29,34,39,44,49
     const maxThreat = 5 + Math.floor((lvl + 1) / 5) * 5;
 
-    // threatPct: % приросту сили героїв за кожен рівень загрози
-    const threatPct = lvl <=  4 ? 1
-                    : lvl <=  9 ? 2
-                    : lvl <= 14 ? 3
-                    : Math.min(10, 3 + Math.floor((lvl - 10) / 5));
+    // threatPct: плавне зростання 1→8 замість стрибків
+    const threatPct = Math.max(1, Math.min(8, 1 + Math.floor(lvl / 7)));
 
     const t = (lvl - 1) / 49;
     return {
@@ -10264,8 +10367,16 @@ function continueGame() {
     const level = loadProgress();
     const ss = document.getElementById('start-screen');
     if (ss) ss.style.display = 'none';
-    StoryManager.init();
-    StoryManager.showIntro(level).then(function() { startGame(level); });
+    _showRunModPicker(level);
+}
+
+function _getTitleByElite(total) {
+    if (total >= 5000) return _t('title-arch');
+    if (total >= 2000) return _t('title-overlord');
+    if (total >= 1000) return _t('title-master');
+    if (total >=  500) return _t('title-dark');
+    if (total >=  100) return _t('title-lord');
+    return _t('title-novice');
 }
 
 function confirmResetProgress() {

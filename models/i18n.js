@@ -161,6 +161,23 @@ uk: {
   'confirm-reset':  'Скинути ВСЕ? Рівень, елітні душі, прокачки та сюжет повернуться до початку.',
   // Lang button
   'lang-btn':       '🇬🇧 EN',
+  // Run modifiers
+  'mod-pick-title': 'Оберіть благословення цього рану',
+  'mod-blood':      '💀 Жага крові',     'mod-blood-d':   '+3 душі за кожного вбитого ворога',
+  'mod-elite':      '⚡ Елітна вилазка', 'mod-elite-d':   'Елітні душі ×2 цей ран',
+  'mod-fury':       '🔥 Лють Лорда',     'mod-fury-d':    '+50% до атаки Лорда',
+  'mod-iron':       '🏰 Залізні Стіни',  'mod-iron-d':    'Всі монстри +120 HP',
+  'mod-pact':       '🌑 Темний Пакт',    'mod-pact-d':    '+5 💀 зараз, але герої на +15% сильніші',
+  'mod-well':       '💧 Криниця Душ',    'mod-well-d':    '+200 звичайних душ на старті',
+  'mod-aura':       '👹 Аура Воєнлорда', 'mod-aura-d':    'Всі монстри отримують +10 до атаки',
+  'mod-regen':      '💜 Незламний',      'mod-regen-d':   '+200 HP Лорда і +2 регенерації HP/сек',
+  // Milestone titles
+  'title-arch':     '☠ Арх-Демон',
+  'title-overlord': '💀 Темний Владика',
+  'title-master':   '🔮 Майстер Підземелль',
+  'title-dark':     '⚔ Темний Лорд',
+  'title-lord':     '🦴 Лорд Підземелля',
+  'title-novice':   '👑 Лорд-Початківець',
 },
 
 en: {
@@ -317,6 +334,23 @@ en: {
   'confirm-reset':  'Reset EVERYTHING? Level, elite souls, upgrades and story will return to the beginning.',
   // Lang button
   'lang-btn':       '🇺🇦 UA',
+  // Run modifiers
+  'mod-pick-title': 'Choose this run\'s blessing',
+  'mod-blood':      '💀 Blood Frenzy',    'mod-blood-d':   '+3 souls per enemy killed',
+  'mod-elite':      '⚡ Elite Surge',     'mod-elite-d':   'Elite souls ×2 this run',
+  'mod-fury':       '🔥 Lord\'s Fury',    'mod-fury-d':    '+50% Lord attack damage',
+  'mod-iron':       '🏰 Iron Walls',      'mod-iron-d':    'All monsters +120 HP',
+  'mod-pact':       '🌑 Dark Pact',       'mod-pact-d':    '+5 💀 now, but heroes are +15% stronger',
+  'mod-well':       '💧 Soul Well',       'mod-well-d':    '+200 souls at the start',
+  'mod-aura':       '👹 Warlord Aura',    'mod-aura-d':    'All monsters gain +10 attack',
+  'mod-regen':      '💜 Undying',         'mod-regen-d':   '+200 Lord HP and +2 HP/sec regen',
+  // Milestone titles
+  'title-arch':     '☠ Arch Demon',
+  'title-overlord': '💀 Dark Overlord',
+  'title-master':   '🔮 Dungeon Master',
+  'title-dark':     '⚔ Dark Lord',
+  'title-lord':     '🦴 Dungeon Lord',
+  'title-novice':   '👑 Aspiring Lord',
 },
 };
 
