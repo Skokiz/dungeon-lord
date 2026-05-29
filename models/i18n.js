@@ -10,8 +10,10 @@ const _I18N = {
 uk: {
   // Start screen
   'lvl-label':      'Рівень',
+  'start-lore':     'П\'ятсот років тому герой Варан запечатав Безодню ціною власної пам\'яті. Ти — що від нього залишилось.',
   'btn-start':      '▶ Почати гру',
   'btn-level':      '▶ Рівень {n}',
+  'btn-hell':       '🔥 Режим Пекла',
   'btn-instr':      '📖 Інструкція',
   'btn-reset':      '↺ Скинути все',
   // Soul dungeon
@@ -50,6 +52,10 @@ uk: {
   'go-win-all':     '🏆 ГРУ ПРОЙДЕНО!',
   'go-win-lvl':     'Рівень {n} пройдено!',
   'go-all50':       'Всі 50 рівнів пройдено! 🎉',
+  'andrii-end-0':   'Андрій пішов. Мабуть, так і краще.',
+  'andrii-end-1':   'Андрій поніс твою розповідь у місто. Щось там змінилось.',
+  'andrii-end-2':   'Ти дізнався більше, ніж сказав. Андрій теж.',
+  'andrii-end-3':   'Навіть Андрію ти не сказав нічого. Тиша — теж відповідь.',
   'go-next':        'Далі: Рівень {n} / 50',
   'go-elite':       '+{n} 💀 зароблено (всього: {t})',
   'go-retry':       '🔄 Спробувати знову',
@@ -114,7 +120,9 @@ uk: {
   'tut-label':      'Підказка {n} / {t}',
   'tut-skip':       'Пропустити',
   'tut-next':       'Далі →',
-  'tut-done':       '✅ Зрозуміло!',
+  'tut-got':        'Зрозуміло',
+  'tut-done':       '✅ Готово!',
+  'wave-label':     'Хвиля',
   'tut-step1':      '⚔️ Натисни <b>АТАКА</b> — відправ першу хвилю ворогів у підземелля!',
   'tut-step2':      '💀 За кожного вбитого героя отримуєш <b>Душі</b>. Трать їх між хвилями на монстрів, поверхи і пастки.',
   'tut-step3':      '🪤 <b>Пастки</b> добивають тих хто прорвався. Шипи — шкода, Телепорт — відкидає назад, Виклик — спавн монстра. Натисни поверх після покупки.',
@@ -183,8 +191,10 @@ uk: {
 en: {
   // Start screen
   'lvl-label':      'Level',
+  'start-lore':     'Five hundred years ago the hero Varan sealed the Abyss at the cost of his own memory. You are what remains of him.',
   'btn-start':      '▶ Start Game',
   'btn-level':      '▶ Level {n}',
+  'btn-hell':       '🔥 Hell Mode',
   'btn-instr':      '📖 How to Play',
   'btn-reset':      '↺ Reset All',
   // Soul dungeon
@@ -223,6 +233,10 @@ en: {
   'go-win-all':     '🏆 GAME COMPLETE!',
   'go-win-lvl':     'Level {n} cleared!',
   'go-all50':       'All 50 levels conquered! 🎉',
+  'andrii-end-0':   'Andrii left. Perhaps that was for the best.',
+  'andrii-end-1':   'Andrii carried your story back to the city. Something changed there.',
+  'andrii-end-2':   'You learned more than you told him. So did he.',
+  'andrii-end-3':   'Even to Andrii, you said nothing. Silence is also an answer.',
   'go-next':        'Next: Level {n} / 50',
   'go-elite':       '+{n} 💀 earned (total: {t})',
   'go-retry':       '🔄 Try Again',
@@ -287,7 +301,9 @@ en: {
   'tut-label':      'Tip {n} / {t}',
   'tut-skip':       'Skip',
   'tut-next':       'Next →',
-  'tut-done':       '✅ Got it!',
+  'tut-got':        'Got it',
+  'tut-done':       '✅ Done!',
+  'wave-label':     'Wave',
   'tut-step1':      '⚔️ Press <b>ATTACK</b> — send the first wave of enemies into the dungeon!',
   'tut-step2':      '💀 Each hero you kill earns <b>Souls</b>. Spend them between waves on monsters, floors, and traps.',
   'tut-step3':      '🪤 <b>Traps</b> finish off those who broke through. Spikes — damage, Teleport — pushes back, Summon — spawns a monster. Tap a floor after buying.',
@@ -571,7 +587,7 @@ const _DECISION_EVENTS_EN = [
         { text:'→ Give it what it asks. For now', tags:['kha'], buff:{ lordDmg:10, heroThreatPct:1 } },
         { text:'→ Call the witch — let her handle it', tags:['zna','vyj'], buff:{} },
       ]},
-    { id:'slime_petition', trigger:'wave_end', minRound:2, weight:2,
+    { id:'slime_petition', trigger:'wave_end', minRound:2, maxRound:25, weight:2,
       badge:'💙 Petition', title:'Slimes Demand Respect',
       text:'A slime delegation appeared in the throne room. They brought a scroll — surprisingly neatly written, considering they have no hands. Key demands: more darkness, fewer torches, and officially stop calling them "those green blobs."',
       choices:[
@@ -579,7 +595,7 @@ const _DECISION_EVENTS_EN = [
         { text:'→ Compromise: new names yes, torches stay', tags:['kha','zna'], buff:{} },
         { text:'→ Declare official title: "Elite Slime Warriors"', tags:['per'], buff:{ eliteChance:2 } },
       ]},
-    { id:'bat_strike', trigger:'wave_start', minRound:3, weight:2,
+    { id:'bat_strike', trigger:'wave_start', minRound:3, maxRound:25, weight:2,
       badge:'🦇 Labor Dispute', title:'Bat Strike',
       text:'The bats declared a strike. After rebuilding the third corridor their echolocation misfires and two flew into a wall. They want either reconstruction or compensation for "occupational injury." The delegate\'s nose is bandaged.',
       choices:[
@@ -587,7 +603,7 @@ const _DECISION_EVENTS_EN = [
         { text:'→ Rebuild the corridor. Healthy monsters are effective monsters', tags:['zna','per'], buff:{ heroThreatPct:-0.3 } },
         { text:'→ Remind them "strike" isn\'t in their contract', tags:['dom'], buff:{ soulBonus:2 } },
       ]},
-    { id:'golem_poet', trigger:'wave_end', minRound:4, weight:2,
+    { id:'golem_poet', trigger:'wave_end', minRound:4, maxRound:25, weight:2,
       badge:'🗿 Cultural Event', title:'Golem Wrote a Poem',
       text:'The golem brought a stone slab with chiseled text. An ode to the dungeon. One line about you: "Lord is great. Lord is dark. Lord sometimes doesn\'t explain why we do this. But we go anyway." The author didn\'t sign — but only one monster has a chisel.',
       choices:[
@@ -595,7 +611,7 @@ const _DECISION_EVENTS_EN = [
         { text:'→ Order another slab carved — with the lord\'s reply', tags:['dom','per'], buff:{} },
         { text:'→ Say nothing. Quietly keep the slab', tags:['vyj'], buff:{ lordDmg:2 } },
       ]},
-    { id:'skeleton_law', trigger:'wave_start', minRound:5, weight:2,
+    { id:'skeleton_law', trigger:'wave_start', minRound:5, maxRound:25, weight:2,
       badge:'💀 Legal Dispute', title:'Skeleton and Tax Status',
       text:'A skeleton came with a question after heroes yelled "You\'re already dead!". It wants legal clarity: if officially dead — must it pay castle tax? And who will be its heir, exactly.',
       choices:[
@@ -603,7 +619,7 @@ const _DECISION_EVENTS_EN = [
         { text:'→ Designate it "Living-For-Dungeon-Purposes." There\'s a seal', tags:['per','dom'], buff:{ soulBonus:4 } },
         { text:'→ Say questions like this mean it owes another round of service', tags:['dom'], buff:{ heroThreatPct:-0.2 } },
       ]},
-    { id:'zombie_menu', trigger:'wave_end', minRound:3, weight:2,
+    { id:'zombie_menu', trigger:'wave_end', minRound:3, maxRound:25, weight:2,
       badge:'🧟 Complaint', title:'Zombies Dislike the Menu',
       text:'Zombies filed a complaint. Anonymously, but the handwriting is recognizable. The gist: we\'re only fed heroes that have "cooled down." We want fresh. Don\'t count spelling errors — not bad for undead.',
       choices:[
@@ -611,7 +627,7 @@ const _DECISION_EVENTS_EN = [
         { text:'→ Introduce a "premium menu" for those distinguished in battle', tags:['kha','per'], buff:{ eliteChance:2 } },
         { text:'→ Put them on the front line — let them solve the freshness problem themselves', tags:['dom'], buff:{ heroThreatPct:-0.5, soulBonus:3 } },
       ]},
-    { id:'minotaur_mirror', trigger:'wave_end', minRound:6, weight:1,
+    { id:'minotaur_mirror', trigger:'wave_end', minRound:6, maxRound:25, weight:1,
       badge:'🐂 Personal Matter', title:'The Minotaur and the Mirror',
       text:'The minotaur found a silver mirror in the trophy room and hasn\'t moved in three days. Doesn\'t bother anyone. Just looks. Occasionally sighs. Monsters pass by and speak in whispers.',
       choices:[
@@ -682,6 +698,143 @@ const _DECISION_EVENTS_EN = [
         { text:'→ Hire them. Effectiveness over loyalty', tags:['kha','zna'], buff:{ soulBonus:-10, heroThreatPct:-1.5 } },
         { text:'→ Refuse. Our own army is more reliable', tags:['dom','per'], buff:{} },
         { text:'→ Hire them and frame them to the city — let it pay them instead', tags:['kha'], buff:{ eliteChance:-2, heroThreatPct:-0.5 } },
+      ]},
+
+    // ── Named heroes: Marta ─────────────────────────────────────────────────────
+    { id:'marta_spy', trigger:'wave_start', minRound:12, maxRound:15, weight:4,
+      badge:'🕵 Intercepted', title:'Scout Marta',
+      text:'Your monsters caught a girl sketching a map of the lower floors. She didn\'t run. She stared straight at you. «I want to know who you are. Not for the guild — for myself.» Her name is embroidered on the cloak: Marta.',
+      choices:[
+        { text:'→ Release her. She\'s done nothing wrong', tags:['vyj','zna'], buff:{ heroThreatPct:-0.5 } },
+        { text:'→ Propose a trade: she tells you about the city, you say nothing about her', tags:['zna','kha'], buff:{ soulBonus:4 } },
+        { text:'→ Keep her under guard. Too curious to let go', tags:['dom'], buff:{ captainChance:2 } },
+      ]},
+    { id:'marta_return', trigger:'wave_start', minRound:28, maxRound:31, weight:5,
+      requires: { id:'marta_spy', choice:0 },
+      badge:'📜 Letter from the scout', title:'Marta returns',
+      text:'She came alone. No weapons, no escort. She placed a list on the floor: families sending heroes, debt contracts, who pays for each raid. «I thought — maybe there\'s a way that doesn\'t kill both of us.»',
+      choices:[
+        { text:'→ «This is worth a great deal. Continue.»', tags:['zna','vyj'], buff:{ heroThreatPct:-1.5, soulBonus:5 } },
+        { text:'→ «You understand I cannot stop?»', tags:['vyj','per'], buff:{ heroThreatPct:-0.5 } },
+        { text:'→ «Peace is impossible. But this data is useful.»', tags:['dom','zna'], buff:{ soulBonus:8 } },
+      ]},
+    { id:'marta_escaped', trigger:'wave_start', minRound:28, maxRound:31, weight:5,
+      requires: { id:'marta_spy', choice:2 },
+      badge:'⚠ Complication', title:'Marta escaped',
+      text:'The cell is empty. The guard knocked out. Written in charcoal on the wall: «You could have let me go.» Scouts report she is now leading the next wave personally.',
+      choices:[
+        { text:'→ Prepare a trap. She knows the dungeon — but not all of it', tags:['per','kha'], buff:{ eliteChance:3 } },
+        { text:'→ Send a signal that you remember. Maybe she\'ll stop', tags:['vyj','zna'], buff:{ heroThreatPct:-0.5 } },
+        { text:'→ Let her come. She chose her path', tags:['dom','pom'], buff:{ lordDmg:4 } },
+      ]},
+
+    // ── Named heroes: Old Vilem ─────────────────────────────────────────────────
+    { id:'vitem_first', trigger:'wave_end', minRound:20, maxRound:23, weight:4,
+      badge:'⚔️ Veteran', title:'Old Vilem',
+      text:'He didn\'t attack. He sat in the middle of the corridor and said: «I served the lord before you. Fifty years. I know what he did — and why he stopped. Do you have a minute?»',
+      choices:[
+        { text:'→ «Speak. But briefly.»', tags:['zna'], buff:{ lordDmg:3 } },
+        { text:'→ «That lord lost. His lessons aren\'t mine.»', tags:['per','dom'], buff:{ heroThreatPct:0.5 } },
+        { text:'→ Release without conversation. Age is no reason to halt a battle', tags:['kha','vyj'], buff:{ soulBonus:3 } },
+      ]},
+    { id:'vitem_second', trigger:'wave_start', minRound:35, maxRound:38, weight:4,
+      requires: { id:'vitem_first', choice:0 },
+      badge:'📜 Letter from the veteran', title:'Vilem writes',
+      text:'Paper arrived via a monster nobody killed. «That lord stopped because he found a name. Varan. He wrote it on the wall of the lowest floor before he disappeared. Have you seen that name yet?»',
+      choices:[
+        { text:'→ «I have. How did he know my name?»', tags:['zna','vyj'], buff:{ lordDmg:5 } },
+        { text:'→ Burn the letter. This could be a trap', tags:['per','dom'], buff:{} },
+        { text:'→ Write back: «I remember more than you think.»', tags:['kha','zna'], buff:{ heroThreatPct:-1, lordDmg:3 } },
+      ]},
+
+    // ── Named heroes: Lyra · Path of peace ─────────────────────────────────────
+    { id:'lira_peace', trigger:'wave_start', minRound:30, maxRound:33, weight:4,
+      badge:'✦ Proposal', title:'Priestess Lyra',
+      text:'A woman in white stopped five steps from the gate. No weapons. «I am not a hero. I am an envoy of gods nobody remembers anymore. I am permitted to speak — if you permit me to be heard.»',
+      choices:[
+        { text:'→ «Speak. But first — who truly sent you?»', tags:['zna','vyj'], buff:{ heroThreatPct:-1 } },
+        { text:'→ Let her in silently and listen', tags:['vyj','kha'], buff:{ soulBonus:3 } },
+        { text:'→ «Gods were silent for five hundred years. Their turn.»', tags:['per','dom'], buff:{ lordDmg:3 } },
+      ]},
+    { id:'lira_truce', trigger:'wave_start', minRound:43, maxRound:45, weight:5,
+      requires: { id:'lira_peace', choice:0 },
+      badge:'✦ Last chance', title:'Lyra: terms fulfilled',
+      text:'Lyra stands in the same place. «Terms fulfilled on both sides. The city is ready to stop the attacks — permanently. In return — you do not leave here. But no one else dies.» The dungeon\'s silence almost sounds like consent.',
+      choices:[
+        { text:'→ Accept. This is the only victory without bodies.', tags:['vyj','zna'], buff:{ lordDmg:0 }, specialAction:'peace_victory' },
+        { text:'→ «Too late. I\'ve already chosen a different path.»', tags:['per','dom'], buff:{ heroThreatPct:-1 } },
+        { text:'→ «Give me one more round to think.»', tags:['kha','vyj'], buff:{ heroThreatPct:-0.5 } },
+      ]},
+
+    // ── ACT III (rounds 26–38): Fracture · Memory stirs ────────────────────
+
+    { id:'memory_fragment', trigger:'wave_start', minRound:26, weight:2,
+      badge:'🌀 Memory', title:'A Shard of the Past',
+      text:'You wake from battle with a name on your tongue. Varan. It feels foreign — yet sounds like yours. The monsters stare. You were speaking aloud.',
+      choices:[
+        { text:'→ Ignore it. Exhaustion and stress, nothing more', tags:['per','kha'], buff:{} },
+        { text:'→ Write it down. Could matter — or explain something important', tags:['zna'], buff:{ lordDmg:3 } },
+        { text:'→ Ask the Abyss. It knows more than it says', tags:['vyj','dom'], buff:{ heroThreatPct:-0.5, lordDmg:5 } },
+      ]},
+
+    { id:'old_soldier', trigger:'wave_end', minRound:30, weight:2,
+      badge:'⚔️ Encounter', title:'The Veteran',
+      text:'An old soldier refuses to fight. He lays on the floor: «I saw the lord before you. He also thought he was winning.» The monsters don\'t know what to do.',
+      choices:[
+        { text:'→ Let him go. Those who choose peace aren\'t my enemies', tags:['vyj'], buff:{ soulBonus:3 } },
+        { text:'→ Interrogate him. Who was «the lord before me»?', tags:['zna'], buff:{ lordDmg:4 } },
+        { text:'→ Detain him by force. An example of defiance is more dangerous than one old man', tags:['dom','per'], buff:{ heroThreatPct:0.5, eliteChance:2 } },
+      ]},
+
+    { id:'abyss_whisper', trigger:'wave_start', minRound:33, weight:2,
+      badge:'🌑 Inner Voice', title:'The Abyss Advises',
+      text:'The Abyss doesn\'t command for once — it asks. «Do you still remember why you began?» A pause. «Do you want to remember?»',
+      choices:[
+        { text:'→ «Yes. I want to know everything.» Even if the answer hurts', tags:['zna','vyj'], buff:{ lordDmg:4 } },
+        { text:'→ «It doesn\'t matter. I do what I do.»', tags:['per','dom'], buff:{} },
+        { text:'→ «Why are you asking? What do you need?»', tags:['kha','zna'], buff:{ heroThreatPct:-0.5, lordDmg:3 } },
+      ]},
+
+    // ── ACT IV (rounds 39–50): Choice · Abyss Intercepts ───────────────────
+
+    { id:'andrii_talk', trigger:'wave_start', minRound:44, maxRound:44, weight:10,
+      badge:'⚔️ Messenger', title:'Hero Andrii',
+      text:'He came unarmed. Set his shield on the floor and said: «I\'m not here to fight. I want to know who you are. The city says — a monster. But monsters don\'t build. You build.» The Abyss commands: kill him.',
+      choices:[
+        { text:'→ «Go. While you can.» He\'s not your enemy — but not an ally either', tags:['per','vyj'], buff:{ heroThreatPct:-1 } },
+        { text:'→ Tell him everything. About Varan, the Abyss, 500 years', tags:['zna','vyj'], buff:{ lordDmg:5 } },
+        { text:'→ Listen. What does he know about your true purpose?', tags:['zna','kha'], buff:{ heroThreatPct:-1.5, lordDmg:3 } },
+        { text:'→ Stay silent. Let him decide for himself', tags:['kha'], buff:{} },
+      ]},
+
+    { id:'abyss_intercept_loyalty', trigger:'wave_start', minRound:39, weight:3,
+      type:'abyss',
+      badge:'∞ THE ABYSS', title:'First Offer',
+      text:'The Abyss speaks without monsters, without intermediaries. Directly. «Five hundred years you guarded me. Now I offer you to become me. No pain. No memory. Simply — an end.»',
+      choices:[
+        { text:'→ «No.» One word. Enough.', tags:['per','dom'], buff:{ lordDmg:6 } },
+        { text:'→ «Tell me more. No pain — what does that mean?»', tags:['zna','kha'], buff:{ heroThreatPct:-1 } },
+        { text:'→ «Five hundred years — and you think I forgot what you are?»', tags:['vyj','per'], buff:{ lordDmg:4, heroThreatPct:-0.5 } },
+      ]},
+
+    { id:'abyss_offer_freedom', trigger:'wave_end', minRound:43, weight:3,
+      type:'abyss',
+      badge:'∞ THE ABYSS', title:'Second Offer',
+      text:'«You protected them and they sent more heroes. You gave them time and they used it against you. Let me handle this differently. Permanently.»',
+      choices:[
+        { text:'→ «I don\'t need a protector.»', tags:['dom','per'], buff:{ lordDmg:5 } },
+        { text:'→ «What would you do to them?»', tags:['zna'], buff:{ heroThreatPct:1 } },
+        { text:'→ Stay silent. Sometimes silence is the only honest answer.', tags:['vyj','kha'], buff:{} },
+      ]},
+
+    { id:'abyss_confession', trigger:'wave_start', minRound:47, weight:3,
+      type:'abyss',
+      badge:'∞ THE ABYSS', title:'Third and Last',
+      text:'«Varan.» Not lord. Varan. «I fear you. Not because you\'re strong. Because you remember. And now you\'re choosing.» The dungeon falls to absolute silence.',
+      choices:[
+        { text:'→ «I remember. And so — no.»', tags:['per','vyj'], buff:{ lordDmg:8 } },
+        { text:'→ «Tell me what you are and I\'ll decide.»', tags:['zna','kha'], buff:{ lordDmg:4 } },
+        { text:'→ «Five hundred years — is my answer. You already know it.»', tags:['dom','per'], buff:{ lordDmg:6, heroThreatPct:-1 } },
       ]},
 ];
 
@@ -874,6 +1027,140 @@ per_rivnovaha: {
 },
 };
 
+// ── 50 cities story data ──────────────────────────────────────────────────────
+const _STORY_LEVELS = [
+// Act I (1–12): Наказ
+{city:'Попільне',act:1,beat:'Перший крок. Попіл ще теплий.',special:false},
+{city:'Береговий Кряж',act:1,beat:'Місто без стін. Довіряли морю.',special:false},
+{city:'Солонець',act:1,beat:'Сіль і кров. Схожа консистенція.',special:false},
+{city:'Бурявець',act:1,beat:'Вони думали буря захистить. Ні.',special:false},
+{city:'Мурований Яр',act:1,beat:'Гарні стіни. Погані монстри.',special:false},
+{city:'Ржавець',act:1,beat:'Залізо іржавіє. Підземелля — ні.',special:false},
+{city:'Чорнолісся',act:1,beat:'Ліс не зупинив. Ніщо не зупинить.',special:false},
+{city:'Вовкогрів',act:1,beat:'Герой перед смертю: «Ти не знаєш що робиш.» Можливо.',special:true},
+{city:'Кістяне Плоскогір\'я',act:1,beat:'Кістки були тут до нас. Стане більше.',special:false},
+{city:'Залізний Брід',act:1,beat:'Десяте місто. Безодня задоволена. Я — нейтральний.',special:false},
+{city:'Срібна Пуща',act:1,beat:'Срібло не допомагає проти монстрів. Тільки у казках.',special:false},
+{city:'Димна Твердь',act:1,beat:'Перше справжнє місто. Вперше чув як воно кричало. Не зупинився.',special:false},
+// Act II (13–25): Тріщини
+{city:'Золоторіг',act:2,beat:'Золото. Тепер нікому не потрібне.',special:false},
+{city:'Фортеця Тихого Ока',act:2,beat:'Вони називали себе нейтральними. Печатки нейтральних немає.',special:false},
+{city:'Багряний Посад',act:2,beat:'Торговці. Думали можна купити мир.',special:false},
+{city:'Залізні Зубці',act:2,beat:'Найбільш укріплене місто до цього рівня. Впало за хвилю.',special:false},
+{city:'Вогняна Переправа',act:2,beat:'Вони спалили міст. Монстри плавають.',special:false},
+{city:'Сталева Корона',act:2,beat:'Королівство з традиціями. Традиція закінчилась.',special:false},
+{city:'Місяць-Камінь',act:2,beat:'Жерці молились. Безодня не молиться.',special:false},
+{city:'Темна Орель',act:2,beat:'Двадцять міст. Лічення стає важким.',special:false},
+{city:'Кривавий Поріг',act:2,beat:'Лицар Селена назвала тебе «Варан». Звідки вона знає це ім\'я?',special:true},
+{city:'Осколок Неба',act:2,beat:'Безодня каже забути Селену. Чому вона хвилюється?',special:false},
+{city:'Сонцева Цитадель',act:2,beat:'Найяскравіше місто. Тепер найтемніше.',special:false},
+{city:'Вічний Порт',act:2,beat:'«Вічний» — перебільшення.',special:false},
+{city:'Серце Степу',act:2,beat:'Половина шляху. Безодня мовчить на питання «навіщо». Вперше.',special:true},
+// Act III (26–38): Розлам
+{city:'Зоряний Маяк',act:3,beat:'Символи на стінах — невідомі. Але рука сама відтворює їх.',special:false},
+{city:'Плач Гір',act:3,beat:'Гори пам\'ятають більше ніж люди.',special:false},
+{city:'Сплячий Гігант',act:3,beat:'Якась частина тебе теж спала. Прокидається.',special:false},
+{city:'Схованка Дракона',act:3,beat:'Дракон захищав місто 300 років. Назвав тебе «братом».',special:false},
+{city:'Брама Тіней',act:3,beat:'Рукопис. Твій підпис. 500 років тому. Безодня замовчала.',special:true},
+{city:'Перекип Безодні',act:3,beat:'Це місто збудували НАД входом у Безодню. Хто знав?',special:false},
+{city:'Осінній Трон',act:3,beat:'Король знав твоє минуле. Помер не сказавши все.',special:false},
+{city:'Крижане Горло',act:3,beat:'Жрець кричав: «Ти будуєш пастку для всього сущого!» Безодня: «Він бреше.»',special:false},
+{city:'Рубіновий Шлях',act:3,beat:'Дорога веде кудись. Ти починаєш підозрювати — куди.',special:false},
+{city:'Залишок Первісного',act:3,beat:'Тут спало щось давніше. Тепер прокинулось.',special:false},
+{city:'Переддвер\'я',act:3,beat:'Чотири міста до правди. Безодня стає настирливою.',special:false},
+{city:'Дзеркальне Болото',act:3,beat:'Побачив відображення. Не своє.',special:false},
+{city:'Забута Столиця',act:3,beat:'Я будував ці стіни. П\'ятсот років тому. Тепер руйную. Безодня мовчить від страху.',special:true},
+// Act IV (39–50): Вибір
+{city:'Перша Печать',act:4,beat:'Безодня: «Лише 11 залишилось.» Я: «Навіщо?» Безодня: «Щоб усе закінчилось.»',special:false},
+{city:'Кривавий Договір',act:4,beat:'Договір підписано давно. Я не пам\'ятаю коли.',special:false},
+{city:'Попіл Богів',act:4,beat:'Боги теж мали свій план. Теж помилилися.',special:false},
+{city:'Зламана Присяга',act:4,beat:'Чия присяга? Моя. Дана собі. 500 років тому.',special:false},
+{city:'Порожнеча Між',act:4,beat:'Між двома виборами — є третій. Я його ще не бачу.',special:false},
+{city:'Остання Надія',act:4,beat:'Герой Андрій прийшов говорити, не воювати. Я вибираю.',special:true},
+{city:'Нічна Корона',act:4,beat:'П\'ять міст. Безодня відчуває мої сумніви. Злиться.',special:false},
+{city:'Серце Печаті',act:4,beat:'Тут б\'ється щось. Не місто — я. Частина мене.',special:false},
+{city:'Безмовне Небо',act:4,beat:'Небо справді замовкло. Навіть вітер не сміє.',special:false},
+{city:'Вічна Тиша',act:4,beat:'Безодня: «Зупинись. Стань частиною мене.» Перша пряма пропозиція.',special:false},
+{city:'Кінець Карти',act:4,beat:'Безодня: «Одне місто і все закінчиться.» Я: «Що — все?» Мовчить. Але я вже знаю.',special:true},
+{city:'Перша Цитадель',act:4,beat:'Місто де народився Варан. Місто де народився я.',special:true},
+];
+
+const _STORY_LEVELS_EN = [
+// Act I (1–12): The Command
+{city:'Ashfields',act:1,beat:'First step. The ash is still warm.',special:false},
+{city:'Coastal Ridge',act:1,beat:'A city with no walls. They trusted the sea.',special:false},
+{city:'Saltmarsh',act:1,beat:'Salt and blood. Similar consistency.',special:false},
+{city:'Stormhaven',act:1,beat:'They thought the storm would protect them. No.',special:false},
+{city:'Stonevale',act:1,beat:'Nice walls. Bad monsters.',special:false},
+{city:'Rustpeak',act:1,beat:'Iron rusts. The dungeon doesn\'t.',special:false},
+{city:'Blackwood',act:1,beat:'The forest didn\'t stop them. Nothing will.',special:false},
+{city:'Wolfgrave',act:1,beat:'A hero shouted before dying: «You don\'t know what you\'re doing.» Perhaps.',special:true},
+{city:'Boneflat',act:1,beat:'There were bones here before us. There will be more.',special:false},
+{city:'Iron Ford',act:1,beat:'The tenth city. The Abyss is satisfied. I am neutral.',special:false},
+{city:'Silver Thicket',act:1,beat:'Silver doesn\'t help against monsters. Only in fairy tales.',special:false},
+{city:'Smokehold',act:1,beat:'The first real city. I heard it scream. Didn\'t stop.',special:false},
+// Act II (13–25): Cracks
+{city:'Goldhorn',act:2,beat:'Gold. Useless now.',special:false},
+{city:'Fort Stillwatch',act:2,beat:'They called themselves neutral. There\'s no seal for the neutral.',special:false},
+{city:'Crimson Quarter',act:2,beat:'Merchants. They thought peace could be purchased.',special:false},
+{city:'Iron Fangs',act:2,beat:'Most fortified city so far. Fell in one wave.',special:false},
+{city:'Fireford',act:2,beat:'They burned the bridge. Monsters swim.',special:false},
+{city:'Steel Crown',act:2,beat:'A kingdom with traditions. The tradition ended.',special:false},
+{city:'Moonstone',act:2,beat:'Priests prayed. The Abyss doesn\'t pray.',special:false},
+{city:'Dark Eagle',act:2,beat:'Twenty cities. Counting becomes hard.',special:false},
+{city:'Bloodthreshold',act:2,beat:'Knight Selena called me «Varan». Where does she know that name?',special:true},
+{city:'Sky Shard',act:2,beat:'The Abyss says to forget Selena. Why does it care?',special:false},
+{city:'Sun Citadel',act:2,beat:'Brightest city. Now the darkest.',special:false},
+{city:'Eternal Port',act:2,beat:'«Eternal» is an overstatement.',special:false},
+{city:'Heart of the Steppe',act:2,beat:'Halfway. The Abyss stays silent when I ask why. For the first time.',special:true},
+// Act III (26–38): Fracture
+{city:'Star Beacon',act:3,beat:'Unknown symbols on the walls. But my hand traces them by itself.',special:false},
+{city:'Mountain Lament',act:3,beat:'Mountains remember more than people.',special:false},
+{city:'Sleeping Giant',act:3,beat:'Part of me was sleeping too. It\'s waking.',special:false},
+{city:'Dragon\'s Cache',act:3,beat:'The dragon guarded this city 300 years. Called me «brother».',special:false},
+{city:'Shadow Gate',act:3,beat:'A manuscript. My signature. 500 years ago. The Abyss fell silent.',special:true},
+{city:'Abyss Overflow',act:3,beat:'This city was built ABOVE the entrance to the Abyss. Who knew?',special:false},
+{city:'Autumn Throne',act:3,beat:'The king knew my past. Died without saying everything.',special:false},
+{city:'Ice Throat',act:3,beat:'A priest screamed: «You\'re building a trap for all existence!» The Abyss: «He lies.»',special:false},
+{city:'Ruby Path',act:3,beat:'The road leads somewhere. I\'m beginning to suspect — where.',special:false},
+{city:'Ancient Remnant',act:3,beat:'Something ancient slept here. Now it\'s awake.',special:false},
+{city:'The Threshold',act:3,beat:'Four cities to the truth. The Abyss grows insistent.',special:false},
+{city:'Mirror Marsh',act:3,beat:'Saw a reflection. Not mine.',special:false},
+{city:'The Forgotten Capital',act:3,beat:'I built these walls. Five hundred years ago. Now I\'m tearing them down. The Abyss falls silent from fear.',special:true},
+// Act IV (39–50): Choice
+{city:'First Seal',act:4,beat:'The Abyss: «Only 11 left.» Me: «What for?» The Abyss: «For everything to end.»',special:false},
+{city:'Bloody Pact',act:4,beat:'The pact was signed long ago. I don\'t remember when.',special:false},
+{city:'Ash of Gods',act:4,beat:'The gods had their plan too. They were wrong too.',special:false},
+{city:'Broken Oath',act:4,beat:'Whose oath? Mine. Made to myself. Five hundred years ago.',special:false},
+{city:'The Void Between',act:4,beat:'Between two choices — there\'s always a third. I don\'t see it yet.',special:false},
+{city:'Last Hope',act:4,beat:'Hero Andrii came to talk, not fight. I choose.',special:true},
+{city:'Night Crown',act:4,beat:'Five cities. The Abyss feels my doubt. It\'s angry.',special:false},
+{city:'Heart of the Seal',act:4,beat:'Something beats here. Not the city — me. Part of me.',special:false},
+{city:'Silent Sky',act:4,beat:'The sky truly fell silent. Even the wind doesn\'t dare.',special:false},
+{city:'Eternal Silence',act:4,beat:'The Abyss: «Stop. Become part of me.» The first direct offer.',special:false},
+{city:'Edge of the Map',act:4,beat:'The Abyss: «One city and everything ends.» Me: «What — everything?» Silence. But I already know.',special:true},
+{city:'The First Citadel',act:4,beat:'The city where Varan was born. The city where I was born.',special:true},
+];
+
+// ── Level 50 narrative endings (6 × stratKey) ─────────────────────────────────
+const _STORY_ENDINGS_L50 = {
+    syla:      'Ти взяв усе. Безодня мертва — бо стала тобою. Ти перший. Ти останній. Ти — усе. І це тихіше ніж ти думав.',
+    lehion:    'Твоя армія стала новим порядком. Ти не завоював світ — ти ним замінив. Десь у глибині Варан пам\'ятає як це називалось. Самотність.',
+    fortress:  'Ти не вийшов. Світ прийшов до тебе і впав. Підземелля стоїть. Може це і було метою — просто стояти.',
+    trap:      'Кожен ворог пішов туди куди ти хотів. Навіть Безодня. Особливо Безодня. Ти єдиний хто знає що справді сталось.',
+    rivnovaha: 'Ти знайшов те що шукав 500 років — не перемогу. Рівновагу між тим хто ти був і тим ким став. Варан і Лорд. Одне ціле.',
+    skarb:     'Ти зберіг усе. Не витратив. Печатки не зламані — лише ти знаєш де вони. Безодня чекає. Ти теж чекаєш. Вічність — добре слово для цього.',
+};
+
+const _STORY_ENDINGS_L50_EN = {
+    syla:      'You took everything. The Abyss is dead — because it became you. You are first. You are last. You are all. It\'s quieter than you expected.',
+    lehion:    'Your army became the new order. You didn\'t conquer the world — you replaced it. Somewhere deep inside, Varan remembers what this was called. Loneliness.',
+    fortress:  'You didn\'t leave. The world came to you and fell. The dungeon stands. Perhaps that was the goal all along — to simply stand.',
+    trap:      'Every enemy went exactly where you wanted. Even the Abyss. Especially the Abyss. You\'re the only one who knows what truly happened.',
+    rivnovaha: 'You found what you sought for 500 years — not victory. Balance between who you were and who you became. Varan and the Lord. One whole.',
+    skarb:     'You kept everything. Spent nothing. The seals aren\'t broken — only you know where they are. The Abyss waits. You wait too. Eternity is a good word for this.',
+};
+
 // ── Getters for language-sensitive arrays ─────────────────────────────────────
 function _getDecisionEvents() {
     return (_lang === 'en') ? _DECISION_EVENTS_EN : _DECISION_EVENTS;
@@ -882,3 +1169,6 @@ function _getDecisionEvents() {
 function _getPsyDesc() {
     return (_lang === 'en') ? _PSY_DESC_EN : _PSY_DESC;
 }
+
+function _getStoryLevels()     { return (_lang === 'en') ? _STORY_LEVELS_EN     : _STORY_LEVELS; }
+function _getStoryEndingsL50() { return (_lang === 'en') ? _STORY_ENDINGS_L50_EN : _STORY_ENDINGS_L50; }

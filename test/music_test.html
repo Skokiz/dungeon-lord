@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<title>Music Test — Dungeon Lord</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: #0a0318; color: #d0b8f0; font-family: monospace; padding: 32px; min-height: 100vh; }
+h1 { color: #cc88ff; font-size: 20px; margin-bottom: 6px; letter-spacing: 2px; }
+.sub { color: #4a2a6a; font-size: 11px; margin-bottom: 28px; letter-spacing: 1px; }
+
+.top { display: flex; gap: 16px; align-items: center; margin-bottom: 28px; flex-wrap: wrap; }
+.btn-play {
+    background: rgba(40,15,80,.7); border: 1px solid #4a2080; border-radius: 10px;
+    padding: 13px 28px; color: #c0a0f0; font-family: monospace; font-size: 15px;
+    cursor: pointer; transition: background .15s, border-color .15s; letter-spacing: 1px;
+}
+.btn-play:hover  { background: rgba(80,30,140,.85); border-color: #8855cc; }
+.btn-play.active { background: rgba(110,40,190,.9); border-color: #bb88ff; color: #fff; }
+
+.vol-row { display: flex; align-items: center; gap: 10px; }
+.vol-row label { color: #4a2a6a; font-size: 11px; }
+input[type=range] { width: 110px; accent-color: #7744bb; }
+.vol-num { color: #5a3a7a; font-size: 11px; width: 32px; }
+
+.chord-row { display: flex; gap: 8px; margin-bottom: 28px; }
+.chord-pill {
+    background: rgba(20,5,50,.6); border: 1px solid #2a1050; border-radius: 20px;
+    padding: 5px 14px; font-size: 11px; color: #4a2a6a; transition: all .2s;
+    letter-spacing: 1px;
+}
+.chord-pill.lit { background: rgba(90,30,160,.5); border-color: #7744bb; color: #bb88ff; }
+
+.layers { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 10px; max-width: 820px; margin-bottom: 28px; }
+.lbtn {
+    background: rgba(25,8,55,.7); border: 1px solid #2a1050; border-radius: 9px;
+    padding: 13px; cursor: pointer; text-align: left; transition: all .15s;
+}
+.lbtn:hover  { border-color: #4a2080; }
+.lbtn.on     { background: rgba(55,18,110,.7); border-color: #6633aa; }
+.lbtn .lname { color: #6a3a9a; font-size: 13px; font-weight: bold; display: block; margin-bottom: 3px; }
+.lbtn.on .lname { color: #cc88ff; }
+.lbtn .ldesc { color: #3a1860; font-size: 10px; line-height: 1.4; }
+.lbtn.on .ldesc { color: #6a4a8a; }
+.vu { height: 3px; background: #150630; border-radius: 2px; margin-top: 9px; overflow: hidden; }
+.vu-fill { height: 100%; background: #7744bb; width: 0%; border-radius: 2px; transition: width 80ms linear; }
+
+.info { color: #2a1050; font-size: 11px; line-height: 2; max-width: 600px; }
+.info b { color: #4a2a6a; }
+</style>
+</head>
+<body>
+<h1>🎵 DUNGEON LORD — MUSIC TEST</h1>
+<p class="sub">D МІНОР  ·  78 BPM  ·  8-ТАКТОВИЙ ЛУП  ·  DUNGEON KEEPER + CASTLEVANIA SotN</p>
+
+<div class="top">
+    <button class="btn-play" id="btn-play" onclick="togglePlay()">▶ Грати</button>
+    <div class="vol-row">
+        <label>VOL</label>
+        <input type="range" id="vol" min="0" max="100" value="72" oninput="setVol(this.value)">
+        <span class="vol-num" id="vol-num">72%</span>
+    </div>
+</div>
+
+<div class="chord-row">
+    <div class="chord-pill" id="cp0">i  · Dm</div>
+    <div class="chord-pill" id="cp1">bVII · C/D</div>
+    <div class="chord-pill" id="cp2">bVI · Bb</div>
+    <div class="chord-pill" id="cp3">v  · Am</div>
+</div>
+
+<div class="layers" id="layers"></div>
+
+<div class="info">
+    <b>Прогресія:</b> Dm → C/D педаль → Bb → Am → (repeat)<br>
+    <b>Tritone:</b> Ab4 з'являється у мелодії на тактах 2 і 8 — "diabolis in musica"<br>
+    <b>Вимкни шари</b> кнопками вище — почуєш як вони накладаються<br>
+    <b>Reverb:</b> синтетичний IR 2.5s, wet 35% — кам'яне підземелля
+</div>
+
+<script>
+'use strict';
+
+// ─── AudioContext ──────────────────────────────────────────────────────────────
+let ac = null, masterGain = null, reverbNode = null, dryBus = null, wetBus = null;
+let playing = false, loopTimer = null, loopStartAC = 0;
+let activeNodes = [];
+let chordTick = null;
+
+const BPM  = 78;
+const b    = 60 / BPM;      // beat  = 0.769s
+const BAR  = b * 4;          // bar   = 3.077s
+const LOOP = BAR * 8;        // loop  = 24.6s
+
+// ─── Note frequencies ─────────────────────────────────────────────────────────
+const N = {
+    E2:82.41, F2:87.31, G2:98.00, A2:110.00, Bb2:116.54,
+    C3:130.81, D3:146.83, E3:164.81, F3:174.61, G3:196.00, A3:220.00, Bb3:233.08,
+    C4:261.63, D4:293.66, E4:329.63, F4:349.23, G4:392.00, Ab4:415.30, A4:440.00, Bb4:466.16,
+    D5:587.33,
+    // Bass octaves
+    D1:36.71, E1:41.20, F1:43.65, G1:49.00, A1:55.00, Bb1:58.27, C2:65.41, D2:73.42,
+};
+
+// ─── Chord progression (2 bars each → 8 bars total) ───────────────────────────
+// i=Dm, bVII=C/D pedal, bVI=Bb, v=Am
+const PROG = [
+    { bass: N.D2, choir:[N.D3,N.F3,N.A3],
+      arp:[N.D3,N.F3,N.A3,N.D4,N.A3,N.F3,N.D3,N.A2] },
+    { bass: N.D2, choir:[N.C3,N.G3,N.E3],
+      arp:[N.C3,N.E3,N.G3,N.C4,N.G3,N.E3,N.C3,N.G2] },
+    { bass: N.Bb1, choir:[N.Bb2,N.D3,N.F3],
+      arp:[N.Bb2,N.D3,N.F3,N.Bb3,N.F3,N.D3,N.Bb2,N.F2] },
+    { bass: N.A1,  choir:[N.A2,N.C3,N.E3],
+      arp:[N.A2,N.C3,N.E3,N.A3,N.E3,N.C3,N.A2,N.E2] },
+];
+
+// ─── Melody [beat_offset, freq, duration_beats] ───────────────────────────────
+// Bars 0-1 over Dm:   D4 . F4 G4 | A4 Ab4(tritone!) .  .
+// Bars 2-3 over C/D:  E4 .  G4 . | D4 C4  .  .
+// Bars 4-5 over Bb:   F4 D4 Bb3 .| D4 .  F4  .
+// Bars 6-7 over Am:   A4 .  E4 G4| A4 Ab4(tritone) A4 .
+const MELODY = [
+    [0*BAR+0*b, N.D4, 0.85], [0*BAR+2*b, N.F4, 0.8], [0*BAR+3*b, N.G4, 0.75],
+    [1*BAR+0*b, N.A4, 1.0],  [1*BAR+1.5*b, N.Ab4, 0.55],
+    [2*BAR+0*b, N.E4, 0.8],  [2*BAR+2*b, N.G4, 0.8],  [2*BAR+3*b, N.E4, 0.65],
+    [3*BAR+0*b, N.D4, 0.9],  [3*BAR+1.5*b, N.C4, 0.9],
+    [4*BAR+0*b, N.F4, 0.75], [4*BAR+1*b, N.D4, 0.7],  [4*BAR+2*b, N.Bb3, 1.3],
+    [5*BAR+0*b, N.D4, 0.7],  [5*BAR+2*b, N.F4, 1.5],
+    [6*BAR+0*b, N.A4, 0.8],  [6*BAR+2*b, N.E4, 0.8],  [6*BAR+3*b, N.G4, 0.7],
+    [7*BAR+0*b, N.A4, 0.55], [7*BAR+0.7*b, N.Ab4, 0.5], [7*BAR+1.4*b, N.A4, 1.6],
+];
+
+// ─── Layer definitions ────────────────────────────────────────────────────────
+const LAYERS_DEF = [
+    { id:'bass',   name:'⬛ Орган-бас',     desc:'Square wave D2/Bb1/A1\nпедальний тонік, повільний фейд', on:true  },
+    { id:'choir',  name:'🔮 Хор (пад)',      desc:'9 деюньованих sine осциляторів\nповільна атака 1.5s, dungeon acoustic', on:true  },
+    { id:'harp',   name:'🎹 Харпсихорд',     desc:'Sawtooth → highpass 600Hz\nарпеджіо тріади вгору-вниз 8th нотами', on:true  },
+    { id:'melody', name:'🎵 Мелодія',        desc:'Triangle + вібрато LFO 5.5Hz\nтритон Ab4 на тактах 2 і 8', on:true  },
+    { id:'perc',   name:'🥁 Перкусія',       desc:'Kick (sine sweep) на 1&3\nSnare (noise bandpass) на 2&4', on:true  },
+];
+const layerOn = {};
+LAYERS_DEF.forEach(l => layerOn[l.id] = l.on);
+
+// ─── Audio init ───────────────────────────────────────────────────────────────
+function initAC() {
+    if (ac) { if (ac.state === 'suspended') ac.resume(); return; }
+    ac = new (window.AudioContext || window.webkitAudioContext)();
+
+    masterGain = ac.createGain();
+    masterGain.gain.value = 0.72;
+    masterGain.connect(ac.destination);
+
+    // Synthetic reverb IR: white noise × exponential decay
+    const irLen = Math.floor(ac.sampleRate * 2.5);
+    const irBuf = ac.createBuffer(2, irLen, ac.sampleRate);
+    for (let c = 0; c < 2; c++) {
+        const d = irBuf.getChannelData(c);
+        for (let i = 0; i < irLen; i++)
+            d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / irLen, 1.8);
+    }
+    reverbNode = ac.createConvolver();
+    reverbNode.buffer = irBuf;
+
+    dryBus = ac.createGain(); dryBus.gain.value = 0.66;
+    wetBus = ac.createGain(); wetBus.gain.value = 0.34;
+
+    dryBus.connect(masterGain);
+    reverbNode.connect(wetBus);
+    wetBus.connect(masterGain);
+}
+
+function wire(gainNode, dryOnly = false) {
+    gainNode.connect(dryBus);
+    if (!dryOnly) gainNode.connect(reverbNode);
+}
+
+// ─── Scheduling ───────────────────────────────────────────────────────────────
+function scheduleLoop(t0) {
+    loopStartAC = t0;
+    activeNodes = [];
+
+    // ── Bass organ ────────────────────────────────────────────────────────────
+    if (layerOn.bass) {
+        PROG.forEach((ch, ci) => {
+            const ts = t0 + ci * 2 * BAR;
+            const te = ts + 2 * BAR;
+            [-4, 4].forEach(dt => {
+                const osc = ac.createOscillator(), g = ac.createGain();
+                osc.type = 'square';
+                osc.frequency.value = ch.bass;
+                osc.detune.value = dt;
+                g.gain.setValueAtTime(0, ts);
+                g.gain.linearRampToValueAtTime(0.19, ts + 0.35);
+                g.gain.setValueAtTime(0.19, te - 0.4);
+                g.gain.linearRampToValueAtTime(0, te);
+                osc.connect(g); wire(g);
+                osc.start(ts); osc.stop(te + 0.05);
+                activeNodes.push(osc);
+            });
+        });
+    }
+
+    // ── Choir pad ─────────────────────────────────────────────────────────────
+    if (layerOn.choir) {
+        PROG.forEach((ch, ci) => {
+            const ts = t0 + ci * 2 * BAR;
+            const te = ts + 2 * BAR;
+            ch.choir.forEach((freq, fi) => {
+                const detunes = fi === 0 ? [-6, 0, 6] : [-4, 4];
+                detunes.forEach((dt, di) => {
+                    const osc = ac.createOscillator(), g = ac.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.value = freq;
+                    osc.detune.value = dt;
+                    const vol = fi === 0 ? 0.07 : 0.045;
+                    g.gain.setValueAtTime(0, ts);
+                    g.gain.linearRampToValueAtTime(vol, ts + 1.6);
+                    g.gain.setValueAtTime(vol, te - 1.6);
+                    g.gain.linearRampToValueAtTime(0, te);
+                    osc.connect(g); wire(g);
+                    osc.start(ts); osc.stop(te + 0.05);
+                    activeNodes.push(osc);
+                });
+            });
+        });
+    }
+
+    // ── Harpsichord arpeggio ──────────────────────────────────────────────────
+    if (layerOn.harp) {
+        const step = b / 2; // 8th notes
+        PROG.forEach((ch, ci) => {
+            const ts = t0 + ci * 2 * BAR;
+            for (let bar = 0; bar < 2; bar++) {
+                for (let s = 0; s < 8; s++) {
+                    const nt = ts + bar * BAR + s * step;
+                    const freq = ch.arp[s];
+                    const osc = ac.createOscillator();
+                    const flt = ac.createBiquadFilter();
+                    const g   = ac.createGain();
+                    osc.type = 'sawtooth';
+                    osc.frequency.value = freq;
+                    flt.type = 'highpass'; flt.frequency.value = 650;
+                    g.gain.setValueAtTime(0.11, nt);
+                    g.gain.exponentialRampToValueAtTime(0.001, nt + 0.13);
+                    osc.connect(flt); flt.connect(g); wire(g);
+                    osc.start(nt); osc.stop(nt + 0.16);
+                    activeNodes.push(osc);
+                }
+            }
+        });
+    }
+
+    // ── Melody (triangle + vibrato LFO) ───────────────────────────────────────
+    if (layerOn.melody) {
+        MELODY.forEach(([off, freq, dur]) => {
+            const nt  = t0 + off;
+            const ne  = nt + dur * b;
+            const osc = ac.createOscillator();
+            const lfo = ac.createOscillator();
+            const lfg = ac.createGain();
+            const g   = ac.createGain();
+            osc.type = 'triangle'; osc.frequency.value = freq;
+            lfo.type = 'sine'; lfo.frequency.value = 5.5;
+            lfg.gain.value = 4; // ±4 cents vibrato
+            lfo.connect(lfg); lfg.connect(osc.detune);
+            const atk = 0.09, rel = Math.min(0.55, dur * b * 0.38);
+            g.gain.setValueAtTime(0, nt);
+            g.gain.linearRampToValueAtTime(0.15, nt + atk);
+            g.gain.setValueAtTime(0.15, ne - rel);
+            g.gain.exponentialRampToValueAtTime(0.001, ne);
+            osc.connect(g); wire(g);
+            lfo.start(nt); lfo.stop(ne + 0.05);
+            osc.start(nt); osc.stop(ne + 0.05);
+            activeNodes.push(osc, lfo);
+        });
+    }
+
+    // ── Percussion ────────────────────────────────────────────────────────────
+    if (layerOn.perc) {
+        const totalBeats = 32; // 8 bars × 4 beats
+        for (let beat = 0; beat < totalBeats; beat++) {
+            const bt = t0 + beat * b;
+            const bi = beat % 4;
+
+            if (bi === 0 || bi === 2) {
+                // Kick: sine pitch sweep
+                const osc = ac.createOscillator(), g = ac.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(115, bt);
+                osc.frequency.exponentialRampToValueAtTime(32, bt + 0.22);
+                g.gain.setValueAtTime(0.38, bt);
+                g.gain.exponentialRampToValueAtTime(0.001, bt + 0.26);
+                osc.connect(g); g.connect(dryBus);
+                osc.start(bt); osc.stop(bt + 0.30);
+                activeNodes.push(osc);
+            }
+
+            if (bi === 1 || bi === 3) {
+                // Snare: noise + bandpass
+                const n   = Math.floor(ac.sampleRate * 0.14);
+                const buf = ac.createBuffer(1, n, ac.sampleRate);
+                const d   = buf.getChannelData(0);
+                for (let i = 0; i < n; i++) d[i] = (Math.random()*2-1) * (1-i/n);
+                const src = ac.createBufferSource();
+                const flt = ac.createBiquadFilter();
+                const g   = ac.createGain();
+                src.buffer = buf;
+                flt.type = 'bandpass'; flt.frequency.value = 210; flt.Q.value = 1.4;
+                g.gain.setValueAtTime(0.11, bt);
+                g.gain.exponentialRampToValueAtTime(0.001, bt + 0.14);
+                src.connect(flt); flt.connect(g); g.connect(dryBus);
+                src.start(bt);
+                activeNodes.push(src);
+            }
+        }
+    }
+
+    // Reschedule 300ms before loop end
+    loopTimer = setTimeout(() => {
+        if (playing) scheduleLoop(t0 + LOOP);
+    }, (LOOP - 0.3) * 1000);
+}
+
+// ─── Controls ─────────────────────────────────────────────────────────────────
+function togglePlay() {
+    const btn = document.getElementById('btn-play');
+    if (playing) {
+        playing = false;
+        clearTimeout(loopTimer);
+        clearInterval(chordTick);
+        activeNodes.forEach(n => { try { n.stop(ac.currentTime + 0.04); } catch(_) {} });
+        activeNodes = [];
+        btn.textContent = '▶ Грати';
+        btn.classList.remove('active');
+        document.querySelectorAll('.chord-pill').forEach(p => p.classList.remove('lit'));
+        document.querySelectorAll('.vu-fill').forEach(v => v.style.width = '0%');
+    } else {
+        initAC();
+        playing = true;
+        scheduleLoop(ac.currentTime + 0.06);
+        btn.textContent = '⏹ Зупинити';
+        btn.classList.add('active');
+        startChordIndicator();
+    }
+}
+
+function startChordIndicator() {
+    clearInterval(chordTick);
+    chordTick = setInterval(() => {
+        if (!playing || !ac) return;
+        const elapsed = (ac.currentTime - loopStartAC + LOOP * 10) % LOOP;
+        const chordIdx = Math.floor(elapsed / (2 * BAR)) % 4;
+        document.querySelectorAll('.chord-pill').forEach((p, i) => {
+            p.classList.toggle('lit', i === chordIdx);
+        });
+        // VU meters: fake activity based on layer
+        updateVU('bass',   layerOn.bass   ? 40 + Math.sin(elapsed * 2.1) * 25 : 0);
+        updateVU('choir',  layerOn.choir  ? 30 + Math.sin(elapsed * 0.7) * 18 : 0);
+        updateVU('harp',   layerOn.harp   ? 55 + Math.sin(elapsed * 8.0) * 35 : 0);
+        updateVU('melody', layerOn.melody ? 25 + Math.sin(elapsed * 3.2) * 20 : 0);
+        updateVU('perc',   layerOn.perc   ? (((elapsed / b) % 1) < 0.15 ? 70 : 10) : 0);
+    }, 80);
+}
+
+function updateVU(id, pct) {
+    const el = document.getElementById('bar-' + id);
+    if (el) el.style.width = Math.max(0, Math.min(100, pct)).toFixed(0) + '%';
+}
+
+function setVol(v) {
+    document.getElementById('vol-num').textContent = v + '%';
+    if (masterGain) masterGain.gain.value = v / 100;
+}
+
+function toggleLayer(id) {
+    layerOn[id] = !layerOn[id];
+    document.getElementById('layer-' + id).classList.toggle('on', layerOn[id]);
+    if (!playing) return;
+    clearTimeout(loopTimer);
+    activeNodes.forEach(n => { try { n.stop(ac.currentTime + 0.05); } catch(_) {} });
+    activeNodes = [];
+    scheduleLoop(ac.currentTime + 0.08);
+}
+
+// ─── Build layer buttons ───────────────────────────────────────────────────────
+const grid = document.getElementById('layers');
+LAYERS_DEF.forEach(l => {
+    const btn = document.createElement('button');
+    btn.className = 'lbtn' + (l.on ? ' on' : '');
+    btn.id = 'layer-' + l.id;
+    btn.innerHTML =
+        `<span class="lname">${l.name}</span>` +
+        `<span class="ldesc">${l.desc.replace(/\n/g,'<br>')}</span>` +
+        `<div class="vu"><div class="vu-fill" id="bar-${l.id}"></div></div>`;
+    btn.onclick = () => toggleLayer(l.id);
+    grid.appendChild(btn);
+});
+</script>
+</body>
+</html>

@@ -3,6 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700&family=Cinzel:wght@400;600&display=swap" rel="stylesheet">
     <title>Dungeon Lord: Siege Defense</title>
     <meta property="og:title" content="Dungeon Lord: Siege Defense">
     <meta property="og:description" content="Ти — Повелитель Підземелля. Захищай підземелля від героїв монстрами, пастками і власними руками. Dark fantasy tower defense.">
@@ -302,6 +305,11 @@
         }
         .pause-btn:hover { background: #38205a; }
         .pause-btn:active { transform: scale(0.96); }
+        .esoul-gem { display:inline-block; width:13px; height:13px; border-radius:50%; background:radial-gradient(circle at 35% 28%, #fffbe0, #ffd700 45%, #c8920a 75%, #7a5500); box-shadow:0 0 6px #ffd70088,0 1px 2px rgba(0,0,0,.5); vertical-align:middle; margin:0 1px; flex-shrink:0; }
+        .pause-vol-row { display:flex; align-items:center; gap:10px; color:#ddccff; font-size:14px; }
+        #music-vol-slider, #start-vol-slider { -webkit-appearance:none; appearance:none; width:120px; height:4px; border-radius:4px; background:#3a1f5a; outline:none; accent-color:#cc88ff; cursor:pointer; }
+        #music-vol-slider::-webkit-slider-thumb, #start-vol-slider::-webkit-slider-thumb { -webkit-appearance:none; width:16px; height:16px; border-radius:50%; background:#cc88ff; cursor:pointer; box-shadow:0 0 4px #aa55ff; }
+        #music-vol-label, #start-vol-label { min-width:36px; color:#cc88ff; font-size:13px; }
         .threat-cap-row { display: flex; align-items: center; gap: 10px; color: #ffcc88; flex-wrap: wrap; justify-content: center; }
         .threat-cap-row input {
             width: 65px; border-radius: 6px;
@@ -318,20 +326,26 @@
 
         /* ── TUTORIAL BUBBLE ── */
         #tut-bubble {
-            position: fixed; z-index: 9500; pointer-events: all;
-            background: rgba(10,5,25,0.97); border: 2px solid #cc88ff;
-            border-radius: 16px; padding: 16px 18px; width: 260px;
-            box-shadow: 0 0 28px rgba(180,100,255,0.35);
+            position: fixed;
+            left: 8px;
+            bottom: calc(var(--controls-h, 120px) + 10px);
+            z-index: 9500; pointer-events: all;
+            background: rgba(10,5,25,0.78);
+            backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+            border: 1.5px solid rgba(204,136,255,0.6);
+            border-radius: 14px; padding: 12px 14px;
+            width: min(252px, calc(100vw - 16px));
+            box-shadow: 0 4px 20px rgba(120,60,200,0.25);
             animation: don-in 0.3s ease;
         }
-        #tut-text { font-size: 13px; line-height: 1.5; margin-bottom: 10px; color: #e8d0ff; }
-        #tut-step-lbl { font-size: 10px; color: #7744aa; margin-bottom: 6px; }
+        #tut-text { font-size: 12px; line-height: 1.5; margin-bottom: 8px; color: #ddc8f8; }
+        #tut-step-lbl { font-size: 10px; color: #7744aa; margin-bottom: 5px; }
         #tut-bubble-btns { display: flex; justify-content: space-between; gap: 8px; }
         #tut-bubble-btns button {
-            flex: 1; padding: 6px 10px; border-radius: 8px; cursor: pointer;
-            border: 1px solid #5a3a7a; background: #1a0d30; color: #cc88ff; font-size: 12px;
+            flex: 1; padding: 5px 8px; border-radius: 8px; cursor: pointer;
+            border: 1px solid #5a3a7a; background: rgba(26,13,48,0.8); color: #cc88ff; font-size: 11px;
         }
-        #tut-btn-next { background: #3a1a5a !important; border-color: #cc88ff !important; }
+        #tut-btn-next { background: rgba(58,26,90,0.9) !important; border-color: #cc88ff !important; }
         @keyframes tut-pulse {
             0%, 100% { box-shadow: 0 0 0 0 rgba(204,136,255,0); }
             50%       { box-shadow: 0 0 0 5px rgba(204,136,255,0.55); }
@@ -348,13 +362,52 @@
         /* ── TRAP SDESC ── */
         .sdesc { display: block; font-size: 0.65em; color: #8866aa; margin-top: 1px; line-height: 1.1; }
 
+        /* ── WAVE BANNER ── */
+        @keyframes wave-banner-anim {
+            0%   { opacity:0; transform:translateX(-50%) translateY(-18px) scale(0.88); }
+            14%  { opacity:1; transform:translateX(-50%) translateY(2px)   scale(1.03); }
+            20%  { opacity:1; transform:translateX(-50%) translateY(0)     scale(1);    }
+            72%  { opacity:1; transform:translateX(-50%) translateY(0)     scale(1);    }
+            100% { opacity:0; transform:translateX(-50%) translateY(14px)  scale(0.95); }
+        }
+        #wave-banner {
+            position: fixed; top: 28%; left: 50%;
+            transform: translateX(-50%);
+            text-align: center; pointer-events: none; z-index: 60;
+            opacity: 0;
+        }
+        #wave-banner.wave-banner-show {
+            animation: wave-banner-anim 2.8s cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
+        }
+        #wave-banner .wb-label {
+            font-family: 'Cinzel', Georgia, serif;
+            font-size: clamp(11px, 2vw, 14px);
+            letter-spacing: 0.4em;
+            text-transform: uppercase;
+            color: #9966cc;
+            text-shadow: 0 0 14px #6633aaaa;
+            margin-bottom: 2px;
+        }
+        #wave-banner .wb-num {
+            font-family: 'Cinzel Decorative', 'Cinzel', Georgia, serif;
+            font-size: clamp(40px, 9vw, 72px);
+            font-weight: 700; line-height: 1;
+            color: #f0e4ff;
+            text-shadow: 0 0 28px #aa55ff, 0 0 60px #6622cc66, 2px 3px 0 #1a0040;
+        }
+
         /* ── TOAST ── */
         #toast-msg {
-            position: fixed; bottom: 115px; left: 50%; transform: translateX(-50%);
-            background: rgba(10,5,25,0.96); border: 1px solid #7744bb;
-            border-radius: 20px; padding: 7px 18px; color: #e8d0ff;
-            font-size: 13px; z-index: 9800; pointer-events: none;
+            position: fixed;
+            bottom: calc(var(--controls-h, 120px) + 10px);
+            left: 50%; transform: translateX(-50%);
+            background: rgba(10,5,25,0.62);
+            backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+            border: 1px solid rgba(119,68,187,0.5);
+            border-radius: 20px; padding: 6px 16px; color: #ddc8f8;
+            font-size: 12px; z-index: 9800; pointer-events: none;
             opacity: 0; transition: opacity 0.35s ease; white-space: nowrap;
+            max-width: 80vw; text-align: center;
         }
 
         /* ── DAILY PANEL ── */
@@ -1099,6 +1152,16 @@
             transition:background .15s, border-color .15s;
         }
         .don-btn:hover { background:rgba(80,40,130,.75); border-color:#7a4aaa; }
+        /* Abyss intercept events — dark crimson override */
+        #donesnnia-overlay.don-abyss {
+            background:linear-gradient(160deg,#160404 0%,#090101 100%);
+            border-color:#6a1515; box-shadow:0 4px 40px #3a000080;
+        }
+        #donesnnia-overlay.don-abyss .don-badge { color:#7a2020; }
+        #donesnnia-overlay.don-abyss .don-title { color:#ff5555; }
+        #donesnnia-overlay.don-abyss .don-text  { color:#c09090; }
+        #donesnnia-overlay.don-abyss .don-btn   { background:rgba(90,10,10,.5); border-color:#6a1515; color:#e0a0a0; }
+        #donesnnia-overlay.don-abyss .don-btn:hover { background:rgba(130,20,20,.75); border-color:#aa3030; }
         /* ── Результат психотипу (у game-over) ─────────────────────────── */
         #psy-result-panel {
             display:none; margin:20px 0 12px;
@@ -1810,11 +1873,19 @@
     <h1>👑 Dungeon Lord</h1>
     <div class="subtitle">Siege Defense</div>
     <button id="btn-lang" onclick="_setLang(_lang==='uk'?'en':'uk')" style="position:absolute;top:12px;right:12px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.2);color:#ccc;border-radius:8px;padding:5px 10px;font-size:13px;cursor:pointer;">🇬🇧 EN</button>
+    <p id="start-lore" data-i18n="start-lore" style="color:#6a4a8a;font-size:13px;letter-spacing:.5px;max-width:300px;text-align:center;line-height:1.6;margin:0"></p>
     <div id="lvl-progress-label"><span data-i18n="lvl-label">Рівень</span> <span id="lvl-num">1</span> <span id="lvl-total">/ 50</span></div>
     <div id="start-elite-display"><span class="esoul-icon">💀</span> <span id="start-elite-num">0</span></div>
     <div id="lord-title"></div>
     <button id="btn-continue" onclick="continueGame()" data-i18n="btn-start">▶ Почати гру</button>
+    <button id="btn-hell" onclick="continueHell()" style="display:none;background:rgba(120,0,0,0.7);border-color:#cc2200;color:#ff6644;" data-i18n="btn-hell">🔥 Режим Пекла</button>
     <button id="btn-instructions" onclick="openInstructions()" data-i18n="btn-instr">📖 Інструкція</button>
+    <div class="pause-vol-row" style="justify-content:center;">
+        <span>🎵</span>
+        <input type="range" id="start-vol-slider" min="0" max="100" value="38"
+               oninput="_onMusicVolSlider(this.value)">
+        <span id="start-vol-label">38%</span>
+    </div>
     <button id="btn-reset-progress" onclick="confirmResetProgress()" data-i18n="btn-reset">↺ Скинути все</button>
 </div>
 
@@ -1893,6 +1964,12 @@
 <div id="pause-overlay" class="overlay-base">
     <h2 data-i18n="pause-title">⏸ ПАУЗА</h2>
     <div id="pause-quote"></div>
+    <div class="pause-vol-row">
+        <span>🎵</span>
+        <input type="range" id="music-vol-slider" min="0" max="100" value="38"
+               oninput="_onMusicVolSlider(this.value)">
+        <span id="music-vol-label">38%</span>
+    </div>
     <button class="pause-btn" id="pause-resume-btn" onclick="togglePause()" data-i18n="pause-resume">Продовжити</button>
     <button class="pause-btn" id="pause-restart-btn" onclick="hardReset()" style="margin-top:8px;background:rgba(180,30,30,0.85);border-color:#ff4444;" data-i18n="pause-restart">🔄 Рестарт</button>
     <button id="pause-api-key-btn" onclick="StoryManager.promptApiKey()" data-i18n="pause-api">🤖 Claude API-ключ</button>
@@ -1909,6 +1986,14 @@
     <div id="psy-result-panel"></div>
     <button id="btn-share" onclick="_shareResult()" data-i18n="btn-share">📤 Поділитись результатом</button>
     <button id="btn-try-again" onclick="hardReset()" data-i18n="go-retry">🔄 Спробувати знову</button>
+</div>
+
+<!-- ── LEVEL BEAT (post-win story flash) ── -->
+<div id="level-beat" class="overlay-base" style="display:none;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:48px 28px;gap:0">
+    <div id="lb-act" style="font-size:10px;letter-spacing:3px;color:#6a3a9a;text-transform:uppercase;margin-bottom:20px;font-family:monospace"></div>
+    <h2 id="lb-city" style="font-size:30px;color:#e8d5ff;margin:0 0 20px;font-weight:700;letter-spacing:1px;text-shadow:0 0 24px rgba(150,80,255,0.5)"></h2>
+    <p id="lb-text" style="font-size:15px;color:#9a7abf;line-height:1.7;max-width:400px;margin:0 0 32px;font-style:italic"></p>
+    <button id="lb-btn" style="background:rgba(42,21,69,0.85);border:1px solid #4a2a7a;color:#c9a0ff;padding:11px 30px;border-radius:8px;font-size:14px;cursor:pointer;letter-spacing:1px;transition:border-color .2s">→</button>
 </div>
 
 <!-- ── Модалка вибору гілки еволюції (Phase 4a) ── -->
@@ -1962,7 +2047,7 @@
     <div class="lord-upg-header">
       <div style="flex:1">
         <h2>⚗️ Прокачка Лорда</h2>
-        <div class="lord-upg-elite">Елітні душі: <span id="lug-elite-count">0</span> 💀</div>
+        <div class="lord-upg-elite">Елітні душі: <span id="lug-elite-count">0</span> <span class="esoul-gem"></span></div>
       </div>
       <button class="overlay-close-btn" onclick="closeLordUpgrade()">✕</button>
     </div>
@@ -2013,6 +2098,7 @@
                 <div class="resource-box elite-box" id="elite-souls-box"><span class="esoul-icon">💀</span> <span id="elite-souls-display">0</span></div>
             </div>
             <div class="hud-right">
+                <div id="hud-story-label" style="font-size:9px;letter-spacing:1.5px;color:#5a3a7a;text-transform:uppercase;margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:160px"></div>
                 <div class="hp-label" data-i18n="hud-city">Місто</div>
                 <div class="hp-bar"><div id="city-hp" class="hp-fill" style="width:100%;background:#a83838"></div><span class="hp-num" id="city-hp-num">2000 / 2000</span></div>
                 <div class="hp-label-lord" data-i18n="hud-lord">Володар</div>
@@ -2160,6 +2246,12 @@
 <!-- ── TOAST ── -->
 <div id="toast-msg"></div>
 
+<!-- ── WAVE BANNER ── -->
+<div id="wave-banner">
+    <div class="wb-label" data-i18n="wave-label">Хвиля</div>
+    <div class="wb-num">1</div>
+</div>
+
 <!-- ── DAILY QUESTS PANEL ── -->
 <div id="daily-panel" style="display:none">
     <div class="daily-title" data-i18n="daily-title">📋 Завдання дня</div>
@@ -2178,7 +2270,7 @@
     </div>
 </div>
 
-<script src="models/i18n.js?v=1"></script>
+<script src="models/i18n.js?v=3"></script>
 <script src="models/draw_slime.js?v=4"></script>
 <script src="models/draw_skeleton.js?v=1"></script>
 <script src="models/hero_flat.js?v=24"></script>
@@ -2197,6 +2289,7 @@
 <script src="models/draw_banshee.js?v=3"></script>
 <script src="models/draw_lich.js?v=2"></script>
 <script src="models/draw_abyss.js?v=3"></script>
+<script src="models/endings.js?v=1"></script>
 <script src="models/draw_dragon.js?v=3"></script>
 
 <script>
@@ -2362,6 +2455,7 @@ let GAME = {
     mobAtkCost: 75,
     mobVitCost: 60,
     monsterHpBonus: 0,
+    monsterHpPct: 0,    // % бонус HP монстрів від perma (відносний)
     monsterDmgBonus: 0,
     monsterArmorBonus: 0,    // броня монстрів від апгрейдів
     monsterDmgPct: 0,        // % бонус дамагу (10% за апгрейд)
@@ -2394,6 +2488,8 @@ let _permaData = { lordAtkLvl:0, lordAtkCost:80,  lordVitLvl:0, lordVitCost:70,
                    mobAtkLvl:0,  mobAtkCost:75,   mobVitLvl:0,  mobVitCost:60,
                    floorLvls: Array(20).fill(0), floorCosts: [60,65,70,75,80,85,90,95,100,105,110,115,120,125,130,135,140,145,150,155],
                    startSoulsLvl:0, startSoulsCost:100 };
+
+let _hellMode = false; // true = Hell Mode progression (unlocked after completing level 50)
 
 // =================== ПЕР-МОНСТР ПРОКАЧКА (нова система) ===================
 // 4 атрибути на тип монстра: atk/hp/cd(швидкість спавна)/count(макс на поверсі).
@@ -3045,15 +3141,7 @@ class Floor {
             let byBtn = fty + pad; // верхній край — під стелею кімнати
             let onRight = (this.depth % 2 === 1); // непарні → правий кут
 
-            // Монстр — завжди крайня (outer) кнопка, Рівень — внутрішня
-            let bxMon, bxUpg;
-            if (onRight) {
-                bxMon = fx + fw - pad - bw;      // Монстр — крайня права
-                bxUpg = bxMon - gap - bw;         // Рівень — лівіше
-            } else {
-                bxMon = fx + pad;                 // Монстр — крайня ліва
-                bxUpg = bxMon + bw + gap;         // Рівень — правіше
-            }
+            let bxUpg = onRight ? (fx + fw - pad - bw) : (fx + pad);
 
             // ── "Апгрейд поверху" ─────────────────────────────────────────
             // Legacy: відключено в Phase 2. Кількість монстрів тепер качається через 🧬 меню.
@@ -3076,26 +3164,8 @@ class Floor {
                 this._btnX = null;
             }
 
-            // ── "Купити монстра" — завжди крайня кнопка ─────────────────
-            let count   = units.filter(u => u.type==='monster' && u.floorIdx===this.depth && !u._summoned).length;
-            let buyCost = 15 + this.depth * 5;
-            let canBuy  = GAME.souls >= buyCost && count < this.maxMonsters;
-            this._buyBtnX = bxMon; this._buyBtnY = byBtn + camY; this._buyBtnW = bw; this._buyBtnH = bh;
-            ctx.fillStyle = canBuy ? 'rgba(80,30,20,0.72)' : 'rgba(20,16,26,0.70)';
-            ctxRoundRect(ctx, bxMon, byBtn, bw, bh, 4); ctx.fill();
-            ctx.strokeStyle = canBuy ? 'rgba(170,90,70,0.75)' : 'rgba(80,80,90,0.35)'; ctx.lineWidth = 1; ctx.stroke();
-            ctx.fillStyle = canBuy ? '#ecd8d0' : '#555';
-            ctx.textAlign = 'center';
-            let _fs2 = isMobile ? '9px' : (isPC ? '13px' : '11px');
-            ctx.font = '600 ' + _fs2 + ' Arial';
-            ctx.fillText('Призвати', bxMon + bw/2, byBtn + bh/2 - (isMobile ? 10 : (isPC ? 15 : 12)));
-            ctx.fillText('монстра', bxMon + bw/2, byBtn + bh/2 + (isMobile ? 2 : 2));
-            ctx.font = _fs2 + ' Arial';
-            ctx.fillStyle = canBuy ? 'rgba(236,216,208,0.72)' : '#555';
-            ctx.fillText(buyCost + ' душ', bxMon + bw/2, byBtn + bh/2 + (isMobile ? 14 : (isPC ? 20 : 16)));
         } else {
-            this._btnX    = null;
-            this._buyBtnX = null;
+            this._btnX = null;
         }
 
         // ── Phase 5: Lv10 — трансформація кімнати (overlay-тінь) ──────────────
@@ -3201,7 +3271,7 @@ class Unit {
             let _kHpBonus  = 1 + 0.10 * _kHpLvl;
 
             // ── HP ────────────────────────────────────────────────────────
-            this.hp = (80 + n * 20 + GAME.monsterHpBonus) * kind.hpMult * _kHpBonus;
+            this.hp = (80 + n * 20 + GAME.monsterHpBonus) * (1 + (GAME.monsterHpPct || 0)) * kind.hpMult * _kHpBonus;
 
             // ── DMG ───────────────────────────────────────────────────────
             let scaledAtk = kind.baseAtk + (n < 5 ? n * 1 : 4 + (n - 4) * 2);
@@ -3293,8 +3363,8 @@ class Unit {
             };
             let monHp  = 90 + n * 22 + (HERO_HP_BONUS[htype.name] || 0);
             let monDmg = (n < 5) ? 6 + n : 6 + 4 + (n - 4) * 2;
-            this.hp   = monHp  * scale;
-            this.dmg  = monDmg * scale;
+            this.hp   = monHp  * scale * (GAME.hellHpMult  || 1);
+            this.dmg  = monDmg * scale * (GAME.hellDmgMult || 1);
 
             // ── Базова броня по типу (до пасивних бонусів) ───────────────
             const HERO_ARMOR = {
@@ -3940,9 +4010,16 @@ class Unit {
                         dmgDealt = 0;
                     }
                     enemy.hp -= dmgDealt;
+                    if (enemy.type === 'lord' && dmgDealt > 0) {
+                        _runLordHit = true;
+                        try { _ctxHintPerm('lord_hit',
+                            'Лорд уражений! Прокачай його, або вклади душі в кількість і силу монстрів, щоб він взагалі не доходив до бою.',
+                            'The Lord is under attack! Upgrade him, or invest souls in monster numbers and strength so he never reaches combat.'); } catch(e) {}
+                    }
                     if (enemy.type === 'hero' && dmgDealt > 0) {
                         enemy._lastHitBy = this.type;
-                        if (this.type === 'lord' && _psyTrack) _psyTrack.combat.lordAttacks++;
+                        if (this.type === 'lord') { if (_psyTrack) _psyTrack.combat.lordAttacks++; }
+                        _SFX.hit();
                         // Іскри при ударі по герою
                         if (dmgDealt >= 2) {
                             let _sc = (this.dmgType === 'mag') ? 'blue' : 'orange';
@@ -4518,7 +4595,7 @@ class Unit {
             if (this.floorIdx < 0) {
                 this.y = CFG.surfaceY;
                 if (this.x > CITY_GATE_X) { this.x -= this.speed * 2 * _dt; }
-                else { GAME.cityHP -= this.dmg * 5; this.hp = 0; spawnParticle(this.x, this.y, 'red'); StoryManager.showComment('heroEscaped'); }
+                else { GAME.cityHP -= this.dmg * 5; this.hp = 0; spawnParticle(this.x, this.y, 'red'); StoryManager.showComment('monsterStrike'); }
                 return;
             }
             // Поверх 0 — до виходу (CAVE_X)
@@ -4958,8 +5035,20 @@ function init() {
     setTimeout(resize, 1500);
     window.addEventListener('resize', resize);
 
-    // Стартовий екран завжди показується при перезавантаженні сторінки
-    // Оновлюємо відображення поточного рівня
+    // Retry після програшу: пропускаємо стартовий екран і одразу запускаємо поточний рівень
+    if (_store.get('DLSiege_retry') === '1') {
+        _store.del('DLSiege_retry');
+        _hellMode = _store.get('DLSiege_retry_hell') === '1';
+        _store.del('DLSiege_retry_hell');
+        _permaData = _loadPerma();
+        _applyLang();
+        const ss = document.getElementById('start-screen');
+        if (ss) ss.style.display = 'none';
+        _showRunModPicker(_hellMode ? _loadHellProgress() : loadProgress());
+        return;
+    }
+
+    // Стартовий екран — показується при звичайному завантаженні
     const _savedLvl = loadProgress();
     const _lvlEl = document.getElementById('lvl-num');
     if (_lvlEl) _lvlEl.textContent = _savedLvl;
@@ -4972,6 +5061,9 @@ function init() {
     if (_eNum) _eNum.innerText = getStoredEliteSouls();
     const _titleEl = document.getElementById('lord-title');
     if (_titleEl) _titleEl.textContent = _getTitleByElite(getStoredEliteSouls());
+    // Hell Mode button — visible only after beating level 50
+    const _hellBtn = document.getElementById('btn-hell');
+    if (_hellBtn) _hellBtn.style.display = _hellUnlocked() ? '' : 'none';
     // Завантажуємо perma-дані глобально
     _permaData = _loadPerma();
     // Анімований старт-екран
@@ -5023,7 +5115,8 @@ function startGame(level) {
     if (_currentRunMod) { _currentRunMod.apply(); _currentRunMod = null; }
 
     // Монстри: бонуси від perma
-    GAME.monsterHpBonus       = _permaData.mobVitLvl * 25;
+    GAME.monsterHpBonus       = 0; // скидаємо; тільки RunMod може додавати
+    GAME.monsterHpPct         = _permaData.mobVitLvl * 0.15; // 15% за рівень perma
     GAME.monsterArmorBonus    = _permaData.mobVitLvl * 1.5;
     GAME.monsterDmgPct        = _permaData.mobAtkLvl * 0.10;
     GAME.monsterAtkSpeedBonus = _permaData.mobAtkLvl * 0.1;
@@ -5033,6 +5126,10 @@ function startGame(level) {
     // Per-monster dev (нова система): session-рівні = golden baseline
     GAME.monsterDev = _initMonsterDevSession();
     // ───────────────────────────────────────────────────────────────────────
+    // Hell Mode multipliers
+    GAME.hellHpMult  = _hellMode ? 2.5 : 1;
+    GAME.hellDmgMult = _hellMode ? 1.8 : 1;
+
     _psyReset();
 
     floors.push(new Floor(0));
@@ -5040,6 +5137,7 @@ function startGame(level) {
 
     let ss = document.getElementById('start-screen');
     if (ss) ss.parentNode.removeChild(ss);
+    try { _Music.startGame(); } catch(e) {}
     beginGame();
 }
 
@@ -5050,7 +5148,7 @@ function beginGame() {
     loop();
     scheduleNextEnemy();
     setInterval(spawnMinions, 1000);
-    setTimeout(function() { try { _tutStart(); } catch(e) {} }, 900);
+    setTimeout(function() { try { _liveTutInit(); } catch(e) {} }, 1200);
     try { _dailyInit(); } catch(e) {}
 }
 
@@ -5065,9 +5163,10 @@ let _nextEnemyDeadline = 0; // абсолютний час (Date.now()) наст
 
 function scheduleNextEnemy() {
     if (GAME.gameOver) return;
-    // 7 сек базово + 2.5 сек за кожен поверх з монстрами
+    // База: 11s на рівні 1 → 7s на рівні 50 (лінійно) + 2.5s за кожен поверх з монстрами
     let monsterFloors = Math.max(1, floors.length - 1);
-    let delay = (7 + (monsterFloors - 1) * 2.5) * 1000;
+    let baseDelay = 11 - ((GAME.currentLevel || 1) - 1) / 49 * 4;
+    let delay = (baseDelay + (monsterFloors - 1) * 2.5) * 1000;
     _nextEnemyDeadline = Date.now() + delay;
 
     function _trySpawn() {
@@ -5089,44 +5188,59 @@ function scheduleNextEnemy() {
     setTimeout(_trySpawn, delay);
 }
 
+// Параметри хвилі: залежать від рівня гри (1-50) і номера хвилі в поточному рані.
+// lFrac  [0..1] — позиція рівня в прогресії 50 рівнів
+// wFrac  [0..1] — внутрішній прогрес рівня, насичується на хвилі 30
+// intensity = lFrac×0.6 + wFrac×0.4 → визначає всі параметри хвилі
+function _waveParams() {
+    const L = GAME.currentLevel || 1;
+    const W = GAME.waveCount;
+    const lFrac = (L - 1) / 49;
+    const wFrac = Math.min(W / 30, 1.0);
+    const intensity = lFrac * 0.6 + wFrac * 0.4;
+
+    const heroCount     = Math.max(1, Math.round(1 + intensity * 5));
+    const maxTierRaw    = Math.max(1, Math.round(intensity * 20));
+    const floorCap      = Math.max(1, floors.length - 1);
+    // На вищих рівнях герої на 0..3 тири вище кількості поверхів гравця
+    const tierPressure  = Math.round(lFrac * 3);
+    const effectiveTier = Math.min(maxTierRaw, floorCap + tierPressure);
+    // Донесення можуть змінювати GAME.eliteChance/captainChance (±N%).
+    // Додаємо їх поверх базових значень від хвилі.
+    const eliteChance   = Math.min(90, Math.max(0, intensity * 28 + (GAME.eliteChance   || 0)));
+    const captainChance = Math.min(45, Math.max(0, intensity * 14 + (GAME.captainChance || 0)));
+
+    return { heroCount, effectiveTier, eliteChance, captainChance };
+}
+
 function spawnEnemy() {
     if (GAME.gameOver) return;
     GAME.waveCount++;
+    try { _showWaveBanner(GAME.waveCount); } catch(e) {}
+    try {
+        if (GAME.waveCount === 1) _liveTutTrigger('hero_first');
+        else if (GAME.waveCount === 3) _liveTutTrigger('lord');
+        if (GAME.waveCount === 10 && !_runLordHit)
+            _ctxHint('lord_idle',
+                'Лорд не отримував урону 10 хвиль. І нехай далі так буде.',
+                'The Lord hasn\'t been touched in 10 waves. Keep it that way.');
+    } catch(e) {}
 
-    // Кількість поверхів з монстрами (всі крім поверху лорда)
-    let monsterFloors = Math.max(1, floors.length - 1);
+    const wp = _waveParams();
 
-    // Кількість героїв: 1 поверх = завжди 1; 2+ поверхів = від 1 до monsterFloors рівномірно
-    let heroCount = 1;
-    if (monsterFloors >= 2) {
-        heroCount = 1 + Math.floor(Math.random() * monsterFloors);
-    }
-
-    // Бонус від рівня загрози (+2% за рівень, макс 60%) — один шанс на +1 героя
-    if (GAME.extraHeroChance > 0 && Math.random() * 100 < GAME.extraHeroChance) {
-        heroCount++;
-    }
-
-    // Обмеження: не більше кількості поверхів з монстрами
-    heroCount = Math.min(heroCount, monsterFloors);
-    heroCount = Math.max(1, heroCount);
-
-    for (let i = 0; i < heroCount; i++) {
-        // Зважений рандом рівня: вищі рівні мають більший шанс
-        // Ваги: рівень 1 = 1, рівень 2 = 2, ..., рівень N = N (трикутний розподіл)
-        let totalWeight = monsterFloors * (monsterFloors + 1) / 2;
+    for (let i = 0; i < wp.heroCount; i++) {
+        // Зважений рандом рівня: вищі тири мають більший шанс (трикутний розподіл)
+        let totalWeight = wp.effectiveTier * (wp.effectiveTier + 1) / 2;
         let roll = Math.random() * totalWeight;
-        let level = 1;
-        let cumulative = 0;
-        for (let lv = 1; lv <= monsterFloors; lv++) {
+        let heroLvl = 1, cumulative = 0;
+        for (let lv = 1; lv <= wp.effectiveTier; lv++) {
             cumulative += lv;
-            if (roll < cumulative) { level = lv; break; }
+            if (roll < cumulative) { heroLvl = lv; break; }
         }
-        // Герої спавняться з воріт міста
-        let hero = new Unit('hero', CITY_GATE_X + i*10, CFG.surfaceY, -1, level);
+        let hero = new Unit('hero', CITY_GATE_X + i * 10, CFG.surfaceY, -1, heroLvl);
         let r = Math.random() * 100;
-        if (r < GAME.captainChance)                          makeEliteAtk(hero);
-        else if (r < GAME.captainChance + GAME.eliteChance)  makeEliteHp(hero);
+        if      (r < wp.captainChance)                     makeEliteAtk(hero);
+        else if (r < wp.captainChance + wp.eliteChance)    makeEliteHp(hero);
         units.push(hero);
     }
 
@@ -5136,8 +5250,7 @@ function spawnEnemy() {
 
 function checkCityBoss() {
     let pct = GAME.cityHP / GAME.maxCityHP * 100;
-    let monsterFloors = Math.max(1, floors.length - 1);
-    let bossLevel = monsterFloors; // максимальний рівень
+    let bossLevel = _waveParams().effectiveTier; // рівень боса = поточний макс тір хвилі
 
     if (!GAME.bossSent75 && pct < 75) {
         GAME.bossSent75 = true;
@@ -5163,6 +5276,16 @@ function spawnBoss(level, mult) {
     boss.size = 34 + mult * 2;
     boss.soulReward = 30 * mult;
     units.push(boss);
+    try { _ctxHintPerm('boss',
+        'Це бос — збільшені характеристики і найвищий рівень. Не жалій монстрів.',
+        'This is a boss — enhanced stats and the highest tier. Don\'t hold back.'); } catch(e) {}
+    try {
+        if (units.filter(u => u.heroRank === 'boss' && u.hp > 0).length >= 2)
+            _ctxHint('multi_boss',
+                'Три великих людини йдуть вбити мене. Це вже честь.',
+                'Three great warriors coming to kill me. That\'s almost flattering.');
+    } catch(e) {}
+    _SFX.canvasShake(8, 5);
 }
 
 function makeEliteHp(hero) {
@@ -5171,6 +5294,9 @@ function makeEliteHp(hero) {
     hero.color = '#33cc88';
     hero.size = 24;
     hero.soulReward = 25;
+    try { _ctxHintPerm('elite',
+        'Небезпечний герой. Такі мають більше хп або урону — і дають більше душ.',
+        'A dangerous hero. Elites have more HP or damage — and drop more souls.'); } catch(e) {}
 }
 
 function makeEliteAtk(hero) {
@@ -5179,6 +5305,9 @@ function makeEliteAtk(hero) {
     hero.color = '#ff6600';
     hero.size = 24;
     hero.soulReward = 25;
+    try { _ctxHintPerm('elite',
+        'Небезпечний герой. Такі мають більше хп або урону — і дають більше душ.',
+        'A dangerous hero. Elites have more HP or damage — and drop more souls.'); } catch(e) {}
 }
 
 // =================== СПАВН МОНСТРІВ ===================
@@ -5286,7 +5415,7 @@ function loop(ts) {
                 GAME.captainChance = Math.min(100, GAME.captainChance + 1);
             }
             // extraHeroChance і heroScalePercent теж обмежені рівнем складності
-            GAME.extraHeroChance  = Math.min(100, GAME.difficultyLevel * 4);
+            GAME.extraHeroChance  = Math.min(50, GAME.difficultyLevel * 4);
             GAME.heroScalePercent = GAME.heroScaleBase + GAME.difficultyLevel * GAME.heroThreatPct;
         }
     }
@@ -6198,7 +6327,7 @@ function loop(ts) {
 
     // ── Місто — ворота на одній вертикальній лінії з лівим факелом поверхів ─
     let _cityAvail = centerX - CFG.floorW / 2 - 10;
-    let _cityScale = Math.min(_worldScale, Math.max(isMobile ? 0.52 : 0.35, _cityAvail / 210));
+    let _cityScale = Math.min(_worldScale, Math.max(isMobile ? 0.52 : 0.48, _cityAvail / 210));
     // X лівого факела поверхів: centerX - floorW/2 - wallW(22) + 11 = centerX - floorW/2 - 11
     let _torchLineX = centerX - CFG.floorW / 2 - 11;
     // Зсуваємо місто так, щоб його ворота (x=100 в локальних координатах) стояли на torchLineX
@@ -8239,6 +8368,7 @@ function loop(ts) {
                 }
                 let reward = (u.soulReward || (u.heroRank === 'boss' ? 80 : u.heroRank.startsWith('elite') ? 25 : 15)) + (GAME.soulBonus || 0);
                 GAME.souls += reward;
+                try { _liveTutTrigger('first_kill'); } catch(e) {}
                 if (_psyTrack) {
                     _psyTrack.combat.totalKills++;
                     if (u._lastHitBy === 'lord') _psyTrack.combat.lordKills++;
@@ -8246,13 +8376,23 @@ function loop(ts) {
                 }
                 // ── Елітні душі 💎 ──────────────────────────────────────
                 if (u.heroRank === 'boss') {
-                    const _ge = 3 * _runEliteMult;
+                    _SFX.bossDeath();
+                    const _ge = 6 * _runEliteMult;
                     GAME.eliteSouls += _ge;
                     spawnDmgText(u.x, u.y - u.size - 18, '+' + _ge + ' 💀', '#ffd700', true);
+                    try { _ctxHintPerm('golden_souls',
+                        'Це золоті душі 💎 — за них можна назавжди прокачати здібності монстрів, поверхи і самого Лорда.',
+                        'These are golden souls 💎 — use them to permanently upgrade monster abilities, floors, and the Lord himself.'); } catch(e) {}
                 } else if (u.heroRank && u.heroRank.startsWith('elite')) {
-                    const _ge = 1 * _runEliteMult;
+                    _SFX.death();
+                    const _ge = 2 * _runEliteMult;
                     GAME.eliteSouls += _ge;
                     spawnDmgText(u.x, u.y - u.size - 18, '+' + _ge + ' 💀', '#ffd700', false);
+                    try { _ctxHintPerm('golden_souls',
+                        'Це золоті душі 💎 — за них можна назавжди прокачати здібності монстрів, поверхи і самого Лорда.',
+                        'These are golden souls 💎 — use them to permanently upgrade monster abilities, floors, and the Lord himself.'); } catch(e) {}
+                } else {
+                    _SFX.death();
                 }
                 let pcol = u.heroRank === 'boss' ? 'purple' : u.heroRank.startsWith('elite') ? 'orange' : 'gold';
                 let ppower = u.heroRank === 'boss' ? 1.8 : u.heroRank.startsWith('elite') ? 1.3 : 1.0;
@@ -8277,6 +8417,11 @@ function loop(ts) {
                 updateUI();
             } else if (u.type === 'lord') { gameOver(); }
             units.splice(i, 1);
+            if (u.type === 'monster' && u.floorIdx >= 0) {
+                let floorMonsters = units.filter(m => m.type === 'monster' && m.floorIdx === u.floorIdx);
+                if (floorMonsters.length === 0 && units.some(h => h.type === 'hero' && h.floorIdx === u.floorIdx))
+                    try { _ctxHint('floor_cleared', 'Поверх без охорони — герої пройдуть вільно.', 'Floor undefended — heroes will pass freely.'); } catch(e) {}
+            }
         } else {
             // AIR_ELE ghost-фаза: таймер → при завершенні знімаємо бафи і вбиваємо
             if (u._transparentTimer > 0) {
@@ -8454,25 +8599,7 @@ function loop(ts) {
 
     updateUI();
 
-    if (GAME.cityHP <= 0 && !GAME.gameOver) {
-        GAME.gameOver = true;
-        const _lvl = GAME.currentLevel || 1;
-        const _nextLvl = Math.min(_lvl + 1, 50);
-        saveProgress(_nextLvl);
-        commitEliteSouls(); // зберігаємо зароблені елітні душі
-        const _isLast = _lvl >= 50;
-        document.getElementById('go-title').innerText = _isLast ? _t('go-win-all') : _t('go-win-lvl', {n:_lvl});
-        document.getElementById('go-title').style.color = 'lime';
-        document.getElementById('go-desc').innerText = _isLast ? _t('go-all50') : _t('go-next', {n:_nextLvl});
-        const _eEl = document.getElementById('go-elite-earned');
-        if (_eEl) _eEl.innerText = GAME.eliteSouls > 0 ? _t('go-elite', {n:GAME.eliteSouls, t:getStoredEliteSouls()}) : '';
-        const _tryBtn = document.getElementById('btn-try-again');
-        _tryBtn.textContent = _isLast ? _t('go-retry-all') : _t('go-next-btn', {n:_nextLvl});
-        _tryBtn.onclick = () => hardReset();
-        if (_isLast) _showPsychotypeResult();
-        document.getElementById('game-over').style.display = 'flex';
-        return;
-    }
+    if (GAME.cityHP <= 0 && !GAME.gameOver) { gameWin(); return; }
 
 
     requestAnimationFrame(loop);
@@ -8707,31 +8834,52 @@ let _psyCurrentEv = null;
 let _runEliteMult  = 1;    // множник елітних душ поточного рану
 let _currentRunMod = null; // обраний модифікатор
 
+// Лінійна шкала значень від мін (рівень 1) до макс (рівень 50)
+function _rms(min, max) {
+    const f = Math.min(1, Math.max(0, ((GAME.currentLevel || 1) - 1) / 49));
+    return Math.round(min + (max - min) * f);
+}
+
 const _RUN_MODS = [
     { id:'blood_frenzy', icon:'💀',
-      name:()=>_t('mod-blood'),  desc:()=>_t('mod-blood-d'),
+      name:()=>_t('mod-blood'),
+      desc:()=> _lang==='en' ? '+1 soul per enemy killed' : '+1 душа за кожного вбитого ворога',
       apply:() => { GAME.soulBonus = (GAME.soulBonus||0) + 1; } },
+
     { id:'elite_surge',  icon:'⚡',
-      name:()=>_t('mod-elite'),  desc:()=>_t('mod-elite-d'),
+      name:()=>_t('mod-elite'),
+      desc:()=> _lang==='en' ? '2× elite soul rewards per kill' : 'Вдвічі більше душ від еліт та босів',
       apply:() => { _runEliteMult = 2; } },
+
     { id:'lord_fury',    icon:'🔥',
-      name:()=>_t('mod-fury'),   desc:()=>_t('mod-fury-d'),
-      apply:() => { GAME.lordDmg = Math.round(GAME.lordDmg * 1.25); } },
+      name:()=>_t('mod-fury'),
+      desc:()=> { const v = _rms(10, 35); return _lang==='en' ? `Lord damage +${v}%` : `Урон Лорда +${v}%`; },
+      apply:() => { const v = _rms(10, 35); GAME.lordDmg = Math.round(GAME.lordDmg * (1 + v / 100)); } },
+
     { id:'iron_walls',   icon:'🏰',
-      name:()=>_t('mod-iron'),   desc:()=>_t('mod-iron-d'),
-      apply:() => { GAME.monsterHpBonus = Math.round((GAME.monsterHpBonus||0) + (80 + GAME.heroScalePercent * 0.5)); } },
+      name:()=>_t('mod-iron'),
+      desc:()=> _lang==='en' ? 'Monsters gain HP based on level' : 'Монстри отримують бонус HP залежно від рівня',
+      apply:() => { GAME.monsterHpBonus = Math.round((GAME.monsterHpBonus||0) + (40 + GAME.heroScalePercent * 0.5)); } },
+
     { id:'dark_pact',    icon:'🌑',
-      name:()=>_t('mod-pact'),   desc:()=>_t('mod-pact-d'),
-      apply:() => { GAME.eliteSouls += 5; GAME.heroScalePercent += 15; } },
+      name:()=>_t('mod-pact'),
+      desc:()=> { const e = _rms(2, 10), t = _rms(5, 20); return _lang==='en' ? `+${e} elite souls, heroes +${t}% stronger` : `+${e} елітних душ, герої +${t}% сильніші`; },
+      apply:() => { GAME.eliteSouls += _rms(2, 10); GAME.heroScalePercent += _rms(5, 20); } },
+
     { id:'soul_well',    icon:'💧',
-      name:()=>_t('mod-well'),   desc:()=>_t('mod-well-d'),
-      apply:() => { GAME.souls += 80; } },
+      name:()=>_t('mod-well'),
+      desc:()=> { const v = _rms(30, 100); return _lang==='en' ? `+${v} souls` : `+${v} душ`; },
+      apply:() => { GAME.souls += _rms(30, 100); } },
+
     { id:'warlord_aura', icon:'👹',
-      name:()=>_t('mod-aura'),   desc:()=>_t('mod-aura-d'),
-      apply:() => { GAME.lordGlobalAtkAura = (GAME.lordGlobalAtkAura||0) + 4; } },
+      name:()=>_t('mod-aura'),
+      desc:()=> { const v = _rms(1, 6); return _lang==='en' ? `All monsters +${v} attack` : `Всі монстри +${v} до атаки`; },
+      apply:() => { GAME.lordGlobalAtkAura = (GAME.lordGlobalAtkAura||0) + _rms(1, 6); } },
+
     { id:'undying',      icon:'💜',
-      name:()=>_t('mod-regen'),  desc:()=>_t('mod-regen-d'),
-      apply:() => { GAME.maxLordHP += 150; GAME.lordRegen = (GAME.lordRegen||0) + 1; } },
+      name:()=>_t('mod-regen'),
+      desc:()=> { const hp = _rms(50, 200); return _lang==='en' ? `+${hp} Lord HP and +1 HP/s regen` : `+${hp} HP Лорда і +1 HP/с реген`; },
+      apply:() => { GAME.maxLordHP += _rms(50, 200); GAME.lordRegen = (GAME.lordRegen||0) + 1; } },
 ];
 
 function _pickRunMods() {
@@ -9199,7 +9347,7 @@ const _DECISION_EVENTS = [
 
     // ── МОНСТРИ: тепліший/гумористичний тон ──
 
-    { id:'slime_petition', trigger:'wave_end', minRound:2, weight:2,
+    { id:'slime_petition', trigger:'wave_end', minRound:2, maxRound:25, weight:2,
       badge:'💙 Петиція', title:'Слайми вимагають поваги',
       text:'Делегація слаймів з\'явилась у тронному залі. Вони принесли сувій — на диво рівно написаний, враховуючи що в них немає рук. Основні вимоги: більше темряви, менше факелів, і офіційно припинити называти їх "ці зелені кульки".',
       choices:[
@@ -9208,7 +9356,7 @@ const _DECISION_EVENTS = [
         { text:'→ Оголосити офіційну назву "Бойові Слизові Воїни"', tags:['per'], buff:{ eliteChance:2 } },
       ]},
 
-    { id:'bat_strike', trigger:'wave_start', minRound:3, weight:2,
+    { id:'bat_strike', trigger:'wave_start', minRound:3, maxRound:25, weight:2,
       badge:'🦇 Виробничий конфлікт', title:'Страйк кажанів',
       text:'Кажани оголосили страйк. Після перебудови третього коридору їхня ехолокація дає збої і двоє влетіли в стіну. Вони хочуть або перебудови, або компенсації за "виробничу травму". У делегата перев\'язаний ніс.',
       choices:[
@@ -9217,7 +9365,7 @@ const _DECISION_EVENTS = [
         { text:'→ Нагадати що "страйк" не є терміном у їхньому контракті', tags:['dom'], buff:{ soulBonus:2 } },
       ]},
 
-    { id:'golem_poet', trigger:'wave_end', minRound:4, weight:2,
+    { id:'golem_poet', trigger:'wave_end', minRound:4, maxRound:25, weight:2,
       badge:'🗿 Культурна подія', title:'Голем написав вірш',
       text:'Голем приніс кам\'яну плиту з висіченим текстом. Ода до підземелля. Один рядок про тебе: "Лорд великий. Лорд темний. Лорд іноді не пояснює навіщо ми це робимо. Але ми все одно йдемо." Автор не підписався — але різець є тільки в одного.',
       choices:[
@@ -9226,7 +9374,7 @@ const _DECISION_EVENTS = [
         { text:'→ Нічого не говорити. Тихо зберегти плиту', tags:['vyj'], buff:{ lordDmg:2 } },
       ]},
 
-    { id:'skeleton_law', trigger:'wave_start', minRound:5, weight:2,
+    { id:'skeleton_law', trigger:'wave_start', minRound:5, maxRound:25, weight:2,
       badge:'💀 Юридична суперечка', title:'Скелет і податковий статус',
       text:'Один скелет прийшов з питанням після того як герої кричали "Ти вже мертвий!". Він хоче юридичну ясність: якщо він офіційно мертвий — чи мусить платити замковий податок? І хто взагалі буде його спадкоємцем.',
       choices:[
@@ -9235,7 +9383,7 @@ const _DECISION_EVENTS = [
         { text:'→ Сказати що за такі питання він заборгував ще раунд служби', tags:['dom'], buff:{ heroThreatPct:-0.2 } },
       ]},
 
-    { id:'zombie_menu', trigger:'wave_end', minRound:3, weight:2,
+    { id:'zombie_menu', trigger:'wave_end', minRound:3, maxRound:25, weight:2,
       badge:'🧟 Скарга', title:'Зомбі незадоволені меню',
       text:'Зомбі надіслали скаргу. Анонімно, але почерк впізнаваний. Суть: нас годують тільки тими героями що "охолонули". Хочемо свіжого. Орфографічних помилок не рахувати — для нежиті написано непогано.',
       choices:[
@@ -9244,7 +9392,7 @@ const _DECISION_EVENTS = [
         { text:'→ Поставити на перші лінії — хай самі вирішують питання свіжості', tags:['dom'], buff:{ heroThreatPct:-0.5, soulBonus:3 } },
       ]},
 
-    { id:'minotaur_mirror', trigger:'wave_end', minRound:6, weight:1,
+    { id:'minotaur_mirror', trigger:'wave_end', minRound:6, maxRound:25, weight:1,
       badge:'🐂 Особиста справа', title:'Мінотавр і дзеркало',
       text:'Мінотавр знайшов у трофейній кімнаті срібне дзеркало і не відходить від нього третій день. Нікого не чіпає. Просто дивиться. Іноді зітхає. Монстри обходять стороною і говорять пошепки.',
       choices:[
@@ -9328,6 +9476,143 @@ const _DECISION_EVENTS = [
         { text:'→ Відмовити. Своя армія надійніша', tags:['dom','per'], buff:{} },
         { text:'→ Найняти і підставити місту — хай воно платить їм далі', tags:['kha'], buff:{ eliteChance:-2, heroThreatPct:-0.5 } },
       ]},
+
+    // ── Іменні герої: Марта ────────────────────────────────────────────────────
+    { id:'marta_spy', trigger:'wave_start', minRound:12, maxRound:15, weight:4,
+      badge:'🕵 Перехоплено', title:'Розвідниця Марта',
+      text:'Монстри спіймали дівчину яка замальовувала карту нижніх ярусів. Вона не бігла. Дивилася прямо. "Я хочу знати хто ти. Не для гільдії — для себе." Ім\'я вишите на плащі: Марта.',
+      choices:[
+        { text:'→ Відпустити. Вона нічого не зробила', tags:['vyj','zna'], buff:{ heroThreatPct:-0.5 } },
+        { text:'→ Запропонувати обмін: вона розповідає про місто — ти мовчиш про неї', tags:['zna','kha'], buff:{ soulBonus:4 } },
+        { text:'→ Тримати під вартою. Занадто цікава щоб відпускати', tags:['dom'], buff:{ captainChance:2 } },
+      ]},
+    { id:'marta_return', trigger:'wave_start', minRound:28, maxRound:31, weight:5,
+      requires: { id:'marta_spy', choice:0 },
+      badge:'📜 Лист від розвідниці', title:'Марта повернулась',
+      text:'Вона прийшла сама. Без зброї, без захисту. Поклала на підлогу список: імена сімей що шлють героїв, боргові контракти, хто платить за кожен похід. "Я думала: може є спосіб що не вбиває обох."',
+      choices:[
+        { text:'→ "Це дорогого варте. Продовжуй."', tags:['zna','vyj'], buff:{ heroThreatPct:-1.5, soulBonus:5 } },
+        { text:'→ "Ти розумієш що я не можу зупинитись?"', tags:['vyj','per'], buff:{ heroThreatPct:-0.5 } },
+        { text:'→ "Мир неможливий. Але ці дані — корисні."', tags:['dom','zna'], buff:{ soulBonus:8 } },
+      ]},
+    { id:'marta_escaped', trigger:'wave_start', minRound:28, maxRound:31, weight:5,
+      requires: { id:'marta_spy', choice:2 },
+      badge:'⚠ Ускладнення', title:'Марта втекла',
+      text:'Камера порожня. Охоронець оглушений. На стіні вуглем: "Ти міг відпустити." Розвідники кажуть: вона веде наступний загін особисто.',
+      choices:[
+        { text:'→ Підготувати пастку. Вона знає підземелля — але не знає всього', tags:['per','kha'], buff:{ eliteChance:3 } },
+        { text:'→ Дати знак що я пам\'ятаю. Може зупиниться', tags:['vyj','zna'], buff:{ heroThreatPct:-0.5 } },
+        { text:'→ Нехай приходить. Обрала свій шлях', tags:['dom','pom'], buff:{ lordDmg:4 } },
+      ]},
+
+    // ── Іменні герої: Старий Вілем ─────────────────────────────────────────────
+    { id:'vitem_first', trigger:'wave_end', minRound:20, maxRound:23, weight:4,
+      badge:'⚔️ Ветеран', title:'Старий Вілем',
+      text:'Він не нападав. Сів посеред коридору і сказав: "Я служив лорду до тебе. П\'ятдесят років. Знаю що він зробив — і чому зупинився. Маєш хвилину?"',
+      choices:[
+        { text:'→ "Говори. Але коротко."', tags:['zna'], buff:{ lordDmg:3 } },
+        { text:'→ "Той лорд програв. Його уроки — не мої."', tags:['per','dom'], buff:{ heroThreatPct:0.5 } },
+        { text:'→ Відпустити без розмови. Старість не причина щоб зупиняти бій', tags:['kha','vyj'], buff:{ soulBonus:3 } },
+      ]},
+    { id:'vitem_second', trigger:'wave_start', minRound:35, maxRound:38, weight:4,
+      requires: { id:'vitem_first', choice:0 },
+      badge:'📜 Листа від ветерана', title:'Вілем пише',
+      text:'Папір прийшов через монстра якого не вбили. "Той лорд зупинився тому що знайшов ім\'я. Варан. Він написав його на стіні найнижчого ярусу перш ніж зникнути. Ти вже бачив це ім\'я?"',
+      choices:[
+        { text:'→ "Бачив. Звідки він знав моє ім\'я?"', tags:['zna','vyj'], buff:{ lordDmg:5 } },
+        { text:'→ Спалити листа. Це може бути пастка', tags:['per','dom'], buff:{} },
+        { text:'→ Написати у відповідь: "Я пам\'ятаю більше ніж думаєш."', tags:['kha','zna'], buff:{ heroThreatPct:-1, lordDmg:3 } },
+      ]},
+
+    // ── Іменні герої: Ліра · Шлях миру ────────────────────────────────────────
+    { id:'lira_peace', trigger:'wave_start', minRound:30, maxRound:33, weight:4,
+      badge:'✦ Пропозиція', title:'Жриця Ліра',
+      text:'Жінка в білому зупинилась за п\'ять кроків до воріт. Ніякої зброї. "Я не герой. Я посол богів яких ніхто вже не пам\'ятає. Мені дозволено говорити — якщо ти дозволиш слухати."',
+      choices:[
+        { text:'→ "Говори. Але спочатку — хто тебе послав насправді?"', tags:['zna','vyj'], buff:{ heroThreatPct:-1 } },
+        { text:'→ Мовчки пропустити і вслухатись', tags:['vyj','kha'], buff:{ soulBonus:3 } },
+        { text:'→ "Боги мовчали п\'ятсот років. Їхня черга."', tags:['per','dom'], buff:{ lordDmg:3 } },
+      ]},
+    { id:'lira_truce', trigger:'wave_start', minRound:43, maxRound:45, weight:5,
+      requires: { id:'lira_peace', choice:0 },
+      badge:'✦ Останній шанс', title:'Ліра: умови виконані',
+      text:'Ліра стоїть у тому ж місці. "Умови виконані з обох сторін. Місто готове зупинити атаки назавжди. Взамін — ти не виходиш звідси. Але вже ніхто не гине." Мовчання підземелля здається згодою.',
+      choices:[
+        { text:'→ Прийняти. Це і є єдина перемога без тіл.', tags:['vyj','zna'], buff:{ lordDmg:0 }, specialAction:'peace_victory' },
+        { text:'→ "Надто пізно. Я вже обрав інший шлях."', tags:['per','dom'], buff:{ heroThreatPct:-1 } },
+        { text:'→ "Дай мені ще один раунд щоб подумати."', tags:['kha','vyj'], buff:{ heroThreatPct:-0.5 } },
+      ]},
+
+    // ── АКТ III (раунди 26–38): Розлам · Пам'ять прокидається ─────────────
+
+    { id:'memory_fragment', trigger:'wave_start', minRound:26, weight:2,
+      badge:'🌀 Спогад', title:'Уламок пам\'яті',
+      text:'Ти прокидаєшся від бою з іменем на язиці. Варан. Воно чуже — але звучить як твоє. Монстри дивляться дивно. Ти говорив вголос.',
+      choices:[
+        { text:'→ Ігнорувати. Втома і стрес, нічого більше', tags:['per','kha'], buff:{} },
+        { text:'→ Записати. Може пригодиться — або пояснить щось важливе', tags:['zna'], buff:{ lordDmg:3 } },
+        { text:'→ Спитати Безодню. Вона точно знає більше ніж каже', tags:['vyj','dom'], buff:{ heroThreatPct:-0.5, lordDmg:5 } },
+      ]},
+
+    { id:'old_soldier', trigger:'wave_end', minRound:30, weight:2,
+      badge:'⚔️ Зустріч', title:'Ветеран',
+      text:'Старий солдат відмовляється битися. Ліг на підлогу і каже: "Я бачив лорда до тебе. Він теж думав що бореться." Монстри не знають що робити.',
+      choices:[
+        { text:'→ Нехай іде. Ті що обирають мир — не мої вороги', tags:['vyj'], buff:{ soulBonus:3 } },
+        { text:'→ Допитати. Хто такий "лорд до мене"?', tags:['zna'], buff:{ lordDmg:4 } },
+        { text:'→ Зупинити силою. Приклад непокори небезпечніший за одного старця', tags:['dom','per'], buff:{ heroThreatPct:0.5, eliteChance:2 } },
+      ]},
+
+    { id:'abyss_whisper', trigger:'wave_start', minRound:33, weight:2,
+      badge:'🌑 Внутрішній голос', title:'Безодня радить',
+      text:'Безодня вперше не наказує — питає. "Ти ще пам\'ятаєш навіщо починав?" Пауза. "Чи хочеш пам\'ятати?"',
+      choices:[
+        { text:'→ "Так. Хочу знати все." Навіть якщо відповідь болюча', tags:['zna','vyj'], buff:{ lordDmg:4 } },
+        { text:'→ "Не важливо. Я роблю те що роблю."', tags:['per','dom'], buff:{} },
+        { text:'→ "Чому питаєш? Що тобі потрібно?"', tags:['kha','zna'], buff:{ heroThreatPct:-0.5, lordDmg:3 } },
+      ]},
+
+    // ── АКТ IV (раунди 39–50): Вибір · Перехоплення Безодні ───────────────
+
+    { id:'andrii_talk', trigger:'wave_start', minRound:44, maxRound:44, weight:10,
+      badge:'⚔️ Посланець', title:'Герой Андрій',
+      text:'Він прийшов без зброї. Поставив щит на підлогу і сказав: "Я не воюю. Я хочу знати хто ти. Місто каже — монстр. Але монстри не будують. Ти будуєш." Безодня наказує: вбий його.',
+      choices:[
+        { text:'→ "Іди. Поки можеш." Він не твій ворог — але й не союзник', tags:['per','vyj'], buff:{ heroThreatPct:-1 } },
+        { text:'→ Розповісти. Все. Про Варана, про Безодню, про 500 років', tags:['zna','vyj'], buff:{ lordDmg:5 } },
+        { text:'→ Вислухати його. Що він знає про мою справжню мету?', tags:['zna','kha'], buff:{ heroThreatPct:-1.5, lordDmg:3 } },
+        { text:'→ Мовчати. Хай сам вирішує', tags:['kha'], buff:{} },
+      ]},
+
+    { id:'abyss_intercept_loyalty', trigger:'wave_start', minRound:39, weight:3,
+      type:'abyss',
+      badge:'∞ БЕЗОДНЯ', title:'Перша пропозиція',
+      text:'Безодня говорить без монстрів, без посередників. Прямо. "П\'ятсот років ти охороняв мене. Тепер я пропоную стати мною. Без болю. Без пам\'яті. Просто — кінець."',
+      choices:[
+        { text:'→ "Ні." Одне слово. Достатньо', tags:['per','dom'], buff:{ lordDmg:6 } },
+        { text:'→ "Розкажи більше. Без болю — це як?"', tags:['zna','kha'], buff:{ heroThreatPct:-1 } },
+        { text:'→ "П\'ятсот років — і ти думаєш я забув що ти таке?"', tags:['vyj','per'], buff:{ lordDmg:4, heroThreatPct:-0.5 } },
+      ]},
+
+    { id:'abyss_offer_freedom', trigger:'wave_end', minRound:43, weight:3,
+      type:'abyss',
+      badge:'∞ БЕЗОДНЯ', title:'Друга пропозиція',
+      text:'"Ти захищав їх і вони посилали нових героїв. Ти дав їм час і вони його використали проти тебе. Дозволь мені вирішити це по-іншому. Назавжди."',
+      choices:[
+        { text:'→ "Мені не потрібен захисник."', tags:['dom','per'], buff:{ lordDmg:5 } },
+        { text:'→ "Що ти будеш робити з ними?"', tags:['zna'], buff:{ heroThreatPct:1 } },
+        { text:'→ Мовчати. Іноді мовчання — єдина чесна відповідь', tags:['vyj','kha'], buff:{} },
+      ]},
+
+    { id:'abyss_confession', trigger:'wave_start', minRound:47, weight:3,
+      type:'abyss',
+      badge:'∞ БЕЗОДНЯ', title:'Третя і остання',
+      text:'"Варане." Не лорде. Варане. "Я боюсь тебе. Не тому що ти сильний. Тому що ти пам\'ятаєш. І зараз ти вибираєш." Тиша підземелля абсолютна.',
+      choices:[
+        { text:'→ "Я пам\'ятаю. І тому — ні."', tags:['per','vyj'], buff:{ lordDmg:8 } },
+        { text:'→ "Скажи мені що ти — і я вирішу."', tags:['zna','kha'], buff:{ lordDmg:4 } },
+        { text:'→ "П\'ятсот років — моя відповідь. Ти вже її знаєш."', tags:['dom','per'], buff:{ lordDmg:6, heroThreatPct:-1 } },
+      ]},
 ];
 
 // ── Вибір і показ рішення ───────────────────────────────────────────────────
@@ -9337,6 +9622,7 @@ function _psyPickEvent(trigger) {
     let pool = _getDecisionEvents().filter(e =>
         e.trigger === trigger &&
         e.minRound <= _psyTrack.rounds &&
+        (!e.maxRound || e.maxRound >= _psyTrack.rounds) &&
         !_psyTrack.shown.includes(e.id) &&
         _psyCheckRequires(e)
     );
@@ -9360,6 +9646,9 @@ function _showDecision(ev) {
     const ov = document.getElementById('donesnnia-overlay');
     if (!ov) return;
     _psyCurrentEv = ev;
+    const isAbyss = ev.type === 'abyss';
+    ov.className = isAbyss ? 'don-abyss' : '';
+    _SFX.donesnnia();
     ov.innerHTML = `
         <div class="don-badge">${ev.badge}</div>
         <div class="don-title">${ev.title}</div>
@@ -9381,7 +9670,7 @@ function _resolveDecisionIdx(idx) {
         _psyTrack.decisions[tag] = (_psyTrack.decisions[tag] || 0) + 1;
     });
     const b = choice.buff || {};
-    if (b.heroThreatPct  !== undefined) GAME.heroThreatPct  = Math.max(0.5, (GAME.heroThreatPct  || 4) + b.heroThreatPct);
+    if (b.heroThreatPct  !== undefined) GAME.heroThreatPct  = Math.max(0.5, Math.min(15, (GAME.heroThreatPct  || 4) + b.heroThreatPct));
     if (b.eliteChance    !== undefined) GAME.eliteChance    = Math.max(0,   Math.min(100, (GAME.eliteChance    || 0) + b.eliteChance));
     if (b.captainChance  !== undefined) GAME.captainChance  = Math.max(0,   Math.min(100, (GAME.captainChance  || 0) + b.captainChance));
     if (b.soulBonus      !== undefined) GAME.soulBonus      = Math.max(0,   (GAME.soulBonus       || 0) + b.soulBonus);
@@ -9394,6 +9683,34 @@ function _resolveDecisionIdx(idx) {
     if (ov) ov.classList.remove('visible');
     _psyCurrentEv = null;
     _psyTrack.pending = false;
+    if (choice.specialAction === 'peace_victory') {
+        setTimeout(() => _peacefulVictory(), 600);
+    }
+}
+
+function _peacefulVictory() {
+    GAME.gameOver = true;
+    GAME.won = true;
+
+    try { _Music.stop(true); } catch(e) {}
+    _SFX.win();
+    const lvl = GAME.currentLevel || 1;
+    const lvls = _getStoryLevels ? _getStoryLevels() : null;
+    const entry = lvls ? lvls[lvl - 1] : null;
+    const pt = _computePsychotype();
+    const endText = _lang === 'en'
+        ? 'Fifty levels were not needed. Peace was not a surrender — it was the only victory that did not require more bodies. The city fell silent. And for the first time in five hundred years, the dungeon fell silent too.'
+        : 'П\'ятдесят рівнів виявились непотрібними. Мир — це не капітуляція. Це єдина перемога, яка не потребує нових тіл. Місто замовкло. І вперше за п\'ятсот років — підземелля теж.';
+    document.getElementById('go-title').innerText = _lang === 'en' ? '✦ True Ending: Peace ✦' : '✦ Справжня кінцівка: Мир ✦';
+    document.getElementById('go-title').style.color = '#aaffcc';
+    document.getElementById('go-desc').innerText = endText;
+    const _eEl = document.getElementById('go-elite-earned');
+    if (_eEl) _eEl.innerText = '';
+    const _tryBtn = document.getElementById('btn-try-again');
+    _tryBtn.textContent = _lang === 'en' ? 'Begin anew' : 'Почати знову';
+    _tryBtn.onclick = () => hardReset();
+    _showPsychotypeResult();
+    document.getElementById('game-over').style.display = 'flex';
 }
 
 // ── Обчислення психотипу ────────────────────────────────────────────────────
@@ -9638,6 +9955,8 @@ function _lugSelect(id) {
     });
 }
 
+const _ESOUL_GEM = '<span class="esoul-gem"></span>';
+
 function _lugRenderDetail(p, eliteSouls) {
     const det = document.getElementById('lord-upg-detail');
     if (!det) return;
@@ -9663,15 +9982,17 @@ function _lugRenderDetail(p, eliteSouls) {
         let tag = bought
             ? '<span class="lud-lvl-tag done">✓</span>'
             : isNext
-                ? `<span class="lud-lvl-tag cost">${nextCost}💀</span>`
+                ? `<span class="lud-lvl-tag cost">${nextCost}${_ESOUL_GEM}</span>`
                 : '<span class="lud-lvl-tag" style="color:#331155">🔒</span>';
         lvlsHtml += `<div class="${cls}"><div class="lud-lvl-n">${_t('lud-rv')}${n}</div><div class="lud-lvl-desc">${lv.desc}</div>${tag}</div>`;
     });
 
+    const _buyTxt  = _lang === 'en' ? `Upgrade — ${nextCost}` : `Прокачати — ${nextCost}`;
+    const _needTxt = _lang === 'en' ? `Need ${nextCost}` : `Потрібно ${nextCost}`;
     let btnHtml = maxed
         ? `<div class="lud-maxed">${_t('lud-maxed')}</div>`
         : `<button class="lud-buy-btn" ${canAfford ? '' : 'disabled'} onclick="buyLordGrid('${def.id}')">`
-          + (canAfford ? _t('lud-upgrade', {n: nextCost}) : _t('lud-need', {n: nextCost})) + '</button>';
+          + (canAfford ? _buyTxt : _needTxt) + `${_ESOUL_GEM}</button>`;
 
     det.innerHTML = `
         <div style="--cc:${def.color}">
@@ -9691,7 +10012,7 @@ function buyLordGrid(id) {
     const cost = _LORD_GRID_COSTS[lvl + 1];
     const avail = getStoredEliteSouls();
     if (avail < cost) return;
-    _haptic(20);
+    _haptic(20); _SFX.buy();
     _questDone('upgrade');
     _psyBuy('lord');
     _store.set('DLSiege_elite', String(avail - cost));
@@ -9840,6 +10161,7 @@ let pendingTrapType = null; // якщо не null — чекаємо кліку 
 function buyTrap(type) {
     let cost = TRAP_COSTS[type];
     if (GAME.souls < cost) return;
+    _SFX.buy();
 
     // Перевіряємо чи є вільні поверхи
     let available = floors.slice(0, floors.length - 1).filter(f => !f.hasTrap);
@@ -9864,7 +10186,7 @@ function buyTrap(type) {
 // =================== ПОВЕРХ / ХВИЛЯ ===================
 function buyFloor() {
     if (GAME.souls < GAME.floorCost) return;
-    _haptic(25);
+    _haptic(25); _SFX.buy();
     _psyBuy('floor');
     GAME.souls -= GAME.floorCost;
     floors.push(new Floor(floors.length));
@@ -9878,6 +10200,7 @@ function buyFloor() {
     } else {
         spawnLord(); // тільки якщо лорда взагалі немає
     }
+    try { _liveTutTrigger('floor_bought'); } catch(e) {}
     updateUI(); saveGame();
 }
 
@@ -9890,6 +10213,12 @@ function triggerWave() {
     if (_psyTrack && _psyTrack.rounds >= 3) _dailyActivate();
     _questDone('wave');
     _psyCheck('wave_start');
+    try {
+        if (GAME.souls > 500 && _psyTrack && _psyTrack.buys.total < 3)
+            _ctxHint('hoarding',
+                'Душі накопичуються. Поверхи і монстри не куплять себе самі.',
+                'Souls are piling up. Floors and monsters won\'t buy themselves.');
+    } catch(e) {}
     // Тільки поточні монстри отримують waveActive — нові спавн не отримають
     units.forEach(u => { if (u.type === 'monster') u.waveActive = true; });
     setTimeout(() => {
@@ -9946,6 +10275,7 @@ function updateUI() {
             lordHpNum:    document.getElementById('lord-hp-num'),
             monDevOv:     document.getElementById('mon-dev-overlay'),
             psyWhisper:   document.getElementById('psy-whisper'),
+            storyLabel:   document.getElementById('hud-story-label'),
         };
     }
     const el = _uiEls;
@@ -9968,6 +10298,21 @@ function updateUI() {
     el.maxThreat.innerText    = GAME.maxThreatLevel;
     el.heroScale.innerText    = 100 + GAME.heroScalePercent;
     el.maxHeroScale.innerText = 100 + GAME.heroScaleBase + GAME.maxThreatLevel * GAME.heroThreatPct;
+
+    // HUD city + act label + threat badge
+    if (el.storyLabel && typeof _getStoryLevels === 'function') {
+        const _lvls = _getStoryLevels();
+        const _lv   = GAME.currentLevel || 1;
+        const _e    = _lvls ? _lvls[_lv - 1] : null;
+        if (_e) {
+            const _thr = GAME.difficultyLevel || 0;
+            const _thrMax = GAME.maxThreatLevel || 5;
+            const _thrPct = _thrMax > 0 ? _thr / _thrMax : 0;
+            const _thrColor = _thrPct >= 0.8 ? '#ff4444' : _thrPct >= 0.5 ? '#ff8800' : '#5a3a7a';
+            const _hellTag = _hellMode ? '<span style="color:#ff6644;font-weight:bold;margin-right:6px">🔥HELL</span>' : '';
+            el.storyLabel.innerHTML = _hellTag + '<span style="color:' + _thrColor + ';font-weight:bold">⚠ ' + _thr + '/' + _thrMax + '</span>  <span style="color:#5a3a7a">' + _getActLabel(_e.act) + '  ·  ' + _e.city + '</span>';
+        }
+    }
 
     if (el.btnFloor) el.btnFloor.disabled = s < GAME.floorCost;
 
@@ -10140,18 +10485,127 @@ function saveGame() {
 }
 
 function hardReset() { _store.del('DLSiege_v3'); location.reload(); }
+
+function retryLevel() {
+    _store.set('DLSiege_retry', '1');
+    if (_hellMode) _store.set('DLSiege_retry_hell', '1');
+    else           _store.del('DLSiege_retry_hell');
+    hardReset();
+}
+function _getActLabel(act) {
+    const L = (_lang === 'en')
+        ? ['ACT I · THE COMMAND', 'ACT II · CRACKS', 'ACT III · FRACTURE', 'ACT IV · THE CHOICE']
+        : ['АКТ I · НАКАЗ',       'АКТ II · ТРІЩИНИ', 'АКТ III · РОЗЛАМ',  'АКТ IV · ВИБІР'];
+    return L[(act || 1) - 1] || '';
+}
+
+function _showLevelBeat(level, onDone) {
+    const lvls = _getStoryLevels ? _getStoryLevels() : null;
+    const entry = lvls ? lvls[level - 1] : null;
+    if (!entry) { onDone(); return; }
+
+    const el = document.getElementById('level-beat');
+    if (!el) { onDone(); return; }
+
+    document.getElementById('lb-act').textContent  = _getActLabel(entry.act);
+    document.getElementById('lb-city').textContent = entry.city;
+    const textEl = document.getElementById('lb-text');
+    textEl.textContent  = entry.beat || '';
+    textEl.style.display = entry.beat ? '' : 'none';
+    document.getElementById('lb-btn').textContent = (_lang === 'en') ? 'Continue →' : 'Продовжити →';
+
+    let _timer = null;
+    const proceed = () => { clearTimeout(_timer); el.style.display = 'none'; onDone(); };
+    document.getElementById('lb-btn').onclick = proceed;
+    el.onclick = null; // prevent backdrop click for special moments
+
+    el.style.display = 'flex';
+    if (!entry.special) { _timer = setTimeout(proceed, 5000); }
+}
+
+function gameWin() {
+    GAME.gameOver = true;
+
+    try { _Music.stop(true); } catch(e) {}
+    _SFX.win();
+    const _lvl = GAME.currentLevel || 1;
+    const _nextLvl = Math.min(_lvl + 1, 50);
+    const _isLast = _lvl >= 50;
+    if (_isLast && !_hellMode) _store.set('DLSiege_beaten50', '1');
+    saveProgress(_nextLvl);
+    commitEliteSouls();
+    _showLevelBeat(_lvl, () => _doGameWinOverlay(_lvl, _nextLvl, _isLast));
+}
+
+function _doGameWinOverlay(lvl, nextLvl, isLast) {
+    const lvls = _getStoryLevels ? _getStoryLevels() : null;
+    const entry = lvls ? lvls[lvl - 1] : null;
+    const cityName = entry ? entry.city : '';
+
+    document.getElementById('go-title').innerText = isLast
+        ? (cityName ? cityName : _t('go-win-all'))
+        : _t('go-win-lvl', {n:lvl});
+    document.getElementById('go-title').style.color = 'lime';
+
+    const _descEl = document.getElementById('go-desc');
+    if (isLast) {
+        const _pt = _computePsychotype();
+        const _endText = _pt ? (_getEnding(_pt.philKey, _pt.stratKey, _pt.temp) || _t('go-all50')) : _t('go-all50');
+        const _ac = (_psyTrack && _psyTrack.memory) ? _psyTrack.memory['andrii_talk'] : undefined;
+        const _aLines = [
+            _t('andrii-end-0'),
+            _t('andrii-end-1'),
+            _t('andrii-end-2'),
+            _t('andrii-end-3'),
+        ];
+        _descEl.innerText = _endText + (_ac !== undefined ? '\n\n' + _aLines[_ac] : '');
+    } else {
+        _descEl.innerText = _t('go-next', {n:nextLvl});
+    }
+
+    const _eEl = document.getElementById('go-elite-earned');
+    if (_eEl) _eEl.innerText = GAME.eliteSouls > 0 ? _t('go-elite', {n:GAME.eliteSouls, t:getStoredEliteSouls()}) : '';
+    const _tryBtn = document.getElementById('btn-try-again');
+    _tryBtn.textContent = isLast ? _t('go-retry-all') : _t('go-next-btn', {n:nextLvl});
+    _tryBtn.onclick = () => hardReset();
+    if (isLast) _showPsychotypeResult();
+    document.getElementById('game-over').style.display = 'flex';
+}
+
 function gameOver() {
     GAME.gameOver = true;
-    commitEliteSouls(); // зберігаємо зароблені елітні душі навіть при поразці
+    try {
+        if (GAME.cityHP / GAME.maxCityHP < 0.05)
+            _ctxHint('almost_win',
+                'Майже. Слово, яке нічого не значить.',
+                'Almost. A word that means nothing.');
+    } catch(e) {}
+
+    try { _Music.stop(true); } catch(e) {}
+    _SFX.gameOver();
+    commitEliteSouls();
+    document.getElementById('go-title').innerText = _t('go-defeat');
+    document.getElementById('go-title').style.color = '';
+    const _q = PAUSE_QUOTES[Math.floor(Math.random() * PAUSE_QUOTES.length)];
+    document.getElementById('go-desc').innerText = '«' + _q + '»';
     const _eEl = document.getElementById('go-elite-earned');
-    if (_eEl) _eEl.innerText = GAME.eliteSouls > 0 ? `+${GAME.eliteSouls} 💀 зароблено (всього: ${getStoredEliteSouls()})` : '';
+    if (_eEl) _eEl.innerText = GAME.eliteSouls > 0 ? _t('go-elite', {n:GAME.eliteSouls, t:getStoredEliteSouls()}) : '';
+    const _psyEl = document.getElementById('psy-result-panel');
+    if (_psyEl) _psyEl.innerHTML = '';
+    const _tryBtn = document.getElementById('btn-try-again');
+    if (_tryBtn) { _tryBtn.textContent = _t('go-retry'); _tryBtn.onclick = () => retryLevel(); }
     document.getElementById('game-over').style.display = 'flex';
 }
 
 // ── Прогрес рівнів (зберігається окремо від ігрового стану) ──
 function loadProgress() { return Math.max(1, Math.min(50, parseInt(_store.get('DLSiege_lvl') || '1'))); }
-function saveProgress(lvl) { _store.set('DLSiege_lvl', String(Math.min(50, Math.max(1, lvl)))); }
+function saveProgress(lvl) {
+    if (_hellMode) { _store.set('DLSiege_hell', String(Math.min(50, Math.max(1, lvl)))); }
+    else           { _store.set('DLSiege_lvl',  String(Math.min(50, Math.max(1, lvl)))); }
+}
 function resetProgress() { _store.del('DLSiege_lvl'); }
+function _loadHellProgress() { return Math.max(1, Math.min(50, parseInt(_store.get('DLSiege_hell') || '1'))); }
+function _hellUnlocked() { return _store.get('DLSiege_beaten50') === '1'; }
 
 // ── Назавжди-прокачки (не скидаються при рестарті) ──
 function loadPermaUpgrades() { try { return JSON.parse(_store.get('DLSiege_perma') || '{}'); } catch(e) { return {}; } }
@@ -10350,8 +10804,8 @@ function getLevelConfig(lvl) {
     // maxThreat: +5 на рівнях 4,9,14,19,24,29,34,39,44,49
     const maxThreat = 5 + Math.floor((lvl + 1) / 5) * 5;
 
-    // threatPct: плавне зростання 1→8 замість стрибків
-    const threatPct = Math.max(1, Math.min(8, 1 + Math.floor(lvl / 7)));
+    // threatPct: стрибки на 8,16,24,32,40,48 — не збігаються з maxThreat (4,9,14,19...)
+    const threatPct = Math.max(1, Math.min(8, 1 + Math.floor(lvl / 8)));
 
     const t = (lvl - 1) / 49;
     return {
@@ -10363,8 +10817,18 @@ function getLevelConfig(lvl) {
 }
 
 function continueGame() {
+    _hellMode = false;
     _stopStartScreen();
     const level = loadProgress();
+    const ss = document.getElementById('start-screen');
+    if (ss) ss.style.display = 'none';
+    _showRunModPicker(level);
+}
+
+function continueHell() {
+    _hellMode = true;
+    _stopStartScreen();
+    const level = _loadHellProgress();
     const ss = document.getElementById('start-screen');
     if (ss) ss.style.display = 'none';
     _showRunModPicker(level);
@@ -10383,6 +10847,8 @@ function confirmResetProgress() {
     if (confirm(_t('confirm-reset'))) {
         // Повне очищення кешу
         _store.del('DLSiege_lvl');
+        _store.del('DLSiege_hell');
+        _store.del('DLSiege_beaten50');
         _store.del('DLSiege_elite');
         _store.del('DLSiege_perma2');
         _store.del('DLSiege_v3');
@@ -10423,6 +10889,8 @@ function _initStartScreen() {
         _startEmbers.push(em);
     }
     _startRAF = requestAnimationFrame(_drawStartCvs);
+    _initMusicVolSlider();
+    try { _Music.playMenu(); } catch(e) {}
 }
 
 function _resizeStartCvs() {
@@ -10503,7 +10971,7 @@ function _drawStartCvs(ts) {
         c.shadowBlur  = 18;
         drawLordStudio(c, {
             CX: lordCX, CY0: lordCY, H: lordH,
-            roD: 1, roT: ts,
+            roD: 1, roT: now,
             ap: 0, wdup: 0, strk: 0, recv: 0, atkVar: 0,
             state: 'idle', tgtX: null, tgtY: null
         });
@@ -10550,7 +11018,7 @@ function resize() {
     canvas.style.height = gH + 'px';
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     centerX = gW / 2;
-    CFG.floorW = Math.min(gW - 60, isMobile ? 380 : (gW >= 1200 ? 900 : (gW >= 768 ? 750 : 600)));
+    CFG.floorW = Math.min(gW - (isMobile ? 60 : 200), isMobile ? 380 : (gW >= 1200 ? 900 : (gW >= 768 ? 750 : 600)));
     CAVE_X = centerX + CFG.floorW * 0.35;
     // Зсуваємо всі абсолютні x-координати при зміні centerX (zoom / resize)
     let dx = centerX - oldCenterX;
@@ -10683,21 +11151,6 @@ function _handleCanvasTap(clientX, clientY) {
         }
     });
 
-    // Кнопки "Купити монстра" (ліва сторона)
-    floors.forEach(f => {
-        if (f.depth === lordIdx || f._buyBtnX == null) return;
-        let pad = (typeof _TAP_PAD !== 'undefined') ? _TAP_PAD : 0;
-        if (cx >= f._buyBtnX - pad && cx <= f._buyBtnX + f._buyBtnW + pad &&
-            cy >= f._buyBtnY - pad && cy <= f._buyBtnY + f._buyBtnH + pad) {
-            let count = units.filter(u => u.type === 'monster' && u.floorIdx === f.depth && !u._summoned).length;
-            let buyCost = 15 + f.depth * 5;
-            if (GAME.souls >= buyCost && count < f.maxMonsters) {
-                GAME.souls -= buyCost;
-                units.push(new Unit('monster', centerX, f.y, f.depth, f.depth + 1));
-                updateUI(); saveGame();
-            }
-        }
-    });
 }
 
 // Desktop click → той самий обробник (пропускаємо якщо вже оброблено touchend)
@@ -10809,13 +11262,32 @@ const PAUSE_QUOTES = [
     "Успіх — результат правильних рішень у правильний момент.",
     "Підземелля Лорда не здається. Ніколи.",
 ];
+function _onMusicVolSlider(val) {
+    const pct = parseInt(val);
+    ['music-vol-label', 'start-vol-label'].forEach(id => { const el = document.getElementById(id); if (el) el.textContent = pct + '%'; });
+    ['music-vol-slider', 'start-vol-slider'].forEach(id => { const el = document.getElementById(id); if (el) el.value = pct; });
+    try { _Music.setVolume(pct); } catch(e) {}
+    try { localStorage.setItem('DL_musicVol', pct); } catch(e) {}
+}
+
+function _initMusicVolSlider() {
+    let saved = 38;
+    try { const v = localStorage.getItem('DL_musicVol'); if (v !== null) saved = Math.max(0, Math.min(100, parseInt(v))); } catch(e) {}
+    ['music-vol-slider', 'start-vol-slider'].forEach(id => { const el = document.getElementById(id); if (el) el.value = saved; });
+    ['music-vol-label', 'start-vol-label'].forEach(id => { const el = document.getElementById(id); if (el) el.textContent = saved + '%'; });
+    try { _Music.setVolume(saved); } catch(e) {}
+}
+
 function togglePause() {
     GAME_PAUSED = !GAME_PAUSED;
     document.getElementById('pause-overlay').style.display = GAME_PAUSED ? 'flex' : 'none';
     if (GAME_PAUSED) {
         const q = PAUSE_QUOTES[Math.floor(Math.random() * PAUSE_QUOTES.length)];
         document.getElementById('pause-quote').textContent = '«' + q + '»';
+        _initMusicVolSlider();
+        try { _Music.pause(); } catch(e) {}
     } else {
+        try { _Music.resume(); } catch(e) {}
         requestAnimationFrame(loop);
     }
 }
@@ -10853,6 +11325,124 @@ document.addEventListener('keydown', e => {
 // Зберігаємо оригінальний _btnH/W для збільшення зони на ±10px з кожного боку
 const _TAP_PAD = isMobile ? 12 : (isPC ? 6 : 0);
 
+const _Music = (function() {
+    const MENU_SRC = 'music/Under_the_Mountain_Arch.mp3';
+    const GAME_SRCS = [
+        'music/Beneath_the_Granite_Gate.mp3',
+        'music/Clockwork_Snare.mp3',
+        'music/The_Architect_s_Toll.mp3',
+        'music/The_Trapdoor_Waltz.mp3',
+        'music/Under_the_Mountain_Arch.mp3',
+    ];
+    const VOL = 0.38;
+    const GAP = 3000;
+
+    let _au = null, _mode = null, _queue = [], _gapT = null, _fadeT = null;
+
+    function _shuffle(arr) {
+        const a = arr.slice();
+        for (let i = a.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [a[i], a[j]] = [a[j], a[i]];
+        }
+        return a;
+    }
+
+    function _kill() {
+        if (_gapT)  { clearTimeout(_gapT);  _gapT  = null; }
+        if (_fadeT) { clearInterval(_fadeT); _fadeT = null; }
+        if (_au)    { _au.onended = null; try { _au.pause(); } catch(e) {} _au = null; }
+    }
+
+    let _blocked = false;
+
+    function _getVol() {
+        try {
+            const v = localStorage.getItem('DL_musicVol');
+            if (v !== null) return Math.max(0, Math.min(100, parseInt(v))) / 100;
+        } catch(e) {}
+        return VOL;
+    }
+
+    function _play(src, onEnd) {
+        if (_au) { _au.onended = null; try { _au.pause(); } catch(e) {} }
+        _au = new Audio(src);
+        _au.volume = _getVol();
+        _au.onended = onEnd;
+        _au.play().catch(function() { _blocked = true; });
+    }
+
+    function _nextMenu() {
+        if (_mode !== 'menu') return;
+        _play(MENU_SRC, function() {
+            if (_mode !== 'menu') return;
+            _gapT = setTimeout(_nextMenu, GAP);
+        });
+    }
+
+    function _nextGame() {
+        if (_mode !== 'game') return;
+        if (!_queue.length) _queue = _shuffle(GAME_SRCS);
+        const src = _queue.shift();
+        _play(src, function() {
+            if (_mode !== 'game') return;
+            _gapT = setTimeout(_nextGame, GAP);
+        });
+    }
+
+    // _blocked=true встановлюється у .catch коли play() реально відхилено
+    function _unlock() {
+        if (!_blocked) return;
+        _blocked = false;
+        if (_mode === 'menu') _nextMenu();
+        else if (_mode === 'game') _nextGame();
+    }
+    document.addEventListener('click',      _unlock, { passive: true });
+    document.addEventListener('touchstart', _unlock, { passive: true });
+
+    return {
+        playMenu() {
+            _kill(); _mode = 'menu';
+            _nextMenu();
+        },
+        startGame() {
+            _kill(); _mode = 'game';
+            _queue = _shuffle(GAME_SRCS);
+            _nextGame();
+        },
+        setVolume(pct) {
+            const v = Math.max(0, Math.min(100, pct)) / 100;
+            if (_au) try { _au.volume = v; } catch(e) {}
+        },
+        pause() {
+            if (_gapT) { clearTimeout(_gapT); _gapT = null; }
+            if (_au) try { _au.pause(); } catch(e) {}
+        },
+        resume() {
+            if (!_au || !_mode) return;
+            if (_au.ended) {
+                if (_mode === 'menu') _nextMenu();
+                else _nextGame();
+            } else {
+                _au.play().catch(function() {});
+            }
+        },
+        stop(fade) {
+            _mode = null;
+            if (_gapT) { clearTimeout(_gapT); _gapT = null; }
+            if (!_au) return;
+            if (!fade) { _kill(); return; }
+            const a = _au; _au = null; a.onended = null;
+            let v = a.volume;
+            _fadeT = setInterval(function() {
+                v = Math.max(0, v - 0.04);
+                try { a.volume = v; } catch(e) {}
+                if (v <= 0) { clearInterval(_fadeT); _fadeT = null; try { a.pause(); } catch(e) {} }
+            }, 60);
+        },
+    };
+})();
+
 init();
 
 // ── HAPTICS ────────────────────────────────────────────────────────────────
@@ -10860,15 +11450,178 @@ function _haptic(pattern) {
     try { if (navigator.vibrate) navigator.vibrate(pattern); } catch(e) {}
 }
 
+// ══════════════════════════════════════════════════════════════════════════
+// SFX — WebAudio synthesis, no external files
+// ══════════════════════════════════════════════════════════════════════════
+let _sfxCtx = null;
+let _sfxEnabled = true;
+let _sfxHitLast = 0;
+
+function _sfxAC() {
+    if (!_sfxEnabled) return null;
+    if (!_sfxCtx) {
+        try { _sfxCtx = new (window.AudioContext || window.webkitAudioContext)(); }
+        catch(e) { _sfxEnabled = false; return null; }
+    }
+    if (_sfxCtx.state === 'suspended') _sfxCtx.resume();
+    return _sfxCtx;
+}
+
+const _SFX = {
+    // Удар монстра по герою — короткий шумовий імпакт
+    hit() {
+        const now = Date.now();
+        if (now - _sfxHitLast < 75) return;
+        _sfxHitLast = now;
+        const ac = _sfxAC(); if (!ac) return;
+        const t = ac.currentTime;
+        const n = ac.sampleRate * 0.07 | 0;
+        const buf = ac.createBuffer(1, n, ac.sampleRate);
+        const d = buf.getChannelData(0);
+        for (let i = 0; i < n; i++) d[i] = (Math.random()*2-1) * (1-i/n);
+        const src = ac.createBufferSource(); src.buffer = buf;
+        const flt = ac.createBiquadFilter(); flt.type='bandpass'; flt.frequency.value=400; flt.Q.value=0.7;
+        const g = ac.createGain(); g.gain.setValueAtTime(0.25, t); g.gain.exponentialRampToValueAtTime(0.001, t+0.07);
+        src.connect(flt); flt.connect(g); g.connect(ac.destination); src.start(t);
+    },
+
+    // Смерть звичайного героя — спадний шум
+    death() {
+        const ac = _sfxAC(); if (!ac) return;
+        const t = ac.currentTime;
+        const n = ac.sampleRate * 0.30 | 0;
+        const buf = ac.createBuffer(1, n, ac.sampleRate);
+        const d = buf.getChannelData(0);
+        for (let i = 0; i < n; i++) d[i] = (Math.random()*2-1) * (1-i/n);
+        const src = ac.createBufferSource(); src.buffer = buf;
+        const flt = ac.createBiquadFilter(); flt.type='lowpass';
+        flt.frequency.setValueAtTime(900, t); flt.frequency.exponentialRampToValueAtTime(80, t+0.3);
+        const g = ac.createGain(); g.gain.setValueAtTime(0.35, t); g.gain.exponentialRampToValueAtTime(0.001, t+0.3);
+        src.connect(flt); flt.connect(g); g.connect(ac.destination); src.start(t);
+    },
+
+    // Смерть боса — тяжкий удар + shake
+    bossDeath() {
+        const ac = _sfxAC(); if (!ac) return;
+        const t = ac.currentTime;
+        const osc = ac.createOscillator();
+        const gO = ac.createGain();
+        osc.type='sine'; osc.frequency.setValueAtTime(90, t); osc.frequency.exponentialRampToValueAtTime(18, t+0.7);
+        gO.gain.setValueAtTime(0.55, t); gO.gain.exponentialRampToValueAtTime(0.001, t+0.7);
+        osc.connect(gO); gO.connect(ac.destination); osc.start(t); osc.stop(t+0.7);
+        const n = ac.sampleRate * 0.4 | 0;
+        const buf = ac.createBuffer(1, n, ac.sampleRate);
+        const d = buf.getChannelData(0);
+        for (let i = 0; i < n; i++) d[i] = (Math.random()*2-1) * (1-i/n);
+        const src = ac.createBufferSource(); src.buffer = buf;
+        const flt = ac.createBiquadFilter(); flt.type='lowpass'; flt.frequency.value=250;
+        const gN = ac.createGain(); gN.gain.setValueAtTime(0.45, t); gN.gain.exponentialRampToValueAtTime(0.001, t+0.4);
+        src.connect(flt); flt.connect(gN); gN.connect(ac.destination); src.start(t);
+        _SFX.canvasShake(10, 7);
+    },
+
+    // Купівля — висхідний тричастинний chime
+    buy() {
+        const ac = _sfxAC(); if (!ac) return;
+        const t = ac.currentTime;
+        [440, 554, 660].forEach((freq, i) => {
+            const osc = ac.createOscillator(); const g = ac.createGain();
+            osc.type='triangle'; osc.frequency.value=freq;
+            g.gain.setValueAtTime(0.16, t+i*0.07); g.gain.exponentialRampToValueAtTime(0.001, t+i*0.07+0.18);
+            osc.connect(g); g.connect(ac.destination); osc.start(t+i*0.07); osc.stop(t+i*0.07+0.18);
+        });
+    },
+
+    // Перемога — грандіозний підйом з акордом
+    win() {
+        const ac = _sfxAC(); if (!ac) return;
+        const t = ac.currentTime;
+        // Бас-дрон підкладка
+        const bass = ac.createOscillator(), gB = ac.createGain();
+        bass.type='sine'; bass.frequency.value=130;
+        gB.gain.setValueAtTime(0, t); gB.gain.linearRampToValueAtTime(0.22, t+0.12);
+        gB.gain.exponentialRampToValueAtTime(0.001, t+1.7);
+        bass.connect(gB); gB.connect(ac.destination); bass.start(t); bass.stop(t+1.7);
+        // Мелодія: 7 нот вгору
+        [[0,523],[0.14,659],[0.28,784],[0.44,1047],[0.60,1175],[0.76,1047],[0.92,1319]].forEach(([dt,freq]) => {
+            const osc = ac.createOscillator(), g = ac.createGain();
+            osc.type='triangle'; osc.frequency.value=freq;
+            g.gain.setValueAtTime(0.19, t+dt); g.gain.exponentialRampToValueAtTime(0.001, t+dt+0.55);
+            osc.connect(g); g.connect(ac.destination); osc.start(t+dt); osc.stop(t+dt+0.55);
+        });
+        // Фінальний акорд
+        [784, 1047, 1319].forEach(freq => {
+            const osc = ac.createOscillator(), g = ac.createGain();
+            osc.type='sawtooth'; osc.frequency.value=freq;
+            g.gain.setValueAtTime(0.07, t+0.92); g.gain.exponentialRampToValueAtTime(0.001, t+1.6);
+            osc.connect(g); g.connect(ac.destination); osc.start(t+0.92); osc.stop(t+1.6);
+        });
+    },
+
+    // Поразка — 4 ноти вниз
+    gameOver() {
+        const ac = _sfxAC(); if (!ac) return;
+        const t = ac.currentTime;
+        [[0,220],[0.35,165],[0.7,110],[1.05,82]].forEach(([dt,freq]) => {
+            const osc = ac.createOscillator(); const g = ac.createGain();
+            osc.type='sawtooth'; osc.frequency.value=freq;
+            g.gain.setValueAtTime(0.26, t+dt); g.gain.exponentialRampToValueAtTime(0.001, t+dt+0.45);
+            osc.connect(g); g.connect(ac.destination); osc.start(t+dt); osc.stop(t+dt+0.45);
+        });
+    },
+
+    // Донесення — м'яка двотонова нотифікація
+    donesnnia() {
+        const ac = _sfxAC(); if (!ac) return;
+        const t = ac.currentTime;
+        [392, 523].forEach((freq, i) => {
+            const osc = ac.createOscillator(); const g = ac.createGain();
+            osc.type='sine'; osc.frequency.value=freq;
+            g.gain.setValueAtTime(0.11, t+i*0.15); g.gain.exponentialRampToValueAtTime(0.001, t+i*0.15+0.32);
+            osc.connect(g); g.connect(ac.destination); osc.start(t+i*0.15); osc.stop(t+i*0.15+0.32);
+        });
+    },
+
+    // Canvas shake для бос-моментів
+    canvasShake(frames, px) {
+        const cv = document.getElementById('c'); if (!cv) return;
+        const orig = cv.style.transform || '';
+        const tick = () => {
+            if (frames-- <= 0) { cv.style.transform = orig; return; }
+            cv.style.transform = `translate(${(Math.random()-.5)*px*2}px,${(Math.random()-.5)*px}px)`;
+            requestAnimationFrame(tick);
+        };
+        tick();
+    }
+};
+
+// ── MUSIC ────────────────────────────────────────────────────────────────
 // ── TOAST ────────────────────────────────────────────────────────────────
 let _toastTid = null;
-function _showToast(msg) {
+function _showToast(msg, duration) {
     const t = document.getElementById('toast-msg');
     if (!t) return;
     t.textContent = msg;
     t.style.opacity = '1';
     clearTimeout(_toastTid);
-    _toastTid = setTimeout(function() { t.style.opacity = '0'; }, 3000);
+    _toastTid = setTimeout(function() { t.style.opacity = '0'; }, duration || 3000);
+}
+
+// ── CONTEXTUAL HINTS ──────────────────────────────────────────────────────
+// _ctxHint     — once per run  (in-memory, resets on reload)
+// _ctxHintPerm — once ever     (localStorage, never repeats)
+const _ctxHintShown = {};
+let _runLordHit = false; // скидається з грою, true якщо лорд отримав удар цей ран
+function _ctxHint(id, uk, en) {
+    if (_ctxHintShown[id]) return;
+    _ctxHintShown[id] = true;
+    _showToast((_lang === 'en') ? en : uk, 6000);
+}
+function _ctxHintPerm(id, uk, en) {
+    const key = 'DL_ctx_' + id;
+    try { if (localStorage.getItem(key)) return; } catch(e) {}
+    try { localStorage.setItem(key, '1'); } catch(e) {}
+    _showToast((_lang === 'en') ? en : uk, 6000);
 }
 
 // ── DAILY SYSTEM ────────────────────────────────────────────────────────────
@@ -10955,6 +11708,79 @@ function _shareResult() {
     const round = pt ? pt.rounds : 0;
     const kills = pt ? pt.totalKills : 0;
     const text = _t('share-text', {arch: archetype, r: round, k: kills});
+
+    // Try to generate PNG first
+    try {
+        const _cv = document.createElement('canvas');
+        _cv.width = 480; _cv.height = 260;
+        const _cx = _cv.getContext('2d');
+        // Background
+        _cx.fillStyle = '#0a0318';
+        _cx.fillRect(0, 0, 480, 260);
+        _cx.strokeStyle = '#4a2080';
+        _cx.lineWidth = 2;
+        _cx.strokeRect(1, 1, 478, 258);
+        // Title
+        _cx.font = 'bold 13px monospace';
+        _cx.fillStyle = '#cc88ff';
+        _cx.fillText('⚔ DUNGEON LORD', 20, 32);
+        // Archetype
+        _cx.font = 'bold 22px monospace';
+        _cx.fillStyle = '#ffffff';
+        _cx.fillText(archetype, 20, 70);
+        // Desc tag
+        const _desc = pt ? (_pDesc[descKey] || null) : null;
+        if (_desc && _desc.tag) {
+            _cx.font = '12px monospace';
+            _cx.fillStyle = '#886699';
+            _cx.fillText('"' + _desc.tag + '"', 20, 96);
+        }
+        // Stats line
+        _cx.font = '12px monospace';
+        _cx.fillStyle = '#d0b8f0';
+        const _killsLbl = _lang === 'en' ? 'kills: ' + kills : 'вбивств: ' + kills;
+        _cx.fillText(_t('psy-rounds', {n: round}) + '  ·  ' + _killsLbl, 20, 130);
+        // Score bars
+        if (pt) {
+            const rows = [
+                {ico:'💜', lbl: _t('psy-lbl-lord'),  sc: pt.scores.syla,     dom: pt.stratKey === 'syla'},
+                {ico:'👾', lbl: _t('psy-lbl-army'),  sc: pt.scores.lehion,   dom: pt.stratKey === 'lehion'},
+                {ico:'🏰', lbl: _t('psy-lbl-floor'), sc: pt.scores.fortress, dom: pt.stratKey === 'fortress'},
+                {ico:'🪤', lbl: _t('psy-lbl-trap'),  sc: pt.scores.trap,     dom: pt.stratKey === 'trap'},
+            ].filter(r => r.sc > 0).sort((a,b) => b.sc - a.sc);
+            rows.forEach((r, i) => {
+                const y = 162 + i * 22;
+                const bar = Math.round(Math.min(r.sc, 1) * 14);
+                _cx.font = '11px monospace';
+                _cx.fillStyle = r.dom ? '#cc88ff' : '#5a3a7a';
+                _cx.fillText(r.lbl, 20, y);
+                _cx.fillStyle = r.dom ? '#9955cc' : '#3a2060';
+                _cx.fillRect(120, y - 12, bar * 14, 14);
+                _cx.fillStyle = '#1a0840';
+                _cx.fillRect(120 + bar * 14, y - 12, (14 - bar) * 14, 14);
+            });
+        }
+        // Footer
+        _cx.font = '10px monospace';
+        _cx.fillStyle = '#3a2060';
+        _cx.fillText('dungeon-lord · 2025', 20, 246);
+
+        _cv.toBlob(function(blob) {
+            if (!blob) { _shareFallback(text); return; }
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url; a.download = 'dungeon-lord-result.png'; a.click();
+            setTimeout(function() { URL.revokeObjectURL(url); }, 5000);
+            if (navigator.share) {
+                navigator.share({ title: 'Dungeon Lord', text: text }).catch(function() {});
+            }
+        }, 'image/png');
+        return;
+    } catch(e) {}
+    _shareFallback(text);
+}
+
+function _shareFallback(text) {
     if (navigator.share) {
         navigator.share({ title: 'Dungeon Lord', text: text }).catch(function() {});
     } else if (navigator.clipboard) {
@@ -10968,64 +11794,100 @@ function _shareResult() {
     }
 }
 
+// ── WAVE BANNER ──────────────────────────────────────────────────────────────
+function _showWaveBanner(n) {
+    const el = document.getElementById('wave-banner');
+    if (!el) return;
+    el.querySelector('.wb-label').textContent = _t('wave-label');
+    el.querySelector('.wb-num').textContent = n;
+    el.classList.remove('wave-banner-show');
+    void el.offsetWidth; // reflow — перезапускає анімацію
+    el.classList.add('wave-banner-show');
+}
+
 // ── TUTORIAL ────────────────────────────────────────────────────────────────
-function _getTutSteps() {
-    return [
-        { text: _t('tut-step1'), target: 'btn-wave', pos: 'above' },
-        { text: _t('tut-step2'), target: null },
-        { text: _t('tut-step3'), target: 'btn-menu-trap', pos: 'above' },
-        { text: _t('tut-step4'), target: 'btn-menu-lord', pos: 'above', last: true },
-    ];
-}
-let _tutCur = 0;
+// ── ЖИВИЙ ТУТОРІАЛ ────────────────────────────────────────────────────────────
+// Кроки з'являються при реальних ігрових подіях, не всі разом на старті.
+const _LT = [
+    { id:'start',
+      uk:'👹 Герої намагаються знищити твого Лорда. Підземелля створює монстрів через деякий час.',
+      en:'👹 Heroes are trying to destroy your Lord. The dungeon creates monsters automatically.',
+      target:null, autoMs:14000 },
+    { id:'hero_first',
+      uk:'⚔️ Герой наближається! Натисни <b>АТАКА</b> — монстри підуть атакувати місто і знищувати всіх на шляху.',
+      en:'⚔️ A hero approaches! Press <b>ATTACK</b> — monsters will storm the City and destroy everyone in their path.',
+      target:'btn-wave', pos:'above', autoMs:12000 },
+    { id:'first_kill',
+      uk:'💀 Підземелля поглинає душі вбитих ворогів. За них ти можеш підсилювати монстрів та створювати нових, а також прокачувати Лорда.',
+      en:'💀 The dungeon absorbs souls of fallen enemies. Use them to upgrade monsters, summon new ones, and empower the Lord.',
+      target:'btn-floor', pos:'above', autoMs:12000 },
+    { id:'floor_bought',
+      uk:'🏰 Ти зробив своє підземелля могутнішим, але і сильніші герої взялися за роботу.',
+      en:'🏰 You made your dungeon stronger — but deadlier heroes are now on their way.',
+      target:null, autoMs:10000 },
+    { id:'lord',
+      uk:'👑 <b>Прокачай Лорда</b>: натисни 👑 → ⚗️ Прокачка. Елітні душі 💎 — назавжди.',
+      en:'👑 <b>Upgrade the Lord</b>: tap 👑 → ⚗️ Upgrade. Elite souls 💎 are permanent.',
+      target:'btn-menu-lord', pos:'above', autoMs:12000, last:true },
+];
 
-function _tutStart() {
+const _ltS = { idx: -1, lastIdx: -1, timer: null, done: false };
+
+function _liveTutInit() {
     try { if (localStorage.getItem('DL_tut_done')) return; } catch(e) {}
-    _tutCur = 0;
-    _tutShow(0);
+    _liveTutShow(0);
 }
 
-function _tutShow(step) {
-    const _steps = _getTutSteps();
-    const s = _steps[step];
-    if (!s) { _tutEnd(); return; }
+function _liveTutShow(idx) {
+    if (_ltS.done) return;
+    if (idx >= _LT.length) { _liveTutEnd(); return; }
+    if (_ltS.timer) { clearTimeout(_ltS.timer); _ltS.timer = null; }
+    _ltS.idx = idx;
+    _ltS.lastIdx = idx;
+    const s = _LT[idx];
     const el = document.getElementById('tut-bubble');
-    document.getElementById('tut-text').innerHTML = s.text;
-    document.getElementById('tut-step-lbl').textContent = _t('tut-label', {n: step + 1, t: _steps.length});
-    document.getElementById('tut-btn-next').textContent = s.last ? _t('tut-done') : _t('tut-next');
+    if (!el) return;
+    document.getElementById('tut-text').innerHTML = (_lang === 'en') ? s.en : s.uk;
+    document.getElementById('tut-step-lbl').textContent = _t('tut-label', {n: idx + 1, t: _LT.length});
+    document.getElementById('tut-btn-next').textContent = s.last ? _t('tut-done') : _t('tut-got');
     el.style.display = 'block';
+    // Підсвічуємо target-елемент якщо є, але не переміщуємо бабл — він фіксований у CSS
     document.querySelectorAll('.tut-highlight').forEach(function(e) { e.classList.remove('tut-highlight'); });
     if (s.target) {
         const tgt = document.getElementById(s.target);
-        if (tgt) {
-            tgt.classList.add('tut-highlight');
-            const r = tgt.getBoundingClientRect();
-            const bW = 268;
-            el.style.transform = '';
-            el.style.left = Math.max(8, Math.min(window.innerWidth - bW - 8, r.left + r.width / 2 - bW / 2)) + 'px';
-            if (s.pos === 'above') {
-                el.style.top = Math.max(8, r.top - 160) + 'px';
-            } else {
-                el.style.top = (r.bottom + 12) + 'px';
-            }
-        }
-    } else {
-        el.style.left = '50%';
-        el.style.top = '40%';
-        el.style.transform = 'translate(-50%, -50%)';
+        if (tgt) tgt.classList.add('tut-highlight');
     }
+    if (s.autoMs) _ltS.timer = setTimeout(function() { _liveTutHide(); }, s.autoMs);
 }
 
-function _tutNext() {
-    _tutCur++;
-    if (_tutCur >= _getTutSteps().length) { _tutEnd(); return; }
-    _tutShow(_tutCur);
+function _liveTutTrigger(id) {
+    if (_ltS.done) return;
+    try { if (localStorage.getItem('DL_tut_done')) return; } catch(e) {}
+    const idx = _LT.findIndex(function(s) { return s.id === id; });
+    if (idx < 0 || idx <= _ltS.idx) return;
+    _liveTutShow(idx);
 }
 
-function _tutEnd() {
-    document.getElementById('tut-bubble').style.display = 'none';
+function _liveTutHide() {
+    if (_ltS.timer) { clearTimeout(_ltS.timer); _ltS.timer = null; }
+    _ltS.idx = -1;
+    const el = document.getElementById('tut-bubble');
+    if (el) el.style.display = 'none';
     document.querySelectorAll('.tut-highlight').forEach(function(e) { e.classList.remove('tut-highlight'); });
+}
+
+function _liveTutEnd() {
+    _ltS.done = true;
+    _liveTutHide();
     try { localStorage.setItem('DL_tut_done', '1'); } catch(e) {}
+}
+
+// Кнопки overlay: "Пропустити" → завершити туторіал; "Зрозуміло" → приховати поточний крок
+function _tutEnd() { _liveTutEnd(); }
+function _tutNext() {
+    const ci = _ltS.idx >= 0 ? _ltS.idx : _ltS.lastIdx;
+    if (ci >= 0 && _LT[ci] && _LT[ci].last) { _liveTutEnd(); }
+    else { _liveTutHide(); }
 }
 
 // ── HELP MODAL ────────────────────────────────────────────────────────────────
@@ -12304,6 +13166,9 @@ function _bestiaryAnimFrame() {
 }
 
 function openBestiary() {
+    try { _ctxHintPerm('bestiary',
+        'Тут живуть монстри твого підземелля. Кожен має свій шлях розвитку — обирай шлях з головою.',
+        'These are your dungeon\'s monsters. Each has its own evolution path — choose wisely.'); } catch(e) {}
     _renderBestiary();
     let ov = document.getElementById('bestiary-overlay');
     if (ov) ov.style.cssText = 'display:flex !important;';
@@ -12911,7 +13776,7 @@ function buyMonStat(kindName, stat) {
     let cost = monStatPrice(stat, nextLvl, kindName);
     let cur = dev[key] || 0;
     if (GAME.souls < cost) return;
-    _haptic(20);
+    _haptic(20); _SFX.buy();
     _questDone('upgrade');
     let prevSpent = dev.soulsSpent || 0;
     _psyBuy('monster');
@@ -13264,6 +14129,12 @@ const StoryManager = (function() {
                 '🏃 Він пішов. Технічно це "туристична екскурсія до міста".',
                 'Бачиш того героя що втік? Я відпустив його. Навмисно. Майже.',
             ],
+            monsterStrike: [
+                '💥 Мої монстри прорвалися! Місто вже відчуло нашу присутність.',
+                '⚔️ Атака! Ще трохи — і ворота падуть. Я завжди вірив у цей план.',
+                'Відмінно! Місто отримало "привіт" від мого підземелля. Особисто.',
+                '🔥 Удар по місту! Наступного разу вони двічі подумають перед відправкою героїв.',
+            ],
             lordHit: [
                 'АУ! Я тут! Хтось мене захищає?! Питаю теоретично!',
                 '💜 Мене вдарили! Цього не було в сценарії... хоча...',
@@ -13348,23 +14219,91 @@ const StoryManager = (function() {
     }
 
     function _levelIntroSteps(level) {
-        const lines = {
-            1:  '👑 Рівень 1. Найлегший у грі. Якщо провалиш — є куди рости. Вгору. В теорії.',
-            2:  '😏 Рівень 2. Трохи складніше. Але ти впораєшся. Може.',
-            3:  '⚔️ Рівень 3. Герої вже пам\'ятають дорогу. Погана новина для нас.',
-            5:  '😤 Рівень 5. Вже звикаєш до поразок? Відмінно — попереду їх більше.',
-            10: '🏆 Рівень 10! Двозначна цифра. Чесно — я не очікував.',
-            15: '⚡ Рівень 15. Герої серйозніші. Ти теж, мабуть. Мабуть.',
-            20: '💀 Рівень 20. Половина шляху. Чи чверть... залежить від оптимізму.',
-            25: '🌑 Рівень 25. Темніє. В прямому та переносному сенсі.',
-            30: '🔥 Рівень 30! Тридцять рівнів. Витримка або мазохізм — я не суджу.',
-            35: '💎 Рівень 35. Обрані доходять сюди. Або впертиві. Теж добре.',
-            40: '👁️ Рівень 40. Мало хто бачить це. Ти або геній, або не знаєш коли зупинитись.',
-            45: '🌌 Рівень 45. Майже кінець. Або початок кінця. Звучить однаково.',
-            50: '🐉 РІВЕНЬ 50! Якщо ти тут — ти переможець. Або шахрай. Поважаю обох.',
+        const lvls = (typeof _getStoryLevels === 'function') ? _getStoryLevels() : null;
+        const entry = lvls ? lvls[level - 1] : null;
+        const city  = entry ? entry.city : ('Рівень ' + level);
+        const act   = entry ? (entry.act || 1) : 1;
+
+        // Act transition (first level of acts II, III, IV)
+        const ACT_STARTS = { 13: true, 26: true, 39: true };
+        const ACT_TRANS_UK = {
+            13: ['✦ АКТ II: ТРІЩИНИ', 'Міста стають більшими. Герої отримують імена. Щось у мені починає ставити запитання.'],
+            26: ['✦ АКТ III: РОЗЛАМ',  'Стіни тут старіші ніж пам\'ять. А пам\'ять повертається — шматками, чужим підписом.'],
+            39: ['✦ АКТ IV: ВИБІР',    'Дванадцять міст до кінця. Безодня вже не приховує чого хоче. Питання — чого хочу я.'],
         };
-        const text = lines[level] || ('⚔️ Рівень ' + level + '. Герої готуються. Ти теж. Я — вже давно.');
-        return [{ text: text }];
+        const ACT_TRANS_EN = {
+            13: ['✦ ACT II: CRACKS',   'Cities grow larger. Heroes get names. Something inside me starts asking questions.'],
+            26: ['✦ ACT III: FRACTURE','These walls are older than memory. And memory returns — in fragments, in someone else\'s signature.'],
+            39: ['✦ ACT IV: CHOICE',   'Twelve cities to the end. The Abyss no longer hides what it wants. The question is what I want.'],
+        };
+
+        // Key story moments — scripted sequences
+        const SPEC_UK = {
+             8: ['⚔️ Вовкогрів.',
+                 'Один із них кричав щось перед смертю. Я не слухав. Але слова залишились. «Ти не знаєш що робиш.» Можливо.'],
+            21: ['⚔️ Кривавий Поріг.',
+                 'Лицар Селена назвала мене «Варан». Це не моє ім\'я. Звідки вона це взяла? Безодня каже забути. Чому вона турбується?'],
+            25: ['⚔️ Серце Степу. Двадцять п\'ять міст.',
+                 'Я запитав Безодню — навіщо. Вона не відповіла. Вперше.'],
+            30: ['⚔️ Брама Тіней.',
+                 'У руїнах — рукопис. Підписаний «Варан». Датований 500 років тому. Безодня замовчала. Вперше від страху.'],
+            38: ['⚔️ Забута Столиця.',
+                 'Я впізнаю кожен камінь. Я будував ці стіни. П\'ятсот років тому. Тепер руйную. Безодня каже «продовжуй» — і я розумію, вона боїться.'],
+            49: ['⚔️ Кінець Карти. Одне місто залишилось.',
+                 'Безодня: «Це кінець». Я питаю: «Кінець чого?» Вона мовчить. Але я вже знаю. Я завжди знав.'],
+            50: ['⚔️ Перша Цитадель.',
+                 'Місто де народився Варан. Місто де народився я. П\'ятсот років тому я будував стіни щоб врятувати цей світ. Тепер руйную останню. Лорд і Варан — нарешті разом.'],
+        };
+        const SPEC_EN = {
+             8: ['⚔️ Wolfgrave.',
+                 'One of them shouted something before dying. I didn\'t listen. But the words stayed. «You don\'t know what you\'re doing.» Perhaps.'],
+            21: ['⚔️ Bloodthreshold.',
+                 'Knight Selena called me «Varan». That\'s not my name. Where did she get it? The Abyss says to forget it. Why does it worry?'],
+            25: ['⚔️ Heart of the Steppe. Twenty-five cities.',
+                 'I asked the Abyss — what for. It didn\'t answer. For the first time.'],
+            30: ['⚔️ Shadow Gate.',
+                 'In the ruins — a manuscript. Signed «Varan». Dated 500 years ago. The Abyss fell silent. For the first time from fear.'],
+            38: ['⚔️ The Forgotten Capital.',
+                 'I recognize every stone. I built these walls. Five hundred years ago. Now I\'m tearing them down. The Abyss says «continue» — and I understand, it\'s afraid.'],
+            49: ['⚔️ Edge of the Map. One city left.',
+                 'The Abyss: «This is the end». Me: «End of what?» Silence. But I already know. I always did.'],
+            50: ['⚔️ The First Citadel.',
+                 'The city where Varan was born. The city where I was born. Five hundred years ago I built walls to save this world. Now I destroy the last one. The Lord and Varan — together at last.'],
+        };
+
+        // Act-voice templates (lord's tone evolves per act)
+        const VOICE_UK = [
+            c => c + '. Ще один пункт у списку. Безодня чекає — і я теж.',
+            c => c + '. Герої вже мають імена. Намагаюсь не звертати уваги.',
+            c => c + '. Щось у цих стінах відчувається знайомим. Не знаю звідки.',
+            c => c + '. Одне з останніх. Я вже знаю що руйную. Продовжую.',
+        ];
+        const VOICE_EN = [
+            c => c + '. Another item on the list. The Abyss waits — and so do I.',
+            c => c + '. Heroes have names now. Trying not to notice.',
+            c => c + '. Something in these walls feels familiar. I don\'t know why.',
+            c => c + '. One of the last ones. I know what I\'m destroying. I continue.',
+        ];
+
+        const isEN  = (_lang === 'en');
+        const specs = isEN ? SPEC_EN : SPEC_UK;
+        const trans = isEN ? ACT_TRANS_EN : ACT_TRANS_UK;
+        const voice = isEN ? VOICE_EN : VOICE_UK;
+        const steps = [];
+
+        if (ACT_STARTS[level] && trans[level]) {
+            steps.push({ text: trans[level][0] });
+            steps.push({ text: trans[level][1] });
+        }
+
+        if (specs[level]) {
+            steps.push({ text: specs[level][0] });
+            steps.push({ text: specs[level][1] });
+        } else {
+            steps.push({ text: voice[act - 1](city) });
+        }
+
+        return steps;
     }
 
     async function _generatePersonalizedStory() {

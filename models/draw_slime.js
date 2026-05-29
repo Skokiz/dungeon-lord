@@ -120,7 +120,7 @@ function drawSlimeMonster(unit, camY) {
         return m ? [+m[1],+m[2],+m[3]] : [40,190,36];
     })();
     const _baseR = _slimeRgb[0], _baseG = _slimeRgb[1], _baseB = _slimeRgb[2];
-    ctx.shadowColor = '#000'; ctx.shadowBlur = 7;
+    ctx.shadowColor = '#000'; ctx.shadowBlur = 3;
     const _angry30 = _angry * 30;
     let _bR = _angry > 0 ? Math.min(255, Math.round(_baseR + _angry30)) : _baseR;
     let _bG = _angry > 0 ? Math.max(0,   Math.round(_baseG - _angry*40)) : _baseG;

@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<title>SFX Test — Dungeon Lord</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+    background: #0a0318;
+    color: #d0b8f0;
+    font-family: monospace;
+    padding: 32px;
+    min-height: 100vh;
+}
+h1 { color: #cc88ff; font-size: 20px; margin-bottom: 8px; letter-spacing: 2px; }
+p  { color: #5a3a7a; font-size: 12px; margin-bottom: 32px; }
+.grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 12px;
+    max-width: 900px;
+}
+button {
+    background: rgba(40,15,80,.6);
+    border: 1px solid #4a2080;
+    border-radius: 10px;
+    padding: 16px 12px;
+    color: #c0a0f0;
+    font-family: monospace;
+    font-size: 13px;
+    cursor: pointer;
+    text-align: left;
+    transition: background .15s, border-color .15s;
+}
+button:hover  { background: rgba(80,30,140,.8); border-color: #8855cc; }
+button:active { background: rgba(120,50,200,.9); border-color: #bb88ff; }
+.icon  { font-size: 22px; display: block; margin-bottom: 6px; }
+.label { color: #cc88ff; font-weight: bold; display: block; margin-bottom: 2px; }
+.desc  { color: #5a3a7a; font-size: 11px; }
+</style>
+</head>
+<body>
+<h1>⚔️ DUNGEON LORD — SFX TEST</h1>
+<p>Клікни будь-яку кнопку щоб послухати звук.</p>
+<div class="grid" id="grid"></div>
+
+<script>
+let _sfxCtx = null;
+let _sfxHitLast = 0;
+
+function _sfxAC() {
+    if (!_sfxCtx) _sfxCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (_sfxCtx.state === 'suspended') _sfxCtx.resume();
+    return _sfxCtx;
+}
+
+const _SFX = {
+    hit() {
+        const now = Date.now();
+        if (now - _sfxHitLast < 75) return;
+        _sfxHitLast = now;
+        const ac = _sfxAC(), t = ac.currentTime;
+        const n = ac.sampleRate * 0.07 | 0;
+        const buf = ac.createBuffer(1, n, ac.sampleRate);
+        const d = buf.getChannelData(0);
+        for (let i = 0; i < n; i++) d[i] = (Math.random()*2-1) * (1-i/n);
+        const src = ac.createBufferSource(); src.buffer = buf;
+        const flt = ac.createBiquadFilter(); flt.type='bandpass'; flt.frequency.value=400; flt.Q.value=0.7;
+        const g = ac.createGain(); g.gain.setValueAtTime(0.25, t); g.gain.exponentialRampToValueAtTime(0.001, t+0.07);
+        src.connect(flt); flt.connect(g); g.connect(ac.destination); src.start(t);
+    },
+
+
+    death() {
+        const ac = _sfxAC(), t = ac.currentTime;
+        const n = ac.sampleRate * 0.30 | 0;
+        const buf = ac.createBuffer(1, n, ac.sampleRate);
+        const d = buf.getChannelData(0);
+        for (let i = 0; i < n; i++) d[i] = (Math.random()*2-1) * (1-i/n);
+        const src = ac.createBufferSource(); src.buffer = buf;
+        const flt = ac.createBiquadFilter(); flt.type='lowpass';
+        flt.frequency.setValueAtTime(900, t); flt.frequency.exponentialRampToValueAtTime(80, t+0.3);
+        const g = ac.createGain(); g.gain.setValueAtTime(0.35, t); g.gain.exponentialRampToValueAtTime(0.001, t+0.3);
+        src.connect(flt); flt.connect(g); g.connect(ac.destination); src.start(t);
+    },
+
+    bossDeath() {
+        const ac = _sfxAC(), t = ac.currentTime;
+        const osc = ac.createOscillator(), gO = ac.createGain();
+        osc.type='sine'; osc.frequency.setValueAtTime(90, t); osc.frequency.exponentialRampToValueAtTime(18, t+0.7);
+        gO.gain.setValueAtTime(0.55, t); gO.gain.exponentialRampToValueAtTime(0.001, t+0.7);
+        osc.connect(gO); gO.connect(ac.destination); osc.start(t); osc.stop(t+0.7);
+        const n = ac.sampleRate * 0.4 | 0;
+        const buf = ac.createBuffer(1, n, ac.sampleRate);
+        const d = buf.getChannelData(0);
+        for (let i = 0; i < n; i++) d[i] = (Math.random()*2-1)*(1-i/n);
+        const src = ac.createBufferSource(); src.buffer = buf;
+        const flt = ac.createBiquadFilter(); flt.type='lowpass'; flt.frequency.value=250;
+        const gN = ac.createGain(); gN.gain.setValueAtTime(0.45, t); gN.gain.exponentialRampToValueAtTime(0.001, t+0.4);
+        src.connect(flt); flt.connect(gN); gN.connect(ac.destination); src.start(t);
+    },
+
+    wave() {
+        const ac = _sfxAC(), t = ac.currentTime;
+        [[55,110,'sine'],[110,220,'sawtooth']].forEach(([f0,f1,tp]) => {
+            const osc = ac.createOscillator(), g = ac.createGain();
+            osc.type=tp; osc.frequency.setValueAtTime(f0,t); osc.frequency.exponentialRampToValueAtTime(f1, t+0.5);
+            g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(0.16, t+0.12); g.gain.exponentialRampToValueAtTime(0.001, t+0.5);
+            osc.connect(g); g.connect(ac.destination); osc.start(t); osc.stop(t+0.5);
+        });
+    },
+
+
+    buy() {
+        const ac = _sfxAC(), t = ac.currentTime;
+        [440, 554, 660].forEach((freq, i) => {
+            const osc = ac.createOscillator(), g = ac.createGain();
+            osc.type='triangle'; osc.frequency.value=freq;
+            g.gain.setValueAtTime(0.16, t+i*0.07); g.gain.exponentialRampToValueAtTime(0.001, t+i*0.07+0.18);
+            osc.connect(g); g.connect(ac.destination); osc.start(t+i*0.07); osc.stop(t+i*0.07+0.18);
+        });
+    },
+
+    win() {
+        const ac = _sfxAC(), t = ac.currentTime;
+        const bass = ac.createOscillator(), gB = ac.createGain();
+        bass.type='sine'; bass.frequency.value=130;
+        gB.gain.setValueAtTime(0, t); gB.gain.linearRampToValueAtTime(0.22, t+0.12);
+        gB.gain.exponentialRampToValueAtTime(0.001, t+1.7);
+        bass.connect(gB); gB.connect(ac.destination); bass.start(t); bass.stop(t+1.7);
+        [[0,523],[0.14,659],[0.28,784],[0.44,1047],[0.60,1175],[0.76,1047],[0.92,1319]].forEach(([dt,freq]) => {
+            const osc = ac.createOscillator(), g = ac.createGain();
+            osc.type='triangle'; osc.frequency.value=freq;
+            g.gain.setValueAtTime(0.19, t+dt); g.gain.exponentialRampToValueAtTime(0.001, t+dt+0.55);
+            osc.connect(g); g.connect(ac.destination); osc.start(t+dt); osc.stop(t+dt+0.55);
+        });
+        [784, 1047, 1319].forEach(freq => {
+            const osc = ac.createOscillator(), g = ac.createGain();
+            osc.type='sawtooth'; osc.frequency.value=freq;
+            g.gain.setValueAtTime(0.07, t+0.92); g.gain.exponentialRampToValueAtTime(0.001, t+1.6);
+            osc.connect(g); g.connect(ac.destination); osc.start(t+0.92); osc.stop(t+1.6);
+        });
+    },
+
+    gameOver() {
+        const ac = _sfxAC(), t = ac.currentTime;
+        [[0,220],[0.35,165],[0.7,110],[1.05,82]].forEach(([dt,freq]) => {
+            const osc = ac.createOscillator(), g = ac.createGain();
+            osc.type='sawtooth'; osc.frequency.value=freq;
+            g.gain.setValueAtTime(0.26, t+dt); g.gain.exponentialRampToValueAtTime(0.001, t+dt+0.45);
+            osc.connect(g); g.connect(ac.destination); osc.start(t+dt); osc.stop(t+dt+0.45);
+        });
+    },
+
+    donesnnia() {
+        const ac = _sfxAC(), t = ac.currentTime;
+        [392, 523].forEach((freq, i) => {
+            const osc = ac.createOscillator(), g = ac.createGain();
+            osc.type='sine'; osc.frequency.value=freq;
+            g.gain.setValueAtTime(0.11, t+i*0.15); g.gain.exponentialRampToValueAtTime(0.001, t+i*0.15+0.32);
+            osc.connect(g); g.connect(ac.destination); osc.start(t+i*0.15); osc.stop(t+i*0.15+0.32);
+        });
+    },
+};
+
+const SOUNDS = [
+    { fn:'hit',       icon:'⚔️',  label:'Hit',         desc:'Будь-який удар по герою' },
+    { fn:'death',     icon:'💀',  label:'Death',        desc:'Смерть звичайного/еліт героя' },
+    { fn:'bossDeath', icon:'💥',  label:'Boss Death',   desc:'Смерть боса (бум + шум)' },
+    { fn:'wave',      icon:'🌊',  label:'Elite/Boss Spawn', desc:'З\'явився еліт або бос' },
+    { fn:'buy',       icon:'💎',  label:'Buy',          desc:'Будь-яка купівля (chime)' },
+    { fn:'win',       icon:'🏆',  label:'Win',          desc:'Рівень пройдено (грандіозний підйом)' },
+    { fn:'gameOver',  icon:'☠️',  label:'Game Over',    desc:'Поразка (4 ноти вниз)' },
+    { fn:'donesnnia', icon:'📜',  label:'Донесення',    desc:'Нарративна подія з\'явилась' },
+];
+
+const grid = document.getElementById('grid');
+SOUNDS.forEach(s => {
+    const btn = document.createElement('button');
+    btn.innerHTML = `<span class="icon">${s.icon}</span><span class="label">${s.label}</span><span class="desc">${s.desc}</span>`;
+    btn.onclick = () => _SFX[s.fn]();
+    grid.appendChild(btn);
+});
+</script>
+</body>
+</html>
