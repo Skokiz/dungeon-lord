@@ -429,6 +429,47 @@
         }
         #btn-share:hover { background: #244870; }
 
+        /* ── Врятувати душі за рекламу (екран кінця гри) ── */
+        #go-soul-salvage {
+            display: flex; flex-direction: column; align-items: center; gap: 8px;
+            margin: 6px 0 4px; max-width: 340px; width: 90%;
+        }
+        .go-salvage-info { color: #cc99ff; font-size: 13px; text-align: center; }
+        .go-salvage-info b { color: #e8d8ff; }
+        .go-salvage-btn {
+            display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+            background: linear-gradient(180deg, #6a4a12 0%, #3a2600 100%);
+            border: 1px solid #ffcc44; border-radius: 10px;
+            color: #fff4cc; font-weight: 600; font-size: 14px;
+            padding: 11px 20px; cursor: pointer; font-family: inherit;
+            -webkit-appearance: none; touch-action: manipulation;
+            box-shadow: 0 0 14px rgba(220,170,40,0.35); transition: all 0.14s;
+        }
+        .go-salvage-btn:hover:not(:disabled) { background: linear-gradient(180deg, #7c5816 0%, #4a3200 100%); box-shadow: 0 0 18px rgba(255,204,68,0.5); }
+        .go-salvage-btn:disabled { opacity: 0.5; cursor: default; box-shadow: none; }
+        .go-salvage-btn b { color: #fff; }
+
+        /* ── Заглушка перегляду реклами ── */
+        #ad-stub-overlay {
+            display: none;
+            position: fixed; inset: 0; z-index: 300;
+            background: rgba(2,1,8,0.96);
+            align-items: center; justify-content: center;
+        }
+        #ad-stub-overlay.show { display: flex; }
+        .ad-stub-card {
+            display: flex; flex-direction: column; align-items: center; gap: 16px;
+            color: #ddccff; font-family: Arial, sans-serif;
+        }
+        .ad-stub-spinner {
+            width: 54px; height: 54px; border-radius: 50%;
+            border: 4px solid rgba(200,150,255,0.2); border-top-color: #cc88ff;
+            animation: ad-stub-spin 0.8s linear infinite;
+        }
+        @keyframes ad-stub-spin { to { transform: rotate(360deg); } }
+        .ad-stub-label { font-size: 15px; letter-spacing: 0.5px; color: #bb99ee; }
+        .ad-stub-count { font-size: 22px; font-weight: 700; color: #ffcc66; }
+
         /* ═══════════════════════════════════════════════════
            СТАРТОВИЙ ЕКРАН
         ═══════════════════════════════════════════════════ */
@@ -1600,15 +1641,20 @@
         }
         .mon-dev-spent { font-size: 13px; color:#cc99ff; }
         .mon-dev-spent b { color:#ffcc66; }
-        .mon-dev-tabs { display:flex; gap: 4px; align-items:center; }
+        /* Сегментований перемикач валюти — зверху картки */
+        .mon-dev-tabs { display:flex; gap: 6px; align-items:center; margin: 0 0 14px 0; }
         .mon-dev-tab {
-            padding: 5px 12px; font-size: 12px; cursor: pointer;
+            flex: 1;
+            padding: 9px 12px; font-size: 13px; font-weight: 600; cursor: pointer;
             background: rgba(40,20,70,0.6); border: 1px solid #4a2e74;
-            border-radius: 6px; color: #aa88cc;
-            font-family: inherit;
+            border-radius: 8px; color: #aa88cc;
+            font-family: inherit; letter-spacing: 0.3px;
+            display:flex; align-items:center; justify-content:center; gap: 6px;
+            transition: all 0.14s;
         }
-        .mon-dev-tab.active { background:#5a3a8a; color:#fff; }
-        .mon-dev-tab.golden.active { background: linear-gradient(180deg,#bb8822,#664400); border-color:#ffcc44; color:#fff4cc; }
+        .mon-dev-tab:hover:not(.active) { border-color:#6a3aaa; color:#c8a8e8; }
+        .mon-dev-tab.active { background:#5a3a8a; color:#fff; border-color:#8a5acc; box-shadow: 0 0 10px rgba(140,80,220,0.35); }
+        .mon-dev-tab.golden.active { background: linear-gradient(180deg,#bb8822,#664400); border-color:#ffcc44; color:#fff4cc; box-shadow: 0 0 12px rgba(220,170,40,0.4); }
         .mon-dev-exchange-btn {
             margin-left: 6px;
             padding: 5px 10px;
@@ -1626,6 +1672,13 @@
         }
         .mon-dev-exchange-btn:disabled { opacity: 0.4; cursor: not-allowed; }
         .mon-dev-tab.golden { background: rgba(70,45,15,0.6); border-color:#aa7722; color:#cc9944; }
+        /* Золотий режим — підсвітка всієї картки коли активна вкладка "Золоті" */
+        .mon-dev-card.golden-mode {
+            border-color: #ffcc44;
+            box-shadow: 0 0 30px rgba(220,170,40,0.42), inset 0 0 22px rgba(180,120,20,0.18);
+        }
+        .mon-dev-card.golden-mode .mon-dev-header { border-bottom-color: #7a5a1a; }
+        .mon-dev-card.golden-mode .mon-dev-footer { border-top-color: #7a5a1a; }
 
         @media (max-width: 480px) {
             .mon-dev-card { padding: 12px 14px 10px 14px; }
@@ -1983,9 +2036,25 @@
     <h1 id="go-title" data-i18n="go-defeat">ПОРАЗКА</h1>
     <p id="go-desc" style="color:#aaa;font-size:16px;margin-top:8px;" data-i18n="go-dead">Володаря вбито...</p>
     <div id="go-elite-earned"></div>
+    <!-- Врятувати звичайні душі: за рекламу конвертувати ВСІ у золоті (10:1) -->
+    <div id="go-soul-salvage" style="display:none">
+        <div class="go-salvage-info">💀 <b><span id="go-salvage-souls">0</span></b> звичайних душ згорять при виході</div>
+        <button id="go-salvage-btn" class="go-salvage-btn" onclick="_watchAdConvertSouls()">
+            📺 Дивитись рекламу → <span class="esoul-icon">💀</span> <b><span id="go-salvage-gold">0</span></b> золотих
+        </button>
+    </div>
     <div id="psy-result-panel"></div>
     <button id="btn-share" onclick="_shareResult()" data-i18n="btn-share">📤 Поділитись результатом</button>
     <button id="btn-try-again" onclick="hardReset()" data-i18n="go-retry">🔄 Спробувати знову</button>
+</div>
+
+<!-- ── Заглушка перегляду реклами ── -->
+<div id="ad-stub-overlay">
+    <div class="ad-stub-card">
+        <div class="ad-stub-spinner"></div>
+        <div class="ad-stub-label">Реклама триває…</div>
+        <div class="ad-stub-count"><span id="ad-stub-sec">3</span> с</div>
+    </div>
 </div>
 
 <!-- ── LEVEL BEAT (post-win story flash) ── -->
@@ -2015,6 +2084,10 @@
             <div class="mon-dev-title">Розвиток: <span class="mon-dev-kind" id="mon-dev-kind-name">—</span></div>
             <button class="mon-dev-close" onclick="closeMonsterDev()" title="Закрити">✕</button>
         </div>
+        <div class="mon-dev-tabs" id="mon-dev-tabs-top">
+            <button class="mon-dev-tab active" id="mon-dev-tab-souls" onclick="switchMonDevTab('souls')">💀 Душі</button>
+            <button class="mon-dev-tab golden" id="mon-dev-tab-golden" onclick="switchMonDevTab('golden')"><span class="esoul-icon">💀</span> Золоті</button>
+        </div>
         <div class="mon-dev-top">
             <div class="mon-dev-portrait" id="mon-dev-portrait">
                 <span class="mon-dev-portrait-emoji">🧟</span>
@@ -2031,12 +2104,7 @@
         </div>
         <div class="mon-dev-footer">
             <div class="mon-dev-spent">Витрачено: <b><span id="mon-dev-spent-num">0</span></b> <span id="mon-dev-spent-icon">💀</span></div>
-            <div class="mon-dev-tabs">
-                <button class="mon-dev-tab active" id="mon-dev-tab-souls" onclick="switchMonDevTab('souls')">💀 Душі</button>
-                <button class="mon-dev-tab golden" id="mon-dev-tab-golden" onclick="switchMonDevTab('golden')">✨ Золоті</button>
-                <button class="mon-dev-exchange-btn" id="mon-dev-exchange-btn" onclick="exchangeSoulsForGolden()" title="Обміняти 100 звичайних душ на 10 золотих">⇄ 100→10</button>
-                <button class="mon-dev-exchange-btn" id="mon-dev-branch-reset-btn" onclick="resetMonBranch()" title="Скинути вибір гілки" style="display:none">🔄 Гілка</button>
-            </div>
+            <button class="mon-dev-exchange-btn" id="mon-dev-branch-reset-btn" onclick="resetMonBranch()" title="Скинути вибір гілки" style="display:none">🔄 Гілка</button>
         </div>
     </div>
 </div>
@@ -9691,6 +9759,7 @@ function _resolveDecisionIdx(idx) {
 function _peacefulVictory() {
     GAME.gameOver = true;
     GAME.won = true;
+    _soulSalvageDone = false;
 
     try { _Music.stop(true); } catch(e) {}
     _SFX.win();
@@ -9711,6 +9780,7 @@ function _peacefulVictory() {
     _tryBtn.onclick = () => hardReset();
     _showPsychotypeResult();
     document.getElementById('game-over').style.display = 'flex';
+    _showSoulSalvage();
 }
 
 // ── Обчислення психотипу ────────────────────────────────────────────────────
@@ -10525,6 +10595,7 @@ function _showLevelBeat(level, onDone) {
 
 function gameWin() {
     GAME.gameOver = true;
+    _soulSalvageDone = false;
 
     try { _Music.stop(true); } catch(e) {}
     _SFX.win();
@@ -10570,10 +10641,12 @@ function _doGameWinOverlay(lvl, nextLvl, isLast) {
     _tryBtn.onclick = () => hardReset();
     if (isLast) _showPsychotypeResult();
     document.getElementById('game-over').style.display = 'flex';
+    _showSoulSalvage();
 }
 
 function gameOver() {
     GAME.gameOver = true;
+    _soulSalvageDone = false;
     try {
         if (GAME.cityHP / GAME.maxCityHP < 0.05)
             _ctxHint('almost_win',
@@ -10595,6 +10668,66 @@ function gameOver() {
     const _tryBtn = document.getElementById('btn-try-again');
     if (_tryBtn) { _tryBtn.textContent = _t('go-retry'); _tryBtn.onclick = () => retryLevel(); }
     document.getElementById('game-over').style.display = 'flex';
+    _showSoulSalvage();
+}
+
+// ── Врятувати звичайні душі: за перегляд реклами конвертувати ВСІ у золоті ──
+// Курс: 10 звичайних душ = 1 золота (елітна). Доступно раз на кожен екран кінця гри.
+const _SOUL_TO_GOLD = 10;
+let _soulSalvageDone = false;
+
+function _showSoulSalvage() {
+    let box = document.getElementById('go-soul-salvage');
+    if (!box) return;
+    let souls = Math.max(0, GAME.souls || 0);
+    let gold  = Math.floor(souls / _SOUL_TO_GOLD);
+    if (_soulSalvageDone || gold < 1) { box.style.display = 'none'; return; }
+    document.getElementById('go-salvage-souls').innerText = souls;
+    document.getElementById('go-salvage-gold').innerText  = gold;
+    let btn = document.getElementById('go-salvage-btn');
+    if (btn) btn.disabled = false;
+    box.style.display = 'flex';
+}
+
+function _watchAdConvertSouls() {
+    if (_soulSalvageDone) return;
+    let souls = Math.max(0, GAME.souls || 0);
+    let gold  = Math.floor(souls / _SOUL_TO_GOLD);
+    if (gold < 1) return;
+    let btn = document.getElementById('go-salvage-btn');
+    if (btn) btn.disabled = true;
+    _playAdStub(() => {
+        // Конвертуємо ВСІ звичайні душі у золоті
+        GAME.eliteSouls = (GAME.eliteSouls || 0) + gold;
+        GAME.souls = 0;
+        _soulSalvageDone = true;
+        commitEliteSouls();               // персист золотих (gameOver уже комітив раніше)
+        updateUI();
+        const _eEl = document.getElementById('go-elite-earned');
+        if (_eEl) _eEl.innerText = _t('go-elite', {n: GAME.eliteSouls, t: getStoredEliteSouls()});
+        _showSoulSalvage();               // ховає блок (done=true)
+        _haptic(30);
+        try { _SFX.buy(); } catch(e) {}
+    });
+}
+
+// Заглушка перегляду реклами: показує оверлей 3 сек, потім callback.
+// Точка розширення: тут підключається реальна мережа (Adsgram тощо).
+function _playAdStub(onDone) {
+    let ov = document.getElementById('ad-stub-overlay');
+    let secEl = document.getElementById('ad-stub-sec');
+    let sec = 3;
+    if (secEl) secEl.innerText = sec;
+    if (ov) ov.classList.add('show');
+    let iv = setInterval(() => {
+        sec--;
+        if (secEl) secEl.innerText = Math.max(0, sec);
+        if (sec <= 0) {
+            clearInterval(iv);
+            if (ov) ov.classList.remove('show');
+            if (typeof onDone === 'function') onDone();
+        }
+    }, 1000);
 }
 
 // ── Прогрес рівнів (зберігається окремо від ігрового стану) ──
@@ -13647,18 +13780,21 @@ function _renderMonsterDev() {
         btn.disabled = isMax || !canAfford;
         let lvlEl  = btn.querySelector('.stat-lvl');
         let costEl = btn.querySelector('.stat-cost');
-        let icon = (tab === 'golden') ? '✨' : '💀';
+        // Золотий режим — золотий череп (той самий, що в HUD під час гри) замість ✨
+        let iconHtml = (tab === 'golden') ? '<span class="esoul-icon">💀</span>' : '💀';
         if (lvlEl)  lvlEl.innerHTML = `${scopeLvl}/${max} <span style="color:#88dd88;font-size:10px">${meta.bonus(scopeLvl)}</span>`;
-        if (costEl) costEl.innerText = isMax ? 'МАКС' : (cost + ' ' + icon);
+        if (costEl) costEl.innerHTML = isMax ? 'МАКС' : (cost + ' ' + iconHtml);
     });
+
+    // Золота підсвітка картки синхронізується з активним табом (важливо при відкритті)
+    let card = document.getElementById('mon-dev-card');
+    if (card) card.classList.toggle('golden-mode', tab === 'golden');
 
     // Лічильник витрачених для активного табу
     let spentNum = (tab === 'golden') ? (goldDev.goldenSpent || 0) : (dev.soulsSpent || 0);
     document.getElementById('mon-dev-spent-num').innerText = spentNum;
-    document.getElementById('mon-dev-spent-icon').innerText = (tab === 'golden') ? '✨' : '💀';
-    // Кнопка обміну: вмикається коли є 100+ душ
-    let exBtn = document.getElementById('mon-dev-exchange-btn');
-    if (exBtn) exBtn.disabled = (GAME.souls < 100);
+    let spentIcon = document.getElementById('mon-dev-spent-icon');
+    if (spentIcon) { spentIcon.className = (tab === 'golden') ? 'esoul-icon' : ''; spentIcon.innerText = '💀'; }
     // Кнопка скидання гілки: показується якщо гілку вибрано
     let resetBtn = document.getElementById('mon-dev-branch-reset-btn');
     if (resetBtn) resetBtn.style.display = (dev.branch || getMonDevGolden(kind).branch) ? '' : 'none';
@@ -13715,18 +13851,10 @@ function switchMonDevTab(tab) {
     _monDevState.tab = tab;
     document.getElementById('mon-dev-tab-souls').classList.toggle('active', tab === 'souls');
     document.getElementById('mon-dev-tab-golden').classList.toggle('active', tab === 'golden');
+    let card = document.getElementById('mon-dev-card');
+    if (card) card.classList.toggle('golden-mode', tab === 'golden');
     let icon = document.getElementById('mon-dev-spent-icon');
-    if (icon) icon.innerText = tab === 'golden' ? '✨' : '💀';
-    _renderMonsterDev();
-}
-
-// Phase 8 — обмін 100 звичайних душ → 10 золотих (елітних)
-function exchangeSoulsForGolden() {
-    if (GAME.souls < 100) return;
-    GAME.souls -= 100;
-    GAME.eliteSouls = (GAME.eliteSouls || 0) + 10;
-    // Не зберігаємо: commit відбудеться лише при перемозі або поразці
-    updateUI(); saveGame();
+    if (icon) { icon.className = (tab === 'golden') ? 'esoul-icon' : ''; icon.innerText = '💀'; }
     _renderMonsterDev();
 }
 
