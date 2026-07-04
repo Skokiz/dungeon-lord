@@ -2,3 +2,4 @@
 *.jpg
 *.jpeg
 .mcp.json
+graphify-out/
