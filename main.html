@@ -74,7 +74,7 @@
         ═══════════════════════════════════════════════════ */
         #hud {
             position: absolute;
-            top: 0; left: 0; right: 0;
+            top: env(safe-area-inset-top, 0px); left: 0; right: 0;
             pointer-events: none;
             display: flex;
             justify-content: space-between;
@@ -108,7 +108,7 @@
         /* Кнопка паузи — абсолютно над canvas */
         #pause-toggle-btn {
             position: absolute;
-            top: 6px; left: 50%; transform: translateX(-50%);
+            top: calc(6px + env(safe-area-inset-top, 0px)); left: 50%; transform: translateX(-50%);
             background: rgba(20,12,32,0.78); border: 1px solid rgba(120,100,180,0.35);
             color: #b9a8d8; border-radius: 6px;
             font-weight: 500;
@@ -275,7 +275,14 @@
         #game-over {
             background: rgba(0,0,0,0.93);
             gap: 16px; z-index: 200;
+            /* Скрол коли контенту багато (психотип + конвертація душ на низьких екранах);
+               margin:auto на крайніх дітях центрує коли вміст поміщається */
+            overflow-y: auto; -webkit-overflow-scrolling: touch;
+            box-sizing: border-box;
+            padding: max(20px, env(safe-area-inset-top,0px)) 16px max(20px, env(safe-area-inset-bottom,0px));
         }
+        #game-over > :first-child { margin-top: auto; }
+        #game-over > :last-child  { margin-bottom: auto; }
         #game-over h1 { color: #ff3333; text-transform: uppercase; text-align: center; }
         #game-over p  { color: #999; text-align: center; }
         #btn-try-again {
@@ -289,7 +296,13 @@
         #pause-overlay {
             background: rgba(0,0,0,0.85);
             gap: 14px; z-index: 190;
+            /* Скрол коли контент не поміщається на низькому екрані */
+            overflow-y: auto; -webkit-overflow-scrolling: touch;
+            box-sizing: border-box;
+            padding: max(20px, env(safe-area-inset-top,0px)) 16px max(20px, env(safe-area-inset-bottom,0px));
         }
+        #pause-overlay > :first-child { margin-top: auto; }
+        #pause-overlay > :last-child  { margin-bottom: auto; }
         #pause-overlay h2 { color: #cc88ff; }
         #pause-quote {
             color: #ddccff; font-style: italic; font-size: 14px;
@@ -1078,8 +1091,11 @@
 
         /* Мовна бульбашка (комікс-стиль) */
         .story-bubble-wrap {
-            width:calc(100% - 32px); max-width:500px;
-            margin-left:80px; /* зсув щоб не перекривати лорда */
+            /* align-self:stretch + auto width → ширина = доступний простір мінус марджини,
+               тому margin-left (під аватар лорда) не виштовхує бульку за правий край */
+            align-self:stretch; width:auto; box-sizing:border-box;
+            max-width:500px;
+            margin:0 16px 0 80px; /* лівий відступ під аватар лорда, правий — від краю екрана */
             position:relative; }
         .story-bubble {
             background:#f5f0ff;
@@ -1258,6 +1274,10 @@
         .lord-upg-header h2 { font-size:17px; font-weight:bold; color:#e0ccff; margin:0 0 4px; }
         .lord-upg-elite { font-size:13px; color:#bb88ff; }
         .lord-upg-body { display:grid; grid-template-columns:1fr 274px; gap:18px; }
+        /* На телефоні деталь-панель не влазить збоку — стекаємо вертикально */
+        @media (max-width: 560px) {
+            .lord-upg-body { grid-template-columns:1fr; }
+        }
         /* grid */
         .lug-col-row {
             display:grid; grid-template-columns:62px 1fr 1fr 1fr;
