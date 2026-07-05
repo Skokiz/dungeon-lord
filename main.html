@@ -6821,6 +6821,35 @@ function loop(ts) {
         // T1 — Рибальське село (1–5) · Хатини рибалок, сітки, дерев'яний причал
         let G=_cy, fa=0.5+0.3*Math.sin(_fl);
         ctx.fillStyle='#8a7858'; ctx.fillRect(0,-5,200,5);
+        // ── Задній ряд: силуети дальніх хат (глибина села) ──
+        ctx.fillStyle='#1c1626';
+        ctx.beginPath();ctx.moveTo(-6,G+58);ctx.lineTo(16,G+40);ctx.lineTo(38,G+58);ctx.closePath();ctx.fill();
+        ctx.fillRect(-6,G+58,44,54);
+        ctx.beginPath();ctx.moveTo(86,G+52);ctx.lineTo(108,G+34);ctx.lineTo(130,G+52);ctx.closePath();ctx.fill();
+        ctx.fillRect(86,G+52,44,60);
+        // тьмяні вікна дальніх хат
+        ctx.fillStyle='rgba(255,190,90,0.20)';
+        ctx.fillRect(6,G+66,8,7); ctx.fillRect(24,G+66,8,7);
+        ctx.fillRect(98,G+60,8,7); ctx.fillRect(114,G+60,8,7);
+        // ── Щогли рибальських човнів за причалом (ліворуч) ──
+        ctx.strokeStyle='#3a2c1e'; ctx.lineWidth=3;
+        ctx.beginPath();ctx.moveTo(10,G+112);ctx.lineTo(14,G+30);ctx.stroke();
+        ctx.beginPath();ctx.moveTo(44,G+112);ctx.lineTo(46,G+52);ctx.stroke();
+        // реї та згорнуті вітрила
+        ctx.strokeStyle='#3a2c1e'; ctx.lineWidth=2;
+        ctx.beginPath();ctx.moveTo(2,G+44);ctx.lineTo(28,G+40);ctx.stroke();
+        ctx.fillStyle='#8a7a62';
+        ctx.beginPath();ctx.moveTo(3,G+45);ctx.lineTo(27,G+41);ctx.lineTo(25,G+48);ctx.lineTo(6,G+51);ctx.closePath();ctx.fill();
+        ctx.beginPath();ctx.moveTo(38,G+60);ctx.lineTo(56,G+58);ctx.stroke();
+        ctx.fillStyle='#7a6a54';
+        ctx.beginPath();ctx.moveTo(39,G+61);ctx.lineTo(55,G+59);ctx.lineTo(53,G+65);ctx.lineTo(41,G+67);ctx.closePath();ctx.fill();
+        // прапорець на вищій щоглі
+        ctx.fillStyle='#aa4433';
+        ctx.beginPath();ctx.moveTo(14,G+30);ctx.lineTo(26,G+34);ctx.lineTo(14,G+38);ctx.closePath();ctx.fill();
+        // такелаж
+        ctx.strokeStyle='rgba(60,45,30,0.55)'; ctx.lineWidth=0.8;
+        ctx.beginPath();ctx.moveTo(14,G+32);ctx.lineTo(4,G+112);ctx.stroke();
+        ctx.beginPath();ctx.moveTo(14,G+32);ctx.lineTo(24,G+112);ctx.stroke();
         // ── Ліва хатина рибалки ──
         ctx.fillStyle='#c4b898'; ctx.fillRect(4,G+52,62,62);
         ctx.fillStyle='#9a9080'; ctx.fillRect(56,G+52,10,62); // тінь
@@ -6921,12 +6950,82 @@ function loop(ts) {
         ctx.strokeStyle='#4a3820'; ctx.lineWidth=1;
         ctx.beginPath();ctx.moveTo(164,G+108);ctx.lineTo(178,G+108);ctx.stroke();
         ctx.beginPath();ctx.moveTo(180,G+110);ctx.lineTo(192,G+110);ctx.stroke();
-        // ── Ворота ──
-        ctx.fillStyle='#6a5238'; ctx.fillRect(64,G+108,72,6);
+        // ── Ворота: кам'яна арка, світло міста зсередини, відчинені стулки ──
+        // Кам'яні стовпи-опори
+        ctx.fillStyle='#7e7868';
+        ctx.fillRect(66,G+72,10,68); ctx.fillRect(124,G+72,10,68);
+        ctx.fillStyle='rgba(255,250,235,0.14)';
+        ctx.fillRect(66,G+72,2,68); ctx.fillRect(124,G+72,2,68);
+        ctx.strokeStyle='rgba(0,0,0,0.3)'; ctx.lineWidth=1;
+        [G+86,G+100,G+114,G+128].forEach(sy=>{
+            ctx.beginPath();ctx.moveTo(66,sy);ctx.lineTo(76,sy);ctx.stroke();
+            ctx.beginPath();ctx.moveTo(124,sy);ctx.lineTo(134,sy);ctx.stroke();
+        });
+        // Отвір арки (темний прохід)
         ctx.fillStyle='#0e0a06';
         ctx.beginPath();ctx.arc(100,G+100,26,Math.PI,0);ctx.rect(74,G+100,52,44);ctx.fill();
-        ctx.strokeStyle='#a87830'; ctx.lineWidth=2;
+        // Тепле світло міста зсередини проходу
+        ctx.save();
+        ctx.beginPath();ctx.arc(100,G+100,26,Math.PI,0);ctx.rect(74,G+100,52,44);ctx.clip();
+        let _gateGlow=ctx.createRadialGradient(100,G+140,4,100,G+140,52);
+        _gateGlow.addColorStop(0,`rgba(255,196,96,${0.34+0.08*Math.sin(_fl*0.7)})`);
+        _gateGlow.addColorStop(0.55,'rgba(220,140,50,0.14)');
+        _gateGlow.addColorStop(1,'rgba(120,60,10,0)');
+        ctx.fillStyle=_gateGlow;
+        ctx.fillRect(60,G+70,80,76);
+        // силует бруківки в проході
+        ctx.fillStyle='rgba(0,0,0,0.35)';
+        [78,92,106,118].forEach((bx,bi)=>{ctx.fillRect(bx,G+136+(bi%2)*2,10,3);});
+        ctx.restore();
+        // Клинчасте каміння арки (вусуари)
+        ctx.fillStyle='#8a8474';
+        for(let vi=0;vi<7;vi++){
+            let a0=Math.PI+vi*(Math.PI/7), a1=a0+Math.PI/7-0.03;
+            ctx.beginPath();
+            ctx.arc(100,G+100,33,a0,a1);
+            ctx.arc(100,G+100,26,a1,a0,true);
+            ctx.closePath();ctx.fill();
+        }
+        ctx.strokeStyle='rgba(0,0,0,0.35)'; ctx.lineWidth=1;
         ctx.beginPath();ctx.arc(100,G+100,26,Math.PI,0);ctx.stroke();
+        // Замковий камінь
+        ctx.fillStyle='#96907e';
+        ctx.beginPath();ctx.moveTo(93,G+64);ctx.lineTo(107,G+64);ctx.lineTo(104,G+76);ctx.lineTo(96,G+76);ctx.closePath();ctx.fill();
+        ctx.fillStyle='rgba(255,250,235,0.16)';ctx.fillRect(93,G+64,14,2);
+        // Відчинені дерев'яні стулки (притиснуті до стовпів)
+        [[66,-1],[134,1]].forEach(([dx,dir])=>{
+            ctx.fillStyle='#5e4426';
+            ctx.beginPath();
+            ctx.moveTo(dx,G+96);ctx.lineTo(dx+dir*10,G+100);ctx.lineTo(dx+dir*10,G+140);ctx.lineTo(dx,G+140);
+            ctx.closePath();ctx.fill();
+            ctx.strokeStyle='#3e2c16';ctx.lineWidth=1;
+            ctx.beginPath();ctx.moveTo(dx+dir*3,G+99);ctx.lineTo(dx+dir*3,G+140);ctx.stroke();
+            ctx.beginPath();ctx.moveTo(dx+dir*7,G+100);ctx.lineTo(dx+dir*7,G+140);ctx.stroke();
+            // залізна смуга
+            ctx.strokeStyle='#2e2a26';ctx.lineWidth=1.6;
+            ctx.beginPath();ctx.moveTo(dx,G+112);ctx.lineTo(dx+dir*10,G+114);ctx.stroke();
+        });
+        // Вивіска на ланцюжках під замковим каменем (легке гойдання)
+        {
+            let sw=Math.sin(_t/900)*1.5;
+            ctx.strokeStyle='#4a4438';ctx.lineWidth=1;
+            ctx.beginPath();ctx.moveTo(96,G+76);ctx.lineTo(96+sw,G+82);ctx.stroke();
+            ctx.beginPath();ctx.moveTo(104,G+76);ctx.lineTo(104+sw,G+82);ctx.stroke();
+            ctx.fillStyle='#6a5232';
+            ctx.fillRect(92+sw,G+82,16,12);
+            ctx.strokeStyle='#3e2c16';ctx.lineWidth=1;
+            ctx.strokeRect(92+sw,G+82,16,12);
+            // рибка на вивісці
+            ctx.fillStyle='#cfe0e8';
+            ctx.beginPath();ctx.ellipse(99+sw,G+88,4,2.2,0,0,Math.PI*2);ctx.fill();
+            ctx.beginPath();ctx.moveTo(103+sw,G+88);ctx.lineTo(106+sw,G+85.5);ctx.lineTo(106+sw,G+90.5);ctx.closePath();ctx.fill();
+        }
+        // Витоптані сліди від воріт у бік підземелля
+        ctx.fillStyle='rgba(40,28,16,0.35)';
+        [[132,0],[144,1],[157,0],[170,1],[184,0]].forEach(([fx2,alt])=>{
+            ctx.beginPath();ctx.ellipse(fx2,G+136+alt,3.2,1.6,0.2,0,Math.PI*2);ctx.fill();
+            ctx.beginPath();ctx.ellipse(fx2+5,G+139-alt,3.2,1.6,-0.2,0,Math.PI*2);ctx.fill();
+        });
         // ── Факели на стовпах ──
         ctx.fillStyle='#6a5030'; ctx.fillRect(22,G+54,5,58); ctx.fillRect(173,G+54,5,58);
         ctx.fillStyle='#cc6010';
@@ -6939,6 +7038,43 @@ function loop(ts) {
         ctx.beginPath();ctx.arc(24,G+44,4,0,Math.PI*2);ctx.fill();
         ctx.beginPath();ctx.arc(176,G+44,4,0,Math.PI*2);ctx.fill();
         ctx.globalAlpha=1;
+        // ── Димар лівої хати + дим ──
+        ctx.fillStyle='#7a6252'; ctx.fillRect(44,G+30,9,20);
+        ctx.fillStyle='#8f7561'; ctx.fillRect(43,G+28,11,4);
+        for(let sm=0;sm<3;sm++){
+            let ph=(_t/2600+sm*0.33)%1;
+            let sx2=48.5+Math.sin(_t/1100+sm*2.2)*4+ph*7;
+            let sy2=G+26-ph*30;
+            ctx.globalAlpha=0.16*(1-ph);
+            ctx.fillStyle='#b8aca0';
+            ctx.beginPath();ctx.arc(sx2,sy2,3+ph*5,0,Math.PI*2);ctx.fill();
+        }
+        ctx.globalAlpha=1;
+        // ── Ореоли світла з вікон (обидві будівлі) ──
+        [[19,G+68],[43,G+68],[122,G+61],[150,G+61]].forEach(([wx2,wy2])=>{
+            let wg=ctx.createRadialGradient(wx2,wy2,1,wx2,wy2,17);
+            wg.addColorStop(0,'rgba(255,200,100,0.20)');
+            wg.addColorStop(1,'rgba(255,160,40,0)');
+            ctx.fillStyle=wg;
+            ctx.beginPath();ctx.arc(wx2,wy2,17,0,Math.PI*2);ctx.fill();
+        });
+        // ── Розвішана риба під краєм навісу ──
+        ctx.strokeStyle='rgba(60,45,30,0.7)'; ctx.lineWidth=0.8;
+        ctx.beginPath();ctx.moveTo(70,G+76);ctx.lineTo(98,G+76);ctx.stroke();
+        [76,84,92].forEach((fx3,fi)=>{
+            ctx.beginPath();ctx.moveTo(fx3,G+76);ctx.lineTo(fx3,G+80);ctx.stroke();
+            ctx.fillStyle=fi%2?'#9fb8c4':'#b8ccd6';
+            ctx.beginPath();ctx.ellipse(fx3,G+83,2,3.4,0,0,Math.PI*2);ctx.fill();
+            ctx.beginPath();ctx.moveTo(fx3-1.6,G+86);ctx.lineTo(fx3+1.6,G+86);ctx.lineTo(fx3,G+89);ctx.closePath();ctx.fill();
+        });
+        // ── Чайка на правому кнехті ──
+        ctx.fillStyle='#e8e4dc';
+        ctx.beginPath();ctx.ellipse(188,G+100,4,2.6,0,0,Math.PI*2);ctx.fill();
+        ctx.beginPath();ctx.arc(191.5,G+97.5,1.8,0,Math.PI*2);ctx.fill();
+        ctx.fillStyle='#e8a030';
+        ctx.beginPath();ctx.moveTo(193,G+97.5);ctx.lineTo(195.5,G+98.2);ctx.lineTo(193,G+98.9);ctx.closePath();ctx.fill();
+        ctx.strokeStyle='#c8c4bc'; ctx.lineWidth=0.8;
+        ctx.beginPath();ctx.moveTo(186,G+99);ctx.lineTo(190,G+100.5);ctx.stroke();
         ctx.fillStyle='#ffe8a0'; ctx.font='bold 11px Arial'; ctx.textAlign='center';
         ctx.fillText('🎣 РИБАЛЬСЬКЕ СЕЛО',100,G+12);
 
