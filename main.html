@@ -6818,138 +6818,184 @@ function loop(ts) {
     }
 
     if (_cityType === 1) {
-        // T1 — Рибальське село (1–5) · Хатини рибалок, сітки, дерев'яний причал
+        // T1 — Рибальське село (1–5) · НІЧНА СЦЕНА: силуети + теплі емісивні акценти
+        // Світлова логіка: місяць праворуч-зверху (холодний рим на правих гранях),
+        // тепле світло лише з вікон/ліхтарів/воріт. Палітра узгоджена з підземеллям.
         let G=_cy, fa=0.5+0.3*Math.sin(_fl);
-        ctx.fillStyle='#8a7858'; ctx.fillRect(0,-5,200,5);
-        // ── Задній ряд: силуети дальніх хат (глибина села) ──
-        ctx.fillStyle='#1c1626';
+        ctx.fillStyle='#241a30'; ctx.fillRect(0,-5,200,5);
+        // ── Задній ряд: силуети дальніх хат ──
+        ctx.fillStyle='#171225';
         ctx.beginPath();ctx.moveTo(-6,G+58);ctx.lineTo(16,G+40);ctx.lineTo(38,G+58);ctx.closePath();ctx.fill();
         ctx.fillRect(-6,G+58,44,54);
         ctx.beginPath();ctx.moveTo(86,G+52);ctx.lineTo(108,G+34);ctx.lineTo(130,G+52);ctx.closePath();ctx.fill();
         ctx.fillRect(86,G+52,44,60);
-        // тьмяні вікна дальніх хат
-        ctx.fillStyle='rgba(255,190,90,0.20)';
+        // ледь жевріючі вікна дальніх хат
+        ctx.fillStyle='rgba(255,180,80,0.12)';
         ctx.fillRect(6,G+66,8,7); ctx.fillRect(24,G+66,8,7);
         ctx.fillRect(98,G+60,8,7); ctx.fillRect(114,G+60,8,7);
-        // ── Щогли рибальських човнів за причалом (ліворуч) ──
-        ctx.strokeStyle='#3a2c1e'; ctx.lineWidth=3;
+        // ── Щогли човнів (силуети з місячним римом праворуч) ──
+        ctx.strokeStyle='#241a2e'; ctx.lineWidth=3;
         ctx.beginPath();ctx.moveTo(10,G+112);ctx.lineTo(14,G+30);ctx.stroke();
         ctx.beginPath();ctx.moveTo(44,G+112);ctx.lineTo(46,G+52);ctx.stroke();
-        // реї та згорнуті вітрила
-        ctx.strokeStyle='#3a2c1e'; ctx.lineWidth=2;
+        ctx.strokeStyle='rgba(150,170,220,0.25)'; ctx.lineWidth=1;
+        ctx.beginPath();ctx.moveTo(15.5,G+30);ctx.lineTo(11.5,G+112);ctx.stroke();
+        ctx.beginPath();ctx.moveTo(47.5,G+52);ctx.lineTo(45.5,G+112);ctx.stroke();
+        // реї та згорнуті вітрила (приглушені)
+        ctx.strokeStyle='#241a2e'; ctx.lineWidth=2;
         ctx.beginPath();ctx.moveTo(2,G+44);ctx.lineTo(28,G+40);ctx.stroke();
-        ctx.fillStyle='#8a7a62';
+        ctx.fillStyle='#4a4058';
         ctx.beginPath();ctx.moveTo(3,G+45);ctx.lineTo(27,G+41);ctx.lineTo(25,G+48);ctx.lineTo(6,G+51);ctx.closePath();ctx.fill();
         ctx.beginPath();ctx.moveTo(38,G+60);ctx.lineTo(56,G+58);ctx.stroke();
-        ctx.fillStyle='#7a6a54';
+        ctx.fillStyle='#403650';
         ctx.beginPath();ctx.moveTo(39,G+61);ctx.lineTo(55,G+59);ctx.lineTo(53,G+65);ctx.lineTo(41,G+67);ctx.closePath();ctx.fill();
-        // прапорець на вищій щоглі
-        ctx.fillStyle='#aa4433';
+        // прапорець (винний, приглушений)
+        ctx.fillStyle='#5a2a38';
         ctx.beginPath();ctx.moveTo(14,G+30);ctx.lineTo(26,G+34);ctx.lineTo(14,G+38);ctx.closePath();ctx.fill();
         // такелаж
-        ctx.strokeStyle='rgba(60,45,30,0.55)'; ctx.lineWidth=0.8;
+        ctx.strokeStyle='rgba(80,70,110,0.45)'; ctx.lineWidth=0.8;
         ctx.beginPath();ctx.moveTo(14,G+32);ctx.lineTo(4,G+112);ctx.stroke();
         ctx.beginPath();ctx.moveTo(14,G+32);ctx.lineTo(24,G+112);ctx.stroke();
-        // ── Ліва хатина рибалки ──
-        ctx.fillStyle='#c4b898'; ctx.fillRect(4,G+52,62,62);
-        ctx.fillStyle='#9a9080'; ctx.fillRect(56,G+52,10,62); // тінь
-        ctx.fillStyle='#5a4a3a'; // темна покрівля
-        ctx.beginPath();ctx.moveTo(0,G+52);ctx.lineTo(35,G+26);ctx.lineTo(70,G+52);ctx.closePath();ctx.fill();
-        ctx.fillStyle='#6a5a48';
-        ctx.beginPath();ctx.moveTo(0,G+52);ctx.lineTo(35,G+26);ctx.lineTo(18,G+52);ctx.closePath();ctx.fill();
-        // Горизонтальні дошки стіни (3 лінії, без циклу)
-        ctx.strokeStyle='rgba(0,0,0,0.1)'; ctx.lineWidth=1;
-        ctx.beginPath();ctx.moveTo(4,G+70);ctx.lineTo(60,G+70);ctx.stroke();
-        ctx.beginPath();ctx.moveTo(4,G+86);ctx.lineTo(60,G+86);ctx.stroke();
-        ctx.beginPath();ctx.moveTo(4,G+102);ctx.lineTo(60,G+102);ctx.stroke();
-        // Вікна з рамою і хрестом
-        ctx.fillStyle='#3a2e20'; ctx.fillRect(10,G+60,18,16); ctx.fillRect(34,G+60,18,16);
-        ctx.fillStyle='#ffcc66'; ctx.fillRect(11,G+61,16,14); ctx.fillRect(35,G+61,16,14);
-        ctx.strokeStyle='#3a2e20'; ctx.lineWidth=1;
+        // ── Ліва хатина рибалки (нічний об'єм: темна маса + теплі вікна) ──
+        ctx.fillStyle='#2e2540'; ctx.fillRect(4,G+52,62,62);
+        ctx.fillStyle='#262038'; ctx.fillRect(4,G+52,10,62);   // тіньова ліва грань
+        ctx.fillStyle='#3a3054'; ctx.fillRect(58,G+52,8,62);   // місячна права грань
+        // кам'яний цоколь
+        ctx.fillStyle='#221b2e'; ctx.fillRect(2,G+100,66,14);
+        ctx.strokeStyle='rgba(0,0,0,0.4)'; ctx.lineWidth=1;
+        ctx.beginPath();ctx.moveTo(2,G+105);ctx.lineTo(68,G+105);ctx.stroke();
+        ctx.beginPath();ctx.moveTo(2,G+110);ctx.lineTo(68,G+110);ctx.stroke();
+        // Дах з провисом (шарм рибальської хати) + місячний рим правого схилу
+        ctx.fillStyle='#1d1732';
+        ctx.beginPath();
+        ctx.moveTo(-3,G+54);
+        ctx.quadraticCurveTo(16,G+44,32,G+27);
+        ctx.quadraticCurveTo(35,G+25,38,G+27);
+        ctx.quadraticCurveTo(54,G+44,73,G+54);
+        ctx.lineTo(66,G+56);
+        ctx.quadraticCurveTo(35,G+34,4,G+56);
+        ctx.closePath();ctx.fill();
+        ctx.strokeStyle='rgba(150,170,220,0.30)'; ctx.lineWidth=1.2;
+        ctx.beginPath();ctx.moveTo(38,G+27);ctx.quadraticCurveTo(54,G+44,73,G+54);ctx.stroke();
+        // звис даху — тінь на стіні
+        ctx.fillStyle='rgba(0,0,0,0.30)';
+        ctx.fillRect(4,G+52,62,4);
+        // Вікна: тепле скло, темна рама-хрест
+        ctx.fillStyle='#16101f'; ctx.fillRect(10,G+60,18,16); ctx.fillRect(34,G+60,18,16);
+        ctx.fillStyle='#ffc978'; ctx.fillRect(11,G+61,16,14); ctx.fillRect(35,G+61,16,14);
+        ctx.fillStyle='#e8963c'; ctx.fillRect(11,G+70,16,5); ctx.fillRect(35,G+70,16,5); // нижній теплий тон
+        ctx.strokeStyle='#16101f'; ctx.lineWidth=1.4;
         ctx.beginPath();ctx.moveTo(19,G+61);ctx.lineTo(19,G+75);ctx.stroke();
         ctx.beginPath();ctx.moveTo(11,G+68);ctx.lineTo(27,G+68);ctx.stroke();
         ctx.beginPath();ctx.moveTo(43,G+61);ctx.lineTo(43,G+75);ctx.stroke();
         ctx.beginPath();ctx.moveTo(35,G+68);ctx.lineTo(51,G+68);ctx.stroke();
-        // Двері з горизонтальною балкою
-        ctx.fillStyle='#4a3828'; ctx.fillRect(20,G+90,22,24);
-        ctx.strokeStyle='#3a2818'; ctx.lineWidth=1;
-        ctx.beginPath();ctx.moveTo(20,G+99);ctx.lineTo(42,G+99);ctx.stroke();
+        // Двері: темні, тепла щілина знизу (всередині світло)
+        ctx.fillStyle='#1e1626'; ctx.fillRect(20,G+90,22,24);
+        ctx.strokeStyle='#120c1a'; ctx.lineWidth=1;
         ctx.beginPath();ctx.moveTo(31,G+90);ctx.lineTo(31,G+114);ctx.stroke();
-        // Бочки біля хатини
-        ctx.fillStyle='#7a4a28'; ctx.fillRect(2,G+104,12,10);
-        ctx.fillStyle='#5a3818'; ctx.fillRect(2,G+108,12,2);
-        ctx.fillStyle='#8a5a38'; ctx.fillRect(3,G+103,10,3);
-        ctx.fillStyle='#6a4830'; ctx.fillRect(18,G+106,10,8);
-        ctx.fillStyle='#5a3818'; ctx.fillRect(18,G+110,10,2);
-        // ── Мала сховища-навіс (між хатинами) ──
-        ctx.fillStyle='#b0a888'; ctx.fillRect(70,G+74,28,40);
-        ctx.fillStyle='#5a4a38';
+        ctx.fillStyle='rgba(255,180,80,0.30)'; ctx.fillRect(21,G+112,20,2);
+        // Бочки: нічні маси з холодним обідком
+        ctx.fillStyle='#2c2138'; ctx.fillRect(2,G+104,12,10);
+        ctx.fillStyle='#241a2c'; ctx.fillRect(2,G+108,12,2);
+        ctx.fillStyle='rgba(150,170,220,0.14)'; ctx.fillRect(11,G+104,3,10);
+        ctx.fillStyle='#281e34'; ctx.fillRect(18,G+106,10,8);
+        ctx.fillStyle='rgba(150,170,220,0.10)'; ctx.fillRect(25,G+106,3,8);
+        // ── Навіс між хатинами (нічний) ──
+        ctx.fillStyle='#2a2138'; ctx.fillRect(70,G+74,28,40);
+        ctx.fillStyle='#1a1428';
         ctx.beginPath();ctx.moveTo(66,G+74);ctx.lineTo(84,G+62);ctx.lineTo(102,G+74);ctx.closePath();ctx.fill();
-        ctx.fillStyle='#6a5a48';
-        ctx.beginPath();ctx.moveTo(66,G+74);ctx.lineTo(84,G+62);ctx.lineTo(76,G+74);ctx.closePath();ctx.fill();
-        // Підвішена сітка на стіні навісу (зигзаг без циклу)
-        ctx.strokeStyle='rgba(50,75,100,0.5)'; ctx.lineWidth=0.8;
+        ctx.strokeStyle='rgba(150,170,220,0.22)'; ctx.lineWidth=1;
+        ctx.beginPath();ctx.moveTo(84,G+62);ctx.lineTo(102,G+74);ctx.stroke();
+        // Сітка на стіні навісу (місячно-блакитна, ледь помітна)
+        ctx.strokeStyle='rgba(120,140,190,0.16)'; ctx.lineWidth=0.8;
         ctx.beginPath();
         ctx.moveTo(73,G+78);ctx.lineTo(79,G+83);ctx.lineTo(85,G+78);ctx.lineTo(91,G+83);ctx.lineTo(97,G+78);
         ctx.moveTo(73,G+83);ctx.lineTo(79,G+88);ctx.lineTo(85,G+83);ctx.lineTo(91,G+88);ctx.lineTo(97,G+83);
-        ctx.moveTo(73,G+78);ctx.lineTo(73,G+88);ctx.moveTo(79,G+78);ctx.lineTo(79,G+88);
-        ctx.moveTo(85,G+78);ctx.lineTo(85,G+88);ctx.moveTo(91,G+78);ctx.lineTo(91,G+88);
+        ctx.moveTo(73,G+78);ctx.lineTo(73,G+88);ctx.moveTo(85,G+78);ctx.lineTo(85,G+88);
         ctx.stroke();
-        // ── Права будівля (склад/ринок) ──
-        ctx.fillStyle='#cec6b0'; ctx.fillRect(106,G+42,76,72);
-        ctx.fillStyle='#a0988a'; ctx.fillRect(168,G+42,14,72);
-        ctx.fillStyle='#4e4038';
-        ctx.beginPath();ctx.moveTo(102,G+42);ctx.lineTo(144,G+18);ctx.lineTo(190,G+42);ctx.closePath();ctx.fill();
-        ctx.fillStyle='#5e5048';
-        ctx.beginPath();ctx.moveTo(102,G+42);ctx.lineTo(144,G+18);ctx.lineTo(124,G+42);ctx.closePath();ctx.fill();
-        // Дошки стіни складу
-        ctx.strokeStyle='rgba(0,0,0,0.1)'; ctx.lineWidth=1;
-        ctx.beginPath();ctx.moveTo(106,G+62);ctx.lineTo(166,G+62);ctx.stroke();
-        ctx.beginPath();ctx.moveTo(106,G+82);ctx.lineTo(166,G+82);ctx.stroke();
-        ctx.beginPath();ctx.moveTo(106,G+102);ctx.lineTo(166,G+102);ctx.stroke();
-        // Вікна складу з хрестами
-        ctx.fillStyle='#3a2e20'; ctx.fillRect(112,G+52,20,18); ctx.fillRect(140,G+52,20,18);
-        ctx.fillStyle='#ffcc66'; ctx.fillRect(113,G+53,18,16); ctx.fillRect(141,G+53,18,16);
-        ctx.strokeStyle='#3a2e20'; ctx.lineWidth=1;
+        // ── Права будівля: портовий склад (нічна маса, великий дах) ──
+        ctx.fillStyle='#2c2240'; ctx.fillRect(106,G+42,76,72);
+        ctx.fillStyle='#241c34'; ctx.fillRect(106,G+42,12,72);   // тіньова грань
+        ctx.fillStyle='#383054'; ctx.fillRect(172,G+42,10,72);   // місячна грань
+        // великий дах + рим правого схилу
+        ctx.fillStyle='#191330';
+        ctx.beginPath();ctx.moveTo(100,G+44);ctx.lineTo(144,G+16);ctx.lineTo(192,G+44);ctx.lineTo(184,G+46);ctx.lineTo(144,G+22);ctx.lineTo(108,G+46);ctx.closePath();ctx.fill();
+        ctx.fillStyle='#150f28';
+        ctx.beginPath();ctx.moveTo(100,G+44);ctx.lineTo(144,G+16);ctx.lineTo(192,G+44);ctx.closePath();ctx.fill();
+        ctx.strokeStyle='rgba(150,170,220,0.30)'; ctx.lineWidth=1.2;
+        ctx.beginPath();ctx.moveTo(144,G+16);ctx.lineTo(192,G+44);ctx.stroke();
+        ctx.fillStyle='rgba(0,0,0,0.30)'; ctx.fillRect(106,G+42,76,4); // тінь звису
+        // вертикальні дошки (ледь помітні)
+        ctx.strokeStyle='rgba(0,0,0,0.25)'; ctx.lineWidth=1;
+        ctx.beginPath();ctx.moveTo(126,G+46);ctx.lineTo(126,G+114);ctx.stroke();
+        ctx.beginPath();ctx.moveTo(146,G+46);ctx.lineTo(146,G+114);ctx.stroke();
+        ctx.beginPath();ctx.moveTo(166,G+46);ctx.lineTo(166,G+114);ctx.stroke();
+        // Кругле вікно-ілюмінатор на фронтоні + горищні двері з балкою-підйомником
+        ctx.fillStyle='#16101f';
+        ctx.beginPath();ctx.arc(144,G+32,6,0,Math.PI*2);ctx.fill();
+        ctx.fillStyle='#ffc978';
+        ctx.beginPath();ctx.arc(144,G+32,4.4,0,Math.PI*2);ctx.fill();
+        ctx.strokeStyle='#16101f'; ctx.lineWidth=1.2;
+        ctx.beginPath();ctx.moveTo(144,G+27.6);ctx.lineTo(144,G+36.4);ctx.stroke();
+        ctx.beginPath();ctx.moveTo(139.6,G+32);ctx.lineTo(148.4,G+32);ctx.stroke();
+        // балка підйомника + мотузка + ящик
+        ctx.fillStyle='#241c34'; ctx.fillRect(140,G+40,26,4);
+        ctx.strokeStyle='rgba(140,120,160,0.45)'; ctx.lineWidth=1;
+        ctx.beginPath();ctx.moveTo(164,G+44);ctx.lineTo(164,G+62);ctx.stroke();
+        ctx.fillStyle='#2a2038'; ctx.fillRect(158,G+62,12,10);
+        ctx.fillStyle='rgba(150,170,220,0.14)'; ctx.fillRect(167,G+62,3,10);
+        // Теплі вікна складу
+        ctx.fillStyle='#16101f'; ctx.fillRect(112,G+52,20,18); ctx.fillRect(140,G+52,20,18);
+        ctx.fillStyle='#ffc978'; ctx.fillRect(113,G+53,18,16); ctx.fillRect(141,G+53,18,16);
+        ctx.fillStyle='#e8963c'; ctx.fillRect(113,G+63,18,6); ctx.fillRect(141,G+63,18,6);
+        ctx.strokeStyle='#16101f'; ctx.lineWidth=1.4;
         ctx.beginPath();ctx.moveTo(122,G+53);ctx.lineTo(122,G+69);ctx.stroke();
         ctx.beginPath();ctx.moveTo(113,G+61);ctx.lineTo(131,G+61);ctx.stroke();
         ctx.beginPath();ctx.moveTo(150,G+53);ctx.lineTo(150,G+69);ctx.stroke();
         ctx.beginPath();ctx.moveTo(141,G+61);ctx.lineTo(159,G+61);ctx.stroke();
-        // Вивіска з якорем над входом
-        ctx.fillStyle='#4a3828'; ctx.fillRect(124,G+80,34,18);
-        ctx.strokeStyle='#6a5038'; ctx.lineWidth=1;
-        ctx.beginPath();ctx.moveTo(124,G+80);ctx.lineTo(158,G+80);ctx.lineTo(158,G+98);ctx.lineTo(124,G+98);ctx.closePath();ctx.stroke();
-        ctx.fillStyle='#d4a840'; ctx.font='bold 9px Arial'; ctx.textAlign='center';
-        ctx.fillText('⚓',141,G+93);
-        // Стовп з сіткою між будівлями (лівіше воріт)
-        ctx.fillStyle='#7a6040'; ctx.fillRect(60,G+42,5,72); ctx.fillRect(103,G+32,5,82);
-        // Сітка між стовпами
-        ctx.strokeStyle='rgba(50,75,100,0.45)'; ctx.lineWidth=0.8;
+        // Вивіска з якорем (темна дошка, мальований латунний якір — emoji неонить)
+        ctx.fillStyle='#251c30'; ctx.fillRect(124,G+80,34,18);
+        ctx.strokeStyle='rgba(150,170,220,0.18)'; ctx.lineWidth=1;
+        ctx.strokeRect(124,G+80,34,18);
+        ctx.strokeStyle='#c9a86a'; ctx.lineWidth=1.4;
+        ctx.beginPath();ctx.arc(141,G+84.5,1.8,0,Math.PI*2);ctx.stroke();          // кільце
+        ctx.beginPath();ctx.moveTo(141,G+86.3);ctx.lineTo(141,G+94);ctx.stroke();   // стрижень
+        ctx.beginPath();ctx.moveTo(138,G+88);ctx.lineTo(144,G+88);ctx.stroke();     // поперечина
+        ctx.beginPath();ctx.arc(141,G+91.5,3.4,Math.PI*0.15,Math.PI*0.85);ctx.stroke(); // лапи
+
+        // Стовпи з розвішаною сіткою (силуети)
+        ctx.fillStyle='#241a2e'; ctx.fillRect(60,G+42,5,72); ctx.fillRect(103,G+32,5,82);
+        ctx.strokeStyle='rgba(120,140,190,0.14)'; ctx.lineWidth=0.8;
         ctx.beginPath();
         ctx.moveTo(65,G+44);ctx.lineTo(65,G+50);ctx.lineTo(73,G+47);ctx.lineTo(81,G+50);ctx.lineTo(89,G+47);ctx.lineTo(97,G+50);ctx.lineTo(103,G+47);
-        ctx.moveTo(65,G+50);ctx.lineTo(73,G+53);ctx.lineTo(81,G+50);ctx.lineTo(89,G+53);ctx.lineTo(97,G+50);ctx.lineTo(103,G+47);
-        ctx.moveTo(65,G+44);ctx.lineTo(103,G+40);
+        ctx.moveTo(65,G+50);ctx.lineTo(73,G+53);ctx.lineTo(81,G+50);ctx.lineTo(89,G+53);ctx.lineTo(97,G+50);
         ctx.stroke();
-        // ── Дерев'яний причал ──
-        ctx.fillStyle='#8a7050'; ctx.fillRect(0,G+112,200,28);
-        ctx.fillStyle='#6e5a3c'; ctx.fillRect(0,G+115,200,4);
-        ctx.fillStyle='#9a8060'; ctx.fillRect(0,G+112,200,3);
-        // Вертикальні стики дощок причалу (4 явні)
-        ctx.strokeStyle='#5e4a2c'; ctx.lineWidth=1.5;
+        // ── Причал: темні дошки, місячний кант зверху ──
+        ctx.fillStyle='#221933'; ctx.fillRect(0,G+112,200,28);
+        ctx.fillStyle='#1a1328'; ctx.fillRect(0,G+126,200,14);
+        ctx.fillStyle='rgba(150,170,220,0.12)'; ctx.fillRect(0,G+112,200,2);
+        ctx.strokeStyle='#120c1e'; ctx.lineWidth=1.5;
         ctx.beginPath();ctx.moveTo(16,G+112);ctx.lineTo(16,G+140);ctx.stroke();
         ctx.beginPath();ctx.moveTo(48,G+112);ctx.lineTo(48,G+140);ctx.stroke();
         ctx.beginPath();ctx.moveTo(152,G+112);ctx.lineTo(152,G+140);ctx.stroke();
         ctx.beginPath();ctx.moveTo(184,G+112);ctx.lineTo(184,G+140);ctx.stroke();
-        // Кнехти (швартовні тумби) — шляп+тіло
-        ctx.fillStyle='#5e4a2e';
+        // тіні під будівлями на причалі (садять маси на землю)
+        ctx.fillStyle='rgba(0,0,0,0.30)';
+        ctx.fillRect(4,G+112,64,5); ctx.fillRect(106,G+112,76,5);
+        // Кнехти (нічні, з мотузкою до щогли)
+        ctx.fillStyle='#1e1628';
         ctx.fillRect(5,G+106,12,10); ctx.fillRect(182,G+106,12,10);
-        ctx.fillStyle='#4a3820';
+        ctx.fillStyle='#171122';
         ctx.fillRect(3,G+103,16,5); ctx.fillRect(180,G+103,16,5);
-        // Ящики біля правої будівлі
-        ctx.fillStyle='#6a5030'; ctx.fillRect(164,G+104,14,10); ctx.fillRect(180,G+106,12,8);
-        ctx.strokeStyle='#4a3820'; ctx.lineWidth=1;
+        ctx.fillStyle='rgba(150,170,220,0.14)';
+        ctx.fillRect(15,G+103,4,13); ctx.fillRect(192,G+103,4,13);
+        ctx.strokeStyle='rgba(90,80,120,0.5)'; ctx.lineWidth=1;
+        ctx.beginPath();ctx.moveTo(11,G+106);ctx.quadraticCurveTo(10,G+96,10,G+112-22);ctx.stroke();
+        // Ящики біля складу (нічні маси)
+        ctx.fillStyle='#261d34'; ctx.fillRect(164,G+104,14,10); ctx.fillRect(180,G+106,12,8);
+        ctx.strokeStyle='rgba(0,0,0,0.4)'; ctx.lineWidth=1;
         ctx.beginPath();ctx.moveTo(164,G+108);ctx.lineTo(178,G+108);ctx.stroke();
-        ctx.beginPath();ctx.moveTo(180,G+110);ctx.lineTo(192,G+110);ctx.stroke();
+        ctx.fillStyle='rgba(150,170,220,0.10)';
+        ctx.fillRect(175,G+104,3,10); ctx.fillRect(189,G+106,3,8);
         // ── Ворота: кам'яна арка, світло міста зсередини, відчинені стулки ──
         // Кам'яні стовпи-опори
         ctx.fillStyle='#7e7868';
@@ -7026,25 +7072,36 @@ function loop(ts) {
             ctx.beginPath();ctx.ellipse(fx2,G+136+alt,3.2,1.6,0.2,0,Math.PI*2);ctx.fill();
             ctx.beginPath();ctx.ellipse(fx2+5,G+139-alt,3.2,1.6,-0.2,0,Math.PI*2);ctx.fill();
         });
-        // ── Факели на стовпах ──
-        ctx.fillStyle='#6a5030'; ctx.fillRect(22,G+54,5,58); ctx.fillRect(173,G+54,5,58);
-        ctx.fillStyle='#cc6010';
-        ctx.beginPath();ctx.moveTo(24,G+46);ctx.lineTo(19,G+55);ctx.lineTo(29,G+55);ctx.closePath();ctx.fill();
-        ctx.beginPath();ctx.moveTo(176,G+46);ctx.lineTo(171,G+55);ctx.lineTo(181,G+55);ctx.closePath();ctx.fill();
-        ctx.globalAlpha=fa*0.45; ctx.fillStyle='#ffaa22';
-        ctx.beginPath();ctx.arc(24,G+44,14,0,Math.PI*2);ctx.fill();
-        ctx.beginPath();ctx.arc(176,G+44,14,0,Math.PI*2);ctx.fill();
-        ctx.globalAlpha=fa; ctx.fillStyle='#ffee88';
-        ctx.beginPath();ctx.arc(24,G+44,4,0,Math.PI*2);ctx.fill();
-        ctx.beginPath();ctx.arc(176,G+44,4,0,Math.PI*2);ctx.fill();
-        ctx.globalAlpha=1;
-        // ── Димар лівої хати + дим ──
-        ctx.fillStyle='#7a6252'; ctx.fillRect(44,G+30,9,20);
-        ctx.fillStyle='#8f7561'; ctx.fillRect(43,G+28,11,4);
+        // ── Вуличні ліхтарі (кований стовп + скляний ліхтар + калюжа світла) ──
+        [[22,0],[176,2.1]].forEach(([lpx,lph])=>{
+            let la2=0.75+0.25*Math.sin(_fl+lph);
+            // стовп з гачком
+            ctx.fillStyle='#1c1528'; ctx.fillRect(lpx-1.5,G+62,3,50);
+            ctx.strokeStyle='#1c1528'; ctx.lineWidth=2.5;
+            ctx.beginPath();ctx.moveTo(lpx,G+62);ctx.quadraticCurveTo(lpx,G+54,lpx+8,G+54);ctx.stroke();
+            ctx.fillStyle='rgba(150,170,220,0.20)'; ctx.fillRect(lpx+0.4,G+62,1.1,50);
+            // ліхтар-коробочка на підвісі
+            ctx.strokeStyle='#161020'; ctx.lineWidth=1;
+            ctx.beginPath();ctx.moveTo(lpx+8,G+54);ctx.lineTo(lpx+8,G+58);ctx.stroke();
+            ctx.fillStyle='#161020'; ctx.fillRect(lpx+4.5,G+57,7,1.6);
+            ctx.fillStyle=`rgba(255,201,120,${0.85*la2})`;
+            ctx.fillRect(lpx+5,G+58.6,6,7);
+            ctx.fillStyle='#161020'; ctx.fillRect(lpx+4.5,G+65.6,7,1.6);
+            // сяйво + калюжа світла на причалі
+            ctx.globalAlpha=la2*0.30; ctx.fillStyle='#ffb84d';
+            ctx.beginPath();ctx.arc(lpx+8,G+62,13,0,Math.PI*2);ctx.fill();
+            ctx.globalAlpha=la2*0.14;
+            ctx.beginPath();ctx.ellipse(lpx+8,G+112,22,5,0,0,Math.PI*2);ctx.fill();
+            ctx.globalAlpha=1;
+        });
+        // ── Димар лівої хати + дим (нічний, з місячним римом) ──
+        ctx.fillStyle='#241c34'; ctx.fillRect(44,G+20,9,18);
+        ctx.fillStyle='#2e2540'; ctx.fillRect(43,G+18,11,4);
+        ctx.fillStyle='rgba(150,170,220,0.22)'; ctx.fillRect(51,G+20,2,18);
         for(let sm=0;sm<3;sm++){
             let ph=(_t/2600+sm*0.33)%1;
             let sx2=48.5+Math.sin(_t/1100+sm*2.2)*4+ph*7;
-            let sy2=G+26-ph*30;
+            let sy2=G+16-ph*30;
             ctx.globalAlpha=0.16*(1-ph);
             ctx.fillStyle='#b8aca0';
             ctx.beginPath();ctx.arc(sx2,sy2,3+ph*5,0,Math.PI*2);ctx.fill();
@@ -7075,8 +7132,10 @@ function loop(ts) {
         ctx.beginPath();ctx.moveTo(193,G+97.5);ctx.lineTo(195.5,G+98.2);ctx.lineTo(193,G+98.9);ctx.closePath();ctx.fill();
         ctx.strokeStyle='#c8c4bc'; ctx.lineWidth=0.8;
         ctx.beginPath();ctx.moveTo(186,G+99);ctx.lineTo(190,G+100.5);ctx.stroke();
-        ctx.fillStyle='#ffe8a0'; ctx.font='bold 11px Arial'; ctx.textAlign='center';
-        ctx.fillText('🎣 РИБАЛЬСЬКЕ СЕЛО',100,G+12);
+        ctx.globalAlpha=0.85;
+        ctx.fillStyle='#c9ab72'; ctx.font='bold 10px Arial'; ctx.textAlign='center';
+        ctx.fillText('🎣 РИБАЛЬСЬКЕ СЕЛО',100,G+8);
+        ctx.globalAlpha=1;
 
     } else if (_cityType === 2) {
         // T2 — Лісова деревня (6-10) · Зрубові хатини, дерева, частокіл
