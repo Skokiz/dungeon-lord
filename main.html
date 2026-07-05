@@ -351,7 +351,12 @@
             border-radius: 14px; padding: 12px 14px;
             width: min(252px, calc(100vw - 16px));
             box-shadow: 0 4px 20px rgba(120,60,200,0.25);
-            animation: don-in 0.3s ease;
+            /* Власна анімація: don-in містить translateX(-50%) і зсував бульбашку за лівий край */
+            animation: tut-in 0.3s ease;
+        }
+        @keyframes tut-in {
+            from { opacity: 0; transform: translateY(16px); }
+            to   { opacity: 1; transform: translateY(0); }
         }
         #tut-text { font-size: 12px; line-height: 1.5; margin-bottom: 8px; color: #ddc8f8; }
         #tut-step-lbl { font-size: 10px; color: #7744aa; margin-bottom: 5px; }
@@ -2770,6 +2775,102 @@ function _buildBrickCache(fw, fh, wallW, depth) {
     b.fillStyle = bShade;
     b.fillRect(wallW, 0, fw, fh);
 
+    // ── АРХІТЕКТУРА: пілястри, карниз, банер, ланцюги ──
+    // Карниз під стелею (світліша смуга із зубцями)
+    b.fillStyle = 'rgba(210,200,235,0.06)';
+    b.fillRect(wallW, 9, fw, 2);
+    for (let dx = wallW + 8; dx < wallW + fw - 8; dx += 26) {
+        b.fillStyle = 'rgba(0,0,0,0.28)';
+        b.fillRect(dx, 11, 6, 3);
+    }
+    // Пілястри кожні ~170px (детерміновано)
+    const pilXs = [];
+    for (let px = wallW + 90 + rnd() * 60; px < wallW + fw - 60; px += 150 + rnd() * 60) {
+        pilXs.push(px);
+        const pw = 15;
+        // тіло колони
+        b.fillStyle = '#322d40';
+        b.fillRect(px, 6, pw, fh - 6);
+        // грані: світла ліва, темна права
+        b.fillStyle = 'rgba(220,210,240,0.10)';
+        b.fillRect(px, 6, 2, fh - 6);
+        b.fillStyle = 'rgba(0,0,0,0.40)';
+        b.fillRect(px + pw - 2, 6, 2, fh - 6);
+        // горизонтальні шви кладки колони
+        b.fillStyle = 'rgba(0,0,0,0.30)';
+        for (let sy2 = 24; sy2 < fh - 8; sy2 += 22) b.fillRect(px, sy2, pw, 1);
+        // капітель
+        b.fillStyle = '#3a3448';
+        b.fillRect(px - 3, 6, pw + 6, 6);
+        b.fillStyle = 'rgba(220,210,240,0.08)';
+        b.fillRect(px - 3, 6, pw + 6, 1);
+        // база
+        b.fillStyle = '#3a3448';
+        b.fillRect(px - 2, fh - 8, pw + 4, 8);
+    }
+    // Банер з гербом (рідко, між пілястрами)
+    if (rnd() < 0.55 && fw > 160) {
+        const bnX = wallW + fw * (0.25 + rnd() * 0.5);
+        const bnW = 20, bnH = 30, bnY = 13;
+        // держак
+        b.fillStyle = '#4a3a28';
+        b.fillRect(bnX - bnW/2 - 3, bnY - 2, bnW + 6, 2);
+        // полотно з трикутним вирізом знизу
+        b.fillStyle = '#421f66';
+        b.beginPath();
+        b.moveTo(bnX - bnW/2, bnY);
+        b.lineTo(bnX + bnW/2, bnY);
+        b.lineTo(bnX + bnW/2, bnY + bnH - 6);
+        b.lineTo(bnX, bnY + bnH);
+        b.lineTo(bnX - bnW/2, bnY + bnH - 6);
+        b.closePath(); b.fill();
+        b.fillStyle = 'rgba(255,240,255,0.07)';
+        b.fillRect(bnX - bnW/2, bnY, bnW, 3);
+        // емблема-череп: коло + очі
+        b.fillStyle = '#c9b8e8';
+        b.beginPath(); b.arc(bnX, bnY + 12, 4.5, 0, Math.PI * 2); b.fill();
+        b.fillRect(bnX - 2.5, bnY + 15, 5, 3);
+        b.fillStyle = '#421f66';
+        b.beginPath(); b.arc(bnX - 1.8, bnY + 11.5, 1.3, 0, Math.PI * 2); b.fill();
+        b.beginPath(); b.arc(bnX + 1.8, bnY + 11.5, 1.3, 0, Math.PI * 2); b.fill();
+    }
+    // Іржаве кільце з ланцюгом (рідко)
+    if (rnd() < 0.45) {
+        const rgX = wallW + 30 + rnd() * (fw - 60);
+        const rgY = 18 + rnd() * 12;
+        b.strokeStyle = '#4e4438'; b.lineWidth = 2;
+        b.beginPath(); b.arc(rgX, rgY, 4, 0, Math.PI * 2); b.stroke();
+        // ланки ланцюга вниз
+        b.lineWidth = 1.4;
+        for (let li = 0; li < 4; li++) {
+            b.beginPath();
+            b.ellipse(rgX, rgY + 8 + li * 7, li % 2 ? 1.6 : 2.6, 3.6, 0, 0, Math.PI * 2);
+            b.stroke();
+        }
+    }
+
+    // ── ОСВІТЛЕННЯ КІМНАТИ (статична база; мерехтіння дають факели в draw) ──
+    // Віньєтка країв кімнати
+    const edgeL = b.createLinearGradient(wallW, 0, wallW + 70, 0);
+    edgeL.addColorStop(0, 'rgba(0,0,0,0.26)'); edgeL.addColorStop(1, 'rgba(0,0,0,0)');
+    b.fillStyle = edgeL; b.fillRect(wallW, 0, 70, fh);
+    const edgeR = b.createLinearGradient(wallW + fw - 70, 0, wallW + fw, 0);
+    edgeR.addColorStop(0, 'rgba(0,0,0,0)'); edgeR.addColorStop(1, 'rgba(0,0,0,0.26)');
+    b.fillStyle = edgeR; b.fillRect(wallW + fw - 70, 0, 70, fh);
+    // Тепле світло від бічних факелів (додатковим світлом)
+    b.globalCompositeOperation = 'lighter';
+    const tY = fh * 0.45;
+    const tR = Math.min(fw * 0.42, 240);
+    [[wallW + 2, 1], [wallW + fw - 2, -1]].forEach(([tx]) => {
+        const tg = b.createRadialGradient(tx, tY, 4, tx, tY, tR);
+        tg.addColorStop(0,   'rgba(255,150,55,0.13)');
+        tg.addColorStop(0.5, 'rgba(200,90,30,0.055)');
+        tg.addColorStop(1,   'rgba(0,0,0,0)');
+        b.fillStyle = tg;
+        b.beginPath(); b.arc(tx, tY, tR, 0, Math.PI * 2); b.fill();
+    });
+    b.globalCompositeOperation = 'source-over';
+
     // ── ПАВУТИННЯ у верхніх кутах кімнати ──
     const _web = (cx, cy, aStart, R) => {
         b.strokeStyle = 'rgba(215,220,240,0.13)';
@@ -2901,6 +3002,13 @@ class Floor {
             this._brickCache = _buildBrickCache(fw, fh, wallW, this.depth);
         }
         ctx.drawImage(this._brickCache, fx - wallW, fty);
+
+        // Глибші поверхи темніші — відчуття спуску в безодню
+        let _dd = Math.min(0.28, this.depth * 0.022);
+        if (_dd > 0.01) {
+            ctx.fillStyle = `rgba(4,2,12,${_dd})`;
+            ctx.fillRect(fx - wallW, fty, fw + wallW * 2, fh + 15);
+        }
 
         // ── 3. Підлога — кам'яний виступ із плит ────────────────────────
         let _flH = isPC ? 20 : 14;
@@ -5573,6 +5681,7 @@ let _frameNow = 0; // cached Date.now() for this frame — use instead of Date.n
 // Offscreen canvas для фону: зірки + гори + місяць коштують ~3-5ms/frame.
 // Оновлюємо кожні 4 кадри або при зміні cameraY > 0.5px (паралакс).
 let _bgCanvas = null, _bgCtx = null, _bgLastCamY = null, _bgFrame = 0;
+let _vinCanvas = null; // кешована глобальна віньєтка
 
 // ── Іконки пасивів героїв та здібностей монстрів (module-level, not recreated per frame) ──
 const PASSIVE_ICONS = {
@@ -5965,9 +6074,122 @@ function loop(ts) {
         ctx.globalAlpha = 1;
     }
 
-    // ── Підземна порода ───────────────────────────────────────────────────
-    ctx.fillStyle = '#0c0814';
-    ctx.fillRect(0, groundY + 36 * _worldScale, gW, 5000);
+    // ── Підземна порода: розріз ґрунту (страти, коріння, камені, кістки, кристали) ──
+    {
+        const soilTopW = CFG.surfaceY + 36 * _worldScale;           // world-координата верху породи
+        ctx.fillStyle = '#0c0814';
+        ctx.fillRect(0, soilTopW - GAME.cameraY, gW, 5000);
+
+        // Зона підземелля — тут деталі не малюємо (перекриється кімнатами)
+        const _sw  = isPC ? 32 : 22;
+        const dgL  = centerX - CFG.floorW / 2 - _sw - 12;
+        const dgR  = centerX + CFG.floorW / 2 + _sw + 12;
+        const dgT  = (floors.length ? floors[0].y - CFG.floorH : soilTopW) - 24;
+        const dgB  = (floors.length ? floors[floors.length - 1].y : soilTopW) + 30;
+        const soilBotW = dgB + 500;
+
+        // Страти породи: ледь помітні горизонтальні шари з хвилястим розділом
+        for (let wy = Math.ceil(soilTopW / 95) * 95; wy < soilBotW; wy += 95) {
+            const sy = wy - GAME.cameraY;
+            if (sy < -40 || sy > gH + 40) continue;
+            ctx.fillStyle = ((wy / 95) % 2 === 0) ? 'rgba(58,40,84,0.07)' : 'rgba(20,12,36,0.35)';
+            ctx.fillRect(0, sy, gW, 38);
+            ctx.strokeStyle = 'rgba(0,0,0,0.30)';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            for (let lx = 0; lx <= gW; lx += 26) {
+                const ly = sy + Math.sin((lx + wy * 3) * 0.045) * 3;
+                lx === 0 ? ctx.moveTo(lx, ly) : ctx.lineTo(lx, ly);
+            }
+            ctx.stroke();
+        }
+
+        // Детермінована сітка вкраплень 84×84 (world-прив'язана — не пливе при скролі)
+        for (let gy = Math.floor(soilTopW / 84) * 84; gy < soilBotW; gy += 84) {
+            const syBase = gy - GAME.cameraY;
+            if (syBase < -90 || syBase > gH + 90) continue;
+            for (let gx = 0; gx < gW + 84; gx += 84) {
+                // хеш клітинки
+                let h = (gx * 73856093 ^ gy * 19349663) >>> 0;
+                h = (h * 1664525 + 1013904223) >>> 0;
+                const jx = gx + (h % 61), jy = gy + ((h >> 8) % 61);
+                if (jx > dgL && jx < dgR && jy > dgT && jy < dgB) continue; // не в зоні підземелля
+                const sx = jx, sy = jy - GAME.cameraY;
+                const kind = (h >> 16) % 10;
+                if (kind < 4) {
+                    // камінь: 2 еліпси з бліком
+                    ctx.fillStyle = '#1c1428';
+                    ctx.beginPath(); ctx.ellipse(sx, sy, 7 + (h % 6), 5 + ((h >> 4) % 4), (h % 7) * 0.4, 0, Math.PI * 2); ctx.fill();
+                    ctx.fillStyle = 'rgba(120,100,160,0.10)';
+                    ctx.beginPath(); ctx.ellipse(sx - 2, sy - 2, 3 + (h % 3), 2, 0, 0, Math.PI * 2); ctx.fill();
+                } else if (kind < 6) {
+                    // дрібна галька
+                    ctx.fillStyle = '#181026';
+                    ctx.beginPath(); ctx.ellipse(sx, sy, 3.5, 2.4, 0.5, 0, Math.PI * 2); ctx.fill();
+                    ctx.beginPath(); ctx.ellipse(sx + 8, sy + 4, 2.6, 1.9, -0.4, 0, Math.PI * 2); ctx.fill();
+                } else if (kind === 6) {
+                    // кістка
+                    ctx.save(); ctx.translate(sx, sy); ctx.rotate(((h >> 5) % 7 - 3) * 0.3);
+                    ctx.strokeStyle = 'rgba(150,135,105,0.35)'; ctx.lineWidth = 2;
+                    ctx.beginPath(); ctx.moveTo(-8, 0); ctx.lineTo(8, 0); ctx.stroke();
+                    ctx.fillStyle = 'rgba(150,135,105,0.35)';
+                    ctx.beginPath(); ctx.arc(-8, 0, 2.4, 0, Math.PI * 2); ctx.fill();
+                    ctx.beginPath(); ctx.arc(8, 0, 2.4, 0, Math.PI * 2); ctx.fill();
+                    ctx.restore();
+                } else if (kind === 7 && ((h >> 20) % 3 === 0)) {
+                    // кристал, що світиться (рідко)
+                    const cA = 0.25 + 0.15 * Math.sin(_t / 1600 + h % 10);
+                    const cg = ctx.createRadialGradient(sx, sy, 0, sx, sy, 16);
+                    cg.addColorStop(0, `rgba(150,90,255,${cA})`);
+                    cg.addColorStop(1, 'rgba(60,20,140,0)');
+                    ctx.fillStyle = cg;
+                    ctx.beginPath(); ctx.arc(sx, sy, 16, 0, Math.PI * 2); ctx.fill();
+                    ctx.fillStyle = `rgba(190,140,255,${0.5 + cA})`;
+                    ctx.beginPath();
+                    ctx.moveTo(sx, sy - 6); ctx.lineTo(sx + 4, sy + 3); ctx.lineTo(sx - 4, sy + 3);
+                    ctx.closePath(); ctx.fill();
+                }
+            }
+        }
+
+        // Коріння з поверхні (звисає у перших ~130px породи)
+        ctx.strokeStyle = 'rgba(96,72,52,0.40)';
+        for (let ri = 0; ri < Math.ceil(gW / 130); ri++) {
+            const rx = ri * 130 + ((ri * 47) % 60);
+            const ry0 = soilTopW - GAME.cameraY;
+            if (ry0 < -160 || ry0 > gH + 20) continue;
+            const rl = 50 + (ri * 37) % 70;
+            const lean = ((ri * 13) % 9 - 4) * 6;
+            ctx.lineWidth = 2.2;
+            ctx.beginPath();
+            ctx.moveTo(rx, ry0);
+            ctx.quadraticCurveTo(rx + lean * 0.4, ry0 + rl * 0.5, rx + lean, ry0 + rl);
+            ctx.stroke();
+            // відгалуження
+            ctx.lineWidth = 1.2;
+            ctx.beginPath();
+            ctx.moveTo(rx + lean * 0.35, ry0 + rl * 0.45);
+            ctx.quadraticCurveTo(rx + lean * 0.35 + 12, ry0 + rl * 0.6, rx + lean * 0.35 + 16, ry0 + rl * 0.78);
+            ctx.stroke();
+        }
+    }
+
+    // ── Світлячки над травою ──────────────────────────────────────────────
+    {
+        for (let i = 0; i < 12; i++) {
+            const fxp = ((i * 163 + 40) % gW) + Math.sin(_t / 1700 + i * 2.3) * 18;
+            const fyp = groundY - 8 - ((i * 97) % 40) + Math.sin(_t / 1300 + i * 1.1) * 7;
+            if (fyp > groundY - 2) continue;
+            const fa = 0.15 + 0.55 * Math.abs(Math.sin(_t / 900 + i * 1.7));
+            ctx.globalAlpha = fa * 0.35;
+            ctx.fillStyle = '#d8f080';
+            ctx.beginPath(); ctx.arc(fxp, fyp, 3.2, 0, Math.PI * 2); ctx.fill();
+            ctx.globalAlpha = fa;
+            ctx.fillStyle = '#eeffb0';
+            ctx.beginPath(); ctx.arc(fxp, fyp, 1.2, 0, Math.PI * 2); ctx.fill();
+        }
+        ctx.globalAlpha = 1;
+    }
 
         // ── кінець offscreen render ───────────────────────────────────────────
         ctx = _savedCtx;
@@ -7695,6 +7917,16 @@ function loop(ts) {
         ctx.fillStyle = '#150e22';
         ctx.beginPath(); ctx.ellipse(_ax, _ay, 14*_as, 3*_as, 0, 0, Math.PI * 2); ctx.fill();
 
+        // Калюжа світла від кристала на землі
+        {
+            let _plA = (_canAfford ? 0.16 : 0.06) + _pulse * 0.05;
+            let _pl = ctx.createRadialGradient(_ax, _ay + 2*_as, 2, _ax, _ay + 2*_as, 34*_as);
+            _pl.addColorStop(0, `rgba(80,210,255,${_plA})`);
+            _pl.addColorStop(1, 'rgba(0,40,80,0)');
+            ctx.fillStyle = _pl;
+            ctx.beginPath(); ctx.ellipse(_ax, _ay + 2*_as, 34*_as, 9*_as, 0, 0, Math.PI * 2); ctx.fill();
+        }
+
         // Ореол кристала
         let _glowA = 0.20 + _pulse * 0.22;
         let _glowC = _canAfford ? `rgba(60,200,255,${_glowA})` : `rgba(100,100,180,${_glowA * 0.4})`;
@@ -8414,6 +8646,16 @@ function loop(ts) {
                 ctx.fill();
                 ctx.restore();
             }
+        } else if (u.hp > 0) {
+            // Контактна тінь під героями/лордом — юніт "стоїть", а не летить
+            const _fy = u.y - GAME.cameraY;
+            const _us = u.size || 16;
+            ctx.globalAlpha = 0.28;
+            ctx.fillStyle = '#000';
+            ctx.beginPath();
+            ctx.ellipse(u.x, _fy, _us * 0.52, _us * 0.13, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.globalAlpha = 1;
         }
         u.draw(GAME.cameraY);
         if (u.hp <= 0) {
@@ -8789,6 +9031,20 @@ function loop(ts) {
         }
         ctx.restore();
     }
+
+    // ── Глобальна віньєтка (кешована; кінематографічне затемнення країв) ──
+    if (!_vinCanvas || _vinCanvas.width !== Math.round(gW) || _vinCanvas.height !== Math.round(gH)) {
+        _vinCanvas = document.createElement('canvas');
+        _vinCanvas.width = Math.round(gW); _vinCanvas.height = Math.round(gH);
+        const vc = _vinCanvas.getContext('2d');
+        const vR = Math.hypot(gW, gH) / 2;
+        const vg = vc.createRadialGradient(gW / 2, gH / 2, vR * 0.58, gW / 2, gH / 2, vR * 1.05);
+        vg.addColorStop(0, 'rgba(4,2,12,0)');
+        vg.addColorStop(1, 'rgba(4,2,12,0.36)');
+        vc.fillStyle = vg;
+        vc.fillRect(0, 0, gW, gH);
+    }
+    ctx.drawImage(_vinCanvas, 0, 0, gW, gH);
 
     updateUI();
 
