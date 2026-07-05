@@ -2706,49 +2706,95 @@ function _buildBrickCache(fw, fh, wallW, depth) {
     let s = depth * 9973 + 31337;
     const rnd = () => { s = (s * 1664525 + 1013904223) >>> 0; return s / 0xffffffff; };
 
-    // ── ЗАДНЯ СТІНА (центральна кімната) — ненав'язливий патерн ──
-    b.fillStyle = '#1e1520';
+    // ── ЗАДНЯ СТІНА (центральна кімната) — виразна кам'яна кладка ──
+    // Тло = темний розчин, зверху окремі камені з фасками, тріщинами і мохом
+    b.fillStyle = '#161220';
     b.fillRect(wallW, 0, fw, fh);
 
-    const bRowH = 14;
+    const bRowH = 17;
     const bRows = Math.ceil(fh / bRowH);
+    // Палітра каменів: сіро-фіолетові + рідкісний зеленавий
+    const BSTONES = ['#2b2836','#2f2b3c','#262230','#332f42','#2d293a','#282434'];
     for (let r = 0; r < bRows; r++) {
         const ry = r * bRowH;
-        const rowOff = (r % 2) * 24;  // біжучий зв'язок
-        let bx = wallW - rowOff;
+        const rh = Math.min(bRowH, fh - ry);
+        if (rh < 4) break;
+        let bx = wallW - (r % 2) * 26 - rnd() * 8;
         while (bx < wallW + fw) {
-            const bw = 38 + rnd() * 22;
-            const roll = rnd();
-            let col = '#231a2e';
-            if (roll < 0.13) col = '#2e2340';
-            else if (roll < 0.24) col = '#18101c';
+            const bw = 30 + rnd() * 34;
             const bx0 = Math.max(bx, wallW);
             const bx1 = Math.min(bx + bw, wallW + fw);
-            if (bx1 > bx0 + 1) {
-                b.globalAlpha = 0.42;
+            if (bx1 > bx0 + 3) {
+                let col = BSTONES[(rnd() * BSTONES.length) | 0];
+                if (rnd() < 0.035) col = '#2a2e2c'; // ледь зеленавий камінь
                 b.fillStyle = col;
-                b.fillRect(bx0, ry, bx1 - bx0, bRowH - 1);
+                b.fillRect(bx0 + 1, ry + 1, bx1 - bx0 - 2, rh - 2);
+                // фаска: верхній highlight + нижня тінь
+                b.fillStyle = 'rgba(210,200,230,0.07)';
+                b.fillRect(bx0 + 1, ry + 1, bx1 - bx0 - 2, 2);
+                b.fillStyle = 'rgba(0,0,0,0.32)';
+                b.fillRect(bx0 + 1, ry + rh - 3, bx1 - bx0 - 2, 2);
+                // рідкісна тріщина
+                if (rnd() < 0.07 && bx1 - bx0 > 20) {
+                    b.strokeStyle = 'rgba(0,0,0,0.38)';
+                    b.lineWidth = 1;
+                    const cx0 = bx0 + 5 + rnd() * (bx1 - bx0 - 14);
+                    b.beginPath();
+                    b.moveTo(cx0, ry + 2);
+                    b.lineTo(cx0 + 4 - rnd() * 8, ry + rh * 0.55);
+                    b.lineTo(cx0 + 8 - rnd() * 16, ry + rh - 2);
+                    b.stroke();
+                }
+                // мох на нижній грані (частіше в нижній половині кімнати)
+                if (rnd() < (ry > fh * 0.5 ? 0.15 : 0.05)) {
+                    const mw = 7 + rnd() * 13;
+                    const mx = bx0 + 3 + rnd() * Math.max(1, bx1 - bx0 - mw - 6);
+                    b.fillStyle = 'rgba(76,112,60,0.5)';
+                    b.beginPath();
+                    b.ellipse(mx + mw / 2, ry + rh - 1.5, mw / 2, 2.6, 0, Math.PI, 0, true);
+                    b.fill();
+                    b.fillStyle = 'rgba(100,146,78,0.35)';
+                    b.beginPath();
+                    b.ellipse(mx + mw * 0.35, ry + rh - 2.2, mw * 0.22, 1.7, 0, Math.PI, 0, true);
+                    b.fill();
+                }
             }
             bx += bw;
         }
     }
-    b.globalAlpha = 1;
-    // Субтильні горизонтальні шви задньої стіни
-    b.strokeStyle = 'rgba(0,0,0,0.22)';
-    b.lineWidth = 1;
-    for (let r = 1; r < bRows; r++) {
-        const ry = r * bRowH;
-        b.beginPath();
-        b.moveTo(wallW, ry - 0.5);
-        b.lineTo(wallW + fw, ry - 0.5);
-        b.stroke();
-    }
+    // Затемнення: сильніше до стелі, легке до підлоги (глибина кімнати)
+    const bShade = b.createLinearGradient(0, 0, 0, fh);
+    bShade.addColorStop(0,    'rgba(0,0,0,0.36)');
+    bShade.addColorStop(0.35, 'rgba(0,0,0,0)');
+    bShade.addColorStop(1,    'rgba(0,0,0,0.18)');
+    b.fillStyle = bShade;
+    b.fillRect(wallW, 0, fw, fh);
+
+    // ── ПАВУТИННЯ у верхніх кутах кімнати ──
+    const _web = (cx, cy, aStart, R) => {
+        b.strokeStyle = 'rgba(215,220,240,0.13)';
+        b.lineWidth = 0.8;
+        for (let i = 0; i <= 4; i++) {
+            const a = aStart + (Math.PI / 2) * (i / 4);
+            b.beginPath();
+            b.moveTo(cx, cy);
+            b.lineTo(cx + Math.cos(a) * R, cy + Math.sin(a) * R);
+            b.stroke();
+        }
+        for (let ring = 1; ring <= 3; ring++) {
+            b.beginPath();
+            b.arc(cx, cy, R * ring / 3.4, aStart, aStart + Math.PI / 2);
+            b.stroke();
+        }
+    };
+    if (rnd() < 0.85) _web(wallW + 2, 2, 0, 26 + rnd() * 14);          // лівий верхній кут
+    if (rnd() < 0.85) _web(wallW + fw - 2, 2, Math.PI / 2, 24 + rnd() * 16); // правий верхній кут
 
     // ── БІЧНІ СТІНИ (контрастна цегляна кладка) ──
-    const BASE   = '#1d1528';
-    const LIGHT  = '#2e2340';
-    const DARK   = '#12081a';
-    const ACCENT = '#261a36';
+    const BASE   = '#241f2f';
+    const LIGHT  = '#342f42';
+    const DARK   = '#161120';
+    const ACCENT = '#2b2637';
 
     const sRowH = 16;
     const sRows = Math.ceil(H / sRowH);
@@ -2856,19 +2902,34 @@ class Floor {
         }
         ctx.drawImage(this._brickCache, fx - wallW, fty);
 
-        // ── 3. Підлога — кам'яні плити ──────────────────────────────────
+        // ── 3. Підлога — кам'яний виступ із плит ────────────────────────
         let _flH = isPC ? 20 : 14;
-        ctx.fillStyle = '#3a2450';
+        ctx.fillStyle = '#322b3e';
         ctx.fillRect(fx, fy, fw, _flH);
-        // плиткові лінії на підлозі
-        ctx.strokeStyle = 'rgba(0,0,0,0.5)'; ctx.lineWidth = 1;
+        // плити з тоновою варіацією (детерміновано по глибині)
+        let _fls = this.depth * 331 + 7;
+        let _flp = (n) => { _fls = (_fls * 1664525 + 1013904223) & 0xffffffff; return Math.abs(_fls % n); };
         let tileW = isPC ? 55 : 40;
         for (let tx = fx; tx < fx + fw; tx += tileW) {
-            ctx.beginPath(); ctx.moveTo(tx, fy); ctx.lineTo(tx, fy + _flH); ctx.stroke();
+            let twd = Math.min(tileW, fx + fw - tx);
+            let tone = _flp(4);
+            if (tone === 0)      { ctx.fillStyle = 'rgba(255,250,255,0.04)'; ctx.fillRect(tx, fy, twd, _flH); }
+            else if (tone === 1) { ctx.fillStyle = 'rgba(0,0,0,0.14)';       ctx.fillRect(tx, fy, twd, _flH); }
+            // шов між плитами
+            ctx.fillStyle = 'rgba(0,0,0,0.5)';
+            ctx.fillRect(tx, fy, 1, _flH);
+            // рідкий мох на стику плити з підлогою
+            if (_flp(6) === 0) {
+                ctx.fillStyle = 'rgba(80,118,62,0.4)';
+                ctx.fillRect(tx + 2 + _flp(Math.max(2, twd - 14)), fy, 7 + _flp(8), 2);
+            }
         }
-        // Відблиск зверху підлоги
-        ctx.fillStyle = 'rgba(180,140,255,0.08)';
-        ctx.fillRect(fx, fy, fw, isPC ? 4 : 3);
+        // Світлий кант зверху виступу
+        ctx.fillStyle = 'rgba(200,185,230,0.14)';
+        ctx.fillRect(fx, fy, fw, isPC ? 2.5 : 2);
+        // Тінь під низом виступу
+        ctx.fillStyle = 'rgba(0,0,0,0.4)';
+        ctx.fillRect(fx, fy + _flH - 2, fw, 2);
 
         // ── 4. Стеля — сталактити ────────────────────────────────────────
         let _cs = isPC ? 1.5 : 1;
@@ -2955,28 +3016,58 @@ class Floor {
             ctx.globalAlpha = 1;
         }
 
-        // ── 6. Тунель/сходи між поверхами ───────────────────────────────
+        // ── 6. Шахта + дерев'яна драбина між поверхами ──────────────────
         if (this.depth >= 0) {
             let ladderTopY = (this.depth === 0) ? CFG.surfaceY : this.y - CFG.floorH;
             let ladderBotY = this.y;
             let ladX = (this.depth === 0) ? CAVE_X : (this.depth > 0 ? floors[this.depth-1].ladderX : CAVE_X);
-            let tw = isPC ? 40 : 28; // ширина тунелю
+            let tw = isPC ? 40 : 28; // ширина шахти
+            let y0 = ladderTopY - camY, y1 = ladderBotY - camY;
 
-            // Тіло тунелю (темний прохід)
-            ctx.fillStyle = '#0e0c18';
-            ctx.fillRect(ladX - tw/2, ladderTopY - camY, tw, ladderBotY - ladderTopY);
+            // Тіло шахти — м'який градієнт (темніше по краях)
+            let shaftG = ctx.createLinearGradient(ladX - tw/2, 0, ladX + tw/2, 0);
+            shaftG.addColorStop(0,   'rgba(6,4,12,0.88)');
+            shaftG.addColorStop(0.5, 'rgba(11,8,20,0.72)');
+            shaftG.addColorStop(1,   'rgba(6,4,12,0.88)');
+            ctx.fillStyle = shaftG;
+            ctx.fillRect(ladX - tw/2, y0, tw, y1 - y0);
 
-            // Бічні краї тунелю (камінь)
+            // Кам'яне облямування шахти зі світлим кантом
             let _tw2 = isPC ? 6 : 4;
-            ctx.fillStyle = '#2a1e3a';
-            ctx.fillRect(ladX - tw/2 - _tw2, ladderTopY - camY, _tw2, ladderBotY - ladderTopY);
-            ctx.fillRect(ladX + tw/2,        ladderTopY - camY, _tw2, ladderBotY - ladderTopY);
+            ctx.fillStyle = '#2e2838';
+            ctx.fillRect(ladX - tw/2 - _tw2, y0, _tw2, y1 - y0);
+            ctx.fillRect(ladX + tw/2,        y0, _tw2, y1 - y0);
+            ctx.fillStyle = 'rgba(205,195,225,0.09)';
+            ctx.fillRect(ladX - tw/2 - _tw2, y0, 1, y1 - y0);
+            ctx.fillRect(ladX + tw/2 + _tw2 - 1, y0, 1, y1 - y0);
 
-            // Сходи
-            ctx.fillStyle = '#4a3860';
-            let stepH = isPC ? 16 : 12;
-            for (let ly = ladderTopY; ly < ladderBotY - stepH; ly += stepH * 1.5) {
-                ctx.fillRect(ladX - tw/2 + 2, ly - camY + stepH, tw - 4, isPC ? 4 : 3);
+            // ── Дерев'яна драбина: дві стійки + щаблі ──
+            let railW  = isPC ? 5 : 3.5;   // товщина стійки
+            let railIn = isPC ? 11 : 8;    // відстань стійки від центру
+            // стійки
+            ctx.fillStyle = '#5d4326';
+            ctx.fillRect(ladX - railIn - railW/2, y0, railW, y1 - y0);
+            ctx.fillRect(ladX + railIn - railW/2, y0, railW, y1 - y0);
+            // світла грань стійок (ліве ребро)
+            ctx.fillStyle = '#7d5c34';
+            ctx.fillRect(ladX - railIn - railW/2, y0, 1.5, y1 - y0);
+            ctx.fillRect(ladX + railIn - railW/2, y0, 1.5, y1 - y0);
+            // щаблі
+            let stepH = isPC ? 15 : 12;
+            let rungW = railIn * 2 + railW;
+            let rungH = isPC ? 3.5 : 3;
+            ctx.fillStyle = '#7a5a33';
+            for (let ly = ladderTopY + stepH * 0.6; ly < ladderBotY - 4; ly += stepH) {
+                ctx.fillRect(ladX - rungW/2, ly - camY, rungW, rungH);
+            }
+            // тіні під щаблями + верхній блік (окремими проходами — менше перемикань стилю)
+            ctx.fillStyle = 'rgba(0,0,0,0.4)';
+            for (let ly = ladderTopY + stepH * 0.6; ly < ladderBotY - 4; ly += stepH) {
+                ctx.fillRect(ladX - rungW/2, ly - camY + rungH - 1, rungW, 1);
+            }
+            ctx.fillStyle = 'rgba(255,232,190,0.22)';
+            for (let ly = ladderTopY + stepH * 0.6; ly < ladderBotY - 4; ly += stepH) {
+                ctx.fillRect(ladX - rungW/2, ly - camY, rungW, 1);
             }
         }
 
