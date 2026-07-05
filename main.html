@@ -206,12 +206,13 @@
         .sub-btn:active { transform: scale(0.92); }
 
         /* Кольори кнопок — приглушена палітра */
-        .cmain-lord    { background: #2a1740; border-color: #6644aa; }
-        .cmain-lord:hover    { background: #38205a; }
-        .cmain-monster { background: #14321c; border-color: #2d6644; }
-        .cmain-monster:hover { background: #1e4a28; }
-        .cmain-trap    { background: #2e2410; border-color: #6e5a22; }
-        .cmain-trap:hover    { background: #423318; }
+        /* Єдине темно-фіолетове тло; колірне кодування — тонким акцентом у рамці (когезія з темою) */
+        .cmain-lord    { background: #1c1330; border-color: #7a54c0; }
+        .cmain-lord:hover    { background: #2a1e48; }
+        .cmain-monster { background: #1c1330; border-color: #3d8a5a; }
+        .cmain-monster:hover { background: #2a1e48; }
+        .cmain-trap    { background: #1c1330; border-color: #b08a3a; }
+        .cmain-trap:hover    { background: #2a1e48; }
         .s-atk     { background: #4a1e1e; border-color: #993838; }
         .s-vit     { background: #1d3a22; border-color: #3d7044; }
         .s-spike   { background: #2a2a2a; border-color: #666; }
@@ -235,8 +236,8 @@
         .btn-floor:hover { background: #244470; }
         .btn-wave  { background: #5a1a28; border-color: #993848; flex: 1.4; }
         .btn-wave:hover  { background: #74222e; }
-        .cmain-bestiary { background: #1a3020; border-color: #3a7048; }
-        .cmain-bestiary:hover { background: #243e2a; }
+        .cmain-bestiary { background: #1c1330; border-color: #3d8a5a; }
+        .cmain-bestiary:hover { background: #2a1e48; }
         @keyframes atk-ready {
             0%,100% { box-shadow: 0 0 5px #cc3344; background: #6a1e2a; }
             50%      { box-shadow: 0 0 16px #ff5566, 0 0 32px rgba(255,60,80,0.35); background: #852030; }
@@ -294,7 +295,7 @@
         #btn-try-again:hover { background: #70522a; }
 
         #pause-overlay {
-            background: rgba(0,0,0,0.85);
+            background: rgba(0,0,0,0.93);
             gap: 14px; z-index: 190;
             /* Скрол коли контент не поміщається на низькому екрані */
             overflow-y: auto; -webkit-overflow-scrolling: touch;
@@ -342,7 +343,8 @@
             position: fixed;
             left: 8px;
             bottom: calc(var(--controls-h, 120px) + 10px);
-            z-index: 9500; pointer-events: all;
+            /* Над ігровим HUD (≤20), але ПІД будь-якою модалкою (≥190) — щоб не перекривати відкриті вікна */
+            z-index: 150; pointer-events: all;
             background: rgba(10,5,25,0.78);
             backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
             border: 1.5px solid rgba(204,136,255,0.6);
@@ -418,7 +420,7 @@
             backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
             border: 1px solid rgba(119,68,187,0.5);
             border-radius: 20px; padding: 6px 16px; color: #ddc8f8;
-            font-size: 12px; z-index: 9800; pointer-events: none;
+            font-size: 12px; z-index: 160; pointer-events: none; /* під модалками (≥190), над HUD */
             opacity: 0; transition: opacity 0.35s ease; white-space: nowrap;
             max-width: 80vw; text-align: center;
         }
@@ -938,6 +940,8 @@
             touch-action: manipulation;
             transition: background 0.15s;
         }
+        /* Плаваюча "?" зайва на стартовому екрані (є кнопка «Інструкція») і перекриває аватар лорда */
+        body:has(#start-screen:not([style*="none"])) #help-open-btn { display: none; }
         #help-open-btn:hover { background: rgba(120,40,220,0.95); }
         /* ── Елітні душі у HUD ── */
         .elite-box { background:rgba(50,35,0,0.85); border:1px solid rgba(255,200,50,0.5);
@@ -970,9 +974,13 @@
             position:fixed; top:0; left:0; width:100%; height:100%;
             background:radial-gradient(ellipse at 50% 30%, #1a0040 0%, #080018 50%, #030008 100%);
             display:none; flex-direction:column; align-items:center;
-            justify-content:flex-start; overflow-y:auto;
+            justify-content:center; overflow-y:auto;
+            box-sizing:border-box;
             padding:24px 16px 32px; gap:16px; z-index:350;
         }
+        /* Центрування, але зі скролом коли карток стане більше */
+        #soul-dungeon-screen > :first-child { margin-top:auto; }
+        #soul-dungeon-screen > :last-child  { margin-bottom:auto; }
         #soul-dungeon-screen h2 { color:#cc88ff; text-shadow:0 0 24px #8800ff;
             text-align:center; margin:0; font-size:22px; }
         #soul-dungeon-elite { color:#ff88ff; font-size:20px; font-weight:bold;
@@ -1022,7 +1030,7 @@
         /* ── Рун-модифікатори ── */
         #run-mod-overlay {
             position:fixed; inset:0; z-index:400;
-            background:rgba(4,1,14,0.95);
+            background:rgba(4,1,14,0.985);
             flex-direction:column; align-items:center; justify-content:center;
             gap:22px; padding:24px 16px; }
         #run-mod-title {
@@ -1175,7 +1183,7 @@
             border-radius:16px; padding:10px 16px;
             display:flex; align-items:flex-start; gap:10px;
             max-width:calc(100% - 32px); width:340px;
-            z-index:400; pointer-events:none;
+            z-index:155; pointer-events:none; /* під модалками (≥190), над HUD */
             opacity:0; transition:opacity 0.3s; }
         #story-toast.story-toast-show { opacity:1; }
         #story-toast.story-toast-hide { opacity:0; }
@@ -1192,7 +1200,9 @@
             box-shadow:0 4px 32px #1a004080;
             z-index:300; display:none; flex-direction:column; gap:10px;
         }
-        #donesnnia-overlay.visible { display:flex; animation:don-in .3s ease; }
+        /* Затемнення всієї гри позаду картки донесення (box-shadow-спред — надійно під карткою) */
+        #donesnnia-overlay.visible { display:flex; animation:don-in .3s ease;
+            box-shadow: 0 4px 32px #1a004080, 0 0 0 100vmax rgba(4,2,12,0.72); }
         @keyframes don-in {
             from { opacity:0; transform:translateX(-50%) translateY(16px); }
             to   { opacity:1; transform:translateX(-50%) translateY(0); }
@@ -1889,8 +1899,8 @@
         .bc-stat-cell:nth-last-child(-n+2) { border-bottom: none; }
         .bc-stat-cell.bc-full { grid-column: 1 / -1; }
         .bc-sc-icon { font-size: 11px; width: 14px; text-align: center; flex-shrink: 0; }
-        .bc-sc-lbl  { font-size: 10.5px; color: #7766aa; flex: 1; }
-        .bc-sc-val  { font-size: 12px; font-weight: 700; color: #dde0ff; }
+        .bc-sc-lbl  { font-size: 10.5px; color: #7766aa; flex: 1; min-width: 0; white-space: nowrap; }
+        .bc-sc-val  { font-size: 12px; font-weight: 700; color: #dde0ff; white-space: nowrap; flex-shrink: 0; }
         .bc-sc-val.cv-atk  { color: #ffbb66; }
         .bc-sc-val.cv-hp   { color: #ff7788; }
         .bc-sc-val.cv-arm  { color: #66ccff; }
@@ -1934,8 +1944,8 @@
             opacity: 0.2;
         }
         .bc-locked-line span { font-size: 9px; color: #5540aa; }
-        .cmain-bestiary { background: #0f2418; border-color: #2a6044; }
-        .cmain-bestiary:hover { background: #163625; }
+        .cmain-bestiary { background: #1c1330; border-color: #3d8a5a; }
+        .cmain-bestiary:hover { background: #2a1e48; }
     </style>
 </head>
 <body>
@@ -1952,7 +1962,7 @@
     <div id="lord-title"></div>
     <button id="btn-continue" onclick="continueGame()" data-i18n="btn-start">▶ Почати гру</button>
     <button id="btn-hell" onclick="continueHell()" style="display:none;background:rgba(120,0,0,0.7);border-color:#cc2200;color:#ff6644;" data-i18n="btn-hell">🔥 Режим Пекла</button>
-    <button id="btn-instructions" onclick="openInstructions()" data-i18n="btn-instr">📖 Інструкція</button>
+    <button id="btn-instructions" onclick="showHelp()" data-i18n="btn-instr">📖 Інструкція</button>
     <div class="pause-vol-row" style="justify-content:center;">
         <span>🎵</span>
         <input type="range" id="start-vol-slider" min="0" max="100" value="38"
@@ -2186,13 +2196,13 @@
                 <div class="resource-box elite-box" id="elite-souls-box"><span class="esoul-icon">💀</span> <span id="elite-souls-display">0</span></div>
             </div>
             <div class="hud-right">
-                <div id="hud-story-label" style="font-size:9px;letter-spacing:1.5px;color:#5a3a7a;text-transform:uppercase;margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:160px"></div>
                 <div class="hp-label" data-i18n="hud-city">Місто</div>
                 <div class="hp-bar"><div id="city-hp" class="hp-fill" style="width:100%;background:#a83838"></div><span class="hp-num" id="city-hp-num">2000 / 2000</span></div>
                 <div class="hp-label-lord" data-i18n="hud-lord">Володар</div>
                 <div class="hp-bar"><div id="lord-hp" class="hp-fill" style="width:100%;background:#7744bb"></div><span class="hp-num" id="lord-hp-num">500 / 500</span></div>
                 <div class="threat-line"><span data-i18n="hud-threat">Загроза — </span><span id="difficulty-level">0</span><span class="hud-max">/<span id="max-threat">5</span></span></div>
                 <div class="threat-line"><span data-i18n="hud-heroes">Сила героїв — </span><span id="hero-scale">100</span>%<span class="hud-max">/<span id="max-hero-scale">100</span>%</span></div>
+                <div id="hud-story-label" style="font-size:9px;letter-spacing:1.5px;color:#5a3a7a;text-transform:uppercase;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:160px;margin-left:auto"></div>
                 <div id="psy-whisper"></div>
             </div>
         </div>
@@ -2303,6 +2313,10 @@
             <span data-i18n="help-souls" data-i18n-html><b>Душі</b> — твоя валюта. Збираєш їх убиваючи героїв, витрачаєш на розвиток.</span>
         </div>
         <div class="help-row">
+            <span class="hi"><span class="esoul-icon">💀</span></span>
+            <span data-i18n="help-elite" data-i18n-html><b>Золоті Душі</b> — падають з еліт і босів, зберігаються між рівнями. Назавжди-покращення в «Душі Підземелля».</span>
+        </div>
+        <div class="help-row">
             <span class="hi">⚔️</span>
             <span data-i18n="help-atk" data-i18n-html><b>АТАКА</b> — запускає наступну групу героїв. <span class="hd">Чим раніше натиснеш — тим більше бонусних душ!</span></span>
         </div>
@@ -2358,7 +2372,7 @@
     </div>
 </div>
 
-<script src="models/i18n.js?v=3"></script>
+<script src="models/i18n.js?v=4"></script>
 <script src="models/draw_slime.js?v=4"></script>
 <script src="models/draw_skeleton.js?v=1"></script>
 <script src="models/hero_flat.js?v=24"></script>
