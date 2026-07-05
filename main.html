@@ -2769,9 +2769,9 @@ function _buildBrickCache(fw, fh, wallW, depth) {
     }
     // Затемнення: сильніше до стелі, легке до підлоги (глибина кімнати)
     const bShade = b.createLinearGradient(0, 0, 0, fh);
-    bShade.addColorStop(0,    'rgba(0,0,0,0.36)');
+    bShade.addColorStop(0,    'rgba(0,0,0,0.24)');
     bShade.addColorStop(0.35, 'rgba(0,0,0,0)');
-    bShade.addColorStop(1,    'rgba(0,0,0,0.18)');
+    bShade.addColorStop(1,    'rgba(0,0,0,0.10)');
     b.fillStyle = bShade;
     b.fillRect(wallW, 0, fw, fh);
 
@@ -2850,12 +2850,12 @@ function _buildBrickCache(fw, fh, wallW, depth) {
     }
 
     // ── ОСВІТЛЕННЯ КІМНАТИ (статична база; мерехтіння дають факели в draw) ──
-    // Віньєтка країв кімнати
+    // Віньєтка країв кімнати (легка)
     const edgeL = b.createLinearGradient(wallW, 0, wallW + 70, 0);
-    edgeL.addColorStop(0, 'rgba(0,0,0,0.26)'); edgeL.addColorStop(1, 'rgba(0,0,0,0)');
+    edgeL.addColorStop(0, 'rgba(0,0,0,0.13)'); edgeL.addColorStop(1, 'rgba(0,0,0,0)');
     b.fillStyle = edgeL; b.fillRect(wallW, 0, 70, fh);
     const edgeR = b.createLinearGradient(wallW + fw - 70, 0, wallW + fw, 0);
-    edgeR.addColorStop(0, 'rgba(0,0,0,0)'); edgeR.addColorStop(1, 'rgba(0,0,0,0.26)');
+    edgeR.addColorStop(0, 'rgba(0,0,0,0)'); edgeR.addColorStop(1, 'rgba(0,0,0,0.13)');
     b.fillStyle = edgeR; b.fillRect(wallW + fw - 70, 0, 70, fh);
     // Тепле світло від бічних факелів (додатковим світлом)
     b.globalCompositeOperation = 'lighter';
@@ -2863,8 +2863,8 @@ function _buildBrickCache(fw, fh, wallW, depth) {
     const tR = Math.min(fw * 0.42, 240);
     [[wallW + 2, 1], [wallW + fw - 2, -1]].forEach(([tx]) => {
         const tg = b.createRadialGradient(tx, tY, 4, tx, tY, tR);
-        tg.addColorStop(0,   'rgba(255,150,55,0.13)');
-        tg.addColorStop(0.5, 'rgba(200,90,30,0.055)');
+        tg.addColorStop(0,   'rgba(255,150,55,0.17)');
+        tg.addColorStop(0.5, 'rgba(200,90,30,0.075)');
         tg.addColorStop(1,   'rgba(0,0,0,0)');
         b.fillStyle = tg;
         b.beginPath(); b.arc(tx, tY, tR, 0, Math.PI * 2); b.fill();
@@ -3003,8 +3003,8 @@ class Floor {
         }
         ctx.drawImage(this._brickCache, fx - wallW, fty);
 
-        // Глибші поверхи темніші — відчуття спуску в безодню
-        let _dd = Math.min(0.28, this.depth * 0.022);
+        // Глибші поверхи темніші — відчуття спуску в безодню (м'яко)
+        let _dd = Math.min(0.16, this.depth * 0.013);
         if (_dd > 0.01) {
             ctx.fillStyle = `rgba(4,2,12,${_dd})`;
             ctx.fillRect(fx - wallW, fty, fw + wallW * 2, fh + 15);
@@ -9038,9 +9038,9 @@ function loop(ts) {
         _vinCanvas.width = Math.round(gW); _vinCanvas.height = Math.round(gH);
         const vc = _vinCanvas.getContext('2d');
         const vR = Math.hypot(gW, gH) / 2;
-        const vg = vc.createRadialGradient(gW / 2, gH / 2, vR * 0.58, gW / 2, gH / 2, vR * 1.05);
+        const vg = vc.createRadialGradient(gW / 2, gH / 2, vR * 0.64, gW / 2, gH / 2, vR * 1.05);
         vg.addColorStop(0, 'rgba(4,2,12,0)');
-        vg.addColorStop(1, 'rgba(4,2,12,0.36)');
+        vg.addColorStop(1, 'rgba(4,2,12,0.20)');
         vc.fillStyle = vg;
         vc.fillRect(0, 0, gW, gH);
     }
