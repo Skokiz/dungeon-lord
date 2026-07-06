@@ -20,6 +20,26 @@
         ═══════════════════════════════════════════════════ */
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+        /* ═══ ДИЗАЙН-ТОКЕНИ: єдина система поверхонь, акцентів і типографіки ═══
+           Правило: нейтральні поверхні + ОДИН бренд-акцент (фіолет).
+           Семантика: --gold лише валюта, --danger лише атака/небезпека. */
+        :root {
+            --surface-1: rgba(20,14,36,0.92);   /* панелі HUD */
+            --surface-2: #241b3d;               /* кнопки, чипи */
+            --surface-3: #2f2450;               /* hover */
+            --border-soft: rgba(150,120,220,0.28);
+            --border-strong: rgba(180,150,240,0.5);
+            --accent: #a78bfa;
+            --gold: #f2c14e;
+            --danger: #e5484d;
+            --text-hi: #f1ecfe;
+            --text-mid: #b7a8d9;
+            --text-low: #7a6a9f;
+            --radius-s: 8px;
+            --radius-m: 12px;
+            --font-display: Georgia, 'Times New Roman', serif;
+        }
+
         html {
             height: 100%;
             /* iOS Safari: використовуємо -webkit-fill-available */
@@ -84,33 +104,47 @@
             z-index: 5;
         }
         .resource-box {
-            font-weight: 600; color: #d4d0e0;
-            background: rgba(10,6,18,0.78);
-            border-radius: 6px; border: 1px solid rgba(120,100,180,0.22);
+            font-weight: 700; color: var(--text-hi);
+            font-variant-numeric: tabular-nums;
+            background: var(--surface-1);
+            border-radius: var(--radius-s); border: 1px solid var(--border-soft);
             white-space: nowrap;
         }
+        .elite-box { border-color: rgba(242,193,78,0.5); color: var(--gold); }
         .hud-right {
-            background: rgba(10,6,18,0.78);
-            border-radius: 6px;
-            border: 1px solid rgba(120,100,180,0.22);
+            background: var(--surface-1);
+            border-radius: var(--radius-m);
+            border: 1px solid var(--border-soft);
             text-align: right;
         }
-        .hp-label       { color: #b85555; display: block; font-weight: 500; }
-        .hp-label-lord  { color: #9966cc; display: block; margin-top: 3px; font-weight: 500; }
-        .hp-bar         { background: #1a1424; border-radius: 2px; overflow: hidden; margin-top: 2px; position: relative; }
-        .hp-fill        { height: 100%; transition: width 0.2s; }
+        .hp-label       { color: #d98a8a; display: block; font-weight: 600; }
+        .hp-label-lord  { color: var(--accent); display: block; margin-top: 3px; font-weight: 600; }
+        .hp-bar         { background: #16101f; border-radius: 4px; overflow: hidden; margin-top: 2px; position: relative;
+                          box-shadow: inset 0 1px 3px rgba(0,0,0,0.6); }
+        .hp-fill        { height: 100%; transition: width 0.2s; border-radius: 4px; }
         .hp-num         { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
                           font-size: 8px; font-weight: 600; color: rgba(230,225,240,0.88);
+                          font-variant-numeric: tabular-nums;
                           text-shadow: 0 1px 2px #000; pointer-events: none; white-space: nowrap; }
-        .threat-line    { color: #aa7755; display: block; font-weight: 500; }
-        .hud-max        { color: #5a4a55; font-size: 0.85em; }
+        .threat-line    { color: var(--text-mid); display: block; font-weight: 500; }
+        .hud-max        { color: var(--text-low); font-size: 0.85em; }
+        /* Піпси загрози: 5 черепів-крапок замість тексту "0/5" */
+        .thr-pip {
+            display: inline-block; width: 7px; height: 7px; border-radius: 50%;
+            background: #2c2140; border: 1px solid #4a3a68;
+            margin-left: 3px; vertical-align: middle;
+        }
+        .thr-pip.on {
+            background: var(--danger); border-color: #ff8890;
+            box-shadow: 0 0 5px rgba(229,72,77,0.7);
+        }
 
         /* Кнопка паузи — абсолютно над canvas */
         #pause-toggle-btn {
             position: absolute;
             top: calc(6px + env(safe-area-inset-top, 0px)); left: 50%; transform: translateX(-50%);
-            background: rgba(20,12,32,0.78); border: 1px solid rgba(120,100,180,0.35);
-            color: #b9a8d8; border-radius: 6px;
+            background: var(--surface-1); border: 1px solid var(--border-soft);
+            color: var(--text-mid); border-radius: var(--radius-s);
             font-weight: 500;
             cursor: pointer;
             pointer-events: auto;
@@ -205,14 +239,14 @@
         }
         .sub-btn:active { transform: scale(0.92); }
 
-        /* Кольори кнопок — приглушена палітра */
-        /* Єдине темно-фіолетове тло; колірне кодування — тонким акцентом у рамці (когезія з темою) */
-        .cmain-lord    { background: #1c1330; border-color: #7a54c0; }
-        .cmain-lord:hover    { background: #2a1e48; }
-        .cmain-monster { background: #1c1330; border-color: #3d8a5a; }
-        .cmain-monster:hover { background: #2a1e48; }
-        .cmain-trap    { background: #1c1330; border-color: #b08a3a; }
-        .cmain-trap:hover    { background: #2a1e48; }
+        /* Категорії: єдина поверхня і рамка — колірне кодування несе іконка.
+           Насичений колір у хромі має лише АТАКА (єдина CTA). */
+        .cmain-lord, .cmain-monster, .cmain-trap {
+            background: var(--surface-2); border-color: var(--border-soft);
+        }
+        .cmain-lord:hover, .cmain-monster:hover, .cmain-trap:hover {
+            background: var(--surface-3); border-color: var(--border-strong);
+        }
         .s-atk     { background: #4a1e1e; border-color: #993838; }
         .s-vit     { background: #1d3a22; border-color: #3d7044; }
         .s-spike   { background: #2a2a2a; border-color: #666; }
@@ -223,21 +257,29 @@
         /* Прямокутні кнопки */
         .rect-btn {
             flex: 1;
-            border-radius: 6px; border: 1px solid; color: #ece8f5;
+            border-radius: var(--radius-m); border: 1px solid; color: var(--text-hi);
             font-weight: 600; cursor: pointer;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
             -webkit-appearance: none;
             touch-action: manipulation;
-            transition: transform 0.08s, background 0.15s;
+            transition: transform 0.08s, background 0.15s, border-color 0.15s;
         }
         .rect-btn:active { transform: scale(0.97); }
-        .rect-btn small  { font-weight: 400; opacity: 0.75; }
-        .btn-floor { background: #1a3658; border-color: #3a6098; }
-        .btn-floor:hover { background: #244470; }
-        .btn-wave  { background: #5a1a28; border-color: #993848; flex: 1.4; }
-        .btn-wave:hover  { background: #74222e; }
-        .cmain-bestiary { background: #1c1330; border-color: #3d8a5a; }
-        .cmain-bestiary:hover { background: #2a1e48; }
+        .rect-btn small  { font-weight: 600; opacity: 1; }
+        /* Побудувати поверх: нейтральна поверхня, золота ціна (валюта = золото) */
+        .btn-floor { background: var(--surface-2); border-color: var(--border-soft); }
+        .btn-floor:hover { background: var(--surface-3); border-color: var(--border-strong); }
+        .btn-floor small { color: var(--gold); }
+        .btn-floor:disabled small { color: var(--danger); opacity: 0.85; }
+        /* АТАКА — єдина насичена CTA на екрані */
+        .btn-wave  {
+            background: linear-gradient(180deg, #6a1c28 0%, #471119 100%);
+            border-color: rgba(229,72,77,0.55); flex: 1.4;
+            letter-spacing: 1px;
+        }
+        .btn-wave:hover  { background: linear-gradient(180deg, #7c222f 0%, #55151e 100%); border-color: rgba(229,72,77,0.85); }
+        .cmain-bestiary { background: var(--surface-2); border-color: var(--border-soft); }
+        .cmain-bestiary:hover { background: var(--surface-3); border-color: var(--border-strong); }
         @keyframes atk-ready {
             0%,100% { box-shadow: 0 0 5px #cc3344; background: #6a1e2a; }
             50%      { box-shadow: 0 0 16px #ff5566, 0 0 32px rgba(255,60,80,0.35); background: #852030; }
@@ -407,6 +449,16 @@
             color: #9966cc;
             text-shadow: 0 0 14px #6633aaaa;
             margin-bottom: 2px;
+        }
+        /* Орнаментальні лінії обабіч напису */
+        #wave-banner .wb-label::before, #wave-banner .wb-label::after {
+            content: ''; display: inline-block; vertical-align: middle;
+            width: clamp(26px, 6vw, 58px); height: 1px;
+            background: linear-gradient(90deg, transparent, #9966cc);
+            margin: 0 10px 3px;
+        }
+        #wave-banner .wb-label::after {
+            background: linear-gradient(90deg, #9966cc, transparent);
         }
         #wave-banner .wb-num {
             font-family: 'Cinzel Decorative', 'Cinzel', Georgia, serif;
@@ -1949,8 +2001,8 @@
             opacity: 0.2;
         }
         .bc-locked-line span { font-size: 9px; color: #5540aa; }
-        .cmain-bestiary { background: #1c1330; border-color: #3d8a5a; }
-        .cmain-bestiary:hover { background: #2a1e48; }
+        .cmain-bestiary { background: var(--surface-2); border-color: var(--border-soft); }
+        .cmain-bestiary:hover { background: var(--surface-3); border-color: var(--border-strong); }
     </style>
 </head>
 <body>
@@ -11180,7 +11232,17 @@ function updateUI() {
     }
     const el = _uiEls;
     let s = GAME.souls;
-    el.souls.innerText = Math.floor(s);
+    // Плавний лічильник душ (count-up/down — число "доганяє" ціль)
+    {
+        const _tgt = Math.floor(s);
+        let _cur = (el._soulsShown === undefined) ? _tgt : el._soulsShown;
+        if (_cur !== _tgt) {
+            const d = _tgt - _cur;
+            _cur += (Math.abs(d) <= 2) ? d : Math.ceil(Math.abs(d) * 0.22) * Math.sign(d);
+        }
+        el._soulsShown = _cur;
+        el.souls.innerText = _cur;
+    }
 
 
     // Оновлюємо меню розвитку монстра раз на 8 кадрів — портрет анімується окремо
@@ -11194,8 +11256,19 @@ function updateUI() {
         el.eliteSouls.innerText = GAME.eliteSouls;
     }
     el.floorCost.innerText    = GAME.floorCost + '💀';
-    el.diffLevel.innerText    = GAME.difficultyLevel;
-    el.maxThreat.innerText    = GAME.maxThreatLevel;
+    // Загроза — піпси замість тексту "0/5" (перебудова лише при зміні)
+    {
+        const _tm = GAME.maxThreatLevel || 5;
+        const _tc = GAME.difficultyLevel || 0;
+        if (el._pipMax !== _tm || el._pipCur !== _tc) {
+            el._pipMax = _tm; el._pipCur = _tc;
+            let _ph = '';
+            for (let i = 0; i < _tm; i++) _ph += '<span class="thr-pip' + (i < _tc ? ' on' : '') + '"></span>';
+            el.diffLevel.innerHTML = _ph;
+            const _mx = el.maxThreat.parentElement;
+            if (_mx) _mx.style.display = 'none';
+        }
+    }
     el.heroScale.innerText    = 100 + GAME.heroScalePercent;
     el.maxHeroScale.innerText = 100 + GAME.heroScaleBase + GAME.maxThreatLevel * GAME.heroThreatPct;
 
@@ -11205,12 +11278,9 @@ function updateUI() {
         const _lv   = GAME.currentLevel || 1;
         const _e    = _lvls ? _lvls[_lv - 1] : null;
         if (_e) {
-            const _thr = GAME.difficultyLevel || 0;
-            const _thrMax = GAME.maxThreatLevel || 5;
-            const _thrPct = _thrMax > 0 ? _thr / _thrMax : 0;
-            const _thrColor = _thrPct >= 0.8 ? '#ff4444' : _thrPct >= 0.5 ? '#ff8800' : '#5a3a7a';
+            // Загрозу тепер показують піпси — тут лише акт і місто (без дубля ⚠ N/M)
             const _hellTag = _hellMode ? '<span style="color:#ff6644;font-weight:bold;margin-right:6px">🔥HELL</span>' : '';
-            el.storyLabel.innerHTML = _hellTag + '<span style="color:' + _thrColor + ';font-weight:bold">⚠ ' + _thr + '/' + _thrMax + '</span>  <span style="color:#5a3a7a">' + _getActLabel(_e.act) + '  ·  ' + _e.city + '</span>';
+            el.storyLabel.innerHTML = _hellTag + '<span style="color:#5a3a7a">' + _getActLabel(_e.act) + '  ·  ' + _e.city + '</span>';
         }
     }
 
