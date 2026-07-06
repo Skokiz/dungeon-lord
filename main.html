@@ -2739,6 +2739,25 @@ function _buildBrickCache(fw, fh, wallW, depth) {
                 b.fillRect(bx0 + 1, ry + 1, bx1 - bx0 - 2, 2);
                 b.fillStyle = 'rgba(0,0,0,0.32)';
                 b.fillRect(bx0 + 1, ry + rh - 3, bx1 - bx0 - 2, 2);
+                // зерно каменю (3-4 цятки шуму — матеріальність)
+                const gn = 3 + (rnd() * 2 | 0);
+                for (let g = 0; g < gn; g++) {
+                    b.fillStyle = rnd() < 0.5 ? 'rgba(0,0,0,0.20)' : 'rgba(215,205,235,0.06)';
+                    b.fillRect(bx0 + 3 + rnd() * Math.max(1, bx1 - bx0 - 7),
+                               ry + 3 + rnd() * Math.max(1, rh - 7), 1.4, 1.4);
+                }
+                // сколотий кут (рідко) — камінь пошарпаний часом
+                if (rnd() < 0.10 && bx1 - bx0 > 14) {
+                    const cw2 = 3 + rnd() * 4;
+                    b.fillStyle = '#161220';
+                    b.beginPath();
+                    if (rnd() < 0.5) {
+                        b.moveTo(bx0 + 1, ry + 1); b.lineTo(bx0 + 1 + cw2, ry + 1); b.lineTo(bx0 + 1, ry + 1 + cw2);
+                    } else {
+                        b.moveTo(bx1 - 1, ry + rh - 1); b.lineTo(bx1 - 1 - cw2, ry + rh - 1); b.lineTo(bx1 - 1, ry + rh - 1 - cw2);
+                    }
+                    b.closePath(); b.fill();
+                }
                 // рідкісна тріщина
                 if (rnd() < 0.07 && bx1 - bx0 > 20) {
                     b.strokeStyle = 'rgba(0,0,0,0.38)';
@@ -2762,6 +2781,17 @@ function _buildBrickCache(fw, fh, wallW, depth) {
                     b.beginPath();
                     b.ellipse(mx + mw * 0.35, ry + rh - 2.2, mw * 0.22, 1.7, 0, Math.PI, 0, true);
                     b.fill();
+                    // звисаючі пасма моху
+                    b.strokeStyle = 'rgba(76,112,60,0.45)';
+                    b.lineWidth = 1;
+                    for (let st2 = 0; st2 < 3; st2++) {
+                        const stx = mx + 2 + rnd() * Math.max(1, mw - 4);
+                        const stl = 2 + rnd() * 4;
+                        b.beginPath();
+                        b.moveTo(stx, ry + rh - 1);
+                        b.lineTo(stx + (rnd() - 0.5) * 2, ry + rh - 1 + stl);
+                        b.stroke();
+                    }
                 }
             }
             bx += bw;
@@ -2774,6 +2804,16 @@ function _buildBrickCache(fw, fh, wallW, depth) {
     bShade.addColorStop(1,    'rgba(0,0,0,0.10)');
     b.fillStyle = bShade;
     b.fillRect(wallW, 0, fw, fh);
+
+    // Ambient occlusion: щільна тінь у стику стіни з підлогою і стелею (об'єм кімнати)
+    const aoB = b.createLinearGradient(0, fh - 14, 0, fh);
+    aoB.addColorStop(0, 'rgba(0,0,0,0)');
+    aoB.addColorStop(1, 'rgba(0,0,0,0.34)');
+    b.fillStyle = aoB; b.fillRect(wallW, fh - 14, fw, 14);
+    const aoT = b.createLinearGradient(0, 0, 0, 10);
+    aoT.addColorStop(0, 'rgba(0,0,0,0.30)');
+    aoT.addColorStop(1, 'rgba(0,0,0,0)');
+    b.fillStyle = aoT; b.fillRect(wallW, 0, fw, 10);
 
     // ── АРХІТЕКТУРА: пілястри, карниз, банер, ланцюги ──
     // Карниз під стелею (світліша смуга із зубцями)
@@ -2924,6 +2964,9 @@ function _buildBrickCache(fw, fh, wallW, depth) {
             // нижня тінь
             b.fillStyle = 'rgba(0,0,0,0.35)';
             b.fillRect(wx + 1 + trim, ry + sRowH - 2, wallW - 2 - trim*2, 1);
+            // зерно (1-2 цятки на камінь)
+            b.fillStyle = rnd() < 0.5 ? 'rgba(0,0,0,0.22)' : 'rgba(215,205,235,0.05)';
+            b.fillRect(wx + 3 + rnd() * Math.max(1, wallW - 7), ry + 3 + rnd() * Math.max(1, sRowH - 7), 1.4, 1.4);
         }
 
         // розчин між рядами
@@ -2959,6 +3002,70 @@ function _buildBrickCache(fw, fh, wallW, depth) {
 
     // збережемо розміри для перевірки інвалідації
     c._bw = fw; c._bh = fh; c._ww = wallW;
+    return c;
+}
+
+// =================== ДРАБИНА (кеш в offscreen canvas) ===================
+// Весь прогін (шахта + обрамлення + драбина зі зносом і тінню) — 1 drawImage на кадр
+function _buildLadderCache(tw, trim, lh, depth) {
+    const w = tw + trim * 2;
+    const c = document.createElement('canvas');
+    c.width = Math.ceil(w); c.height = Math.max(4, Math.ceil(lh));
+    const b = c.getContext('2d');
+    let s = depth * 7919 + 1234;
+    const rnd = () => { s = (s * 1664525 + 1013904223) >>> 0; return s / 0xffffffff; };
+    const cx = w / 2;
+    // Шахта — м'який градієнт
+    const shaftG = b.createLinearGradient(trim, 0, trim + tw, 0);
+    shaftG.addColorStop(0,   'rgba(6,4,12,0.88)');
+    shaftG.addColorStop(0.5, 'rgba(11,8,20,0.72)');
+    shaftG.addColorStop(1,   'rgba(6,4,12,0.88)');
+    b.fillStyle = shaftG; b.fillRect(trim, 0, tw, lh);
+    // Кам'яне облямування зі світлим кантом
+    b.fillStyle = '#2e2838';
+    b.fillRect(0, 0, trim, lh); b.fillRect(w - trim, 0, trim, lh);
+    b.fillStyle = 'rgba(205,195,225,0.09)';
+    b.fillRect(0, 0, 1, lh); b.fillRect(w - 1, 0, 1, lh);
+    // Параметри драбини
+    const railW = isPC ? 5 : 3.5;
+    const railIn = isPC ? 11 : 8;
+    const stepH = isPC ? 15 : 12;
+    const rungW = railIn * 2 + railW;
+    const rungH = isPC ? 3.5 : 3;
+    // Тінь драбини на задній стінці шахти (об'єм)
+    b.fillStyle = 'rgba(0,0,0,0.35)';
+    b.fillRect(cx - railIn - railW/2 + 3, 0, railW, lh);
+    b.fillRect(cx + railIn - railW/2 + 3, 0, railW, lh);
+    // Стійки зі світлою гранню
+    b.fillStyle = '#5d4326';
+    b.fillRect(cx - railIn - railW/2, 0, railW, lh);
+    b.fillRect(cx + railIn - railW/2, 0, railW, lh);
+    b.fillStyle = '#7d5c34';
+    b.fillRect(cx - railIn - railW/2, 0, 1.5, lh);
+    b.fillRect(cx + railIn - railW/2, 0, 1.5, lh);
+    // Щаблі: легкий перекіс (ручна робота), знос по центру, темні кріплення
+    for (let ly = stepH * 0.6; ly < lh - 4; ly += stepH) {
+        const jy = ly + (rnd() - 0.5) * 1.6;
+        // тінь щабля на шахті
+        b.fillStyle = 'rgba(0,0,0,0.30)';
+        b.fillRect(cx - rungW/2 + 2, jy + rungH, rungW - 4, 1.2);
+        // щабель
+        b.fillStyle = '#7a5a33';
+        b.fillRect(cx - rungW/2, jy, rungW, rungH);
+        // темні кінці-кріплення
+        b.fillStyle = '#4e3a20';
+        b.fillRect(cx - rungW/2, jy, 2.5, rungH);
+        b.fillRect(cx + rungW/2 - 2.5, jy, 2.5, rungH);
+        // потертість по центру — тут ходять
+        b.fillStyle = 'rgba(255,230,180,0.18)';
+        b.fillRect(cx - rungW * 0.2, jy, rungW * 0.4, Math.max(1, rungH * 0.6));
+        // верхній блік + нижня тінь
+        b.fillStyle = 'rgba(255,232,190,0.22)';
+        b.fillRect(cx - rungW/2, jy, rungW, 1);
+        b.fillStyle = 'rgba(0,0,0,0.4)';
+        b.fillRect(cx - rungW/2, jy + rungH - 1, rungW, 1);
+    }
+    c._lw = w; c._lh = lh;
     return c;
 }
 
@@ -3031,6 +3138,16 @@ class Floor {
                 ctx.fillStyle = 'rgba(80,118,62,0.4)';
                 ctx.fillRect(tx + 2 + _flp(Math.max(2, twd - 14)), fy, 7 + _flp(8), 2);
             }
+            // рідка тріщина на плиті
+            if (_flp(6) === 1 && twd > 16) {
+                ctx.strokeStyle = 'rgba(0,0,0,0.35)'; ctx.lineWidth = 1;
+                let _ccx = tx + 5 + _flp(twd - 12);
+                ctx.beginPath();
+                ctx.moveTo(_ccx, fy + 1);
+                ctx.lineTo(_ccx + 3 - _flp(6), fy + _flH * 0.55);
+                ctx.lineTo(_ccx + 6 - _flp(12), fy + _flH - 2);
+                ctx.stroke();
+            }
         }
         // Світлий кант зверху виступу
         ctx.fillStyle = 'rgba(200,185,230,0.14)';
@@ -3086,6 +3203,13 @@ class Floor {
             ctx.ellipse(tx, torchY - 3*_tf + flicker*0.2, (7 + Math.abs(flicker)*0.3)*_tf, 12*_tf, 0, 0, Math.PI*2);
             ctx.fill();
 
+            // Живий відсвіт полум'я на стінах (мерехтить синхронно з вогнем)
+            let wl = ctx.createRadialGradient(tx, torchY - 2*_tf, 2, tx, torchY - 2*_tf, 64*_tf);
+            wl.addColorStop(0, `rgba(255,150,60,${0.07 + 0.05 * Math.abs(flicker) / 3})`);
+            wl.addColorStop(1, 'rgba(0,0,0,0)');
+            ctx.fillStyle = wl;
+            ctx.beginPath(); ctx.arc(tx, torchY - 2*_tf, 64*_tf, 0, Math.PI*2); ctx.fill();
+
             // ── Дим над факелом ───────────────────────────────────────────
             {
                 let ts = _frameNow / 1400 + ti * 1.57;
@@ -3124,59 +3248,19 @@ class Floor {
             ctx.globalAlpha = 1;
         }
 
-        // ── 6. Шахта + дерев'яна драбина між поверхами ──────────────────
+        // ── 6. Шахта + драбина (кешована зі зносом і тінню — 1 drawImage) ──
         if (this.depth >= 0) {
             let ladderTopY = (this.depth === 0) ? CFG.surfaceY : this.y - CFG.floorH;
             let ladderBotY = this.y;
             let ladX = (this.depth === 0) ? CAVE_X : (this.depth > 0 ? floors[this.depth-1].ladderX : CAVE_X);
             let tw = isPC ? 40 : 28; // ширина шахти
-            let y0 = ladderTopY - camY, y1 = ladderBotY - camY;
-
-            // Тіло шахти — м'який градієнт (темніше по краях)
-            let shaftG = ctx.createLinearGradient(ladX - tw/2, 0, ladX + tw/2, 0);
-            shaftG.addColorStop(0,   'rgba(6,4,12,0.88)');
-            shaftG.addColorStop(0.5, 'rgba(11,8,20,0.72)');
-            shaftG.addColorStop(1,   'rgba(6,4,12,0.88)');
-            ctx.fillStyle = shaftG;
-            ctx.fillRect(ladX - tw/2, y0, tw, y1 - y0);
-
-            // Кам'яне облямування шахти зі світлим кантом
             let _tw2 = isPC ? 6 : 4;
-            ctx.fillStyle = '#2e2838';
-            ctx.fillRect(ladX - tw/2 - _tw2, y0, _tw2, y1 - y0);
-            ctx.fillRect(ladX + tw/2,        y0, _tw2, y1 - y0);
-            ctx.fillStyle = 'rgba(205,195,225,0.09)';
-            ctx.fillRect(ladX - tw/2 - _tw2, y0, 1, y1 - y0);
-            ctx.fillRect(ladX + tw/2 + _tw2 - 1, y0, 1, y1 - y0);
-
-            // ── Дерев'яна драбина: дві стійки + щаблі ──
-            let railW  = isPC ? 5 : 3.5;   // товщина стійки
-            let railIn = isPC ? 11 : 8;    // відстань стійки від центру
-            // стійки
-            ctx.fillStyle = '#5d4326';
-            ctx.fillRect(ladX - railIn - railW/2, y0, railW, y1 - y0);
-            ctx.fillRect(ladX + railIn - railW/2, y0, railW, y1 - y0);
-            // світла грань стійок (ліве ребро)
-            ctx.fillStyle = '#7d5c34';
-            ctx.fillRect(ladX - railIn - railW/2, y0, 1.5, y1 - y0);
-            ctx.fillRect(ladX + railIn - railW/2, y0, 1.5, y1 - y0);
-            // щаблі
-            let stepH = isPC ? 15 : 12;
-            let rungW = railIn * 2 + railW;
-            let rungH = isPC ? 3.5 : 3;
-            ctx.fillStyle = '#7a5a33';
-            for (let ly = ladderTopY + stepH * 0.6; ly < ladderBotY - 4; ly += stepH) {
-                ctx.fillRect(ladX - rungW/2, ly - camY, rungW, rungH);
+            let lh = Math.max(4, Math.round(ladderBotY - ladderTopY));
+            let lw = tw + _tw2 * 2;
+            if (!this._ladCache || this._ladCache._lh !== lh || this._ladCache._lw !== lw) {
+                this._ladCache = _buildLadderCache(tw, _tw2, lh, this.depth);
             }
-            // тіні під щаблями + верхній блік (окремими проходами — менше перемикань стилю)
-            ctx.fillStyle = 'rgba(0,0,0,0.4)';
-            for (let ly = ladderTopY + stepH * 0.6; ly < ladderBotY - 4; ly += stepH) {
-                ctx.fillRect(ladX - rungW/2, ly - camY + rungH - 1, rungW, 1);
-            }
-            ctx.fillStyle = 'rgba(255,232,190,0.22)';
-            for (let ly = ladderTopY + stepH * 0.6; ly < ladderBotY - 4; ly += stepH) {
-                ctx.fillRect(ladX - rungW/2, ly - camY, rungW, 1);
-            }
+            ctx.drawImage(this._ladCache, ladX - lw / 2, ladderTopY - camY);
         }
 
         // ── 7. Пастки ────────────────────────────────────────────────────
@@ -8271,6 +8355,16 @@ function loop(ts) {
         // База-еліпс
         ctx.fillStyle = '#150e22';
         ctx.beginPath(); ctx.ellipse(_ax, _ay, 14*_as, 3*_as, 0, 0, Math.PI * 2); ctx.fill();
+
+        // Відсвіт кристала на стіні позаду (пульсує разом з ореолом)
+        {
+            let _wbA = (_canAfford ? 0.09 : 0.035) + _pulse * 0.045;
+            let _wb = ctx.createRadialGradient(_ax, _ay - 30*_as, 4, _ax, _ay - 30*_as, 48*_as);
+            _wb.addColorStop(0, `rgba(80,200,255,${_wbA})`);
+            _wb.addColorStop(1, 'rgba(0,40,80,0)');
+            ctx.fillStyle = _wb;
+            ctx.beginPath(); ctx.arc(_ax, _ay - 30*_as, 48*_as, 0, Math.PI * 2); ctx.fill();
+        }
 
         // Калюжа світла від кристала на землі
         {
