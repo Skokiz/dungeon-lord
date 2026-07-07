@@ -113,6 +113,13 @@
             border-radius: var(--radius-s); border: 1px solid var(--border-soft);
             white-space: nowrap;
         }
+        /* Пульс лічильника, коли прилітає орб душі */
+        .resource-box.gem-pop { animation: gemPop 0.28s ease-out; }
+        @keyframes gemPop {
+            0%   { transform: scale(1); }
+            35%  { transform: scale(1.13); filter: brightness(1.35); }
+            100% { transform: scale(1); }
+        }
         .elite-box { border-color: rgba(242,193,78,0.5); color: var(--gold); }
         .hud-right {
             background: var(--surface-1);
@@ -1035,6 +1042,8 @@
         }
         /* Плаваюча "?" зайва на стартовому екрані (є кнопка «Інструкція») і перекриває аватар лорда */
         body:has(#start-screen:not([style*="none"])) #help-open-btn { display: none; }
+        /* ...і поверх кнопок Донесення на мобілці (z-index 500 > 300) — ховаємо поки відкрите */
+        body:has(#donesnnia-overlay.visible) #help-open-btn { display: none; }
         #help-open-btn:hover { background: rgba(120,40,220,0.95); }
         /* ── Елітні душі у HUD ── */
         .elite-box { background:rgba(50,35,0,0.85); border:1px solid rgba(255,200,50,0.5);
@@ -2465,7 +2474,7 @@
     </div>
 </div>
 
-<script src="models/i18n.js?v=6"></script>
+<script src="models/i18n.js?v=7"></script>
 <script src="models/draw_slime.js?v=4"></script>
 <script src="models/draw_skeleton.js?v=1"></script>
 <script src="models/hero_flat.js?v=24"></script>
@@ -2675,7 +2684,6 @@ let GAME = {
     maxThreatLevel: 999,
     currentLevel: 1,
     soulBonus: 0,        // +X душ за кожного вбитого героя (назавжди)
-    soulBonusCost: 100,  // ціна наступного апгрейду (назавжди)
 };
 
 // Постійні прокачки — завантажуються з localStorage при старті гри
@@ -8443,7 +8451,7 @@ function loop(ts) {
         let _ay = _lordFloor.y - GAME.cameraY; // screen Y поверхні підлоги лорда
         let _t3 = _frameNow;
         let _pulse = 0.5 + 0.5 * Math.sin(_t3 / 600);
-        let _canAfford = GAME.souls >= GAME.soulBonusCost;
+        let _canAfford = GAME.eliteSouls >= _soulCollCost();
 
         ctx.save();
 
@@ -8515,15 +8523,17 @@ function loop(ts) {
 
         // "+N 💀" якщо вже є апгрейди
         // \u0425\u0435\u043B\u043F\u0435\u0440: "\u0447\u0438\u0441\u043B\u043E + \u0444\u0456\u043E\u043B\u0435\u0442\u043E\u0432\u0438\u0439 \u043E\u0440\u0431" \u0432\u0456\u0434\u0446\u0435\u043D\u0442\u0440\u043E\u0432\u0430\u043D\u043E\u044E \u0433\u0440\u0443\u043F\u043E\u044E (\u0437\u0430\u043C\u0456\u043D\u0430 \uD83D\uDC80 \u043D\u0430 canvas)
-        const _drawValOrb = (val, cx, cy, font, col) => {
+        const _drawValOrb = (val, cx, cy, font, col, gold) => {
             ctx.font = font; ctx.fillStyle = col;
-            const s = '' + val, fp = parseInt(font, 10), r = fp * 0.34, gap = r * 0.7;
+            // Розмір шрифту з рядка виду 'bold 13px Arial' (parseInt на 'bold...' дає NaN!)
+            const s = '' + val, fp = parseFloat((font.match(/[\d.]+/) || [12])[0]), r = fp * 0.34, gap = r * 0.7;
             ctx.textAlign = 'left';
             const tw = ctx.measureText(s).width, x0 = cx - (tw + gap + r * 2) / 2;
             ctx.fillText(s, x0, cy);
             const ox = x0 + tw + gap + r, oy = cy - fp * 0.32;
             const g = ctx.createRadialGradient(ox - r*0.3, oy - r*0.35, 0, ox, oy, r);
-            g.addColorStop(0, '#f3e8ff'); g.addColorStop(0.42, '#b98bff'); g.addColorStop(0.72, '#7a3fd0'); g.addColorStop(1, '#3a1a66');
+            if (gold) { g.addColorStop(0,'#fffbe0'); g.addColorStop(0.45,'#ffd700'); g.addColorStop(0.75,'#c8920a'); g.addColorStop(1,'#7a5500'); }
+            else      { g.addColorStop(0,'#f3e8ff'); g.addColorStop(0.42,'#b98bff'); g.addColorStop(0.72,'#7a3fd0'); g.addColorStop(1,'#3a1a66'); }
             ctx.fillStyle = g; ctx.beginPath(); ctx.arc(ox, oy, r, 0, 6.2832); ctx.fill();
             ctx.textAlign = 'center';
         };
@@ -8536,8 +8546,8 @@ function loop(ts) {
         ctx.font = (isPC ? '12px' : '8px') + ' Arial'; ctx.textAlign = 'center';
         ctx.fillText('Збирач душ', _ax, _ay - (GAME.soulBonus > 0 ? 52*_as : 48*_as));
         ctx.globalAlpha = 1;
-        // Ціна
-        _drawValOrb(GAME.soulBonusCost, _ax, _ay - 7*_as, (isPC ? '13px' : '9px') + ' Arial', _canAfford ? '#ffee88' : '#887755');
+        // Ціна — у золотих (елітних) душах
+        _drawValOrb(_soulCollCost(), _ax, _ay - 7*_as, (isPC ? '13px' : '9px') + ' Arial', _canAfford ? '#ffee88' : '#887755', true);
 
         // Hitbox (world Y = _lordFloor.y - 32 = crystal center)
         GAME._soulAltarX      = _ax;
@@ -9380,7 +9390,8 @@ function loop(ts) {
                     _SFX.bossDeath();
                     const _ge = 6 * _runEliteMult;
                     GAME.eliteSouls += _ge;
-                    spawnDmgText(u.x, u.y - u.size - 18, '+' + _ge + ' 💀', '#ffd700', true);
+                    spawnSoulFly(u.x, u.y - u.size * 0.5, Math.min(_ge, 6), true);
+                    spawnDmgText(u.x, u.y - u.size - 18, '+' + _ge, '#ffd700', true);
                     try { _ctxHintPerm('golden_souls',
                         'Це золоті душі 💎 — за них можна назавжди прокачати здібності монстрів, поверхи і самого Лорда.',
                         'These are golden souls 💎 — use them to permanently upgrade monster abilities, floors, and the Lord himself.'); } catch(e) {}
@@ -9388,7 +9399,8 @@ function loop(ts) {
                     _SFX.death();
                     const _ge = 2 * _runEliteMult;
                     GAME.eliteSouls += _ge;
-                    spawnDmgText(u.x, u.y - u.size - 18, '+' + _ge + ' 💀', '#ffd700', false);
+                    spawnSoulFly(u.x, u.y - u.size * 0.5, Math.min(_ge, 4), true);
+                    spawnDmgText(u.x, u.y - u.size - 18, '+' + _ge, '#ffd700', false);
                     try { _ctxHintPerm('golden_souls',
                         'Це золоті душі 💎 — за них можна назавжди прокачати здібності монстрів, поверхи і самого Лорда.',
                         'These are golden souls 💎 — use them to permanently upgrade monster abilities, floors, and the Lord himself.'); } catch(e) {}
@@ -9414,7 +9426,9 @@ function loop(ts) {
                     triggerScreenShake(5);
                     _killFlash.alpha = 0.10; _killFlash.col = '#ff8800';
                 }
-                spawnDmgText(u.x, u.y - u.size, '+' + reward + '💀', '#ffcc00', u.heroRank !== 'normal');
+                spawnSoulFly(u.x, u.y - u.size * 0.5,
+                    u.heroRank === 'boss' ? 5 : u.heroRank.startsWith('elite') ? 4 : 3, false);
+                spawnDmgText(u.x, u.y - u.size, '+' + reward, '#ffcc00', u.heroRank !== 'normal');
                 updateUI();
             } else if (u.type === 'lord') { gameOver(); }
             units.splice(i, 1);
@@ -9453,6 +9467,8 @@ function loop(ts) {
         if (p.life <= 0) particles.splice(i, 1);
     }
     ctx.globalAlpha = 1;
+    // ── Орби душ, що летять до HUD ──────────────────────────────────────
+    _updateDrawSoulFlies();
     // Kill flash overlay
     if (_killFlash.alpha > 0) {
         ctx.globalAlpha = _killFlash.alpha;
@@ -11441,6 +11457,78 @@ function spawnDmgText(x, y, text, color = '#ffffff', big = false) {
     dmgTexts.push({ x, y, text, color, big, life: 50, maxLife: 50,
         vx: (Math.random() - 0.5) * 0.8, vy: -1.4 });
 }
+
+// ── Орби душ: вилітають з вбитого ворога і летять до HUD-лічильника ────────
+let _soulFlies = [];
+function spawnSoulFly(wx, wy, n, gold) {
+    // Ціль: центр gem-іконки у HUD (DOM-координати = canvas CSS-координати)
+    const el = gold ? document.getElementById('elite-souls-box')
+                    : document.querySelector('#hud .resource-box');
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    const tx = r.left + r.height * 0.55, ty = r.top + r.height * 0.5;
+    const sx = wx, sy = wy - GAME.cameraY;
+    for (let i = 0; i < n; i++) {
+        // Контрольна точка: розкид убік і вгору — дуга, а не пряма
+        const cx = sx + (Math.random() - 0.5) * 160;
+        const cy = sy - 60 - Math.random() * 90;
+        _soulFlies.push({
+            sx: sx + (Math.random() - 0.5) * 16, sy: sy + (Math.random() - 0.5) * 10,
+            cx, cy, tx, ty,
+            t: 0, delay: i * 4 + Math.random() * 5,   // stagger у кадрах
+            dur: 38 + Math.random() * 14,             // ~0.6–0.9с
+            size: gold ? 4.5 : 3.2 + Math.random() * 1.6,
+            gold: !!gold,
+            trail: [],
+        });
+    }
+}
+function _updateDrawSoulFlies() {
+    if (!_soulFlies.length) return;
+    for (let i = _soulFlies.length - 1; i >= 0; i--) {
+        const f = _soulFlies[i];
+        if (f.delay > 0) { f.delay -= _dt; continue; }
+        f.t += _dt / f.dur;
+        if (f.t >= 1) {
+            _soulFlies.splice(i, 1);
+            _hudGemPop(f.gold);
+            continue;
+        }
+        // ease-in: повільний відрив, швидкий фініш
+        const e = f.t * f.t * (3 - 2 * f.t);
+        const u = 1 - e;
+        const x = u*u*f.sx + 2*u*e*f.cx + e*e*f.tx;
+        const y = u*u*f.sy + 2*u*e*f.cy + e*e*f.ty;
+        f.trail.push({ x, y });
+        if (f.trail.length > 6) f.trail.shift();
+        // Хвіст
+        for (let k = 0; k < f.trail.length; k++) {
+            const tp = f.trail[k], ta = (k + 1) / f.trail.length * 0.30;
+            ctx.globalAlpha = ta;
+            ctx.fillStyle = f.gold ? '#ffd700' : '#b98bff';
+            ctx.beginPath(); ctx.arc(tp.x, tp.y, f.size * 0.55 * (k + 1) / f.trail.length, 0, 6.2832); ctx.fill();
+        }
+        ctx.globalAlpha = 1;
+        // Сам орб (той самий градієнт, що в .soul-gem / .esoul-gem)
+        const g = ctx.createRadialGradient(x - f.size*0.3, y - f.size*0.35, 0, x, y, f.size);
+        if (f.gold) { g.addColorStop(0,'#fffbe0'); g.addColorStop(0.45,'#ffd700'); g.addColorStop(0.75,'#c8920a'); g.addColorStop(1,'#7a5500'); }
+        else        { g.addColorStop(0,'#f3e8ff'); g.addColorStop(0.42,'#b98bff'); g.addColorStop(0.72,'#7a3fd0'); g.addColorStop(1,'#3a1a66'); }
+        ctx.fillStyle = g;
+        ctx.shadowColor = f.gold ? '#ffd700' : '#a06bff';
+        ctx.shadowBlur = 7;
+        ctx.beginPath(); ctx.arc(x, y, f.size, 0, 6.2832); ctx.fill();
+        ctx.shadowBlur = 0;
+    }
+}
+// Пульс лічильника при прильоті орба
+function _hudGemPop(gold) {
+    const el = gold ? document.getElementById('elite-souls-box')
+                    : document.querySelector('#hud .resource-box');
+    if (!el) return;
+    el.classList.remove('gem-pop');
+    void el.offsetWidth; // рестарт CSS-анімації
+    el.classList.add('gem-pop');
+}
 function triggerScreenShake(intensity) {
     screenShake = Math.max(screenShake, intensity || 6);
 }
@@ -11875,29 +11963,31 @@ function closeInstructions() {
     if (ss) ss.style.display = 'flex';
 }
 
+// Ціна апгрейду збирача: 10 × номер прокачки, платиться золотими (елітними) душами
+function _soulCollCost() { return 10 * ((GAME.soulBonus || 0) + 1); }
+
 function upgradeSoulBonus() {
-    if (GAME.souls < GAME.soulBonusCost) return;
-    GAME.souls -= GAME.soulBonusCost;
+    const cost = _soulCollCost();
+    const avail = getStoredEliteSouls();
+    if (avail < cost) return;
+    _haptic(20); _SFX.buy();
+    _store.set('DLSiege_elite', String(avail - cost));
+    GAME.eliteSouls = avail - cost;
     GAME.soulBonus += 1;
-    // Ціна наступного рівня: ×1.55 заокруглена до 5
-    GAME.soulBonusCost = Math.round(GAME.soulBonusCost * 1.55 / 5) * 5;
+    // Золотий сплеск на кристалі
+    if (GAME._soulAltarX != null)
+        spawnHitBurst(GAME._soulAltarX, GAME._soulAltarWorldY, 'gold', 10, 1.2);
     saveGame();
     updateUI();
 }
 
 function getLevelConfig(lvl) {
     // Початковий % сили героїв (heroScalePercent):
-    //   Рівні 1–11: зростає від 70% до 100%
-    //   Рівні 12+:  100 + (lvl - 11)% → тобто heroBase = lvl - 11
+    //   Рівні 1–11: лінійно від 40% до 100% (+6%/рівень) — м'який старт, крутіший ріст
+    //   Рівні 12+:  без змін, 50-й лишається 125%
     let heroBase;
-    if      (lvl === 1)  heroBase = -30; // 70%
-    else if (lvl === 2)  heroBase = -25; // 75%
-    else if (lvl <= 5)   heroBase = -20; // 80%
-    else if (lvl === 6)  heroBase = -15; // 85%
-    else if (lvl === 7)  heroBase = -10; // 90%
-    else if (lvl <= 10)  heroBase =  -5; // 95%
-    else if (lvl === 11) heroBase =   0; // 100%
-    else                 heroBase = Math.round((lvl - 11) * 0.65); // 12→1%, 20→6%, 30→12%, 50→25%
+    if (lvl <= 11) heroBase = -66 + lvl * 6;                     // 1→-60 (40%), 6→-30 (70%), 11→0 (100%)
+    else           heroBase = Math.round((lvl - 11) * 0.65);     // 12→1%, 20→6%, 30→12%, 50→25%
 
     // maxThreat: +5 на рівнях 4,9,14,19,24,29,34,39,44,49
     const maxThreat = 5 + Math.floor((lvl + 1) / 5) * 5;

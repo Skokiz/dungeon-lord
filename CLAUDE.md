@@ -225,7 +225,7 @@ const _sc = (buys, prio, cap) => Math.min((buys + prio * 0.5) / Math.max(cap, 1)
 
 15 текстових подій-оверлеїв (overlay `#donesnnia-overlay`) тригеряться на `wave_start`/`wave_end`. Гравець вибирає варіант → теги `{ dom, pom, zna, vyj, kha, per }` інкрементуються, бафи для GAME.* (heroThreatPct, lordDmg тощо) застосовуються непомітно.
 
-**Ключові функції:** `_psyReset()`, `_psyBuy(cat)`, `_psyCheck(trigger)`, `_showDonesnnia(ev)`, `_psyDismiss(choiceIdx)`.
+**Ключові функції:** `_psyReset()`, `_psyBuy(cat)`, `_psyCheck(trigger)`, `_showDecision(ev)`, `_resolveDecisionIdx(idx)`.
 
 ### Θ Темперамент — 3 варіанти
 
