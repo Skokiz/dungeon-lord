@@ -37,7 +37,9 @@
             --text-low: #7a6a9f;
             --radius-s: 8px;
             --radius-m: 12px;
-            --font-display: Georgia, 'Times New Roman', serif;
+            --font-ui: -apple-system, 'Segoe UI', sans-serif;
+            --font-display: 'Cinzel', Georgia, 'Times New Roman', serif;
+            --font-deco: 'Cinzel Decorative', 'Cinzel', Georgia, serif;
         }
 
         html {
@@ -51,7 +53,7 @@
             min-height: -webkit-fill-available;
             overflow: hidden;
             background: #0d0820;
-            font-family: -apple-system, 'Segoe UI', sans-serif;
+            font-family: var(--font-ui);
             color: white;
             user-select: none;
             -webkit-user-select: none;
@@ -327,7 +329,7 @@
         }
         #game-over > :first-child { margin-top: auto; }
         #game-over > :last-child  { margin-bottom: auto; }
-        #game-over h1 { color: #ff3333; text-transform: uppercase; text-align: center; }
+        #game-over h1 { font-family: var(--font-display); color: #ff3333; text-transform: uppercase; text-align: center; }
         #game-over p  { color: #999; text-align: center; }
         #btn-try-again {
             background: #5a4220; color: #ece8d0;
@@ -347,7 +349,7 @@
         }
         #pause-overlay > :first-child { margin-top: auto; }
         #pause-overlay > :last-child  { margin-bottom: auto; }
-        #pause-overlay h2 { color: #cc88ff; }
+        #pause-overlay h2 { font-family: var(--font-display); color: #cc88ff; }
         #pause-quote {
             color: #ddccff; font-style: italic; font-size: 14px;
             text-align: center; max-width: 320px; line-height: 1.5;
@@ -393,6 +395,8 @@
         .dl-clock { --i:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='9' fill='none' stroke='black' stroke-width='2.4'/%3E%3Cpath d='M12 7v5l3.5 2' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round'/%3E%3C/svg%3E"); }
         .dl-group { --i:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='7.5' cy='9' r='3.2' fill='black'/%3E%3Ccircle cx='16.5' cy='9' r='3.2' fill='black'/%3E%3Ccircle cx='12' cy='16.5' r='3.6' fill='black'/%3E%3C/svg%3E"); }
         .dl-tower { --i:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M5 21V8h2.5V5H10v3h4V5h2.5v3H19v13h-5v-4.5a2 2 0 1 0-4 0V21z' fill='black'/%3E%3C/svg%3E"); }
+        .dl-share { --i:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 2.5 16.5 7h-3v7.5h-3V7h-3z' fill='black'/%3E%3Cpath d='M4 13v6.5h16V13h2.5v9H1.5v-9z' fill='black'/%3E%3C/svg%3E"); }
+        .dl-play { --i:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill-rule='evenodd' d='M3 5.5A1.5 1.5 0 0 1 4.5 4h15A1.5 1.5 0 0 1 21 5.5v13a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 18.5zM10 8.5v7l6-3.5z' fill='black'/%3E%3C/svg%3E"); }
         .pause-vol-row { display:flex; align-items:center; gap:10px; color:#ddccff; font-size:14px; }
         #music-vol-slider, #start-vol-slider { -webkit-appearance:none; appearance:none; width:120px; height:4px; border-radius:4px; background:#3a1f5a; outline:none; accent-color:#cc88ff; cursor:pointer; }
         #music-vol-slider::-webkit-slider-thumb, #start-vol-slider::-webkit-slider-thumb { -webkit-appearance:none; width:16px; height:16px; border-radius:50%; background:#cc88ff; cursor:pointer; box-shadow:0 0 4px #aa55ff; }
@@ -473,7 +477,7 @@
             animation: wave-banner-anim 2.8s cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
         }
         #wave-banner .wb-label {
-            font-family: 'Cinzel', Georgia, serif;
+            font-family: var(--font-display);
             font-size: clamp(11px, 2vw, 14px);
             letter-spacing: 0.4em;
             text-transform: uppercase;
@@ -492,7 +496,7 @@
             background: linear-gradient(90deg, #9966cc, transparent);
         }
         #wave-banner .wb-num {
-            font-family: 'Cinzel Decorative', 'Cinzel', Georgia, serif;
+            font-family: var(--font-deco);
             font-size: clamp(40px, 9vw, 72px);
             font-weight: 700; line-height: 1;
             color: #f0e4ff;
@@ -562,7 +566,7 @@
         #ad-stub-overlay.show { display: flex; }
         .ad-stub-card {
             display: flex; flex-direction: column; align-items: center; gap: 16px;
-            color: #ddccff; font-family: Arial, sans-serif;
+            color: #ddccff; font-family: var(--font-ui);
         }
         .ad-stub-spinner {
             width: 54px; height: 54px; border-radius: 50%;
@@ -584,6 +588,7 @@
             z-index: 300;
         }
         #start-screen h1 {
+            font-family: var(--font-deco); font-weight: 700;
             color: #cc88ff; text-shadow: 0 0 30px #aa00ff;
             text-transform: uppercase; letter-spacing: 3px; text-align: center;
         }
@@ -1363,7 +1368,7 @@
             border:1px solid #6a3aaa; border-radius:14px;
             width:min(820px,96vw); max-height:92vh; overflow-y:auto;
             box-shadow:0 8px 48px #2a006688; padding:20px 22px 22px;
-            color:#d8c8f0; font-family:Arial,sans-serif;
+            color:#d8c8f0; font-family:var(--font-ui);
         }
         .lord-upg-header {
             display:flex; align-items:center; gap:14px;
@@ -1468,7 +1473,7 @@
             min-width: 320px; max-width: 720px; width: 92%;
             max-height: 92vh; overflow-y: auto;
             color: #d8c8f0;
-            font-family: Arial, sans-serif;
+            font-family: var(--font-ui);
         }
         .mon-dev-header {
             display:flex; align-items:center; justify-content:space-between;
@@ -2142,7 +2147,7 @@
         <span id="music-vol-label">38%</span>
     </div>
     <button class="pause-btn" id="pause-resume-btn" onclick="togglePause()" data-i18n="pause-resume">Продовжити</button>
-    <button class="pause-btn" id="pause-restart-btn" onclick="hardReset()" style="margin-top:8px;background:rgba(180,30,30,0.85);border-color:#ff4444;" data-i18n="pause-restart">🔄 Рестарт</button>
+    <button class="pause-btn" id="pause-restart-btn" onclick="hardReset()" style="margin-top:8px;background:rgba(180,30,30,0.85);border-color:#ff4444;" data-i18n="pause-restart" data-i18n-html>🔄 Рестарт</button>
     <button id="pause-api-key-btn" onclick="StoryManager.promptApiKey()" data-i18n="pause-api">🤖 Claude API-ключ</button>
 </div>
 
@@ -2156,14 +2161,14 @@
     <div id="go-elite-earned"></div>
     <!-- Врятувати звичайні душі: за рекламу конвертувати ВСІ у золоті (10:1) -->
     <div id="go-soul-salvage" style="display:none">
-        <div class="go-salvage-info">💀 <b><span id="go-salvage-souls">0</span></b> звичайних душ згорять при виході</div>
+        <div class="go-salvage-info"><span class="soul-gem"></span> <b><span id="go-salvage-souls">0</span></b> звичайних душ згорять при виході</div>
         <button id="go-salvage-btn" class="go-salvage-btn" onclick="_watchAdConvertSouls()">
-            📺 Дивитись рекламу → <span class="esoul-gem"></span> <b><span id="go-salvage-gold">0</span></b> золотих
+            <span class="dl-ico dl-play"></span> Дивитись рекламу → <span class="esoul-gem"></span> <b><span id="go-salvage-gold">0</span></b> золотих
         </button>
     </div>
     <div id="psy-result-panel"></div>
-    <button id="btn-share" onclick="_shareResult()" data-i18n="btn-share">📤 Поділитись результатом</button>
-    <button id="btn-try-again" onclick="hardReset()" data-i18n="go-retry">🔄 Спробувати знову</button>
+    <button id="btn-share" onclick="_shareResult()" data-i18n="btn-share" data-i18n-html>📤 Поділитись результатом</button>
+    <button id="btn-try-again" onclick="hardReset()" data-i18n="go-retry" data-i18n-html>🔄 Спробувати знову</button>
 </div>
 
 <!-- ── Заглушка перегляду реклами ── -->
@@ -2460,7 +2465,7 @@
     </div>
 </div>
 
-<script src="models/i18n.js?v=5"></script>
+<script src="models/i18n.js?v=6"></script>
 <script src="models/draw_slime.js?v=4"></script>
 <script src="models/draw_skeleton.js?v=1"></script>
 <script src="models/hero_flat.js?v=24"></script>
@@ -11597,7 +11602,7 @@ function _doGameWinOverlay(lvl, nextLvl, isLast) {
     const _eEl = document.getElementById('go-elite-earned');
     if (_eEl) _eEl.innerText = GAME.eliteSouls > 0 ? _t('go-elite', {n:GAME.eliteSouls, t:getStoredEliteSouls()}) : '';
     const _tryBtn = document.getElementById('btn-try-again');
-    _tryBtn.textContent = isLast ? _t('go-retry-all') : _t('go-next-btn', {n:nextLvl});
+    _tryBtn.innerHTML = isLast ? _t('go-retry-all') : _t('go-next-btn', {n:nextLvl});
     _tryBtn.onclick = () => hardReset();
     if (isLast) _showPsychotypeResult();
     document.getElementById('game-over').style.display = 'flex';
@@ -11626,7 +11631,7 @@ function gameOver() {
     const _psyEl = document.getElementById('psy-result-panel');
     if (_psyEl) _psyEl.innerHTML = '';
     const _tryBtn = document.getElementById('btn-try-again');
-    if (_tryBtn) { _tryBtn.textContent = _t('go-retry'); _tryBtn.onclick = () => retryLevel(); }
+    if (_tryBtn) { _tryBtn.innerHTML = _t('go-retry'); _tryBtn.onclick = () => retryLevel(); }
     document.getElementById('game-over').style.display = 'flex';
     _showSoulSalvage();
 }

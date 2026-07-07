@@ -62,6 +62,16 @@ const _LORD_BASE = { maxHP: 500, dmg: 20, armor: 5, sizePC: 54 };
 
 Main.html при малюванні лорда передає `tgtX/tgtY` = центр `this.fightTarget` щоб beam наводився.
 
+## Типографіка — 3 токени
+
+- `--font-ui` — системний sans, body і всі панелі (Arial-хардкоди викорінені)
+- `--font-display` — Cinzel/Georgia serif: game-over h1, pause h2, wave-banner label
+- `--font-deco` — Cinzel Decorative: старт-заголовок, wave-banner число
+
+Cinzel — **латиниця-only**: кирилиця падає у Georgia (свідомо, виглядає ок). Вантажиться з Google Fonts `<link>` — офлайн буде Georgia-fallback.
+
+**Пастка i18n**: рядки з HTML (`<span class="dl-ico ...">`) працюють тільки через `innerHTML`. `data-i18n` за замовчуванням — `textContent`; додавай `data-i18n-html` атрибут. JS-оновлення кнопок (`_tryBtn` тощо) — теж `innerHTML`, не `textContent`.
+
 ## Іконки UI — без системних емодзі
 
 **Валюта — gem-пара** (CSS radial-gradient, розмір в `em` → масштабується зі шрифтом):

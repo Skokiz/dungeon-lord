@@ -44,7 +44,7 @@ uk: {
   // Pause
   'pause-title':    '⏸ ПАУЗА',
   'pause-resume':   'Продовжити',
-  'pause-restart':  '🔄 Рестарт',
+  'pause-restart':  '<span class="dl-ico dl-regen"></span> Рестарт',
   'pause-api':      '🤖 Claude API-ключ',
   // Game over
   'go-defeat':      'ПОРАЗКА',
@@ -58,10 +58,10 @@ uk: {
   'andrii-end-3':   'Навіть Андрію ти не сказав нічого. Тиша — теж відповідь.',
   'go-next':        'Далі: Рівень {n} / 50',
   'go-elite':       '+{n} 💀 зароблено (всього: {t})',
-  'go-retry':       '🔄 Спробувати знову',
-  'go-retry-all':   '🔄 Грати заново',
+  'go-retry':       '<span class="dl-ico dl-regen"></span> Спробувати знову',
+  'go-retry-all':   '<span class="dl-ico dl-regen"></span> Грати заново',
   'go-next-btn':    '→ Рівень {n}',
-  'btn-share':      '📤 Поділитись результатом',
+  'btn-share':      '<span class="dl-ico dl-share"></span> Поділитись результатом',
   // Branch choice
   'branch-subtitle': 'Обери шлях розвитку — рішення невідворотне',
   'branch-warn':    'Після вибору інша гілка стане недоступною для цього монстра',
@@ -226,7 +226,7 @@ en: {
   // Pause
   'pause-title':    '⏸ PAUSED',
   'pause-resume':   'Resume',
-  'pause-restart':  '🔄 Restart',
+  'pause-restart':  '<span class="dl-ico dl-regen"></span> Restart',
   'pause-api':      '🤖 Claude API Key',
   // Game over
   'go-defeat':      'DEFEAT',
@@ -240,10 +240,10 @@ en: {
   'andrii-end-3':   'Even to Andrii, you said nothing. Silence is also an answer.',
   'go-next':        'Next: Level {n} / 50',
   'go-elite':       '+{n} 💀 earned (total: {t})',
-  'go-retry':       '🔄 Try Again',
-  'go-retry-all':   '🔄 Play Again',
+  'go-retry':       '<span class="dl-ico dl-regen"></span> Try Again',
+  'go-retry-all':   '<span class="dl-ico dl-regen"></span> Play Again',
   'go-next-btn':    '→ Level {n}',
-  'btn-share':      '📤 Share Result',
+  'btn-share':      '<span class="dl-ico dl-share"></span> Share Result',
   // Branch choice
   'branch-subtitle': 'Choose an evolution path — this decision is final',
   'branch-warn':    'After choosing, the other branch will be locked for this monster',
