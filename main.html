@@ -7208,28 +7208,32 @@ function loop(ts) {
             ctx.beginPath();ctx.ellipse(fx2,G+136+alt,3.2,1.6,0.2,0,Math.PI*2);ctx.fill();
             ctx.beginPath();ctx.ellipse(fx2+5,G+139-alt,3.2,1.6,-0.2,0,Math.PI*2);ctx.fill();
         });
-        // ── Вуличні ліхтарі (кований стовп + скляний ліхтар + калюжа світла) ──
-        [[22,0],[176,2.1]].forEach(([lpx,lph])=>{
+        // ── Настінні ліхтарі на стовпах воріт: джерело видиме, світло збирає фокус на вході ──
+        [[66,-1,0],[134,1,2.1]].forEach(([ax2,dir,lph])=>{
             let la2=0.75+0.25*Math.sin(_fl+lph);
-            // стовп з гачком
-            ctx.fillStyle='#1c1528'; ctx.fillRect(lpx-1.5,G+62,3,50);
-            ctx.strokeStyle='#1c1528'; ctx.lineWidth=2.5;
-            ctx.beginPath();ctx.moveTo(lpx,G+62);ctx.quadraticCurveTo(lpx,G+54,lpx+8,G+54);ctx.stroke();
-            ctx.fillStyle='rgba(150,170,220,0.20)'; ctx.fillRect(lpx+0.4,G+62,1.1,50);
-            // ліхтар-коробочка на підвісі
-            ctx.strokeStyle='#161020'; ctx.lineWidth=1;
-            ctx.beginPath();ctx.moveTo(lpx+8,G+54);ctx.lineTo(lpx+8,G+58);ctx.stroke();
-            ctx.fillStyle='#161020'; ctx.fillRect(lpx+4.5,G+57,7,1.6);
-            ctx.fillStyle=`rgba(255,201,120,${0.85*la2})`;
-            ctx.fillRect(lpx+5,G+58.6,6,7);
-            ctx.fillStyle='#161020'; ctx.fillRect(lpx+4.5,G+65.6,7,1.6);
-            // сяйво + калюжа світла на причалі
-            ctx.globalAlpha=la2*0.30; ctx.fillStyle='#ffb84d';
-            ctx.beginPath();ctx.arc(lpx+8,G+62,13,0,Math.PI*2);ctx.fill();
-            ctx.globalAlpha=la2*0.14;
-            ctx.beginPath();ctx.ellipse(lpx+8,G+112,22,5,0,0,Math.PI*2);ctx.fill();
+            let lx2=ax2+dir*7, ly2=G+84;
+            // кований кронштейн зі стовпа
+            ctx.strokeStyle='#161020'; ctx.lineWidth=1.6;
+            ctx.beginPath();ctx.moveTo(ax2,ly2-6);ctx.lineTo(lx2,ly2-6);ctx.lineTo(lx2,ly2-3);ctx.stroke();
+            // корпус ліхтаря
+            ctx.fillStyle='#161020'; ctx.fillRect(lx2-4,ly2-3.5,8,1.6);
+            ctx.fillStyle=`rgba(255,201,120,${0.9*la2})`;
+            ctx.fillRect(lx2-3,ly2-2,6,7);
+            ctx.fillStyle='#161020'; ctx.fillRect(lx2-4,ly2+5,8,1.6);
+            // сяйво падає на стовп і арку (джерело поруч із поверхнею)
+            ctx.globalAlpha=la2*0.26; ctx.fillStyle='#ffb84d';
+            ctx.beginPath();ctx.arc(lx2,ly2+1,12,0,Math.PI*2);ctx.fill();
             ctx.globalAlpha=1;
         });
+        // Світло з відчинених воріт лягає калюжею на землю перед входом
+        {
+            let ga2=0.15+0.05*Math.sin(_fl*0.7);
+            let gp=ctx.createRadialGradient(100,G+141,4,100,G+141,38);
+            gp.addColorStop(0,`rgba(255,196,96,${ga2})`);
+            gp.addColorStop(1,'rgba(120,60,10,0)');
+            ctx.fillStyle=gp;
+            ctx.beginPath();ctx.ellipse(100,G+141,38,7,0,0,Math.PI*2);ctx.fill();
+        }
         // ── Димар лівої хати + дим (нічний, з місячним римом) ──
         ctx.fillStyle='#241c34'; ctx.fillRect(44,G+20,9,18);
         ctx.fillStyle='#2e2540'; ctx.fillRect(43,G+18,11,4);
@@ -7243,13 +7247,18 @@ function loop(ts) {
             ctx.beginPath();ctx.arc(sx2,sy2,3+ph*5,0,Math.PI*2);ctx.fill();
         }
         ctx.globalAlpha=1;
-        // ── Ореоли світла з вікон (обидві будівлі) ──
-        [[19,G+68],[43,G+68],[122,G+61],[150,G+61]].forEach(([wx2,wy2])=>{
-            let wg=ctx.createRadialGradient(wx2,wy2,1,wx2,wy2,17);
-            wg.addColorStop(0,'rgba(255,200,100,0.20)');
+        // ── Світловий спил з вікон: м'яка пляма ВНИЗ по стіні (світло має напрямок) ──
+        [[19,G+75,16],[43,G+75,16],[122,G+69,18],[150,G+69,18]].forEach(([wx2,wy2,ww2])=>{
+            let wg=ctx.createLinearGradient(0,wy2,0,wy2+13);
+            wg.addColorStop(0,'rgba(255,190,90,0.16)');
             wg.addColorStop(1,'rgba(255,160,40,0)');
             ctx.fillStyle=wg;
-            ctx.beginPath();ctx.arc(wx2,wy2,17,0,Math.PI*2);ctx.fill();
+            ctx.beginPath();
+            ctx.moveTo(wx2-ww2/2,wy2);
+            ctx.lineTo(wx2+ww2/2,wy2);
+            ctx.lineTo(wx2+ww2/2+4,wy2+13);
+            ctx.lineTo(wx2-ww2/2-4,wy2+13);
+            ctx.closePath();ctx.fill();
         });
         // ── Розвішана риба під краєм навісу ──
         ctx.strokeStyle='rgba(60,45,30,0.7)'; ctx.lineWidth=0.8;
@@ -7523,16 +7532,19 @@ function loop(ts) {
         ctx.restore();
         ctx.strokeStyle='#6a6478'; ctx.lineWidth=2;
         ctx.beginPath();ctx.arc(100,G+100,26,Math.PI,0);ctx.stroke();
-        // Залізні ліхтарі (нічні стовпи)
-        ctx.fillStyle='#1c1528'; ctx.fillRect(26,G+8,4,50); ctx.fillRect(170,G+8,4,50);
-        ctx.fillRect(22,G+54,14,4); ctx.fillRect(167,G+54,14,4);
-        ctx.globalAlpha=fa*0.4; ctx.fillStyle='#ffdd88';
-        ctx.beginPath();ctx.arc(28,G+6,14,0,Math.PI*2);ctx.fill();
-        ctx.beginPath();ctx.arc(172,G+6,14,0,Math.PI*2);ctx.fill();
-        ctx.globalAlpha=fa; ctx.fillStyle='#ffeeaa';
-        ctx.beginPath();ctx.arc(28,G+6,5,0,Math.PI*2);ctx.fill();
-        ctx.beginPath();ctx.arc(172,G+6,5,0,Math.PI*2);ctx.fill();
-        ctx.globalAlpha=1;
+        // Настінні ліхтарі на фахверкових фасадах (джерело на стіні, не в небі)
+        [[28,G+52,0],[190,G+56,1.4]].forEach(([lx2,ly2,lph])=>{
+            let la2=0.75+0.25*Math.sin(_fl+lph);
+            ctx.strokeStyle='#171126'; ctx.lineWidth=1.6;
+            ctx.beginPath();ctx.moveTo(lx2,ly2-8);ctx.lineTo(lx2,ly2-3);ctx.stroke();
+            ctx.fillStyle='#171126'; ctx.fillRect(lx2-4,ly2-3.5,8,1.6);
+            ctx.fillStyle=`rgba(255,201,120,${0.9*la2})`;
+            ctx.fillRect(lx2-3,ly2-2,6,7);
+            ctx.fillStyle='#171126'; ctx.fillRect(lx2-4,ly2+5,8,1.6);
+            ctx.globalAlpha=la2*0.25; ctx.fillStyle='#ffb84d';
+            ctx.beginPath();ctx.arc(lx2,ly2+1,12,0,Math.PI*2);ctx.fill();
+            ctx.globalAlpha=1;
+        });
         ctx.globalAlpha=0.85;
         ctx.fillStyle='#c9ab72'; ctx.font='bold 10px Arial'; ctx.textAlign='center';
         ctx.fillText('⛪ ФАХВЕРК-МІСТЕЧКО',100,G+6);
@@ -8344,16 +8356,24 @@ function loop(ts) {
         ctx.fillStyle='#882ecc';
         ctx.beginPath();ctx.moveTo(6,G+72);ctx.lineTo(0,G+78);ctx.lineTo(6,G+84);ctx.closePath();ctx.fill();
         ctx.beginPath();ctx.moveTo(194,G+72);ctx.lineTo(200,G+78);ctx.lineTo(194,G+84);ctx.closePath();ctx.fill();
-        // Золоті ліхтарі
-        ctx.fillStyle='#6a5a30'; ctx.fillRect(27,G+6,5,50); ctx.fillRect(168,G+6,5,50);
-        ctx.fillRect(24,G+52,14,4); ctx.fillRect(165,G+52,14,4);
-        ctx.globalAlpha=fa*0.35; ctx.fillStyle='#ffffaa';
-        ctx.beginPath();ctx.arc(31,G+2,18,0,Math.PI*2);ctx.fill();
-        ctx.beginPath();ctx.arc(169,G+2,18,0,Math.PI*2);ctx.fill();
-        ctx.globalAlpha=fa; ctx.fillStyle='#ffee88';
-        ctx.beginPath();ctx.arc(31,G+2,6,0,Math.PI*2);ctx.fill();
-        ctx.beginPath();ctx.arc(169,G+2,6,0,Math.PI*2);ctx.fill();
-        ctx.globalAlpha=1;
+        // Золоті світильники на вежах (джерело на тлі каменю, не в небі)
+        [[29,0],[171,1.8]].forEach(([lx2,lph])=>{
+            let la2=0.75+0.25*Math.sin(_fl+lph);
+            let ly2=G+30;
+            // кований тримач на стіні вежі
+            ctx.fillStyle='#6a5a30'; ctx.fillRect(lx2-2.5,ly2+6,5,22);
+            ctx.strokeStyle='#6a5a30'; ctx.lineWidth=1.6;
+            ctx.beginPath();ctx.moveTo(lx2,ly2-8);ctx.lineTo(lx2,ly2-4);ctx.stroke();
+            // золочений ліхтар
+            ctx.fillStyle='#c9a86a'; ctx.fillRect(lx2-4.5,ly2-4.5,9,1.8);
+            ctx.fillStyle=`rgba(255,225,140,${0.92*la2})`;
+            ctx.fillRect(lx2-3.5,ly2-2.5,7,8);
+            ctx.fillStyle='#c9a86a'; ctx.fillRect(lx2-4.5,ly2+5.5,9,1.8);
+            // сяйво на камені вежі
+            ctx.globalAlpha=la2*0.26; ctx.fillStyle='#ffe9a0';
+            ctx.beginPath();ctx.arc(lx2,ly2+1,13,0,Math.PI*2);ctx.fill();
+            ctx.globalAlpha=1;
+        });
         // Золоте світло з-за портикуліса (столиця сяє зсередини)
         ctx.save();
         ctx.beginPath();ctx.arc(100,G+100,22,Math.PI,0);ctx.rect(78,G+100,44,44);ctx.clip();
