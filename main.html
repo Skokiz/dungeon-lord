@@ -390,6 +390,9 @@
         .dl-moon { --i:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M20.5 14.5A8.8 8.8 0 0 1 9.5 3.5a8.8 8.8 0 1 0 11 11z' fill='black'/%3E%3C/svg%3E"); }
         .dl-drop { --i:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 2s6.5 7.6 6.5 12a6.5 6.5 0 1 1-13 0C5.5 9.6 12 2 12 2z' fill='black'/%3E%3C/svg%3E"); }
         .dl-orb { --i:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='9' fill='black'/%3E%3C/svg%3E"); }
+        .dl-clock { --i:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='9' fill='none' stroke='black' stroke-width='2.4'/%3E%3Cpath d='M12 7v5l3.5 2' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round'/%3E%3C/svg%3E"); }
+        .dl-group { --i:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='7.5' cy='9' r='3.2' fill='black'/%3E%3Ccircle cx='16.5' cy='9' r='3.2' fill='black'/%3E%3Ccircle cx='12' cy='16.5' r='3.6' fill='black'/%3E%3C/svg%3E"); }
+        .dl-tower { --i:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M5 21V8h2.5V5H10v3h4V5h2.5v3H19v13h-5v-4.5a2 2 0 1 0-4 0V21z' fill='black'/%3E%3C/svg%3E"); }
         .pause-vol-row { display:flex; align-items:center; gap:10px; color:#ddccff; font-size:14px; }
         #music-vol-slider, #start-vol-slider { -webkit-appearance:none; appearance:none; width:120px; height:4px; border-radius:4px; background:#3a1f5a; outline:none; accent-color:#cc88ff; cursor:pointer; }
         #music-vol-slider::-webkit-slider-thumb, #start-vol-slider::-webkit-slider-thumb { -webkit-appearance:none; width:16px; height:16px; border-radius:50%; background:#cc88ff; cursor:pointer; box-shadow:0 0 4px #aa55ff; }
@@ -2442,9 +2445,9 @@
 <!-- ── DAILY QUESTS PANEL ── -->
 <div id="daily-panel" style="display:none">
     <div class="daily-title" data-i18n="daily-title">📋 Завдання дня</div>
-    <div id="dq-kills"   class="daily-q" data-i18n="dq-kills">○ Знищ 5 героїв +5💀</div>
-    <div id="dq-wave"    class="daily-q" data-i18n="dq-wave">○ Запусти хвилю +5💀</div>
-    <div id="dq-upgrade" class="daily-q" data-i18n="dq-upgrade">○ Апгрейдни +5💀</div>
+    <div id="dq-kills"   class="daily-q" data-i18n="dq-kills" data-i18n-html>○ Знищ 5 героїв +5💀</div>
+    <div id="dq-wave"    class="daily-q" data-i18n="dq-wave" data-i18n-html>○ Запусти хвилю +5💀</div>
+    <div id="dq-upgrade" class="daily-q" data-i18n="dq-upgrade" data-i18n-html>○ Апгрейдни +5💀</div>
 </div>
 
 <!-- ── TUTORIAL BUBBLE ── -->
@@ -2457,7 +2460,7 @@
     </div>
 </div>
 
-<script src="models/i18n.js?v=4"></script>
+<script src="models/i18n.js?v=5"></script>
 <script src="models/draw_slime.js?v=4"></script>
 <script src="models/draw_skeleton.js?v=1"></script>
 <script src="models/hero_flat.js?v=24"></script>
@@ -12765,7 +12768,8 @@ function _dailyRenderPanel() {
     function _dq(id, text, done) {
         const el = document.getElementById(id);
         if (!el) return;
-        el.textContent = (done ? '✓ ' : '○ ') + text + ' +5💀';
+        // i18n-рядок уже містить маркер ○/✓ і "+5💀" — не дублюємо, 💀 → орб
+        el.innerHTML = text.replace('💀', '<span class="soul-gem"></span>');
         el.className = 'daily-q' + (done ? ' done' : '');
     }
     _dq('dq-kills',   q.kills ? _t('dq-kills-done') : _t('dq-kills'), q.kills);
@@ -12900,24 +12904,24 @@ function _showWaveBanner(n) {
 // Кроки з'являються при реальних ігрових подіях, не всі разом на старті.
 const _LT = [
     { id:'start',
-      uk:'👹 Герої намагаються знищити твого Лорда. Підземелля створює монстрів через деякий час.',
-      en:'👹 Heroes are trying to destroy your Lord. The dungeon creates monsters automatically.',
+      uk:'<span class="dl-ico dl-beast"></span> Герої намагаються знищити твого Лорда. Підземелля створює монстрів через деякий час.',
+      en:'<span class="dl-ico dl-beast"></span> Heroes are trying to destroy your Lord. The dungeon creates monsters automatically.',
       target:null, autoMs:14000 },
     { id:'hero_first',
-      uk:'⚔️ Герой наближається! Натисни <b>АТАКА</b> — монстри підуть атакувати місто і знищувати всіх на шляху.',
-      en:'⚔️ A hero approaches! Press <b>ATTACK</b> — monsters will storm the City and destroy everyone in their path.',
+      uk:'<span class="dl-ico dl-sword"></span> Герой наближається! Натисни <b>АТАКА</b> — монстри підуть атакувати місто і знищувати всіх на шляху.',
+      en:'<span class="dl-ico dl-sword"></span> A hero approaches! Press <b>ATTACK</b> — monsters will storm the City and destroy everyone in their path.',
       target:'btn-wave', pos:'above', autoMs:12000 },
     { id:'first_kill',
-      uk:'💀 Підземелля поглинає душі вбитих ворогів. За них ти можеш підсилювати монстрів та створювати нових, а також прокачувати Лорда.',
-      en:'💀 The dungeon absorbs souls of fallen enemies. Use them to upgrade monsters, summon new ones, and empower the Lord.',
+      uk:'<span class="soul-gem"></span> Підземелля поглинає душі вбитих ворогів. За них ти можеш підсилювати монстрів та створювати нових, а також прокачувати Лорда.',
+      en:'<span class="soul-gem"></span> The dungeon absorbs souls of fallen enemies. Use them to upgrade monsters, summon new ones, and empower the Lord.',
       target:'btn-floor', pos:'above', autoMs:12000 },
     { id:'floor_bought',
-      uk:'🏰 Ти зробив своє підземелля могутнішим, але і сильніші герої взялися за роботу.',
-      en:'🏰 You made your dungeon stronger — but deadlier heroes are now on their way.',
+      uk:'<span class="dl-ico dl-tower"></span> Ти зробив своє підземелля могутнішим, але і сильніші герої взялися за роботу.',
+      en:'<span class="dl-ico dl-tower"></span> You made your dungeon stronger — but deadlier heroes are now on their way.',
       target:null, autoMs:10000 },
     { id:'lord',
-      uk:'👑 <b>Прокачай Лорда</b>: натисни 👑 → ⚗️ Прокачка. Елітні душі 💎 — назавжди.',
-      en:'👑 <b>Upgrade the Lord</b>: tap 👑 → ⚗️ Upgrade. Elite souls 💎 are permanent.',
+      uk:'<span class="dl-ico dl-crown"></span> <b>Прокачай Лорда</b>: натисни <span class="dl-ico dl-crown"></span> → <span class="dl-ico dl-flask"></span> Прокачка. Елітні душі <span class="esoul-gem"></span> — назавжди.',
+      en:'<span class="dl-ico dl-crown"></span> <b>Upgrade the Lord</b>: tap <span class="dl-ico dl-crown"></span> → <span class="dl-ico dl-flask"></span> Upgrade. Elite souls <span class="esoul-gem"></span> are permanent.',
       target:'btn-menu-lord', pos:'above', autoMs:12000, last:true },
 ];
 
@@ -13574,10 +13578,10 @@ const MON_DEV_EMOJI = {
     lightning:'⚡', dark_knight:'⚔️', banshee:'😱', lich:'🧛', abyss:'🕳', dragon:'🐉'
 };
 const MON_DEV_STAT_META = [
-    { key:'atk',   ico:'⚔️', label:'Атака',     bonus:lvl => `+${lvl*10}%` },
-    { key:'hp',    ico:'💚', label:'ХП',        bonus:lvl => `+${lvl*10}%` },
-    { key:'cd',    ico:'⏱',  label:'Колдаун',   bonus:lvl => `−${lvl*5}%` },
-    { key:'count', ico:'🔢', label:'Кількість', bonus:lvl => `+${lvl}` },
+    { key:'atk',   ico:'dl-sword', label:'Атака',     bonus:lvl => `+${lvl*10}%` },
+    { key:'hp',    ico:'dl-heart', label:'ХП',        bonus:lvl => `+${lvl*10}%` },
+    { key:'cd',    ico:'dl-clock', label:'Колдаун',   bonus:lvl => `−${lvl*5}%` },
+    { key:'count', ico:'dl-group', label:'Кількість', bonus:lvl => `+${lvl}` },
 ];
 // Глобальна таблиця для бестіарію (колір + тип атаки) — MONSTER_KINDS локальна в Unit()
 const MON_INFO = {
@@ -14437,7 +14441,7 @@ function _ensureMonDevButtons() {
         btn.className = 'mon-stat-btn';
         btn.dataset.stat = meta.key;
         btn.innerHTML = `
-            <span class="stat-ico">${meta.ico}</span>
+            <span class="stat-ico"><span class="dl-ico ${meta.ico}"></span></span>
             <span class="stat-lbl">${meta.label}</span>
             <span class="stat-lvl"></span>
             <span class="stat-cost"></span>
@@ -14705,15 +14709,16 @@ function _renderMonsterDev() {
     let countCap = countMaxBase + 3;
 
     let statsHtml = '';
-    statsHtml += `<div class="stat-row"><span class="stat-name">⚔️ Атака</span><span class="stat-val">${dmgEff.toFixed(1)}</span></div>`;
-    statsHtml += `<div class="stat-row"><span class="stat-name">💚 ХП</span><span class="stat-val">${hpEff.toFixed(1)}</span></div>`;
-    statsHtml += `<div class="stat-row"><span class="stat-name">⏱ Спавн</span><span class="stat-val">${intervalEff.toFixed(1)}с</span></div>`;
-    statsHtml += `<div class="stat-row"><span class="stat-name">🔢 Кільк.</span><span class="stat-val">${countEff}/${countCap}</span></div>`;
-    statsHtml += `<div class="stat-row"><span class="stat-name">⚡ Тип атаки</span><span class="stat-val">${baseInfo.dmgType==='mag'?'Магія':'Фізика'}</span></div>`;
+    const _si = c => `<span class="dl-ico ${c}"></span>`;
+    statsHtml += `<div class="stat-row"><span class="stat-name">${_si('dl-sword')} Атака</span><span class="stat-val">${dmgEff.toFixed(1)}</span></div>`;
+    statsHtml += `<div class="stat-row"><span class="stat-name">${_si('dl-heart')} ХП</span><span class="stat-val">${hpEff.toFixed(1)}</span></div>`;
+    statsHtml += `<div class="stat-row"><span class="stat-name">${_si('dl-clock')} Спавн</span><span class="stat-val">${intervalEff.toFixed(1)}с</span></div>`;
+    statsHtml += `<div class="stat-row"><span class="stat-name">${_si('dl-group')} Кільк.</span><span class="stat-val">${countEff}/${countCap}</span></div>`;
+    statsHtml += `<div class="stat-row"><span class="stat-name">${_si(baseInfo.dmgType==='mag'?'dl-spark':'dl-sword')} Тип атаки</span><span class="stat-val">${baseInfo.dmgType==='mag'?'Магія':'Фізика'}</span></div>`;
     const armorStr = baseInfo.armor > 0 ? `${baseInfo.armor}` + (baseInfo.magArmor > 0 ? ` / ${baseInfo.magArmor}` : '') : (baseInfo.magArmor > 0 ? `0 / ${baseInfo.magArmor}` : '—');
-    statsHtml += `<div class="stat-row"><span class="stat-name">🛡 Броня</span><span class="stat-val">${armorStr}</span></div>`;
-    statsHtml += `<div class="stat-row"><span class="stat-name">💜 Реген</span><span class="stat-val">${baseInfo.regen > 0 ? baseInfo.regen.toFixed(1) + '/с' : '—'}</span></div>`;
-    statsHtml += `<div class="stat-row"><span class="stat-name">⚡ ША</span><span class="stat-val">${baseInfo.atkSpd.toFixed(2)}/с</span></div>`;
+    statsHtml += `<div class="stat-row"><span class="stat-name">${_si('dl-shield')} Броня</span><span class="stat-val">${armorStr}</span></div>`;
+    statsHtml += `<div class="stat-row"><span class="stat-name">${_si('dl-regen')} Реген</span><span class="stat-val">${baseInfo.regen > 0 ? baseInfo.regen.toFixed(1) + '/с' : '—'}</span></div>`;
+    statsHtml += `<div class="stat-row"><span class="stat-name">${_si('dl-bolt')} ША</span><span class="stat-val">${baseInfo.atkSpd.toFixed(2)}/с</span></div>`;
     document.getElementById('mon-dev-stats').innerHTML = statsHtml;
 
     // In-place оновлення кнопок (DOM не пересоздається — click events не губляться)
