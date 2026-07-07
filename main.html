@@ -104,6 +104,7 @@
             z-index: 5;
         }
         .resource-box {
+            display: inline-flex; align-items: center; gap: 0.32em;
             font-weight: 700; color: var(--text-hi);
             font-variant-numeric: tabular-nums;
             background: var(--surface-1);
@@ -361,7 +362,34 @@
         }
         .pause-btn:hover { background: #38205a; }
         .pause-btn:active { transform: scale(0.96); }
-        .esoul-gem { display:inline-block; width:13px; height:13px; border-radius:50%; background:radial-gradient(circle at 35% 28%, #fffbe0, #ffd700 45%, #c8920a 75%, #7a5500); box-shadow:0 0 6px #ffd70088,0 1px 2px rgba(0,0,0,.5); vertical-align:middle; margin:0 1px; flex-shrink:0; }
+        /* Орби-валюти: розмір у em → масштабуються зі шрифтом контейнера на всіх брейкпойнтах.
+           vertical-align для inline-контекстів; у flex-контейнерах центрує align-items:center. */
+        .esoul-gem { display:inline-block; width:0.82em; height:0.82em; border-radius:50%; background:radial-gradient(circle at 35% 28%, #fffbe0, #ffd700 45%, #c8920a 75%, #7a5500); box-shadow:0 0 6px #ffd70088,0 1px 2px rgba(0,0,0,.5); vertical-align:-0.06em; flex-shrink:0; }
+        /* Регулярні душі — фіолетовий орб (пара до золотого .esoul-gem еліти) */
+        .soul-gem { display:inline-block; width:0.82em; height:0.82em; border-radius:50%; background:radial-gradient(circle at 35% 28%, #f3e8ff, #b98bff 42%, #7a3fd0 72%, #3a1a66); box-shadow:0 0 6px #a06bffaa,0 1px 2px rgba(0,0,0,.5); vertical-align:-0.06em; flex-shrink:0; }
+        /* ── Icon-set: monochrome mask-SVG замість системних емодзі (крос-платформно однакові, тонуються currentColor) ── */
+        .dl-ico { display:inline-block; width:1.15em; height:1.15em; vertical-align:-0.22em; background-color:currentColor; flex-shrink:0;
+            -webkit-mask:var(--i) center/contain no-repeat; mask:var(--i) center/contain no-repeat; }
+        .dl-crown { --i:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M4.6 18.2h14.8l1.8-9.6-5.2 4L12 4.2 8 12.6l-5.2-4z' fill='black'/%3E%3C/svg%3E"); }
+        .dl-trap  { --i:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M2 18.5 6 8l4 10.5zM8 18.5 12 8l4 10.5zM14 18.5 18 8l4 10.5z' fill='black'/%3E%3C/svg%3E"); }
+        .dl-beast { --i:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M7 15a5 5 0 1 0 10 0 5 5 0 1 0-10 0Z' fill='black'/%3E%3Cpath d='M9.8 5.5a2.2 2.2 0 1 0 4.4 0 2.2 2.2 0 1 0-4.4 0Z' fill='black'/%3E%3Cpath d='M3.4 9a2 2 0 1 0 4 0 2 2 0 1 0-4 0Z' fill='black'/%3E%3Cpath d='M16.6 9a2 2 0 1 0 4 0 2 2 0 1 0-4 0Z' fill='black'/%3E%3C/svg%3E"); }
+        .dl-flask { --i:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M9.5 3h5v1.6h-1V9l4.4 7.8A3 3 0 0 1 15.3 21H8.7a3 3 0 0 1-2.6-4.2L10.5 9V4.6h-1z' fill='black'/%3E%3C/svg%3E"); }
+        .dl-sword { --i:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M19.8 2.6 21.4 4.2 12 13.6l1.9 1.9-1.5 1.5-1.6-1.6-3.4 3.4c-.5.5-1.4.5-1.9 0l-.2-.2c-.5-.5-.5-1.4 0-1.9l3.4-3.4-1.6-1.6 1.5-1.5 1.9 1.9z' fill='black'/%3E%3C/svg%3E"); }
+        .dl-heart { --i:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 21 10.55 19.7C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.2z' fill='black'/%3E%3C/svg%3E"); }
+        .dl-shield { --i:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 2 4 5v6c0 5 3.4 8.8 8 11 4.6-2.2 8-6 8-11V5z' fill='black'/%3E%3C/svg%3E"); }
+        .dl-bolt { --i:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M13 2 5 13.5h4.5L11 22l8-11.5h-4.5z' fill='black'/%3E%3C/svg%3E"); }
+        .dl-burst { --i:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 2l1.8 6.2L20 5l-3.2 5.2L23 12l-6.2 1.8L20 19l-5.2-3.2L12 22l-1.8-6.2L4 19l3.2-5.2L1 12l6.2-1.8L4 5l5.2 3.2z' fill='black'/%3E%3C/svg%3E"); }
+        .dl-regen { --i:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M19 12a7 7 0 1 1-2.05-4.95' fill='none' stroke='black' stroke-width='2.8' stroke-linecap='round'/%3E%3Cpath d='M20.5 3.2v5.3h-5.3z' fill='black'/%3E%3C/svg%3E"); }
+        .dl-spark { --i:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 2C13 8 16 11 22 12 16 13 13 16 12 22 11 16 8 13 2 12 8 11 11 8 12 2z' fill='black'/%3E%3C/svg%3E"); }
+        .dl-star { --i:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 2l3.1 6.3 6.9 1-5 4.8L18.2 21 12 17.8 5.8 21 7 14.1l-5-4.8 6.9-1z' fill='black'/%3E%3C/svg%3E"); }
+        .dl-bone { --i:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='5.5' cy='15.5' r='3' fill='black'/%3E%3Ccircle cx='8.5' cy='18.5' r='3' fill='black'/%3E%3Ccircle cx='15.5' cy='5.5' r='3' fill='black'/%3E%3Ccircle cx='18.5' cy='8.5' r='3' fill='black'/%3E%3Crect x='4' y='10' width='16' height='4' transform='rotate(-45 12 12)' fill='black'/%3E%3C/svg%3E"); }
+        .dl-eye { --i:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill-rule='evenodd' d='M12 5C6.5 5 2.6 9.6 1.5 12c1.1 2.4 5 7 10.5 7s9.4-4.6 10.5-7C21.4 9.6 17.5 5 12 5zm0 3.8a3.2 3.2 0 1 1 0 6.4 3.2 3.2 0 0 1 0-6.4z' fill='black'/%3E%3C/svg%3E"); }
+        .dl-ghost { --i:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill-rule='evenodd' d='M12 2a7.5 7.5 0 0 0-7.5 7.5V21l2.5-1.8L9.5 21l2.5-1.8L14.5 21l2.5-1.8L19.5 21V9.5A7.5 7.5 0 0 0 12 2zM9.3 8.6a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3zm5.4 0a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3z' fill='black'/%3E%3C/svg%3E"); }
+        .dl-crystal { --i:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='10' r='6.6' fill='black'/%3E%3Cpath d='M6.8 18h10.4l-1.4 3H8.2z' fill='black'/%3E%3C/svg%3E"); }
+        .dl-swirl { --i:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 12a2 2 0 0 0 2-2 3.5 3.5 0 0 0-3.5-3.5A5.5 5.5 0 0 0 5 12a7.5 7.5 0 0 0 7.5 7.5A9.5 9.5 0 0 0 22 10' fill='none' stroke='black' stroke-width='2.6' stroke-linecap='round'/%3E%3C/svg%3E"); }
+        .dl-moon { --i:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M20.5 14.5A8.8 8.8 0 0 1 9.5 3.5a8.8 8.8 0 1 0 11 11z' fill='black'/%3E%3C/svg%3E"); }
+        .dl-drop { --i:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 2s6.5 7.6 6.5 12a6.5 6.5 0 1 1-13 0C5.5 9.6 12 2 12 2z' fill='black'/%3E%3C/svg%3E"); }
+        .dl-orb { --i:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='9' fill='black'/%3E%3C/svg%3E"); }
         .pause-vol-row { display:flex; align-items:center; gap:10px; color:#ddccff; font-size:14px; }
         #music-vol-slider, #start-vol-slider { -webkit-appearance:none; appearance:none; width:120px; height:4px; border-radius:4px; background:#3a1f5a; outline:none; accent-color:#cc88ff; cursor:pointer; }
         #music-vol-slider::-webkit-slider-thumb, #start-vol-slider::-webkit-slider-thumb { -webkit-appearance:none; width:16px; height:16px; border-radius:50%; background:#cc88ff; cursor:pointer; box-shadow:0 0 4px #aa55ff; }
@@ -1004,10 +1032,10 @@
         .elite-box { background:rgba(50,35,0,0.85); border:1px solid rgba(255,200,50,0.5);
             font-weight:bold; color:#ffd700; border-radius:10px;
             text-shadow:0 0 8px rgba(255,200,0,0.7); white-space:nowrap; }
-        .esoul-icon { display:inline-block; filter:sepia(1) saturate(6) hue-rotate(350deg) brightness(1.25); }
 
         /* ── Стартовий екран — нові кнопки ── */
-        #start-elite-display { color:#ff88ff; font-size:15px; font-weight:bold;
+        #start-elite-display { display:inline-flex; align-items:center; gap:0.32em;
+            color:#ff88ff; font-size:15px; font-weight:bold;
             background:rgba(120,0,160,0.4); border:1px solid rgba(200,100,255,0.3);
             border-radius:8px; padding:4px 14px; letter-spacing:1px; }
         #btn-soul-dungeon {
@@ -1955,7 +1983,7 @@
         }
         .bc-stat-cell:nth-last-child(-n+2) { border-bottom: none; }
         .bc-stat-cell.bc-full { grid-column: 1 / -1; }
-        .bc-sc-icon { font-size: 11px; width: 14px; text-align: center; flex-shrink: 0; }
+        .bc-sc-icon { font-size: 11px; width: 14px; text-align: center; flex-shrink: 0; color: #8d7ab8; }
         .bc-sc-lbl  { font-size: 10.5px; color: #7766aa; flex: 1; min-width: 0; white-space: nowrap; }
         .bc-sc-val  { font-size: 12px; font-weight: 700; color: #dde0ff; white-space: nowrap; flex-shrink: 0; }
         .bc-sc-val.cv-atk  { color: #ffbb66; }
@@ -2015,7 +2043,7 @@
     <button id="btn-lang" onclick="_setLang(_lang==='uk'?'en':'uk')" style="position:absolute;top:12px;right:12px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.2);color:#ccc;border-radius:8px;padding:5px 10px;font-size:13px;cursor:pointer;">🇬🇧 EN</button>
     <p id="start-lore" data-i18n="start-lore" style="color:#6a4a8a;font-size:13px;letter-spacing:.5px;max-width:300px;text-align:center;line-height:1.6;margin:0"></p>
     <div id="lvl-progress-label"><span data-i18n="lvl-label">Рівень</span> <span id="lvl-num">1</span> <span id="lvl-total">/ 50</span></div>
-    <div id="start-elite-display"><span class="esoul-icon">💀</span> <span id="start-elite-num">0</span></div>
+    <div id="start-elite-display"><span class="esoul-gem"></span> <span id="start-elite-num">0</span></div>
     <div id="lord-title"></div>
     <button id="btn-continue" onclick="continueGame()" data-i18n="btn-start">▶ Почати гру</button>
     <button id="btn-hell" onclick="continueHell()" style="display:none;background:rgba(120,0,0,0.7);border-color:#cc2200;color:#ff6644;" data-i18n="btn-hell">🔥 Режим Пекла</button>
@@ -2038,7 +2066,7 @@
 <!-- ── ДУША ПІДЗЕМЕЛЛЯ ── -->
 <div id="soul-dungeon-screen">
     <h2 data-i18n="sd-title">💜 Душа Підземелля</h2>
-    <div id="soul-dungeon-elite"><span class="esoul-icon">💀</span> <span id="soul-dungeon-elite-num">0</span></div>
+    <div id="soul-dungeon-elite"><span class="esoul-gem"></span> <span id="soul-dungeon-elite-num">0</span></div>
     <div id="soul-dungeon-hint" data-i18n="sd-hint" data-i18n-html>Витрачай Елітні Душі на назавжди-покращення.<br>Ефект застосовується з наступного рівня.</div>
     <div id="soul-dungeon-cards"></div>
     <button id="btn-close-soul-dungeon" onclick="closeSoulDungeon()" data-i18n="btn-back">← Назад</button>
@@ -2056,7 +2084,7 @@
         <p data-i18n="instr-souls">Вбивай героїв — отримуй Душі 💀. Купуй нові поверхи, монстрів, пастки, покращуй Лорда і монстрів.</p>
     </div>
     <div class="instr-section">
-        <h3><span class="esoul-icon">💀</span> <span data-i18n="instr-elite-h">Елітні Душі</span></h3>
+        <h3><span class="esoul-gem"></span> <span data-i18n="instr-elite-h">Елітні Душі</span></h3>
         <p data-i18n="instr-elite">З елітних героїв випадає 1💀, з босів — 3💀. Вони зберігаються між рівнями. Використовуй їх у Душі Підземелля для назавжди-покращень.</p>
     </div>
     <div class="instr-section">
@@ -2127,7 +2155,7 @@
     <div id="go-soul-salvage" style="display:none">
         <div class="go-salvage-info">💀 <b><span id="go-salvage-souls">0</span></b> звичайних душ згорять при виході</div>
         <button id="go-salvage-btn" class="go-salvage-btn" onclick="_watchAdConvertSouls()">
-            📺 Дивитись рекламу → <span class="esoul-icon">💀</span> <b><span id="go-salvage-gold">0</span></b> золотих
+            📺 Дивитись рекламу → <span class="esoul-gem"></span> <b><span id="go-salvage-gold">0</span></b> золотих
         </button>
     </div>
     <div id="psy-result-panel"></div>
@@ -2172,8 +2200,8 @@
             <button class="mon-dev-close" onclick="closeMonsterDev()" title="Закрити">✕</button>
         </div>
         <div class="mon-dev-tabs" id="mon-dev-tabs-top">
-            <button class="mon-dev-tab active" id="mon-dev-tab-souls" onclick="switchMonDevTab('souls')">💀 Душі</button>
-            <button class="mon-dev-tab golden" id="mon-dev-tab-golden" onclick="switchMonDevTab('golden')"><span class="esoul-icon">💀</span> Золоті</button>
+            <button class="mon-dev-tab active" id="mon-dev-tab-souls" onclick="switchMonDevTab('souls')"><span class="soul-gem"></span> Душі</button>
+            <button class="mon-dev-tab golden" id="mon-dev-tab-golden" onclick="switchMonDevTab('golden')"><span class="esoul-gem"></span> Золоті</button>
         </div>
         <div class="mon-dev-top">
             <div class="mon-dev-portrait" id="mon-dev-portrait">
@@ -2190,7 +2218,7 @@
             <span>Дерево еволюції — Phase 3</span>
         </div>
         <div class="mon-dev-footer">
-            <div class="mon-dev-spent">Витрачено: <b><span id="mon-dev-spent-num">0</span></b> <span id="mon-dev-spent-icon">💀</span></div>
+            <div class="mon-dev-spent">Витрачено: <b><span id="mon-dev-spent-num">0</span></b> <span id="mon-dev-spent-icon" class="soul-gem"></span></div>
             <button class="mon-dev-exchange-btn" id="mon-dev-branch-reset-btn" onclick="resetMonBranch()" title="Скинути вибір гілки" style="display:none">🔄 Гілка</button>
         </div>
     </div>
@@ -2201,7 +2229,7 @@
   <div class="lord-upg-card" onclick="event.stopPropagation()">
     <div class="lord-upg-header">
       <div style="flex:1">
-        <h2>⚗️ Прокачка Лорда</h2>
+        <h2><span class="dl-ico dl-flask"></span> Прокачка Лорда</h2>
         <div class="lord-upg-elite">Елітні душі: <span id="lug-elite-count">0</span> <span class="esoul-gem"></span></div>
       </div>
       <button class="overlay-close-btn" onclick="closeLordUpgrade()">✕</button>
@@ -2223,7 +2251,7 @@
     <div id="bestiary-panel" onclick="event.stopPropagation()">
         <div id="bestiary-header">
             <div id="bestiary-header-left">
-                <div class="bh-title">🐾 БЕСТІАРІЙ ПІДЗЕМЕЛЛЯ</div>
+                <div class="bh-title"><span class="dl-ico dl-beast"></span> БЕСТІАРІЙ ПІДЗЕМЕЛЛЯ</div>
                 <div class="bh-progress" id="bestiary-progress-lbl"></div>
             </div>
             <button id="bestiary-close-btn" onclick="closeBestiary()">✕</button>
@@ -2249,8 +2277,8 @@
         <!-- HUD поверх canvas (тільки читання, pointer-events:none) -->
         <div id="hud">
             <div style="display:flex;flex-direction:column;gap:4px">
-                <div class="resource-box">💀 <span id="souls-display">100</span></div>
-                <div class="resource-box elite-box" id="elite-souls-box"><span class="esoul-icon">💀</span> <span id="elite-souls-display">0</span></div>
+                <div class="resource-box"><span class="soul-gem"></span> <span id="souls-display">100</span></div>
+                <div class="resource-box elite-box" id="elite-souls-box"><span class="esoul-gem"></span> <span id="elite-souls-display">0</span></div>
             </div>
             <div class="hud-right">
                 <div class="hp-label" data-i18n="hud-city">Місто</div>
@@ -2279,7 +2307,7 @@
                 <div class="circle-sub-menu" id="sub-lord">
                     <button class="sub-btn s-atk" id="btn-lord-upg-open" onclick="openLordUpgrade()"
                         title="Прокачка Лорда — 3×3 дерево апгрейдів">
-                        <span class="sicon">⚗️</span>
+                        <span class="sicon dl-ico dl-flask"></span>
                         <span class="slabel" data-i18n="ctrl-lord-upg">Прокачка</span>
                         <span class="scost" id="lord-upg-badge">—</span>
                     </button>
@@ -2287,7 +2315,7 @@
                 </div>
                 <button class="circle-main-btn cmain-lord" id="btn-menu-lord" onclick="toggleMenu('lord')"
                     title="Прокачати Лорда Підземелля">
-                    <span class="icon">👑</span>
+                    <span class="icon dl-ico dl-crown"></span>
                     <span data-i18n="ctrl-lord">Лорд</span>
                 </button>
             </div>
@@ -2326,7 +2354,7 @@
                 </div>
                 <button class="circle-main-btn cmain-trap" id="btn-menu-trap" onclick="toggleMenu('trap')"
                     title="Купити пастку і встановити на поверсі">
-                    <span class="icon">🪤</span>
+                    <span class="icon dl-ico dl-trap"></span>
                     <span data-i18n="ctrl-trap">Пастки</span>
                 </button>
             </div>
@@ -2334,7 +2362,7 @@
             <div class="circle-menu" id="menu-bestiary">
                 <button class="circle-main-btn cmain-bestiary" id="btn-bestiary" onclick="openBestiary()"
                     title="Бестіарій — перегляд і прокачка монстрів">
-                    <span class="icon">🐾</span>
+                    <span class="icon dl-ico dl-beast"></span>
                     <span data-i18n="ctrl-bestiary">Бестіарій</span>
                 </button>
             </div>
@@ -2370,7 +2398,7 @@
             <span data-i18n="help-souls" data-i18n-html><b>Душі</b> — твоя валюта. Збираєш їх убиваючи героїв, витрачаєш на розвиток.</span>
         </div>
         <div class="help-row">
-            <span class="hi"><span class="esoul-icon">💀</span></span>
+            <span class="hi"><span class="esoul-gem"></span></span>
             <span data-i18n="help-elite" data-i18n-html><b>Золоті Душі</b> — падають з еліт і босів, зберігаються між рівнями. Назавжди-покращення в «Душі Підземелля».</span>
         </div>
         <div class="help-row">
@@ -8478,10 +8506,21 @@ function loop(ts) {
         ctx.globalAlpha = 1;
 
         // "+N 💀" якщо вже є апгрейди
+        // \u0425\u0435\u043B\u043F\u0435\u0440: "\u0447\u0438\u0441\u043B\u043E + \u0444\u0456\u043E\u043B\u0435\u0442\u043E\u0432\u0438\u0439 \u043E\u0440\u0431" \u0432\u0456\u0434\u0446\u0435\u043D\u0442\u0440\u043E\u0432\u0430\u043D\u043E\u044E \u0433\u0440\u0443\u043F\u043E\u044E (\u0437\u0430\u043C\u0456\u043D\u0430 \uD83D\uDC80 \u043D\u0430 canvas)
+        const _drawValOrb = (val, cx, cy, font, col) => {
+            ctx.font = font; ctx.fillStyle = col;
+            const s = '' + val, fp = parseInt(font, 10), r = fp * 0.34, gap = r * 0.7;
+            ctx.textAlign = 'left';
+            const tw = ctx.measureText(s).width, x0 = cx - (tw + gap + r * 2) / 2;
+            ctx.fillText(s, x0, cy);
+            const ox = x0 + tw + gap + r, oy = cy - fp * 0.32;
+            const g = ctx.createRadialGradient(ox - r*0.3, oy - r*0.35, 0, ox, oy, r);
+            g.addColorStop(0, '#f3e8ff'); g.addColorStop(0.42, '#b98bff'); g.addColorStop(0.72, '#7a3fd0'); g.addColorStop(1, '#3a1a66');
+            ctx.fillStyle = g; ctx.beginPath(); ctx.arc(ox, oy, r, 0, 6.2832); ctx.fill();
+            ctx.textAlign = 'center';
+        };
         if (GAME.soulBonus > 0) {
-            ctx.fillStyle = '#aaeeff';
-            ctx.font = 'bold ' + (isPC ? '13px' : '9px') + ' Arial'; ctx.textAlign = 'center';
-            ctx.fillText('+' + GAME.soulBonus + ' \uD83D\uDC80', _ax, _ay - 48*_as);
+            _drawValOrb('+' + GAME.soulBonus, _ax, _ay - 48*_as, 'bold ' + (isPC ? '13px' : '9px') + ' Arial', '#aaeeff');
         }
         // Назва
         ctx.globalAlpha = 0.7 + _pulse * 0.2;
@@ -8490,9 +8529,7 @@ function loop(ts) {
         ctx.fillText('Збирач душ', _ax, _ay - (GAME.soulBonus > 0 ? 52*_as : 48*_as));
         ctx.globalAlpha = 1;
         // Ціна
-        ctx.font = (isPC ? '13px' : '9px') + ' Arial';
-        ctx.fillStyle = _canAfford ? '#ffee88' : '#887755';
-        ctx.fillText(GAME.soulBonusCost + ' \uD83D\uDC80', _ax, _ay - 7*_as);
+        _drawValOrb(GAME.soulBonusCost, _ax, _ay - 7*_as, (isPC ? '13px' : '9px') + ' Arial', _canAfford ? '#ffee88' : '#887755');
 
         // Hitbox (world Y = _lordFloor.y - 32 = crystal center)
         GAME._soulAltarX      = _ax;
@@ -9615,8 +9652,8 @@ const r5 = v => Math.round(v / 5) * 5;
 // =================== ПРОКАЧКА ЛОРДА (GRID 3×3) ===================
 
 const _LORD_GRID_DEF = [
-    { id:'body_atk', row:'body', col:'atk', icon:'⚔', name:'Бойова міць',      color:'#d4880a',
-      rowLbl:'🦴 Тіло', colLbl:'⚔ Атака',
+    { id:'body_atk', row:'body', col:'atk', icon:'dl-sword', name:'Бойова міць',      color:'#d4880a',
+      rowLbl:'<span class="dl-ico dl-bone"></span> Тіло', colLbl:'<span class="dl-ico dl-sword"></span> Атака',
       levels:[
         { desc:'+5 до атаки' },
         { desc:'+15% до швидкості атаки' },
@@ -9624,8 +9661,8 @@ const _LORD_GRID_DEF = [
         { desc:'12% шанс критичного удару (×2 dmg)' },
         { desc:'Кожен 4-й удар — AoE по всьому поверсі' },
     ]},
-    { id:'body_def', row:'body', col:'def', icon:'🛡', name:'Загартування',     color:'#44aa55',
-      rowLbl:'🦴 Тіло', colLbl:'🛡 Захист',
+    { id:'body_def', row:'body', col:'def', icon:'dl-shield', name:'Загартування',     color:'#44aa55',
+      rowLbl:'<span class="dl-ico dl-bone"></span> Тіло', colLbl:'<span class="dl-ico dl-shield"></span> Захист',
       levels:[
         { desc:'+80 HP' },
         { desc:'+4 броні' },
@@ -9633,8 +9670,8 @@ const _LORD_GRID_DEF = [
         { desc:'8% шанс заблокувати удар' },
         { desc:'При HP<25% — +50% броні автоматично' },
     ]},
-    { id:'body_sup', row:'body', col:'sup', icon:'🏆', name:'Воїнська аура',    color:'#cc8822',
-      rowLbl:'🦴 Тіло', colLbl:'✨ Аура',
+    { id:'body_sup', row:'body', col:'sup', icon:'dl-star', name:'Воїнська аура',    color:'#cc8822',
+      rowLbl:'<span class="dl-ico dl-bone"></span> Тіло', colLbl:'<span class="dl-ico dl-spark"></span> Аура',
       levels:[
         { desc:'Монстри поверху лорда: +8% атаки' },
         { desc:'Монстри поверху лорда: +8% HP' },
@@ -9642,8 +9679,8 @@ const _LORD_GRID_DEF = [
         { desc:'Монстри в аурі: +12% ША' },
         { desc:'Монстри в аурі: 1 безкоштовне відродження/хвилю' },
     ]},
-    { id:'mind_atk', row:'mind', col:'atk', icon:'🔮', name:'Темна магія',      color:'#4488ff',
-      rowLbl:'🧠 Розум', colLbl:'⚔ Атака',
+    { id:'mind_atk', row:'mind', col:'atk', icon:'dl-crystal', name:'Темна магія',      color:'#4488ff',
+      rowLbl:'<span class="dl-ico dl-eye"></span> Розум', colLbl:'<span class="dl-ico dl-sword"></span> Атака',
       levels:[
         { desc:'+6 до магічної атаки' },
         { desc:'Beam пробиває 30% броні' },
@@ -9651,8 +9688,8 @@ const _LORD_GRID_DEF = [
         { desc:'+10 до атаки' },
         { desc:'Beam рикошетить на 2 ближніх героїв' },
     ]},
-    { id:'mind_def', row:'mind', col:'def', icon:'🌀', name:'Магічний щит',     color:'#5566ee',
-      rowLbl:'🧠 Розум', colLbl:'🛡 Захист',
+    { id:'mind_def', row:'mind', col:'def', icon:'dl-swirl', name:'Магічний щит',     color:'#5566ee',
+      rowLbl:'<span class="dl-ico dl-eye"></span> Розум', colLbl:'<span class="dl-ico dl-shield"></span> Захист',
       levels:[
         { desc:'+6 магічної броні' },
         { desc:'12% ухилення від магічних атак' },
@@ -9660,8 +9697,8 @@ const _LORD_GRID_DEF = [
         { desc:'Відображає 20% магічного урону назад' },
         { desc:'Щит на 80 HP (відновлюється щохв.)' },
     ]},
-    { id:'mind_sup', row:'mind', col:'sup', icon:'🌑', name:'Темне прокляття',  color:'#6644cc',
-      rowLbl:'🧠 Розум', colLbl:'✨ Аура',
+    { id:'mind_sup', row:'mind', col:'sup', icon:'dl-moon', name:'Темне прокляття',  color:'#6644cc',
+      rowLbl:'<span class="dl-ico dl-eye"></span> Розум', colLbl:'<span class="dl-ico dl-spark"></span> Аура',
       levels:[
         { desc:'Герої поверху лорда: −12% атаки' },
         { desc:'Монстри поверху: реген 0.5 HP/с' },
@@ -9669,8 +9706,8 @@ const _LORD_GRID_DEF = [
         { desc:'Монстри поверху: +20% HP' },
         { desc:'При смерті монстра: 30% шанс на привидне відродження' },
     ]},
-    { id:'soul_atk', row:'soul', col:'atk', icon:'🩸', name:'Поглинання душ',  color:'#cc2244',
-      rowLbl:'💀 Душа', colLbl:'⚔ Атака',
+    { id:'soul_atk', row:'soul', col:'atk', icon:'dl-drop', name:'Поглинання душ',  color:'#cc2244',
+      rowLbl:'<span class="dl-ico dl-ghost"></span> Душа', colLbl:'<span class="dl-ico dl-sword"></span> Атака',
       levels:[
         { desc:'15% вампіризм від атак лорда' },
         { desc:'+5 атаки + кожна 5-а атака миттєва' },
@@ -9678,8 +9715,8 @@ const _LORD_GRID_DEF = [
         { desc:'+8 до атаки' },
         { desc:'Вбивство героя → +3 HP назавжди' },
     ]},
-    { id:'soul_def', row:'soul', col:'def', icon:'💜', name:'Безсмертна воля',  color:'#9922cc',
-      rowLbl:'💀 Душа', colLbl:'🛡 Захист',
+    { id:'soul_def', row:'soul', col:'def', icon:'dl-heart', name:'Безсмертна воля',  color:'#9922cc',
+      rowLbl:'<span class="dl-ico dl-ghost"></span> Душа', colLbl:'<span class="dl-ico dl-shield"></span> Захист',
       levels:[
         { desc:'Реген 1.5 HP/с' },
         { desc:'При смерті: воскресіння з 25% HP (1×/хв)' },
@@ -9687,8 +9724,8 @@ const _LORD_GRID_DEF = [
         { desc:'+40% максHP' },
         { desc:'Кожні 12с: відновити 8% від maxHP' },
     ]},
-    { id:'soul_sup', row:'soul', col:'sup', icon:'🌕', name:'Темний пакт',      color:'#882299',
-      rowLbl:'💀 Душа', colLbl:'✨ Аура',
+    { id:'soul_sup', row:'soul', col:'sup', icon:'dl-orb', name:'Темний пакт',      color:'#882299',
+      rowLbl:'<span class="dl-ico dl-ghost"></span> Душа', colLbl:'<span class="dl-ico dl-spark"></span> Аура',
       levels:[
         { desc:'Всі монстри підземелля: +5% атаки' },
         { desc:'+1 до ліміту монстрів на кожному поверсі' },
@@ -10841,28 +10878,28 @@ function _renderLordUpgrade() {
         const regen = Math.round((GAME.lordRegenPct   || 0) * 100 * 10) / 10;
         const aspd  = Math.round((GAME.lordAtkSpeedBonus || 0) * 100);
         const chips = [
-            ['⚔️', 'Атака', atk],
-            ['❤️', 'ХП', hp],
-            ['🛡️', 'Броня', magAr > 0 ? `${armor}/${magAr}` : armor],
-            ['⚡', 'Швид.атк', aspd > 0 ? `+${aspd}%` : '—'],
-            ['💥', 'Крит', crit > 0 ? `${crit}%` : '—'],
-            ['💜', 'Реген', regen > 0 ? `${regen}%/с` : '—'],
+            ['dl-sword', 'Атака', atk],
+            ['dl-heart', 'ХП', hp],
+            ['dl-shield', 'Броня', magAr > 0 ? `${armor}/${magAr}` : armor],
+            ['dl-bolt', 'Швид.атк', aspd > 0 ? `+${aspd}%` : '—'],
+            ['dl-burst', 'Крит', crit > 0 ? `${crit}%` : '—'],
+            ['dl-regen', 'Реген', regen > 0 ? `${regen}%/с` : '—'],
         ];
         statsEl.innerHTML = chips.map(([ic, lbl, val]) =>
-            `<div class="lus-chip">${ic} ${lbl}: <b>${val}</b></div>`
+            `<div class="lus-chip"><span class="dl-ico ${ic}"></span> ${lbl}: <b>${val}</b></div>`
         ).join('');
     }
 
     // ── Генеруємо grid ──────────────────────────────────────────────────────
     const ROWS = [
-        { key:'body', label:'🦴<br>Тіло' },
-        { key:'mind', label:'🧠<br>Розум' },
-        { key:'soul', label:'💀<br>Душа' },
+        { key:'body', label:'<span class="dl-ico dl-bone"></span><br>Тіло' },
+        { key:'mind', label:'<span class="dl-ico dl-eye"></span><br>Розум' },
+        { key:'soul', label:'<span class="dl-ico dl-ghost"></span><br>Душа' },
     ];
     const COLS = [
-        { key:'atk', label:'⚔<br>Атака' },
-        { key:'def', label:'🛡<br>Захист' },
-        { key:'sup', label:'✨<br>Аура' },
+        { key:'atk', label:'<span class="dl-ico dl-sword"></span><br>Атака' },
+        { key:'def', label:'<span class="dl-ico dl-shield"></span><br>Захист' },
+        { key:'sup', label:'<span class="dl-ico dl-spark"></span><br>Аура' },
     ];
 
     let html = '<div style="display:flex;flex-direction:column;gap:6px">';
@@ -10900,7 +10937,7 @@ function _renderLordUpgrade() {
 
             html += `<div class="${cls}" style="--cc:${def.color}" onclick="_lugSelect('${id}')">`
                   + (canAfford ? '<div class="lug-afford-dot"></div>' : '')
-                  + `<div class="lug-cell-icon">${def.icon}</div>`
+                  + `<div class="lug-cell-icon"><span class="dl-ico ${def.icon}" style="color:${def.color}"></span></div>`
                   + `<div class="lug-cell-name">${def.name}</div>`
                   + pips
                   + '</div>';
@@ -10968,7 +11005,7 @@ function _lugRenderDetail(p, eliteSouls) {
 
     det.innerHTML = `
         <div style="--cc:${def.color}">
-          <div class="lud-title">${def.icon} ${def.name}</div>
+          <div class="lud-title"><span class="dl-ico ${def.icon}"></span> ${def.name}</div>
           <div class="lud-sub">${def.rowLbl} · ${def.colLbl} · ${_t('lud-lvl-of', {n: lvl})}</div>
         </div>
         <div class="lud-sep"></div>
@@ -11275,7 +11312,7 @@ function updateUI() {
         el.eliteSoulsBox.style.display = '';
         el.eliteSouls.innerText = GAME.eliteSouls;
     }
-    el.floorCost.innerText    = GAME.floorCost + '💀';
+    el.floorCost.innerHTML    = GAME.floorCost + ' <span class="soul-gem"></span>';
     // Загроза — піпси замість тексту "0/5" (перебудова лише при зміні)
     {
         const _tm = GAME.maxThreatLevel || 5;
@@ -11798,7 +11835,7 @@ function updateSoulDungeonUI() {
             <div class="perma-card-desc">${c.desc}</div>
             <button class="perma-buy-btn ${can?'can-afford':'cannot-afford'}"
                 onclick="buyPerma('${c.type}')" ${can?'':'disabled'}>
-                ${cost} <span class="esoul-icon">💀</span>
+                ${cost} <span class="esoul-gem"></span>
             </button>`;
         cont.appendChild(card);
     });
@@ -14284,22 +14321,22 @@ function _renderBestiary() {
 
             // Третя клітинка: броня (фіз + маг через "/", або одна)
             let armorStr = '';
-            let armorIcon = '🛡';
+            let armorIcon = 'dl-shield';
             let armorClass = 'cv-arm';
             if (armor > 0 && magArmor > 0) {
                 armorStr = armor + ' / ' + magArmor;
-                armorIcon = '🛡'; armorClass = 'cv-arm';
+                armorIcon = 'dl-shield'; armorClass = 'cv-arm';
             } else if (armor > 0) {
                 armorStr = String(armor);
             } else if (magArmor > 0) {
                 armorStr = String(magArmor);
-                armorIcon = '✦'; armorClass = 'cv-mag';
+                armorIcon = 'dl-spark'; armorClass = 'cv-mag';
             } else {
                 armorStr = '—'; armorClass = '';
             }
             let armorLbl = (armor > 0 && magArmor > 0) ? 'Броня / Маг' : (magArmor > 0 ? 'Маг.броня' : 'Броня');
             let cell3 = '<div class="bc-stat-cell">'
-                + '<span class="bc-sc-icon">' + armorIcon + '</span>'
+                + '<span class="bc-sc-icon dl-ico ' + armorIcon + '"></span>'
                 + '<span class="bc-sc-lbl">' + armorLbl + '</span>'
                 + '<span class="bc-sc-val ' + armorClass + '">' + armorStr + '</span>'
                 + '</div>';
@@ -14307,12 +14344,12 @@ function _renderBestiary() {
             // Четверта клітинка: реген якщо є, інакше швидкість атаки
             let cell4 = regen > 0
                 ? '<div class="bc-stat-cell">'
-                    + '<span class="bc-sc-icon">⟳</span>'
+                    + '<span class="bc-sc-icon dl-ico dl-regen"></span>'
                     + '<span class="bc-sc-lbl">Реген</span>'
                     + '<span class="bc-sc-val cv-reg">' + regen.toFixed(1) + '/с</span>'
                     + '</div>'
                 : '<div class="bc-stat-cell">'
-                    + '<span class="bc-sc-icon">⚡</span>'
+                    + '<span class="bc-sc-icon dl-ico dl-bolt"></span>'
                     + '<span class="bc-sc-lbl">Швидк.</span>'
                     + '<span class="bc-sc-val cv-spd">' + atkSpd.toFixed(2) + '/с</span>'
                     + '</div>';
@@ -14320,12 +14357,12 @@ function _renderBestiary() {
             // Завжди рівно 4 клітинки (2×2)
             let statsGrid = '<div class="bc-stats-grid">'
                 + '<div class="bc-stat-cell">'
-                    + '<span class="bc-sc-icon">⚔</span>'
+                    + '<span class="bc-sc-icon dl-ico dl-sword"></span>'
                     + '<span class="bc-sc-lbl">Атака</span>'
                     + '<span class="bc-sc-val cv-atk">' + atkVal + '</span>' + atkUpg
                 + '</div>'
                 + '<div class="bc-stat-cell">'
-                    + '<span class="bc-sc-icon">♥</span>'
+                    + '<span class="bc-sc-icon dl-ico dl-heart"></span>'
                     + '<span class="bc-sc-lbl">ХП</span>'
                     + '<span class="bc-sc-val cv-hp">' + hpVal + '</span>' + hpUpg
                 + '</div>'
@@ -14338,7 +14375,7 @@ function _renderBestiary() {
             if (evoLvl > 0) {
                 let evoLabel = branch ? 'Гілка ' + branch + ' · ' + evoLvl + '/10' : evoLvl + ' / 10 навиків';
                 evoRow = '<div class="bc-evo-row">'
-                    + '<span class="bc-sc-icon">★</span>'
+                    + '<span class="bc-sc-icon dl-ico dl-star"></span>'
                     + '<span class="bc-sc-lbl">Еволюція</span>'
                     + '<span class="bc-sc-val">' + evoLabel + '</span>'
                     + '</div>';
@@ -14376,9 +14413,9 @@ function _renderBestiary() {
                   + '<div class="bc-stats">'
                   + '<div class="bc-locked-stats">'
                   + '<div class="bc-locked-label">???</div>'
-                  + '<div class="bc-locked-line"><span>⚔ Атака</span><span>— — —</span></div>'
-                  + '<div class="bc-locked-line"><span>♥ ХП</span><span>— — —</span></div>'
-                  + '<div class="bc-locked-line"><span>🛡 Броня</span><span>— — —</span></div>'
+                  + '<div class="bc-locked-line"><span><span class="dl-ico dl-sword"></span> Атака</span><span>— — —</span></div>'
+                  + '<div class="bc-locked-line"><span><span class="dl-ico dl-heart"></span> ХП</span><span>— — —</span></div>'
+                  + '<div class="bc-locked-line"><span><span class="dl-ico dl-shield"></span> Броня</span><span>— — —</span></div>'
                   + '</div>'
                   + '</div>'
                   + '</div>';
@@ -14701,7 +14738,7 @@ function _renderMonsterDev() {
         let lvlEl  = btn.querySelector('.stat-lvl');
         let costEl = btn.querySelector('.stat-cost');
         // Золотий режим — золотий череп (той самий, що в HUD під час гри) замість ✨
-        let iconHtml = (tab === 'golden') ? '<span class="esoul-icon">💀</span>' : '💀';
+        let iconHtml = (tab === 'golden') ? '<span class="esoul-gem"></span>' : '<span class="soul-gem"></span>';
         if (lvlEl)  lvlEl.innerHTML = `${scopeLvl}/${max} <span style="color:#88dd88;font-size:10px">${meta.bonus(scopeLvl)}</span>`;
         if (costEl) costEl.innerHTML = isMax ? 'МАКС' : (cost + ' ' + iconHtml);
     });
@@ -14714,7 +14751,7 @@ function _renderMonsterDev() {
     let spentNum = (tab === 'golden') ? (goldDev.goldenSpent || 0) : (dev.soulsSpent || 0);
     document.getElementById('mon-dev-spent-num').innerText = spentNum;
     let spentIcon = document.getElementById('mon-dev-spent-icon');
-    if (spentIcon) { spentIcon.className = (tab === 'golden') ? 'esoul-icon' : ''; spentIcon.innerText = '💀'; }
+    if (spentIcon) { spentIcon.className = (tab === 'golden') ? 'esoul-gem' : 'soul-gem'; spentIcon.innerText = ''; }
     // Кнопка скидання гілки: показується якщо гілку вибрано
     let resetBtn = document.getElementById('mon-dev-branch-reset-btn');
     if (resetBtn) resetBtn.style.display = (dev.branch || getMonDevGolden(kind).branch) ? '' : 'none';
@@ -14774,7 +14811,7 @@ function switchMonDevTab(tab) {
     let card = document.getElementById('mon-dev-card');
     if (card) card.classList.toggle('golden-mode', tab === 'golden');
     let icon = document.getElementById('mon-dev-spent-icon');
-    if (icon) { icon.className = (tab === 'golden') ? 'esoul-icon' : ''; icon.innerText = '💀'; }
+    if (icon) { icon.className = (tab === 'golden') ? 'esoul-gem' : 'soul-gem'; icon.innerText = ''; }
     _renderMonsterDev();
 }
 
