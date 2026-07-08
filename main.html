@@ -1584,9 +1584,8 @@
             padding: 14px;
         }
         .evo-tree {
+            /* Розміри задаються inline рендером: 610×220 (горизонт.) або 220×610 (вертик. на вузьких) */
             position: relative;
-            min-width: 610px;
-            height: 220px;
         }
         .evo-tree-svg {
             position: absolute; top: 0; left: 0;
@@ -14725,7 +14724,19 @@ function _renderMonsterTree(kind) {
     const t1f = spent >= MON_TREE_THRESHOLDS[2];
     const t2f = spent >= MON_TREE_THRESHOLDS[3];
 
-    let svg = `<svg class="evo-tree-svg" viewBox="0 0 610 220" preserveAspectRatio="xMinYMid meet">`;
+    // ── Вертикальна орієнтація на вузьких екранах (iPhone mini тощо):
+    //    транспозиція x↔y всієї геометрії — стовбур згори, гілки-колонки вниз.
+    const vert = (window.innerWidth || 999) < 560;
+    const PX = (x, y) => vert ? y : x;
+    const PY = (x, y) => vert ? x : y;
+    const LINE = (x1,y1,x2,y2,stroke,extra) =>
+        `<line x1="${PX(x1,y1)}" y1="${PY(x1,y1)}" x2="${PX(x2,y2)}" y2="${PY(x2,y2)}" stroke="${stroke}" ${SW}${extra||''}/>`;
+    const RECT = (x,y,w,h,rx,attrs) => vert
+        ? `<rect x="${y}" y="${x}" width="${h}" height="${w}" rx="${rx}" ${attrs}/>`
+        : `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="${rx}" ${attrs}/>`;
+    const VB_W = vert ? 220 : 610, VB_H = vert ? 610 : 220;
+
+    let svg = `<svg class="evo-tree-svg" viewBox="0 0 ${VB_W} ${VB_H}" preserveAspectRatio="xMinYMid meet">`;
     svg += `<defs>
       <filter id="evoGlow" x="-60%" y="-160%" width="220%" height="420%">
         <feGaussianBlur stdDeviation="1.2" result="b"/>
@@ -14736,70 +14747,76 @@ function _renderMonsterTree(kind) {
     // ── Рейли (тільки над нодами, стартують від AE/BE) ──────────────
     let railAx = AE - 4, railAw = L.branchA[6].cx + N2 + 6 - railAx;
     let railBx = BE - 4, railBw = L.branchB[6].cx + N2 + 6 - railBx;
-    svg += `<rect x="${railAx}" y="${AY-N2-8}" width="${railAw}" height="${EVO_NODE_SIZE+16}" rx="10"
-             fill="${aLocked?'rgba(14,8,28,0.45)':'rgba(12,28,72,0.32)'}"/>`;
-    svg += `<rect x="${railBx}" y="${BY-N2-8}" width="${railBw}" height="${EVO_NODE_SIZE+16}" rx="10"
-             fill="${bLocked?'rgba(14,8,28,0.45)':'rgba(52,16,6,0.32)'}"/>`;
+    svg += RECT(railAx, AY-N2-8, railAw, EVO_NODE_SIZE+16, 10,
+             `fill="${aLocked?'rgba(14,8,28,0.45)':'rgba(12,28,72,0.32)'}"`);
+    svg += RECT(railBx, BY-N2-8, railBw, EVO_NODE_SIZE+16, 10,
+             `fill="${bLocked?'rgba(14,8,28,0.45)':'rgba(52,16,6,0.32)'}"`);
 
-    // ── Підписи гілок — у проміжку між рейлами і diamond (динамічні Y) ─
-    // Gap A: між низом рейлу A (AY+N2+8) і вершиною diamond (TY-DM)
-    // Gap B: між низом diamond (TY+DM) і верхом рейлу B (BY-N2-8)
-    const aLabelY = Math.round((AY + N2 + 8 + TY - DM) / 2);
-    const bLabelY = Math.round((TY + DM + BY - N2 - 8) / 2);
+    // ── Підписи гілок (текст не транспонуємо — окремі координати) ─────
     let aAlpha = aLocked ? 0.35 : 1, bAlpha = bLocked ? 0.35 : 1;
     let aLCol  = splitFilled ? `rgba(100,175,255,${aAlpha})` : `rgba(55,95,185,${aAlpha})`;
     let bLCol  = splitFilled ? `rgba(255,155,80,${bAlpha})`  : `rgba(165,65,28,${bAlpha})`;
     let aLBg   = splitFilled ? `rgba(12,30,80,${aAlpha*0.85})` : `rgba(10,20,55,${aAlpha*0.70})`;
     let bLBg   = splitFilled ? `rgba(60,18,6,${bAlpha*0.85})`  : `rgba(42,12,4,${bAlpha*0.70})`;
-    svg += `<rect x="${SX+4}" y="${aLabelY-8}" width="60" height="16" rx="5" fill="${aLBg}" stroke="${aLCol.replace(/[\d.]+\)$/,'0.4)')}" stroke-width="1"/>`;
-    svg += `<text x="${SX+34}" y="${aLabelY+4.5}" text-anchor="middle" font-size="9.5" font-family="inherit" fill="${aLCol}" font-weight="800" letter-spacing="0.5">▲ ГІЛКА A</text>`;
-    svg += `<rect x="${SX+4}" y="${bLabelY-8}" width="60" height="16" rx="5" fill="${bLBg}" stroke="${bLCol.replace(/[\d.]+\)$/,'0.4)')}" stroke-width="1"/>`;
-    svg += `<text x="${SX+34}" y="${bLabelY+4.5}" text-anchor="middle" font-size="9.5" font-family="inherit" fill="${bLCol}" font-weight="800" letter-spacing="0.5">▼ ГІЛКА B</text>`;
+    const _lbl = (cx, cy, bg, col, txt) =>
+        `<rect x="${cx-30}" y="${cy-8}" width="60" height="16" rx="5" fill="${bg}" stroke="${col.replace(/[\d.]+\)$/,'0.4)')}" stroke-width="1"/>`
+      + `<text x="${cx}" y="${cy+4.5}" text-anchor="middle" font-size="9.5" font-family="inherit" fill="${col}" font-weight="800" letter-spacing="0.5">${txt}</text>`;
+    if (vert) {
+        // Горизонтальні плашки над своїми колонками, під діамантом
+        const lblY = SX + DM + 22;
+        svg += _lbl(AY, lblY, aLBg, aLCol, '◄ ГІЛКА A');
+        svg += _lbl(BY, lblY, bLBg, bLCol, 'ГІЛКА B ►');
+    } else {
+        const aLabelY = Math.round((AY + N2 + 8 + TY - DM) / 2);
+        const bLabelY = Math.round((TY + DM + BY - N2 - 8) / 2);
+        svg += _lbl(SX+34, aLabelY, aLBg, aLCol, '▲ ГІЛКА A');
+        svg += _lbl(SX+34, bLabelY, bLBg, bLCol, '▼ ГІЛКА B');
+    }
 
     // ── Trunk 1→2, 2→3, 3→diamond ────────────────────────────────────
-    svg += `<line x1="${L.trunk[0].cx+N2-2}" y1="${TY}" x2="${L.trunk[1].cx-N2+2}" y2="${TY}" stroke="${lc(t1f,false,'T')}" ${SW}${lg(t1f,false)}/>`;
-    svg += `<line x1="${L.trunk[1].cx+N2-2}" y1="${TY}" x2="${L.trunk[2].cx-N2+2}" y2="${TY}" stroke="${lc(t2f,false,'T')}" ${SW}${lg(t2f,false)}/>`;
-    svg += `<line x1="${L.trunk[2].cx+N2-2}" y1="${TY}" x2="${SX-DM}" y2="${TY}" stroke="${lc(splitFilled,false,'T')}" ${SW}${lg(splitFilled,false)}/>`;
+    svg += LINE(L.trunk[0].cx+N2-2, TY, L.trunk[1].cx-N2+2, TY, lc(t1f,false,'T'), lg(t1f,false));
+    svg += LINE(L.trunk[1].cx+N2-2, TY, L.trunk[2].cx-N2+2, TY, lc(t2f,false,'T'), lg(t2f,false));
+    svg += LINE(L.trunk[2].cx+N2-2, TY, SX-DM, TY, lc(splitFilled,false,'T'), lg(splitFilled,false));
 
     // ── Diamond — великий, помітний ───────────────────────────────────
     let dFill   = splitFilled ? 'rgba(170,95,255,0.90)' : 'rgba(42,22,74,0.88)';
     let dStroke = splitFilled ? '#dd99ff' : '#6633bb';
     let dGlow   = splitFilled ? ` filter="url(#evoGlow)"` : '';
-    svg += `<polygon points="${SX-DM},${TY} ${SX},${TY-DM} ${SX+DM},${TY} ${SX},${TY+DM}"
+    svg += `<polygon points="${PX(SX-DM,TY)},${PY(SX-DM,TY)} ${PX(SX,TY-DM)},${PY(SX,TY-DM)} ${PX(SX+DM,TY)},${PY(SX+DM,TY)} ${PX(SX,TY+DM)},${PY(SX,TY+DM)}"
              fill="${dFill}" stroke="${dStroke}" stroke-width="2"${dGlow}/>`;
 
-    // ── "Обери гілку!" — між підписами, по центру diamond ────────────
+    // ── "Обери гілку!" — по центру diamond (горизонтальна плашка) ────
     if (splitFilled && !branch) {
-        svg += `<rect x="${SX-30}" y="${TY-9}" width="60" height="18" rx="6" fill="rgba(195,148,12,0.90)" stroke="rgba(255,220,60,0.6)" stroke-width="1"/>`;
-        svg += `<text x="${SX}" y="${TY+3.5}" text-anchor="middle" font-size="9" font-family="inherit" fill="#fff7bb" font-weight="800">⚡ Обери!</text>`;
+        svg += `<rect x="${PX(SX,TY)-30}" y="${PY(SX,TY)-9}" width="60" height="18" rx="6" fill="rgba(195,148,12,0.90)" stroke="rgba(255,220,60,0.6)" stroke-width="1"/>`;
+        svg += `<text x="${PX(SX,TY)}" y="${PY(SX,TY)+3.5}" text-anchor="middle" font-size="9" font-family="inherit" fill="#fff7bb" font-weight="800">Обери!</text>`;
     }
 
     // ── Y-форк: симетричні безьє-криві від diamond до гілок ──────────
-    // Обидві криві: спочатку вертикально від diamond, потім плавно до гілки
-    const MID_A = TY - (TY - AY) * 0.5;  // середина між diamond і гілкою A по Y
-    const MID_B = TY + (BY - TY) * 0.5;  // середина між diamond і гілкою B по Y
-    svg += `<path d="M ${SX} ${TY-DM} C ${SX} ${MID_A} ${AE} ${MID_A} ${AE} ${AY}"
+    const MID_A = TY - (TY - AY) * 0.5;  // середина між diamond і гілкою A (лог. Y)
+    const MID_B = TY + (BY - TY) * 0.5;
+    svg += `<path d="M ${PX(SX,TY-DM)} ${PY(SX,TY-DM)} C ${PX(SX,MID_A)} ${PY(SX,MID_A)} ${PX(AE,MID_A)} ${PY(AE,MID_A)} ${PX(AE,AY)} ${PY(AE,AY)}"
              fill="none" stroke="${lc(splitFilled,aLocked,'A')}" ${SW}${lg(splitFilled,aLocked)}/>`;
-    svg += `<path d="M ${SX} ${TY+DM} C ${SX} ${MID_B} ${BE} ${MID_B} ${BE} ${BY}"
+    svg += `<path d="M ${PX(SX,TY+DM)} ${PY(SX,TY+DM)} C ${PX(SX,MID_B)} ${PY(SX,MID_B)} ${PX(BE,MID_B)} ${PY(BE,MID_B)} ${PX(BE,BY)} ${PY(BE,BY)}"
              fill="none" stroke="${lc(splitFilled,bLocked,'B')}" ${SW}${lg(splitFilled,bLocked)}/>`;
 
     // ── Внутрішні з'єднання гілок ──────────────────────────────────────
     for (let i = 0; i < L.branchA.length - 1; i++) {
         let f = spent >= MON_TREE_THRESHOLDS[tree.branchA.nodes[i+1].lvl];
-        svg += `<line x1="${L.branchA[i].cx+N2-2}" y1="${AY}" x2="${L.branchA[i+1].cx-N2+2}" y2="${AY}" stroke="${lc(f,aLocked,'A')}" ${SW}${lg(f,aLocked)}/>`;
+        svg += LINE(L.branchA[i].cx+N2-2, AY, L.branchA[i+1].cx-N2+2, AY, lc(f,aLocked,'A'), lg(f,aLocked));
     }
     for (let i = 0; i < L.branchB.length - 1; i++) {
         let f = spent >= MON_TREE_THRESHOLDS[tree.branchB.nodes[i+1].lvl];
-        svg += `<line x1="${L.branchB[i].cx+N2-2}" y1="${BY}" x2="${L.branchB[i+1].cx-N2+2}" y2="${BY}" stroke="${lc(f,bLocked,'B')}" ${SW}${lg(f,bLocked)}/>`;
+        svg += LINE(L.branchB[i].cx+N2-2, BY, L.branchB[i+1].cx-N2+2, BY, lc(f,bLocked,'B'), lg(f,bLocked));
     }
 
     svg += `</svg>`;
 
-    // Ноди (HTML — для tooltip і клік)
-    let html = '<div class="evo-tree">' + svg;
-    tree.trunk.forEach((n, i) => { html += _evoNodeHtml(n, spent, false, L.trunk[i], ''); });
-    tree.branchA.nodes.forEach((n, i) => { html += _evoNodeHtml(n, spent, aLocked, L.branchA[i], 'branch-a'); });
-    tree.branchB.nodes.forEach((n, i) => { html += _evoNodeHtml(n, spent, bLocked, L.branchB[i], 'branch-b'); });
+    // Ноди (HTML — для tooltip і клік); позиції транспонуються разом з SVG
+    const TP = p => ({ cx: PX(p.cx, p.cy), cy: PY(p.cx, p.cy) });
+    let html = `<div class="evo-tree" style="width:${VB_W}px;height:${VB_H}px;${vert?'margin:0 auto;':''}">` + svg;
+    tree.trunk.forEach((n, i) => { html += _evoNodeHtml(n, spent, false, TP(L.trunk[i]), ''); });
+    tree.branchA.nodes.forEach((n, i) => { html += _evoNodeHtml(n, spent, aLocked, TP(L.branchA[i]), 'branch-a'); });
+    tree.branchB.nodes.forEach((n, i) => { html += _evoNodeHtml(n, spent, bLocked, TP(L.branchB[i]), 'branch-b'); });
     html += '</div>';
     wrap.innerHTML = html;
 }
