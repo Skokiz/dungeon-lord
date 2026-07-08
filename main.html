@@ -402,6 +402,8 @@
         .dl-clock { --i:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='9' fill='none' stroke='black' stroke-width='2.4'/%3E%3Cpath d='M12 7v5l3.5 2' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round'/%3E%3C/svg%3E"); }
         .dl-group { --i:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='7.5' cy='9' r='3.2' fill='black'/%3E%3Ccircle cx='16.5' cy='9' r='3.2' fill='black'/%3E%3Ccircle cx='12' cy='16.5' r='3.6' fill='black'/%3E%3C/svg%3E"); }
         .dl-tower { --i:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M5 21V8h2.5V5H10v3h4V5h2.5v3H19v13h-5v-4.5a2 2 0 1 0-4 0V21z' fill='black'/%3E%3C/svg%3E"); }
+        .dl-dart { --i:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M21 3 9.5 8.5 13 12 3 22l1.5-6L2 13.5 12 3.5 15.5 7z' fill='black'/%3E%3Cpath d='M21 3l-5.5 11.5L12 11z' fill='black'/%3E%3C/svg%3E"); }
+        .dl-flame { --i:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 2c1.2 4.2-3.5 6-3.5 10a3.5 3.5 0 0 0 7 0c0-1.6-1-2.8-1-2.8s3.5 1.8 3.5 5.3A6 6 0 1 1 6 14.5C6 9 11 7.5 12 2z' fill='black'/%3E%3C/svg%3E"); }
         .dl-share { --i:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 2.5 16.5 7h-3v7.5h-3V7h-3z' fill='black'/%3E%3Cpath d='M4 13v6.5h16V13h2.5v9H1.5v-9z' fill='black'/%3E%3C/svg%3E"); }
         .dl-play { --i:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill-rule='evenodd' d='M3 5.5A1.5 1.5 0 0 1 4.5 4h15A1.5 1.5 0 0 1 21 5.5v13a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 18.5zM10 8.5v7l6-3.5z' fill='black'/%3E%3C/svg%3E"); }
         .pause-vol-row { display:flex; align-items:center; gap:10px; color:#ddccff; font-size:14px; }
@@ -1044,6 +1046,9 @@
         body:has(#start-screen:not([style*="none"])) #help-open-btn { display: none; }
         /* ...і поверх кнопок Донесення на мобілці (z-index 500 > 300) — ховаємо поки відкрите */
         body:has(#donesnnia-overlay.visible) #help-open-btn { display: none; }
+        /* Туторіал-бабл перекриває відкрите сабменю (пастки/лорд) на мобілці — ховаємо поки меню відкрите.
+           !important бо JS керує display інлайново. */
+        body:has(.circle-sub-menu.open) #tut-bubble { display: none !important; }
         #help-open-btn:hover { background: rgba(120,40,220,0.95); }
         /* ── Елітні душі у HUD ── */
         .elite-box { background:rgba(50,35,0,0.85); border:1px solid rgba(255,200,50,0.5);
@@ -2055,7 +2060,7 @@
 <!-- ── СТАРТОВИЙ ЕКРАН ── -->
 <div id="start-screen">
     <canvas id="start-canvas"></canvas>
-    <h1>👑 Dungeon Lord</h1>
+    <h1><span class="dl-ico dl-crown" style="color:#f2c14e"></span> Dungeon Lord</h1>
     <div class="subtitle">Siege Defense</div>
     <button id="btn-lang" onclick="_setLang(_lang==='uk'?'en':'uk')" style="position:absolute;top:12px;right:12px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.2);color:#ccc;border-radius:8px;padding:5px 10px;font-size:13px;cursor:pointer;">🇬🇧 EN</button>
     <p id="start-lore" data-i18n="start-lore" style="color:#6a4a8a;font-size:13px;letter-spacing:.5px;max-width:300px;text-align:center;line-height:1.6;margin:0"></p>
@@ -2342,30 +2347,30 @@
                 <div class="circle-sub-menu" id="sub-trap">
                     <button class="sub-btn s-spike" id="btn-trap-spike" onclick="buyTrap('spike')"
                         title="Шипи: завдають шкоди герою при вході на поверх. Натисни поверх щоб встановити.">
-                        <span class="sicon">🗡️</span>
+                        <span class="sicon"><span class="dl-ico dl-trap"></span></span>
                         <span class="slabel" data-i18n="trap-spike">Шипи</span>
-                        <span class="scost">70💀</span>
+                        <span class="scost">70 <span class="soul-gem"></span></span>
                         <span class="sdesc" data-i18n="trap-spike-d">фіз. шкода</span>
                     </button>
                     <button class="sub-btn s-dart" id="btn-trap-dart" onclick="buyTrap('dart')"
                         title="Дротик: обстрілює героя що знаходиться на поверсі. Натисни поверх щоб встановити.">
-                        <span class="sicon">🪃</span>
+                        <span class="sicon"><span class="dl-ico dl-dart"></span></span>
                         <span class="slabel" data-i18n="trap-dart">Дротик</span>
-                        <span class="scost">80💀</span>
+                        <span class="scost">80 <span class="soul-gem"></span></span>
                         <span class="sdesc" data-i18n="trap-dart-d">дальня атака</span>
                     </button>
                     <button class="sub-btn s-tele" id="btn-trap-tele" onclick="buyTrap('teleport')"
                         title="Телепорт: повертає героя на початок підземелля. Натисни поверх щоб встановити.">
-                        <span class="sicon">🌀</span>
+                        <span class="sicon"><span class="dl-ico dl-swirl"></span></span>
                         <span class="slabel" data-i18n="trap-tele">Телепорт</span>
-                        <span class="scost">100💀</span>
+                        <span class="scost">100 <span class="soul-gem"></span></span>
                         <span class="sdesc" data-i18n="trap-tele-d">відкидає назад</span>
                     </button>
                     <button class="sub-btn s-summon" id="btn-trap-summon" onclick="buyTrap('summon')"
                         title="Виклик: призиває монстра-захисника на поверсі. Натисни поверх щоб встановити.">
-                        <span class="sicon">⭐</span>
+                        <span class="sicon"><span class="dl-ico dl-star"></span></span>
                         <span class="slabel" data-i18n="trap-summon">Виклик</span>
-                        <span class="scost">120💀</span>
+                        <span class="scost">120 <span class="soul-gem"></span></span>
                         <span class="sdesc" data-i18n="trap-summon-d">спавн монстра</span>
                     </button>
                 </div>
@@ -2411,7 +2416,7 @@
         <div class="help-sub" data-i18n="help-sub">Ти — Повелитель Підземелля. Не дай героям дістатись до міста!</div>
 
         <div class="help-row">
-            <span class="hi">💀</span>
+            <span class="hi"><span class="soul-gem"></span></span>
             <span data-i18n="help-souls" data-i18n-html><b>Душі</b> — твоя валюта. Збираєш їх убиваючи героїв, витрачаєш на розвиток.</span>
         </div>
         <div class="help-row">
@@ -2419,27 +2424,27 @@
             <span data-i18n="help-elite" data-i18n-html><b>Золоті Душі</b> — падають з еліт і босів, зберігаються між рівнями. Назавжди-покращення в «Душі Підземелля».</span>
         </div>
         <div class="help-row">
-            <span class="hi">⚔️</span>
+            <span class="hi"><span class="dl-ico dl-sword"></span></span>
             <span data-i18n="help-atk" data-i18n-html><b>АТАКА</b> — запускає наступну групу героїв. <span class="hd">Чим раніше натиснеш — тим більше бонусних душ!</span></span>
         </div>
         <div class="help-row">
-            <span class="hi">🏗️</span>
+            <span class="hi"><span class="dl-ico dl-tower"></span></span>
             <span data-i18n="help-floor" data-i18n-html><b>Поверх</b> — будує новий підземний поверх. <span class="hd">На поверхах стоять монстри і можна ставити пастки.</span></span>
         </div>
         <div class="help-row">
-            <span class="hi">🪤</span>
+            <span class="hi"><span class="dl-ico dl-trap"></span></span>
             <span data-i18n="help-trap" data-i18n-html><b>Пастки</b> — купи пастку, потім <span class="hd">натисни на поверх</span> щоб встановити.</span>
         </div>
         <div class="help-row">
-            <span class="hi">👑</span>
+            <span class="hi"><span class="dl-ico dl-crown"></span></span>
             <span data-i18n="help-lord-row" data-i18n-html><b>Володар</b> — твій персонаж що атакує героїв на поверхні.</span>
         </div>
         <div class="help-row">
-            <span class="hi">🧟</span>
+            <span class="hi"><span class="dl-ico dl-beast"></span></span>
             <span data-i18n="help-monsters" data-i18n-html><b>Монстри</b> — покращуй атаку і витривалість усіх монстрів підземелля одночасно.</span>
         </div>
         <div class="help-row">
-            <span class="hi">📷</span>
+            <span class="hi"><span class="dl-ico dl-eye"></span></span>
             <span data-i18n="help-camera" data-i18n-html><span class="hd">Потягни камеру вгору/вниз</span> щоб побачити глибші поверхи.</span>
         </div>
 
@@ -2474,7 +2479,7 @@
     </div>
 </div>
 
-<script src="models/i18n.js?v=7"></script>
+<script src="models/i18n.js?v=8"></script>
 <script src="models/draw_slime.js?v=4"></script>
 <script src="models/draw_skeleton.js?v=1"></script>
 <script src="models/hero_flat.js?v=24"></script>
@@ -9872,42 +9877,42 @@ function _rms(min, max) {
 }
 
 const _RUN_MODS = [
-    { id:'blood_frenzy', icon:'💀',
+    { id:'blood_frenzy', icon:'dl-ghost',
       name:()=>_t('mod-blood'),
       desc:()=> _lang==='en' ? '+1 soul per enemy killed' : '+1 душа за кожного вбитого ворога',
       apply:() => { GAME.soulBonus = (GAME.soulBonus||0) + 1; } },
 
-    { id:'elite_surge',  icon:'⚡',
+    { id:'elite_surge',  icon:'dl-bolt',
       name:()=>_t('mod-elite'),
       desc:()=> _lang==='en' ? '2× elite soul rewards per kill' : 'Вдвічі більше душ від еліт та босів',
       apply:() => { _runEliteMult = 2; } },
 
-    { id:'lord_fury',    icon:'🔥',
+    { id:'lord_fury',    icon:'dl-flame',
       name:()=>_t('mod-fury'),
       desc:()=> { const v = _rms(10, 35); return _lang==='en' ? `Lord damage +${v}%` : `Урон Лорда +${v}%`; },
       apply:() => { const v = _rms(10, 35); GAME.lordDmg = Math.round(GAME.lordDmg * (1 + v / 100)); } },
 
-    { id:'iron_walls',   icon:'🏰',
+    { id:'iron_walls',   icon:'dl-tower',
       name:()=>_t('mod-iron'),
       desc:()=> _lang==='en' ? 'Monsters gain HP based on level' : 'Монстри отримують бонус HP залежно від рівня',
       apply:() => { GAME.monsterHpBonus = Math.round((GAME.monsterHpBonus||0) + (40 + GAME.heroScalePercent * 0.5)); } },
 
-    { id:'dark_pact',    icon:'🌑',
+    { id:'dark_pact',    icon:'dl-moon',
       name:()=>_t('mod-pact'),
       desc:()=> { const e = _rms(2, 10), t = _rms(5, 20); return _lang==='en' ? `+${e} elite souls, heroes +${t}% stronger` : `+${e} елітних душ, герої +${t}% сильніші`; },
       apply:() => { GAME.eliteSouls += _rms(2, 10); GAME.heroScalePercent += _rms(5, 20); } },
 
-    { id:'soul_well',    icon:'💧',
+    { id:'soul_well',    icon:'dl-drop',
       name:()=>_t('mod-well'),
       desc:()=> { const v = _rms(30, 100); return _lang==='en' ? `+${v} souls` : `+${v} душ`; },
       apply:() => { GAME.souls += _rms(30, 100); } },
 
-    { id:'warlord_aura', icon:'👹',
+    { id:'warlord_aura', icon:'dl-beast',
       name:()=>_t('mod-aura'),
       desc:()=> { const v = _rms(1, 6); return _lang==='en' ? `All monsters +${v} attack` : `Всі монстри +${v} до атаки`; },
       apply:() => { GAME.lordGlobalAtkAura = (GAME.lordGlobalAtkAura||0) + _rms(1, 6); } },
 
-    { id:'undying',      icon:'💜',
+    { id:'undying',      icon:'dl-heart',
       name:()=>_t('mod-regen'),
       desc:()=> { const hp = _rms(50, 200); return _lang==='en' ? `+${hp} Lord HP and +1 HP/s regen` : `+${hp} HP Лорда і +1 HP/с реген`; },
       apply:() => { GAME.maxLordHP += _rms(50, 200); GAME.lordRegen = (GAME.lordRegen||0) + 1; } },
@@ -9925,7 +9930,7 @@ function _showRunModPicker(level) {
     if (title) title.textContent = _t('mod-pick-title');
     cards.innerHTML = mods.map((m, i) => `
         <div class="run-mod-card" onclick="_selectRunMod(${i})">
-            <div class="run-mod-icon">${m.icon}</div>
+            <div class="run-mod-icon"><span class="dl-ico ${m.icon}"></span></div>
             <div class="run-mod-name">${m.name()}</div>
             <div class="run-mod-desc">${m.desc()}</div>
         </div>`).join('');
@@ -11903,7 +11908,7 @@ function buyPerma(type) {
 // ── Інтерфейс Душі Підземелля ──────────────────────────────────────────────
 const _SD_CARDS = [
     // Legacy global Lord/Monster cards видалено в Phase 2 — заміняє меню розвитку (🧬)
-    { type:'startSouls', icon:'💀', name:'Початкові Душі',       desc:'+10 душ на старті рівня',        lvlKey:'startSoulsLvl', costKey:'startSoulsCost' },
+    { type:'startSouls', icon:'dl-ghost', name:'Початкові Душі',       desc:'+10 душ на старті рівня',        lvlKey:'startSoulsLvl', costKey:'startSoulsCost' },
 ];
 
 let _selectedFloor = 0;
@@ -11925,7 +11930,7 @@ function updateSoulDungeonUI() {
         card.className = 'perma-card';
         card.setAttribute('data-type', c.type);
         card.innerHTML = `
-            <div class="perma-card-icon">${c.icon}</div>
+            <div class="perma-card-icon"><span class="dl-ico ${c.icon}"></span></div>
             <div class="perma-card-name">${c.name}</div>
             <div class="perma-card-lvl">${_t('perma-lvl', {n: `<b>${lvl}</b>`})}</div>
             <div class="perma-card-desc">${c.desc}</div>
