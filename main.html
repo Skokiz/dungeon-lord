@@ -1110,6 +1110,10 @@
             max-width:320px; line-height:1.5; }
         #soul-dungeon-cards { display:flex; flex-wrap:wrap; gap:12px;
             justify-content:center; width:100%; max-width:560px; }
+        .sd-empty-note { max-width:360px; text-align:center; color:#9a7ad0;
+            font-size:13px; line-height:1.6; padding:18px 20px;
+            background:rgba(30,16,54,0.5); border:1px dashed #4a2e74; border-radius:12px; }
+        .sd-empty-note b { color:#d8c4ff; }
         .perma-card {
             background:rgba(40,10,70,0.9); border:1px solid #5a2880;
             border-radius:14px; padding:14px 12px; width:140px; min-width:130px;
@@ -2410,7 +2414,7 @@
                 <span data-i18n="btn-floor">Побудувати поверх</span><br><small id="floor-cost-lbl">100💀</small>
             </button>
             <button class="rect-btn btn-wave atk-ready" id="btn-wave" onclick="triggerWave()"
-                title="Викликати наступну хвилю атакуючих героїв. Чим раніше — тим більше бонусних душ!">
+                title="Викликати наступну хвилю: монстри йдуть на місто. Урон по місту дає душі.">
                 <span data-i18n="btn-wave">АТАКА</span>
             </button>
         </div>
@@ -2437,7 +2441,7 @@
         </div>
         <div class="help-row">
             <span class="hi"><span class="dl-ico dl-sword"></span></span>
-            <span data-i18n="help-atk" data-i18n-html><b>АТАКА</b> — запускає наступну групу героїв. <span class="hd">Чим раніше натиснеш — тим більше бонусних душ!</span></span>
+            <span data-i18n="help-atk" data-i18n-html><b>АТАКА</b> — запускає наступну групу героїв. <span class="hd">Монстри йдуть на місто; кожні 10 HP міста дають душу.</span></span>
         </div>
         <div class="help-row">
             <span class="hi"><span class="dl-ico dl-tower"></span></span>
@@ -2491,7 +2495,7 @@
     </div>
 </div>
 
-<script src="models/i18n.js?v=8"></script>
+<script src="models/i18n.js?v=9"></script>
 <script src="models/draw_slime.js?v=4"></script>
 <script src="models/draw_skeleton.js?v=1"></script>
 <script src="models/hero_flat.js?v=24"></script>
@@ -2725,8 +2729,8 @@ function monStatPrice(stat, targetLvl, kindName) {
     if (targetLvl < 1 || targetLvl > MON_DEV_MAX[stat]) return Infinity;
     // Тир монстра (0=slime .. 19=dragon) → +5 до бази за кожен тир
     let tier = kindName ? Math.max(0, MONSTER_KIND_NAMES.indexOf(kindName)) : 0;
-    if (stat === 'atk' || stat === 'hp') return (30 + tier * 5) + (targetLvl - 1) * 15;
-    if (stat === 'cd')                    return (40 + tier * 5) + (targetLvl - 1) * 30;
+    if (stat === 'atk' || stat === 'hp') return (20 + tier * 5) + (targetLvl - 1) * 15;
+    if (stat === 'cd')                    return (30 + tier * 5) + (targetLvl - 1) * 30;
     if (stat === 'count')                 return MON_DEV_COUNT_PRICES[targetLvl - 1] || Infinity;
     return Infinity;
 }
@@ -5093,7 +5097,21 @@ class Unit {
             if (this.floorIdx < 0) {
                 this.y = CFG.surfaceY;
                 if (this.x > CITY_GATE_X) { this.x -= this.speed * 2 * _dt; }
-                else { GAME.cityHP -= this.dmg * 5; this.hp = 0; spawnParticle(this.x, this.y, 'red'); StoryManager.showComment('monsterStrike'); }
+                else {
+                    let _cd = this.dmg * 5;
+                    GAME.cityHP -= _cd;
+                    // Фарм: 1 душа за кожні 10 HP, знятих з міста (акумулятор зберігає залишок)
+                    GAME._cityDmgAccum = (GAME._cityDmgAccum || 0) + Math.max(0, _cd);
+                    if (GAME._cityDmgAccum >= 10) {
+                        let _gain = Math.floor(GAME._cityDmgAccum / 10);
+                        GAME._cityDmgAccum -= _gain * 10;
+                        GAME.souls += _gain;
+                        spawnSoulFly(this.x, this.y, Math.min(_gain, 4), false);
+                        spawnDmgText(this.x, this.y - 14, '+' + _gain, '#b98bff');
+                        updateUI();
+                    }
+                    this.hp = 0; spawnParticle(this.x, this.y, 'red'); StoryManager.showComment('monsterStrike');
+                }
                 return;
             }
             // Поверх 0 — до виходу (CAVE_X)
@@ -5586,8 +5604,13 @@ function startGame(level) {
     // ── Завантаження постійних прокачок ────────────────────────────────────
     _permaData = _loadPerma();
 
-    // Душі на старт (базові 100 + бонус)
-    GAME.souls = 100 + _permaData.startSoulsLvl * 10;
+    // Збирач Душ (перма): старт 100 + 10/рів, за-героя +1/рів.
+    // soulBonus ставимо ДО рун-моду — blood_frenzy/донесення додаються зверху.
+    const _collLvl = _permaData.soulCollLvl || 0;
+    GAME.souls = 100 + 10 * _collLvl;
+    GAME.soulBonus = _collLvl;
+    GAME._cityDmgAccum = 0;
+    GAME._soulsSpentLevel = 0;   // для salvage-логіки при програші
 
     // Лорд: фіксовані базові стати + grid-апгрейди зверху
     GAME.maxLordHP        = _LORD_BASE.maxHP;
@@ -9394,7 +9417,7 @@ function loop(ts) {
                     let _b7Fire = (_fMByKF.get('fire_ele:' + u.floorIdx) || []).some(m => m._evoSpawnAccel);
                     if (_b7Fire && floors[u.floorIdx]) floors[u.floorIdx].spawnTimer += 2;
                 }
-                let reward = (u.soulReward || (u.heroRank === 'boss' ? 80 : u.heroRank.startsWith('elite') ? 25 : 15)) + (GAME.soulBonus || 0);
+                let reward = (u.soulReward || (u.heroRank === 'boss' ? 80 : u.heroRank.startsWith('elite') ? 25 : 10)) + (GAME.soulBonus || 0);
                 GAME.souls += reward;
                 try { _liveTutTrigger('first_kill'); } catch(e) {}
                 if (_psyTrack) {
@@ -9405,7 +9428,8 @@ function loop(ts) {
                 // ── Елітні душі 💎 ──────────────────────────────────────
                 if (u.heroRank === 'boss') {
                     _SFX.bossDeath();
-                    const _ge = 6 * _runEliteMult;
+                    // Бос-золото росте з рівнем — вирівнює золото-за-хвилину на пізніх рівнях
+                    const _ge = (6 + Math.floor((GAME.currentLevel || 1) / 5)) * _runEliteMult;
                     GAME.eliteSouls += _ge;
                     spawnSoulFly(u.x, u.y - u.size * 0.5, Math.min(_ge, 6), true);
                     spawnDmgText(u.x, u.y - u.size - 18, '+' + _ge, '#ffd700', true);
@@ -10760,7 +10784,7 @@ function _peacefulVictory() {
     _tryBtn.onclick = () => hardReset();
     _showPsychotypeResult();
     document.getElementById('game-over').style.display = 'flex';
-    _showSoulSalvage();
+    _showSoulSalvage(false);
 }
 
 // ── Обчислення психотипу ────────────────────────────────────────────────────
@@ -11221,7 +11245,7 @@ function buyTrap(type) {
     _psyBuy('trap');
     // Якщо тільки один поверх доступний — ставимо одразу
     if (available.length === 1) {
-        GAME.souls -= cost;
+        _spend(cost);
         available[0].hasTrap = true;
         available[0].trapType = type;
         updateUI(); saveGame();
@@ -11238,7 +11262,7 @@ function buyFloor() {
     if (GAME.souls < GAME.floorCost) return;
     _haptic(25); _SFX.buy();
     _psyBuy('floor');
-    GAME.souls -= GAME.floorCost;
+    _spend(GAME.floorCost);
     floors.push(new Floor(floors.length));
     GAME.floorCost = r5(GAME.floorCost * 1.25);
     // Переміщуємо лорда на новий (нижній) поверх — НЕ перестворюємо, HP зберігається
@@ -11711,7 +11735,7 @@ function _doGameWinOverlay(lvl, nextLvl, isLast) {
     _tryBtn.onclick = () => hardReset();
     if (isLast) _showPsychotypeResult();
     document.getElementById('game-over').style.display = 'flex';
-    _showSoulSalvage();
+    _showSoulSalvage(false);
 }
 
 function gameOver() {
@@ -11738,20 +11762,37 @@ function gameOver() {
     const _tryBtn = document.getElementById('btn-try-again');
     if (_tryBtn) { _tryBtn.innerHTML = _t('go-retry'); _tryBtn.onclick = () => retryLevel(); }
     document.getElementById('game-over').style.display = 'flex';
-    _showSoulSalvage();
+    _showSoulSalvage(true);
 }
 
-// ── Врятувати звичайні душі: за перегляд реклами конвертувати ВСІ у золоті ──
-// Курс: 10 звичайних душ = 1 золота (елітна). Доступно раз на кожен екран кінця гри.
-const _SOUL_TO_GOLD = 10;
-let _soulSalvageDone = false;
+// Витрата душ із обліком для salvage-логіки (спент за поточний рівень)
+function _spend(n) {
+    GAME.souls -= n;
+    GAME._soulsSpentLevel = (GAME._soulsSpentLevel || 0) + Math.max(0, n);
+}
 
-function _showSoulSalvage() {
+// ── Врятувати звичайні душі: за перегляд реклами конвертувати у золоті ──
+// Прогресивний курс: перші 500 душ = 10:1, надлишок = 30:1 (карає накопичення).
+let _soulSalvageDone = false;
+function _salvageGold(souls) {
+    souls = Math.max(0, souls);
+    const head = Math.min(souls, 500), tail = Math.max(0, souls - 500);
+    return Math.floor(head / 10) + Math.floor(tail / 30);
+}
+// При програші salvage доступний лише якщо активно грав: витрачено ≥ 2× залишку.
+// Це закриває фарм «накопич і навмисно помри». При перемозі — завжди.
+function _salvageEligible(isLoss) {
+    if (!isLoss) return true;
+    const leftover = Math.max(0, GAME.souls || 0);
+    return (GAME._soulsSpentLevel || 0) >= 2 * leftover;
+}
+
+function _showSoulSalvage(isLoss) {
     let box = document.getElementById('go-soul-salvage');
     if (!box) return;
     let souls = Math.max(0, GAME.souls || 0);
-    let gold  = Math.floor(souls / _SOUL_TO_GOLD);
-    if (_soulSalvageDone || gold < 1) { box.style.display = 'none'; return; }
+    let gold  = _salvageGold(souls);
+    if (_soulSalvageDone || gold < 1 || !_salvageEligible(isLoss)) { box.style.display = 'none'; return; }
     document.getElementById('go-salvage-souls').innerText = souls;
     document.getElementById('go-salvage-gold').innerText  = gold;
     let btn = document.getElementById('go-salvage-btn');
@@ -11762,7 +11803,7 @@ function _showSoulSalvage() {
 function _watchAdConvertSouls() {
     if (_soulSalvageDone) return;
     let souls = Math.max(0, GAME.souls || 0);
-    let gold  = Math.floor(souls / _SOUL_TO_GOLD);
+    let gold  = _salvageGold(souls);
     if (gold < 1) return;
     let btn = document.getElementById('go-salvage-btn');
     if (btn) btn.disabled = true;
@@ -11825,7 +11866,7 @@ function commitEliteSouls() {
 const _MAX_FLOORS = 20;
 const _FLOOR_BASE_COSTS = [60,65,70,75,80,85,90,95,100,105,110,115,120,125,130,135,140,145,150,155];
 const _LORD_GRID_IDS = ['body_atk','body_def','body_sup','mind_atk','mind_def','mind_sup','soul_atk','soul_def','soul_sup'];
-const _LORD_GRID_COSTS = [0, 80, 150, 250, 400, 600]; // [1..5]
+const _LORD_GRID_COSTS = [0, 50, 120, 220, 380, 600]; // [1..5] — front-loaded: ранні дешевші
 const _PERMA_DEFAULTS = () => ({
     lordAtkLvl:0, lordAtkCost:80,
     lordVitLvl:0, lordVitCost:70,
@@ -11834,7 +11875,8 @@ const _PERMA_DEFAULTS = () => ({
     mobVitLvl:0,  mobVitCost:60,
     floorLvls: Array(_MAX_FLOORS).fill(0),
     floorCosts: _FLOOR_BASE_COSTS.slice(),
-    startSoulsLvl:0, startSoulsCost:100,
+    startSoulsLvl:0, startSoulsCost:100,   // legacy — мігрує в soulCollLvl
+    soulCollLvl:0,                          // Збирач Душ (перма): старт +10/рів, за-героя +1/рів
     // нова система: per-monster perma-baseline (golden souls)
     monsterDevGolden: (() => {
         let o = {};
@@ -11864,6 +11906,9 @@ function _loadPerma() {
             if ((out.lordVitLvl || 0) > 0) out.lordGrid.body_def = Math.min(out.lordVitLvl, 5);
         }
         _LORD_GRID_IDS.forEach(id => { if (typeof out.lordGrid[id] !== 'number') out.lordGrid[id] = 0; });
+        // Міграція: старий Soul-Dungeon апгрейд "Початкові Душі" → Збирач Душ
+        if (typeof out.soulCollLvl !== 'number') out.soulCollLvl = 0;
+        if ((out.startSoulsLvl || 0) > out.soulCollLvl) out.soulCollLvl = out.startSoulsLvl;
         // Міграція: гарантуємо monsterDevGolden для кожного типу монстра
         if (!out.monsterDevGolden || typeof out.monsterDevGolden !== 'object') out.monsterDevGolden = {};
         MONSTER_KIND_NAMES.forEach(k => {
@@ -11919,8 +11964,8 @@ function buyPerma(type) {
 
 // ── Інтерфейс Душі Підземелля ──────────────────────────────────────────────
 const _SD_CARDS = [
-    // Legacy global Lord/Monster cards видалено в Phase 2 — заміняє меню розвитку (🧬)
-    { type:'startSouls', icon:'dl-ghost', name:'Початкові Душі',       desc:'+10 душ на старті рівня',        lvlKey:'startSoulsLvl', costKey:'startSoulsCost' },
+    // «Початкові Душі» перенесено в Збирач Душ (керує стартом і за-героя разом).
+    // Legacy Lord/Monster картки — у меню Розвитку (🧬).
 ];
 
 let _selectedFloor = 0;
@@ -11934,6 +11979,11 @@ function updateSoulDungeonUI() {
     document.getElementById('soul-dungeon-elite-num').innerText = avail;
     let cont = document.getElementById('soul-dungeon-cards');
     cont.innerHTML = '';
+    if (!_SD_CARDS.length) {
+        cont.innerHTML = `<div class="sd-empty-note">${_lang==='en'
+            ? 'Permanent upgrades now live in the <b>Soul Collector</b> (crystal on the surface) and monster <b>Development</b>.'
+            : 'Постійні покращення тепер у <b>Збирачі Душ</b> (кристал на поверхні) та в <b>Розвитку</b> монстрів.'}</div>`;
+    }
     _SD_CARDS.forEach(c => {
         let lvl  = p[c.lvlKey];
         let cost = p[c.costKey];
@@ -11980,8 +12030,10 @@ function closeInstructions() {
     if (ss) ss.style.display = 'flex';
 }
 
-// Ціна апгрейду збирача: 10 × номер прокачки, платиться золотими (елітними) душами
-function _soulCollCost() { return 10 * ((GAME.soulBonus || 0) + 1); }
+// Ціна апгрейду збирача (золоті/елітні душі). Зростає з рівнем — відносно до наростаючої
+// нагороди: кожен рівень додає +10 старт і накопичувальний +1/вбивство.
+function _soulCollLvl() { return (_permaData && _permaData.soulCollLvl) || 0; }
+function _soulCollCost() { return 15 * (_soulCollLvl() + 1); }
 
 function upgradeSoulBonus() {
     const cost = _soulCollCost();
@@ -11990,7 +12042,11 @@ function upgradeSoulBonus() {
     _haptic(20); _SFX.buy();
     _store.set('DLSiege_elite', String(avail - cost));
     GAME.eliteSouls = avail - cost;
-    GAME.soulBonus += 1;
+    // Персистентно: рівень збирача живе в пермі (не губиться при hardReset)
+    _permaData.soulCollLvl = _soulCollLvl() + 1;
+    _savePerma(_permaData);
+    // Поточний ран одразу відчуває +1 за-героя (старт застосується з наступного рівня)
+    GAME.soulBonus = (GAME.soulBonus || 0) + 1;
     // Золотий сплеск на кристалі
     if (GAME._soulAltarX != null)
         spawnHitBurst(GAME._soulAltarX, GAME._soulAltarWorldY, 'gold', 10, 1.2);
@@ -12295,7 +12351,7 @@ function _handleCanvasTap(clientX, clientY) {
             // cy вже в world-координатах
             if (cx >= fx1 && cx <= fx2 && cy >= f.y - CFG.floorH && cy <= f.y) {
                 if (GAME.souls >= cost) {
-                    GAME.souls -= cost;
+                    _spend(cost);
                     f.hasTrap = true;
                     f.trapType = pendingTrapType;
                     if (f.trapType === 'teleport') f.teleportCooldown = 0;
@@ -12345,7 +12401,7 @@ function _handleCanvasTap(clientX, clientY) {
         if (cx >= f._btnX - pad && cx <= f._btnX + f._btnW + pad &&
             cy >= f._btnY - pad && cy <= f._btnY + f._btnH + pad) {
             if (GAME.souls >= f.floorUpgradeCost) {
-                GAME.souls -= f.floorUpgradeCost;
+                _spend(f.floorUpgradeCost);
                 f.maxMonsters += f.isBatFloor ? 2 : 1; // кажани: +2 за апгрейд
                 let _fBase = Math.round(60 * Math.pow(1.1, f.depth) / 5) * 5;
                 // Кількість куплених апгрейдів (для формули ціни)
@@ -15025,7 +15081,7 @@ function buyMonStat(kindName, stat) {
     _questDone('upgrade');
     let prevSpent = dev.soulsSpent || 0;
     _psyBuy('monster');
-    GAME.souls -= cost;
+    _spend(cost);
     dev[key] = nextLvl;
     dev.soulsSpent = prevSpent + cost;
     updateUI(); saveGame();
