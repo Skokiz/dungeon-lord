@@ -2724,7 +2724,7 @@ const MONSTER_KIND_NAMES = [
     'water_ele','earth_ele','air_ele','fire_ele','lightning','dark_knight','banshee','lich','abyss','dragon'
 ];
 const MON_DEV_MAX = { atk:15, hp:15, cd:10, count:3 };
-const MON_DEV_COUNT_PRICES = [250, 450, 750]; // індекс = lvl-1
+const MON_DEV_COUNT_PRICES = [200, 400, 700]; // індекс = lvl-1
 function monStatPrice(stat, targetLvl, kindName) {
     if (targetLvl < 1 || targetLvl > MON_DEV_MAX[stat]) return Infinity;
     // Тир монстра (0=slime .. 19=dragon) → +5 до бази за кожен тир
@@ -5735,6 +5735,10 @@ function startGame(level) {
 
     floors.push(new Floor(0));
     floors.push(new Floor(1));
+    // Вічні поверхи (перма за золото): добудовуємо одразу, ціна наступного росте як завжди
+    GAME.floorCost = 200;
+    for (let _pf = 0; _pf < (_permaData.permaFloorLvl || 0) && floors.length < _MAX_FLOORS; _pf++)
+        _addFloorFree();
 
     let ss = document.getElementById('start-screen');
     if (ss) ss.parentNode.removeChild(ss);
@@ -9563,6 +9567,7 @@ function loop(ts) {
                     let _ge = (6 + Math.floor((GAME.currentLevel || 1) / 5)) * _runEliteMult;
                     if (GAME.lordEliteSoulBonus > 0) _ge = Math.round(_ge * (1 + GAME.lordEliteSoulBonus));
                     GAME.eliteSouls += _ge;
+                    _store.set('DLSiege_elite', String(GAME.eliteSouls)); // live-синхронізація зі сховищем
                     spawnSoulFly(u.x, u.y - u.size * 0.5, Math.min(_ge, 6), true);
                     spawnDmgText(u.x, u.y - u.size - 18, '+' + _ge, '#ffd700', true);
                     try { _ctxHintPerm('golden_souls',
@@ -9573,6 +9578,7 @@ function loop(ts) {
                     let _ge = 2 * _runEliteMult;
                     if (GAME.lordEliteSoulBonus > 0) _ge = Math.round(_ge * (1 + GAME.lordEliteSoulBonus));
                     GAME.eliteSouls += _ge;
+                    _store.set('DLSiege_elite', String(GAME.eliteSouls)); // live-синхронізація зі сховищем
                     spawnSoulFly(u.x, u.y - u.size * 0.5, Math.min(_ge, 4), true);
                     spawnDmgText(u.x, u.y - u.size - 18, '+' + _ge, '#ffd700', false);
                     try { _ctxHintPerm('golden_souls',
@@ -11418,11 +11424,8 @@ function buyTrap(type) {
 }
 
 // =================== ПОВЕРХ / ХВИЛЯ ===================
-function buyFloor() {
-    if (GAME.souls < GAME.floorCost) return;
-    _haptic(25); _SFX.buy();
-    _psyBuy('floor');
-    _spend(GAME.floorCost);
+// Додає поверх без оплати (спільне для buyFloor і вічних поверхів зі старту)
+function _addFloorFree() {
     floors.push(new Floor(floors.length));
     GAME.floorCost = r5(GAME.floorCost * 1.25);
     // Переміщуємо лорда на новий (нижній) поверх — НЕ перестворюємо, HP зберігається
@@ -11434,6 +11437,14 @@ function buyFloor() {
     } else {
         spawnLord(); // тільки якщо лорда взагалі немає
     }
+}
+
+function buyFloor() {
+    if (GAME.souls < GAME.floorCost) return;
+    _haptic(25); _SFX.buy();
+    _psyBuy('floor');
+    _spend(GAME.floorCost);
+    _addFloorFree();
     try { _liveTutTrigger('floor_bought'); } catch(e) {}
     updateUI(); saveGame();
 }
@@ -12037,6 +12048,7 @@ const _PERMA_DEFAULTS = () => ({
     floorCosts: _FLOOR_BASE_COSTS.slice(),
     startSoulsLvl:0, startSoulsCost:100,   // legacy — мігрує в soulCollLvl
     soulCollLvl:0,                          // Збирач Душ (перма): старт +10/рів, за-героя +1/рів
+    permaFloorLvl:0, permaFloorCost:40,     // Вічні поверхи: рівень стартує з N готовими поверхами
     // нова система: per-monster perma-baseline (golden souls)
     monsterDevGolden: (() => {
         let o = {};
@@ -12069,6 +12081,8 @@ function _loadPerma() {
         // Міграція: старий Soul-Dungeon апгрейд "Початкові Душі" → Збирач Душ
         if (typeof out.soulCollLvl !== 'number') out.soulCollLvl = 0;
         if ((out.startSoulsLvl || 0) > out.soulCollLvl) out.soulCollLvl = out.startSoulsLvl;
+        if (typeof out.permaFloorLvl  !== 'number') out.permaFloorLvl  = 0;
+        if (typeof out.permaFloorCost !== 'number') out.permaFloorCost = 40;
         // Міграція: гарантуємо monsterDevGolden для кожного типу монстра
         if (!out.monsterDevGolden || typeof out.monsterDevGolden !== 'object') out.monsterDevGolden = {};
         MONSTER_KIND_NAMES.forEach(k => {
@@ -12115,6 +12129,12 @@ function buyPerma(type) {
         p.floorLvls[di]++; p.floorCosts[di] = r5(p.floorCosts[di] * 1.50);
     }
     else if (type === 'startSouls') { cost = p.startSoulsCost; if (avail < cost) return; p.startSoulsLvl++; p.startSoulsCost = r5(p.startSoulsCost * 1.50); }
+    else if (type === 'permaFloor') {
+        if ((p.permaFloorLvl || 0) >= _MAX_FLOORS - 2) return; // не більше за кап поверхів
+        cost = p.permaFloorCost; if (avail < cost) return;
+        p.permaFloorLvl = (p.permaFloorLvl || 0) + 1;
+        p.permaFloorCost = r5(p.permaFloorCost * 1.50);
+    }
     else return;
     _store.set('DLSiege_elite', String(avail - cost));
     _savePerma(p);
@@ -12126,6 +12146,9 @@ function buyPerma(type) {
 const _SD_CARDS = [
     // «Початкові Душі» перенесено в Збирач Душ (керує стартом і за-героя разом).
     // Legacy Lord/Monster картки — у меню Розвитку (🧬).
+    { type:'permaFloor', icon:'dl-tower', name:'Вічний поверх',
+      desc:'Кожен рівень починається з +1 уже збудованим поверхом (назавжди)',
+      lvlKey:'permaFloorLvl', costKey:'permaFloorCost' },
 ];
 
 let _selectedFloor = 0;
@@ -15204,7 +15227,8 @@ function buyMonGoldenStat(kindName, stat) {
     let cost = monStatPrice(stat, nextLvl, kindName); // та ж ціна, але в золотих
     if ((GAME.eliteSouls || 0) < cost) return;
     GAME.eliteSouls -= cost;
-    // Не зберігаємо в localStorage: commit відбудеться лише при перемозі або поразці
+    // Атомарний persist: золото і golden-рівень зберігаються разом одразу
+    _store.set('DLSiege_elite', String(GAME.eliteSouls));
     g[key] = nextLvl;
     g.goldenSpent = (g.goldenSpent || 0) + cost;
     // Refund: якщо session вже купив цей рівень — повертаємо звичайні душі
@@ -15217,6 +15241,7 @@ function buyMonGoldenStat(kindName, stat) {
     let lv3 = MON_TREE_THRESHOLDS[3];
     let needsBranch = MON_DEV_TREES[kindName] && !dev.branch && !g.branch;
     let prevSpent = (g.goldenSpent || 0) - cost;
+    _savePerma(_permaData); // golden-рівень персистимо разом зі списаним золотом
     saveGame();
     updateUI();
     _renderMonsterDev();
