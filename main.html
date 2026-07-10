@@ -197,6 +197,24 @@
             justify-content: center;
             align-items: flex-end;
         }
+        /* Тогл золотого режиму: покупки стають вічними за золоті душі */
+        #btn-gold-mode {
+            flex: 0 0 auto; align-self: stretch; width: 52px;
+            background: var(--surface-2); border: 1px solid var(--border-soft);
+            border-radius: var(--radius-m); cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            -webkit-appearance: none; touch-action: manipulation;
+            transition: background 0.15s, border-color 0.15s, box-shadow 0.15s;
+        }
+        #btn-gold-mode .esoul-gem { width: 20px; height: 20px; filter: grayscale(0.75) brightness(0.8); transition: filter 0.15s; }
+        #controls.gold-mode #btn-gold-mode {
+            background: rgba(60,44,6,0.9); border-color: var(--gold);
+            box-shadow: 0 0 14px rgba(242,193,78,0.45);
+        }
+        #controls.gold-mode #btn-gold-mode .esoul-gem { filter: none; }
+        #controls.gold-mode .btn-floor { border-color: rgba(242,193,78,0.55); }
+        #controls.gold-mode .btn-floor small { color: var(--gold); }
+
         .ctrl-rects {
             display: flex;
             justify-content: center;
@@ -1591,6 +1609,16 @@
             /* Розміри задаються inline рендером: 610×220 (горизонт.) або 220×610 (вертик. на вузьких) */
             position: relative;
         }
+        /* Тултіп вузла дерева (hover / long-press) */
+        #evo-tip {
+            display: none; position: fixed; z-index: 900;
+            max-width: 270px; padding: 9px 12px;
+            background: rgba(14,7,30,0.97); border: 1px solid #7a4ec0;
+            border-radius: 9px; box-shadow: 0 4px 22px rgba(60,10,140,0.55);
+            pointer-events: none;
+        }
+        .evo-tip-head { font-size: 11px; font-weight: 700; color: #b998e8; margin-bottom: 3px; letter-spacing: 0.4px; }
+        .evo-tip-body { font-size: 12.5px; line-height: 1.45; color: #ece2ff; }
         .evo-tree-svg {
             position: absolute; top: 0; left: 0;
             width: 100%; height: 100%;
@@ -2407,11 +2435,15 @@
 
         </div>
 
-        <!-- Ряд 2: Поверх + АТАКА -->
+        <!-- Ряд 2: Голд-режим + Поверх + АТАКА -->
         <div class="ctrl-rects">
+            <button id="btn-gold-mode" onclick="_toggleGoldMode()"
+                title="Золотий режим: поверхи і пастки купуються за золоті душі й лишаються назавжди">
+                <span class="esoul-gem"></span>
+            </button>
             <button class="rect-btn btn-floor" id="btn-floor" onclick="buyFloor()"
                 title="Побудувати новий підземний поверх для монстрів і пасток">
-                <span data-i18n="btn-floor">Побудувати поверх</span><br><small id="floor-cost-lbl">100💀</small>
+                <span id="btn-floor-label" data-i18n="btn-floor">Побудувати поверх</span><br><small id="floor-cost-lbl">100💀</small>
             </button>
             <button class="rect-btn btn-wave atk-ready" id="btn-wave" onclick="triggerWave()"
                 title="Викликати наступну хвилю: монстри йдуть на місто. Урон по місту дає душі.">
@@ -2495,7 +2527,7 @@
     </div>
 </div>
 
-<script src="models/i18n.js?v=9"></script>
+<script src="models/i18n.js?v=10"></script>
 <script src="models/draw_slime.js?v=4"></script>
 <script src="models/draw_skeleton.js?v=1"></script>
 <script src="models/hero_flat.js?v=24"></script>
@@ -5702,6 +5734,8 @@ function startGame(level) {
     GAME.soulBonus = _collLvl;
     GAME._cityDmgAccum = 0;
     GAME._soulsSpentLevel = 0;   // для salvage-логіки при програші
+    GAME._soulsStartLevel = GAME.souls;  // для підсумку "зібрано за рівень"
+    GAME._goldEarnedLevel = 0;           // золото, зароблене цього рівня
 
     // Лорд: фіксовані базові стати + grid-апгрейди зверху
     GAME.lordRegenPct = 0;
@@ -5739,6 +5773,8 @@ function startGame(level) {
     GAME.floorCost = 200;
     for (let _pf = 0; _pf < (_permaData.permaFloorLvl || 0) && floors.length < _MAX_FLOORS; _pf++)
         _addFloorFree();
+    // Вічні пастки: розставляємо на існуючі поверхи (крім лорд-поверху)
+    floors.forEach(f => _applyPermaTrap(f));
 
     let ss = document.getElementById('start-screen');
     if (ss) ss.parentNode.removeChild(ss);
@@ -9567,6 +9603,7 @@ function loop(ts) {
                     let _ge = (6 + Math.floor((GAME.currentLevel || 1) / 5)) * _runEliteMult;
                     if (GAME.lordEliteSoulBonus > 0) _ge = Math.round(_ge * (1 + GAME.lordEliteSoulBonus));
                     GAME.eliteSouls += _ge;
+                    GAME._goldEarnedLevel = (GAME._goldEarnedLevel || 0) + _ge;
                     _store.set('DLSiege_elite', String(GAME.eliteSouls)); // live-синхронізація зі сховищем
                     spawnSoulFly(u.x, u.y - u.size * 0.5, Math.min(_ge, 6), true);
                     spawnDmgText(u.x, u.y - u.size - 18, '+' + _ge, '#ffd700', true);
@@ -9578,6 +9615,7 @@ function loop(ts) {
                     let _ge = 2 * _runEliteMult;
                     if (GAME.lordEliteSoulBonus > 0) _ge = Math.round(_ge * (1 + GAME.lordEliteSoulBonus));
                     GAME.eliteSouls += _ge;
+                    GAME._goldEarnedLevel = (GAME._goldEarnedLevel || 0) + _ge;
                     _store.set('DLSiege_elite', String(GAME.eliteSouls)); // live-синхронізація зі сховищем
                     spawnSoulFly(u.x, u.y - u.size * 0.5, Math.min(_ge, 4), true);
                     spawnDmgText(u.x, u.y - u.size - 18, '+' + _ge, '#ffd700', false);
@@ -11424,6 +11462,29 @@ function buyTrap(type) {
 }
 
 // =================== ПОВЕРХ / ХВИЛЯ ===================
+// ── Золотий режим: поверхи/пастки купуються за золото і фіксуються назавжди ──
+let _goldMode = false;
+function _toggleGoldMode() {
+    _goldMode = !_goldMode;
+    _haptic(15);
+    const c = document.getElementById('controls');
+    if (c) c.classList.toggle('gold-mode', _goldMode);
+    // Лейбл кнопки поверху
+    const lbl = document.getElementById('btn-floor-label');
+    if (lbl) lbl.textContent = _goldMode ? _t('btn-floor-perma') : _t('btn-floor');
+    // Валюта в цінах трап-сабменю
+    document.querySelectorAll('#sub-trap .scost span').forEach(g => {
+        g.className = _goldMode ? 'esoul-gem' : 'soul-gem';
+    });
+    updateUI();
+}
+// Ставить вічну пастку на поверх, якщо вона куплена для цього depth
+function _applyPermaTrap(f) {
+    if (!f || f.hasTrap || f.depth === floors.length - 1) return; // лорд-поверх без пасток
+    const pt = (_permaData.permaTraps || []).find(t => t.depth === f.depth);
+    if (pt) { f.hasTrap = true; f.trapType = pt.type; if (pt.type === 'teleport') f.teleportCooldown = 0; }
+}
+
 // Додає поверх без оплати (спільне для buyFloor і вічних поверхів зі старту)
 function _addFloorFree() {
     floors.push(new Floor(floors.length));
@@ -11437,9 +11498,26 @@ function _addFloorFree() {
     } else {
         spawnLord(); // тільки якщо лорда взагалі немає
     }
+    // Колишній лорд-поверх став звичайним — вічна пастка могла на нього чекати
+    if (floors.length >= 2) _applyPermaTrap(floors[floors.length - 2]);
 }
 
 function buyFloor() {
+    if (_goldMode) {
+        // Вічний поверх: та сама ціна, що звичайний, але в золотих — і назавжди
+        const cost = GAME.floorCost;
+        if ((GAME.eliteSouls || 0) < cost || floors.length >= _MAX_FLOORS) return;
+        _haptic(25); _SFX.buy();
+        _psyBuy('floor');
+        GAME.eliteSouls -= cost;
+        _store.set('DLSiege_elite', String(GAME.eliteSouls));
+        _permaData.permaFloorLvl = (_permaData.permaFloorLvl || 0) + 1;
+        _savePerma(_permaData);
+        _addFloorFree();
+        _showToast(_lang === 'en' ? 'Eternal floor built — it will greet you every level' : 'Вічний поверх збудовано — він чекатиме на кожному рівні');
+        updateUI(); saveGame();
+        return;
+    }
     if (GAME.souls < GAME.floorCost) return;
     _haptic(25); _SFX.buy();
     _psyBuy('floor');
@@ -11548,7 +11626,7 @@ function updateUI() {
         el.eliteSoulsBox.style.display = '';
         el.eliteSouls.innerText = GAME.eliteSouls;
     }
-    el.floorCost.innerHTML    = GAME.floorCost + ' <span class="soul-gem"></span>';
+    el.floorCost.innerHTML    = GAME.floorCost + (_goldMode ? ' <span class="esoul-gem"></span>' : ' <span class="soul-gem"></span>');
     // Загроза — піпси замість тексту "0/5" (перебудова лише при зміні)
     {
         const _tm = GAME.maxThreatLevel || 5;
@@ -11577,7 +11655,9 @@ function updateUI() {
         }
     }
 
-    if (el.btnFloor) el.btnFloor.disabled = s < GAME.floorCost;
+    if (el.btnFloor) el.btnFloor.disabled = _goldMode
+        ? ((GAME.eliteSouls || 0) < GAME.floorCost || floors.length >= _MAX_FLOORS)
+        : s < GAME.floorCost;
 
     // Бейдж кнопки прокачки — показуємо ціну наступного доступного апгрейду
     if (el.lordUpgBadge) {
@@ -11899,8 +11979,7 @@ function _doGameWinOverlay(lvl, nextLvl, isLast) {
         _descEl.innerText = _t('go-next', {n:nextLvl});
     }
 
-    const _eEl = document.getElementById('go-elite-earned');
-    if (_eEl) _eEl.innerText = GAME.eliteSouls > 0 ? _t('go-elite', {n:GAME.eliteSouls, t:getStoredEliteSouls()}) : '';
+    _renderLevelEarnings();
     const _tryBtn = document.getElementById('btn-try-again');
     _tryBtn.innerHTML = isLast ? _t('go-retry-all') : _t('go-next-btn', {n:nextLvl});
     _tryBtn.onclick = () => hardReset();
@@ -11926,14 +12005,26 @@ function gameOver() {
     document.getElementById('go-title').style.color = '';
     const _q = PAUSE_QUOTES[Math.floor(Math.random() * PAUSE_QUOTES.length)];
     document.getElementById('go-desc').innerText = '«' + _q + '»';
-    const _eEl = document.getElementById('go-elite-earned');
-    if (_eEl) _eEl.innerText = GAME.eliteSouls > 0 ? _t('go-elite', {n:GAME.eliteSouls, t:getStoredEliteSouls()}) : '';
+    _renderLevelEarnings();
     const _psyEl = document.getElementById('psy-result-panel');
     if (_psyEl) _psyEl.innerHTML = '';
     const _tryBtn = document.getElementById('btn-try-again');
     if (_tryBtn) { _tryBtn.innerHTML = _t('go-retry'); _tryBtn.onclick = () => retryLevel(); }
     document.getElementById('game-over').style.display = 'flex';
     _showSoulSalvage(true);
+}
+
+// Підсумок рівня: скільки зароблено обох валют (game-over/win екран)
+function _renderLevelEarnings() {
+    const el = document.getElementById('go-elite-earned');
+    if (!el) return;
+    const g = GAME._goldEarnedLevel || 0;
+    // Зібрані душі = все, що пройшло через руки: витрачене + залишок − стартовий капітал
+    const s = Math.max(0, Math.round((GAME._soulsSpentLevel || 0) + Math.max(0, GAME.souls || 0) - (GAME._soulsStartLevel || 0)));
+    let html = '';
+    if (g > 0) html += _t('go-elite', {n: g, t: getStoredEliteSouls()});
+    if (s > 0) html += (html ? '<br>' : '') + _t('go-souls', {n: s});
+    el.innerHTML = html;
 }
 
 // Витрата душ із обліком для salvage-логіки (спент за поточний рівень)
@@ -11985,8 +12076,7 @@ function _watchAdConvertSouls() {
         _soulSalvageDone = true;
         commitEliteSouls();               // персист золотих (gameOver уже комітив раніше)
         updateUI();
-        const _eEl = document.getElementById('go-elite-earned');
-        if (_eEl) _eEl.innerText = _t('go-elite', {n: GAME.eliteSouls, t: getStoredEliteSouls()});
+        _renderLevelEarnings();
         _showSoulSalvage();               // ховає блок (done=true)
         _haptic(30);
         try { _SFX.buy(); } catch(e) {}
@@ -12048,7 +12138,8 @@ const _PERMA_DEFAULTS = () => ({
     floorCosts: _FLOOR_BASE_COSTS.slice(),
     startSoulsLvl:0, startSoulsCost:100,   // legacy — мігрує в soulCollLvl
     soulCollLvl:0,                          // Збирач Душ (перма): старт +10/рів, за-героя +1/рів
-    permaFloorLvl:0, permaFloorCost:40,     // Вічні поверхи: рівень стартує з N готовими поверхами
+    permaFloorLvl:0,                        // Вічні поверхи: рівень стартує з N готовими поверхами
+    permaTraps: [],                         // Вічні пастки: [{depth, type}]
     // нова система: per-monster perma-baseline (golden souls)
     monsterDevGolden: (() => {
         let o = {};
@@ -12081,8 +12172,8 @@ function _loadPerma() {
         // Міграція: старий Soul-Dungeon апгрейд "Початкові Душі" → Збирач Душ
         if (typeof out.soulCollLvl !== 'number') out.soulCollLvl = 0;
         if ((out.startSoulsLvl || 0) > out.soulCollLvl) out.soulCollLvl = out.startSoulsLvl;
-        if (typeof out.permaFloorLvl  !== 'number') out.permaFloorLvl  = 0;
-        if (typeof out.permaFloorCost !== 'number') out.permaFloorCost = 40;
+        if (typeof out.permaFloorLvl !== 'number') out.permaFloorLvl = 0;
+        if (!Array.isArray(out.permaTraps)) out.permaTraps = [];
         // Міграція: гарантуємо monsterDevGolden для кожного типу монстра
         if (!out.monsterDevGolden || typeof out.monsterDevGolden !== 'object') out.monsterDevGolden = {};
         MONSTER_KIND_NAMES.forEach(k => {
@@ -12129,12 +12220,6 @@ function buyPerma(type) {
         p.floorLvls[di]++; p.floorCosts[di] = r5(p.floorCosts[di] * 1.50);
     }
     else if (type === 'startSouls') { cost = p.startSoulsCost; if (avail < cost) return; p.startSoulsLvl++; p.startSoulsCost = r5(p.startSoulsCost * 1.50); }
-    else if (type === 'permaFloor') {
-        if ((p.permaFloorLvl || 0) >= _MAX_FLOORS - 2) return; // не більше за кап поверхів
-        cost = p.permaFloorCost; if (avail < cost) return;
-        p.permaFloorLvl = (p.permaFloorLvl || 0) + 1;
-        p.permaFloorCost = r5(p.permaFloorCost * 1.50);
-    }
     else return;
     _store.set('DLSiege_elite', String(avail - cost));
     _savePerma(p);
@@ -12144,11 +12229,8 @@ function buyPerma(type) {
 
 // ── Інтерфейс Душі Підземелля ──────────────────────────────────────────────
 const _SD_CARDS = [
-    // «Початкові Душі» перенесено в Збирач Душ (керує стартом і за-героя разом).
+    // «Початкові Душі» → Збирач Душ; вічні поверхи/пастки → золотий режим у грі (тогл біля «Побудувати поверх»).
     // Legacy Lord/Monster картки — у меню Розвитку (🧬).
-    { type:'permaFloor', icon:'dl-tower', name:'Вічний поверх',
-      desc:'Кожен рівень починається з +1 уже збудованим поверхом (назавжди)',
-      lvlKey:'permaFloorLvl', costKey:'permaFloorCost' },
 ];
 
 let _selectedFloor = 0;
@@ -12533,7 +12615,22 @@ function _handleCanvasTap(clientX, clientY) {
             let fx2 = centerX + CFG.floorW / 2;
             // cy вже в world-координатах
             if (cx >= fx1 && cx <= fx2 && cy >= f.y - CFG.floorH && cy <= f.y) {
-                if (GAME.souls >= cost) {
+                if (_goldMode) {
+                    // Вічна пастка: золото, той самий номінал, лишається назавжди на цьому поверсі
+                    if ((GAME.eliteSouls || 0) >= cost) {
+                        GAME.eliteSouls -= cost;
+                        _store.set('DLSiege_elite', String(GAME.eliteSouls));
+                        f.hasTrap = true;
+                        f.trapType = pendingTrapType;
+                        if (f.trapType === 'teleport') f.teleportCooldown = 0;
+                        if (!_permaData.permaTraps) _permaData.permaTraps = [];
+                        _permaData.permaTraps = _permaData.permaTraps.filter(t => t.depth !== f.depth);
+                        _permaData.permaTraps.push({ depth: f.depth, type: pendingTrapType });
+                        _savePerma(_permaData);
+                        _showToast(_lang === 'en' ? 'Eternal trap set — forever on this floor' : 'Вічна пастка встановлена — назавжди на цьому поверсі');
+                        updateUI(); saveGame();
+                    }
+                } else if (GAME.souls >= cost) {
                     _spend(cost);
                     f.hasTrap = true;
                     f.trapType = pendingTrapType;
@@ -13133,8 +13230,9 @@ function _questDone(type) {
     if (_dailyState.quests[type]) return;
     _dailyState.quests[type] = true;
     try { localStorage.setItem(_dailyState.questKey, JSON.stringify(_dailyState.quests)); } catch(e) {}
-    _store.set('DLSiege_elite', String(getStoredEliteSouls() + 5));
     GAME.eliteSouls = (GAME.eliteSouls || 0) + 5;
+    GAME._goldEarnedLevel = (GAME._goldEarnedLevel || 0) + 5;
+    _store.set('DLSiege_elite', String(GAME.eliteSouls));
     _showToast(_t('toast-quest'));
     _dailyRenderPanel();
 }
@@ -15069,20 +15167,64 @@ function _evoNodeHtml(node, spent, lockedBranch, pos, branchCls) {
     if (node.finale) cls += ' evo-finale';
     if (unlocked) cls += ' filled';
     if (lockedBranch) cls += ' locked-branch';
-    let title = `Lv ${node.lvl} (${threshold} душ): ${node.desc}`;
+    let tip = `Lv ${node.lvl} · ${threshold} душ|${node.desc}`;
     let icon  = node.icon || node.lvl;
     if (_EVO_ICO[icon]) icon = `<span class="dl-ico ${_EVO_ICO[icon]}"></span>`;
     let check = unlocked ? '<span class="evo-checkmark">✓</span>' : '';
     let style = `left:${pos.cx - EVO_NODE_SIZE/2}px; top:${pos.cy - EVO_NODE_SIZE/2}px;`;
-    return `<div class="${cls}" style="${style}" title="${title.replace(/"/g,'&quot;')}">`
+    return `<div class="${cls}" style="${style}" data-tip="${tip.replace(/"/g,'&quot;')}">`
          + `<span class="evo-node-icon">${icon}</span>`
          + `<span class="evo-node-lvl">${node.lvl}</span>`
          + `${check}</div>`;
 }
 
+// ── Тултіп вузлів дерева: hover на ПК, довгий тап на телефоні ────────────
+let _evoTipInit = false;
+function _initEvoTip() {
+    if (_evoTipInit) return;
+    _evoTipInit = true;
+    const tipEl = document.createElement('div');
+    tipEl.id = 'evo-tip';
+    document.body.appendChild(tipEl);
+    let holdTimer = null, touchNode = null, tx0 = 0, ty0 = 0;
+
+    function show(node) {
+        const raw = node.getAttribute('data-tip') || '';
+        const [head, body] = raw.split('|');
+        tipEl.innerHTML = `<div class="evo-tip-head">${head}</div><div class="evo-tip-body">${body || ''}</div>`;
+        tipEl.style.display = 'block';
+        const r = node.getBoundingClientRect(), tw = tipEl.offsetWidth, th = tipEl.offsetHeight;
+        let x = r.left + r.width / 2 - tw / 2;
+        x = Math.max(8, Math.min(x, window.innerWidth - tw - 8));
+        let y = r.top - th - 10;                      // над нодою
+        if (y < 8) y = r.bottom + 10;                 // не влазить — під нодою
+        tipEl.style.left = x + 'px'; tipEl.style.top = y + 'px';
+    }
+    function hide() { tipEl.style.display = 'none'; }
+    function nodeOf(e) { return e.target && e.target.closest ? e.target.closest('.evo-node') : null; }
+
+    document.addEventListener('mouseover', e => { const n = nodeOf(e); if (n) show(n); });
+    document.addEventListener('mouseout',  e => { if (nodeOf(e)) hide(); });
+    document.addEventListener('touchstart', e => {
+        const n = nodeOf(e); if (!n) { hide(); return; }
+        touchNode = n; tx0 = e.touches[0].clientX; ty0 = e.touches[0].clientY;
+        holdTimer = setTimeout(() => { show(n); _haptic(15); }, 380);
+    }, { passive: true });
+    document.addEventListener('touchmove', e => {
+        if (!holdTimer) return;
+        const t = e.touches[0];
+        if (Math.abs(t.clientX - tx0) > 12 || Math.abs(t.clientY - ty0) > 12) { clearTimeout(holdTimer); holdTimer = null; }
+    }, { passive: true });
+    ['touchend', 'touchcancel'].forEach(ev => document.addEventListener(ev, () => {
+        if (holdTimer) { clearTimeout(holdTimer); holdTimer = null; }
+        setTimeout(hide, 1600); // тултіп тримається трохи після відпускання
+    }, { passive: true }));
+}
+
 function _renderMonsterDev() {
     let kind = _monDevState.kindName;
     if (!kind) return;
+    _initEvoTip();
     document.getElementById('mon-dev-kind-name').innerText = MON_DEV_LABELS[kind] || kind;
     // Портрет анімується окремим RAF (_monDevPortRAF), тут не чіпаємо
     _renderMonsterTree(kind);
