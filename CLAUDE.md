@@ -95,21 +95,30 @@ Cinzel — **латиниця-only**: кирилиця падає у Georgia (с
 **Ключові константи:**
 ```js
 const _LORD_GRID_IDS = ['body_atk','body_def','body_sup','mind_atk','mind_def','mind_sup','soul_atk','soul_def','soul_sup'];
-const _LORD_GRID_COSTS = [0, 80, 150, 250, 400, 600]; // cost[lvl] щоб купити lvl
+const _LORD_GRID_COSTS = [0, 50, 120, 220, 380, 600]; // front-loaded: ранні дешевші
 ```
 
 **Зберігається:** `_permaData.lordGrid` — об'єкт `{ body_atk: 0..5, ... }`. Міграція зі старих `lordAtkLvl`/`lordVitLvl` → `body_atk`/`body_def`.
 
 **Ключові функції:**
 - `_LORD_GRID_DEF` — масив з 9 об'єктів `{ id, row, col, icon, name, color, rowLbl, colLbl, levels[5] }`
-- `_applyLordGridEffects(p)` — скидає GAME.lordDmg/lordArmor/etc. до базових і нараховує всі бонуси з сітки
+- `_resetLordGridFlags()` — ЄДИНЕ місце скидання всіх GAME.lord* полів гріда (викликається зі startGame і buyLordGrid)
+- `_applyLordGridEffects(p)` — нараховує всі бонуси з сітки поверх reset
 - `buyLordGrid(id)` — купує наступний рівень, списує elite souls, оновлює юніт лорда + UI
 - `openLordUpgrade()` / `_renderLordUpgrade()` — overlay `#lord-upg-overlay`
 - `_lordUpgNextCost()` — повертає мінімальну вартість наступного доступного апгрейду (для badge)
 
+**Усі 45 ефектів РЕАЛІЗОВАНІ** (редизайн 2026-07): колонки диференційовані — Тіло=сирий DPS/танк, Розум=контроль+анти-магія, Душа=sustain+глобальні аури. Wiring:
+- Атака/захист лорда, крит/блок/вамп/фриз/рикошет/AoE4/пробій — центральний attack-блок Unit (шукай `Лорд-грід:` коментарі)
+- Аури монстрів: `_lordAuraOn(fi)` (лорд ±auraRange; 99=все), atk у damage-time, HP/ША при спавні
+- Прокляття героїв: `_lordCurseOn(fi)`, −атака в damage-time, DoT в update, вічна мітка `_curseMarked`
+- Воскресіння/періодичний хіл/елітний монстр — блок «Реген Лорда» + death-цикл
+- `GAME._lordReviveUsed` скидається в startGame (1 воскресіння на рівень)
+- Рун-мод warlord_aura тепер пише `GAME.monsterFlatAtk` (плоска атака при спавні), НЕ lordGlobalAtkAura (частка)
+
 **UI:** кнопка ⚗️ Прокачка у circle menu лорда → overlay `#lord-upg-overlay`.
 
-**Важливо для `_applyLordGridEffects`:** `soul_def` Lv4 (+40% maxHP) застосовується мультиплікативно після всіх адитивних бонусів — завжди останнім.
+**Важливо для `_applyLordGridEffects`:** `soul_def` Lv3 (+25% maxHP) застосовується мультиплікативно після всіх адитивних бонусів — завжди останнім.
 
 ## Музика і SFX
 

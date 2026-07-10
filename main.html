@@ -2794,7 +2794,7 @@ function _floorMaxMonsters(f) {
     let kindName = _floorKindName(f);
     let cLvl = getMonStatLvl(kindName, 'count');
     let base = f.isBatFloor ? 5 : 2; // кажани: 5 base, інші: 2
-    return base + cLvl;
+    return base + cLvl + (GAME.lordGlobalCountBonus || 0);
 }
 
 let floors = [];
@@ -3774,18 +3774,24 @@ class Unit {
 
             // ── HP ────────────────────────────────────────────────────────
             this.hp = (80 + n * 20 + GAME.monsterHpBonus) * (1 + (GAME.monsterHpPct || 0)) * kind.hpMult * _kHpBonus;
+            // Лорд-грід: HP-аури (Темний пакт глобально + бойова аура за поверхом)
+            {
+                let _lgHp = 1 + (GAME.lordGlobalHpAura || 0) + (_lordAuraOn(floorIdx) ? (GAME.lordAuraHp || 0) : 0);
+                if (_lgHp !== 1) this.hp *= _lgHp;
+            }
 
             // ── DMG ───────────────────────────────────────────────────────
             let scaledAtk = kind.baseAtk + (n < 5 ? n * 1 : 4 + (n - 4) * 2);
             let dmgVariance = 0.9 + Math.random() * 0.2;
             this.rawBaseDmg = scaledAtk;
             this._dmgVariance = dmgVariance;
-            this.baseDmg = scaledAtk * (1 + (GAME.monsterDmgPct || 0)) * _kAtkBonus;
+            this.baseDmg = scaledAtk * (1 + (GAME.monsterDmgPct || 0)) * _kAtkBonus + (GAME.monsterFlatAtk || 0);
             this.dmg = Math.round(this.baseDmg * dmgVariance);
 
             // ── ША ────────────────────────────────────────────────────────
             this.baseAtkSpeed = kind.baseSpd;
-            this.atkSpeedBonus = GAME.monsterAtkSpeedBonus;
+            this.atkSpeedBonus = GAME.monsterAtkSpeedBonus
+                + (_lordAuraOn(floorIdx) ? (GAME.lordAuraSpd || 0) : 0);
             let mSpeedMult = 0.9 + Math.random() * 0.2;
             this.speed = 1.1 * mSpeedMult;
             this.color = kind.color;
@@ -4220,6 +4226,13 @@ class Unit {
             return;
         }
 
+        // Лорд-грід: прокляття роз'їдає (mind_sup L4 — DoT у зоні прокляття)
+        if (this.type === 'hero' && GAME.lordCurseDot > 0 && this.hp > 0 && _lordCurseOn(this.floorIdx)) {
+            this.hp -= this.maxHp * GAME.lordCurseDot / 60 * _dt;
+            if (Math.random() < 0.02) spawnParticle(this.x, this.y - this.size * 0.6, 'purple', {size:1.2, vy:-0.6});
+            if (this.hp <= 0) this._lastHitBy = 'lord';
+        }
+
         // Герой під дією переляку (Дух) — біжить до міста 2 сек
         if (this.type === 'hero' && (this._scareTimer || 0) > 0) {
             this._scareTimer--;
@@ -4375,6 +4388,7 @@ class Unit {
                 if (this.type === 'hero' && this.dmgType !== 'mag' && _isFloorAcid(this.floorIdx)) {
                     dmgDealt *= 0.75;
                 }
+                const _rawPreDef = dmgDealt; // для лорд-пробою (частка шкоди повз броню)
                 // DARK KNIGHT A6: Чорний клинок — 50%/66% шанс: тип mag або phys, ігнорує протилежну броню
                 let _dkBladeHitType = null;
                 if (this.monsterKind === 'dark_knight' && this._evoBlackBlade && enemy.type === 'hero') {
@@ -4390,6 +4404,32 @@ class Unit {
                 }
                 if (_dkBladeHitType === null) {
                     dmgDealt = applyDef(dmgDealt, this, enemy, pierceArmor);
+                }
+
+                // ═══ Лорд-грід: модифікатори завданої шкоди ═══
+                if (this.type === 'lord') {
+                    // Пробій: 30% шкоди йде повз броню цілі
+                    if (GAME.lordPierce > 0) dmgDealt = _rawPreDef * GAME.lordPierce + dmgDealt * (1 - GAME.lordPierce);
+                    if (GAME.lordCritChance > 0 && Math.random() < GAME.lordCritChance) {
+                        dmgDealt *= 2;
+                        spawnDmgText(enemy.x, enemy.y - enemy.size - 16, 'КРИТ!', '#ffdd44', true);
+                    }
+                }
+                if (this.type === 'monster') {
+                    // Бойова аура лорда (±range) + глобальний Темний пакт
+                    let _am = 1 + (GAME.lordGlobalAtkAura || 0) + (_lordAuraOn(this.floorIdx) ? (GAME.lordAuraAtk || 0) : 0);
+                    if (_am !== 1) dmgDealt *= _am;
+                }
+                if (this.type === 'hero') {
+                    // Прокляття лорда: −атака в зоні + вічна мітка
+                    if (_lordCurseOn(this.floorIdx)) {
+                        dmgDealt *= (1 - GAME.lordCurseAtk);
+                        if (GAME.lordCurseMark && !this._curseMarked) {
+                            this._curseMarked = true;
+                            spawnDmgText(this.x, this.y - this.size - 14, 'ПРОКЛЯТО', '#aa66ff');
+                        }
+                    }
+                    if (this._curseMarked) dmgDealt *= 0.90;
                 }
 
                 // WATER_ELE: щит поглинає вхідний урон повністю поки не спустошений
@@ -4511,7 +4551,58 @@ class Unit {
                         spawnDmgText(enemy.x, enemy.y - enemy.size - 10, '💨УХИЛ', '#aaffaa');
                         dmgDealt = 0;
                     }
+                    // ═══ Лорд-грід: захист лорда (до застосування шкоди) ═══
+                    if (enemy.type === 'lord' && dmgDealt > 0) {
+                        if (GAME.lordFirstBlock && !this._lordFirstSpent) {
+                            this._lordFirstSpent = true; dmgDealt = 0;
+                            spawnDmgText(enemy.x, enemy.y - enemy.size - 12, 'БАР\'ЄР', '#88ddff');
+                        } else if (GAME.lordBlockChance > 0 && Math.random() < GAME.lordBlockChance) {
+                            dmgDealt = 0;
+                            spawnDmgText(enemy.x, enemy.y - enemy.size - 12, 'БЛОК', '#aaccff');
+                        } else if (this.dmgType === 'mag' && GAME.lordMagDodge > 0 && Math.random() < GAME.lordMagDodge) {
+                            dmgDealt = 0;
+                            spawnDmgText(enemy.x, enemy.y - enemy.size - 12, 'УХИЛ', '#aaffee');
+                        } else {
+                            if (this.dmgType === 'mag' && GAME.lordMagReflect > 0) {
+                                let _rf = dmgDealt * GAME.lordMagReflect;
+                                this.hp -= _rf; this._lastHitBy = 'lord';
+                                spawnParticle(this.x, this.y - this.size, 'purple');
+                                spawnDmgText(this.x, this.y - this.size - 8, '-' + Math.round(_rf), '#cc88ff');
+                            }
+                            if (GAME.lordLowHpWard && enemy.hp < enemy.maxHp * 0.25) dmgDealt *= 0.65;
+                        }
+                    }
                     enemy.hp -= dmgDealt;
+                    // ═══ Лорд-грід: он-хіт ефекти лорда ═══
+                    if (this.type === 'lord' && dmgDealt > 0 && enemy.type === 'hero') {
+                        if (GAME.lordVampire > 0 && this.hp > 0)
+                            this.hp = Math.min(this.maxHp, this.hp + dmgDealt * GAME.lordVampire);
+                        if (GAME.lordFreeze > 0 && Math.random() < GAME.lordFreeze) {
+                            enemy._stunTimer = (enemy._stunTimer || 0) + 60;
+                            spawnParticle(enemy.x, enemy.y - enemy.size, 'cyan');
+                        }
+                        this._lordHitN = (this._lordHitN || 0) + 1;
+                        if (GAME.lordAoe4 && this._lordHitN % 4 === 0) {
+                            units.filter(h => h.type === 'hero' && h !== enemy && h.hp > 0 && h.floorIdx === this.floorIdx)
+                                .forEach(h => {
+                                    let _d = applyDef(this.dmg * 0.60, this, h, false);
+                                    h.hp -= _d; h._lastHitBy = 'lord';
+                                    spawnDmgText(h.x, h.y - h.size - 8, Math.round(_d).toString(), '#cc88ff');
+                                });
+                            triggerScreenShake(4);
+                            spawnHitBurst(this.x, this.y - this.size * 0.5, 'purple', 10, 1.2);
+                        }
+                        if (GAME.lordRicochet) {
+                            units.filter(h => h.type === 'hero' && h !== enemy && h.hp > 0 && h.floorIdx === this.floorIdx)
+                                .slice(0, 2)
+                                .forEach(h => {
+                                    let _d = applyDef(dmgDealt * 0.50, this, h, false);
+                                    h.hp -= _d; h._lastHitBy = 'lord';
+                                    spawnParticle(h.x, h.y - h.size, 'purple');
+                                    spawnDmgText(h.x, h.y - h.size - 8, Math.round(_d).toString(), '#cc88ff');
+                                });
+                        }
+                    }
                     if (enemy.type === 'lord' && dmgDealt > 0) {
                         _runLordHit = true;
                         try { _ctxHintPerm('lord_hit',
@@ -5613,26 +5704,15 @@ function startGame(level) {
     GAME._soulsSpentLevel = 0;   // для salvage-логіки при програші
 
     // Лорд: фіксовані базові стати + grid-апгрейди зверху
-    GAME.maxLordHP        = _LORD_BASE.maxHP;
-    GAME.lordDmg          = _LORD_BASE.dmg;
-    GAME.lordArmor        = _LORD_BASE.armor;
-    GAME.lordMagArmor     = 0;
-    GAME.lordRegenPct     = 0;
-    GAME.lordRegen        = 0;
-    GAME.lordAtkSpeedBonus= 0;
-    GAME.lordCritChance   = 0;
-    GAME.lordBlockChance  = 0;
-    GAME.lordVampire      = 0;
-    GAME.lordFloorAtkAura = 0;
-    GAME.lordFloorHpAura  = 0;
-    GAME.lordFloorSpdAura = 0;
-    GAME.lordGlobalAtkAura= 0;
-    GAME.lordGlobalHpAura = 0;
-    GAME.lordGlobalCountBonus = 0;
+    GAME.lordRegenPct = 0;
+    GAME._lordReviveUsed = false;
+    GAME._lordHealT = 0; GAME._eliteSpawnT = 0;
+    _resetLordGridFlags();
     _applyLordGridEffects(_permaData);
 
     // ── Рун-модифікатор ──────────────────────────────────────────────────────
     _runEliteMult = 1;
+    GAME.monsterFlatAtk = 0;
     if (_currentRunMod) { _currentRunMod.apply(); _currentRunMod = null; }
 
     // Монстри: бонуси від perma
@@ -8602,6 +8682,45 @@ function loop(ts) {
         let lord = units.find(u => u.type==='lord');
         if (lord && lord.hp > 0 && lord.hp < GAME.maxLordHP)
             lord.hp = Math.min(lord.hp + GAME.lordRegen/60, GAME.maxLordHP);
+
+        // Лорд-грід: періодичне відновлення (soul_def L4) — 5% maxHP кожні 12с
+        if (GAME.lordPeriodicHeal > 0 && lord && lord.hp > 0) {
+            GAME._lordHealT = (GAME._lordHealT || 0) + _dt;
+            if (GAME._lordHealT >= 720) {
+                GAME._lordHealT = 0;
+                if (lord.hp < lord.maxHp) {
+                    const _ph = Math.round(lord.maxHp * GAME.lordPeriodicHeal);
+                    lord.hp = Math.min(lord.maxHp, lord.hp + _ph);
+                    spawnDmgText(lord.x, lord.y - 70, '+' + _ph, '#66ffaa', true);
+                    spawnParticle(lord.x, lord.y - 40, 'green', {size:2, vy:-1.5, glow:true});
+                }
+            }
+        }
+        // Лорд-грід: Темний пакт L5 — щохвилини випадковий монстр стає елітним
+        if (GAME.lordEliteSpawn) {
+            GAME._eliteSpawnT = (GAME._eliteSpawnT || 0) + _dt;
+            if (GAME._eliteSpawnT >= 3600) {
+                GAME._eliteSpawnT = 0;
+                const _pool = units.filter(m => m.type === 'monster' && m.hp > 0 && !m._eliteMon);
+                if (_pool.length) {
+                    const m = _pool[Math.floor(Math.random() * _pool.length)];
+                    m._eliteMon = true;
+                    m.dmg = Math.round(m.dmg * 1.6);
+                    m.baseDmg = (m.baseDmg || m.dmg) * 1.6;
+                    m.maxHp = Math.round(m.maxHp * 1.6);
+                    m.hp = Math.min(m.maxHp, Math.round(m.hp * 1.6));
+                    spawnHitBurst(m.x, m.y - m.size * 0.5, 'gold', 12, 1.3);
+                    spawnDmgText(m.x, m.y - m.size - 12, 'ЕЛІТА!', '#ffd700', true);
+                }
+            }
+            // Золоте мерехтіння елітних монстрів (дешева індикація)
+            if ((_frameNow | 0) % 24 === 0) {
+                units.forEach(m => {
+                    if (m._eliteMon && m.hp > 0 && m.type === 'monster')
+                        spawnParticle(m.x + (Math.random()-0.5)*m.size, m.y - m.size*0.8, 'gold', {size:1.3, vy:-0.8, glow:true, life:25});
+                });
+            }
+        }
     }
 
     // ── Pre-cache unit categories (один прохід замість 20+ filter/forEach) ──
@@ -9425,11 +9544,24 @@ function loop(ts) {
                     if (u._lastHitBy === 'lord') _psyTrack.combat.lordKills++;
                     _dailyKillCheck();
                 }
+                // Лорд-грід: Поглинання душ — бонуси за вбивства самим лордом
+                if (u._lastHitBy === 'lord') {
+                    if (GAME.lordKillSouls > 0) {
+                        GAME.souls += GAME.lordKillSouls;
+                        spawnSoulFly(u.x, u.y - u.size * 0.5, 1, false);
+                    }
+                    if (GAME.lordKillHpStack) {
+                        GAME.maxLordHP += 3;
+                        const _lu = units.find(x => x.type === 'lord');
+                        if (_lu) { _lu.maxHp += 3; _lu.hp = Math.min(_lu.maxHp, _lu.hp + 3); }
+                    }
+                }
                 // ── Елітні душі 💎 ──────────────────────────────────────
                 if (u.heroRank === 'boss') {
                     _SFX.bossDeath();
                     // Бос-золото росте з рівнем — вирівнює золото-за-хвилину на пізніх рівнях
-                    const _ge = (6 + Math.floor((GAME.currentLevel || 1) / 5)) * _runEliteMult;
+                    let _ge = (6 + Math.floor((GAME.currentLevel || 1) / 5)) * _runEliteMult;
+                    if (GAME.lordEliteSoulBonus > 0) _ge = Math.round(_ge * (1 + GAME.lordEliteSoulBonus));
                     GAME.eliteSouls += _ge;
                     spawnSoulFly(u.x, u.y - u.size * 0.5, Math.min(_ge, 6), true);
                     spawnDmgText(u.x, u.y - u.size - 18, '+' + _ge, '#ffd700', true);
@@ -9438,7 +9570,8 @@ function loop(ts) {
                         'These are golden souls 💎 — use them to permanently upgrade monster abilities, floors, and the Lord himself.'); } catch(e) {}
                 } else if (u.heroRank && u.heroRank.startsWith('elite')) {
                     _SFX.death();
-                    const _ge = 2 * _runEliteMult;
+                    let _ge = 2 * _runEliteMult;
+                    if (GAME.lordEliteSoulBonus > 0) _ge = Math.round(_ge * (1 + GAME.lordEliteSoulBonus));
                     GAME.eliteSouls += _ge;
                     spawnSoulFly(u.x, u.y - u.size * 0.5, Math.min(_ge, 4), true);
                     spawnDmgText(u.x, u.y - u.size - 18, '+' + _ge, '#ffd700', false);
@@ -9471,7 +9604,18 @@ function loop(ts) {
                     u.heroRank === 'boss' ? 5 : u.heroRank.startsWith('elite') ? 4 : 3, false);
                 spawnDmgText(u.x, u.y - u.size, '+' + reward, '#ffcc00', u.heroRank !== 'normal');
                 updateUI();
-            } else if (u.type === 'lord') { gameOver(); }
+            } else if (u.type === 'lord') {
+                // Лорд-грід: Воскресіння (soul_def L5) — раз на рівень
+                if (GAME.lordReviveHP > 0 && !GAME._lordReviveUsed) {
+                    GAME._lordReviveUsed = true;
+                    u.hp = Math.round(u.maxHp * GAME.lordReviveHP);
+                    spawnHitBurst(u.x, u.y - u.size * 0.5, 'purple', 16, 1.6);
+                    spawnDmgText(u.x, u.y - u.size - 22, 'ВОСКРЕСІННЯ', '#cc88ff', true);
+                    triggerScreenShake(8);
+                    continue; // лорд лишається в units
+                }
+                gameOver();
+            }
             units.splice(i, 1);
             if (u.type === 'monster' && u.floorIdx >= 0) {
                 let floorMonsters = units.filter(m => m.type === 'monster' && m.floorIdx === u.floorIdx);
@@ -9721,155 +9865,175 @@ const _LORD_GRID_DEF = [
       rowLbl:'<span class="dl-ico dl-bone"></span> Тіло', colLbl:'<span class="dl-ico dl-sword"></span> Атака',
       levels:[
         { desc:'+5 до атаки' },
-        { desc:'+15% до швидкості атаки' },
         { desc:'+10 до атаки' },
-        { desc:'12% шанс критичного удару (×2 dmg)' },
-        { desc:'Кожен 4-й удар — AoE по всьому поверсі' },
+        { desc:'+20% до швидкості атаки' },
+        { desc:'Крит 20%: подвійна шкода' },
+        { desc:'Кожен 4-й удар — AoE по всіх героях поверху (60% шкоди)' },
     ]},
     { id:'body_def', row:'body', col:'def', icon:'dl-shield', name:'Загартування',     color:'#44aa55',
       rowLbl:'<span class="dl-ico dl-bone"></span> Тіло', colLbl:'<span class="dl-ico dl-shield"></span> Захист',
       levels:[
         { desc:'+80 HP' },
-        { desc:'+4 броні' },
-        { desc:'+120 HP' },
-        { desc:'8% шанс заблокувати удар' },
-        { desc:'При HP<25% — +50% броні автоматично' },
+        { desc:'+120 HP (сумарно +200)' },
+        { desc:'+5 броні' },
+        { desc:'Блок 15%: повністю зупиняє удар' },
+        { desc:'При HP<25% — отримувана шкода −35%' },
     ]},
     { id:'body_sup', row:'body', col:'sup', icon:'dl-star', name:'Воїнська аура',    color:'#cc8822',
       rowLbl:'<span class="dl-ico dl-bone"></span> Тіло', colLbl:'<span class="dl-ico dl-spark"></span> Аура',
       levels:[
-        { desc:'Монстри поверху лорда: +8% атаки' },
-        { desc:'Монстри поверху лорда: +8% HP' },
-        { desc:'Аура охоплює ±1 сусідній поверх' },
-        { desc:'Монстри в аурі: +12% ША' },
-        { desc:'Монстри в аурі: 1 безкоштовне відродження/хвилю' },
+        { desc:'Аура (поверх лорда ±1): монстри +10% атаки' },
+        { desc:'Монстри в аурі: +10% HP (нові спавни)' },
+        { desc:'Аура розширюється до ±2 поверхів' },
+        { desc:'Монстри в аурі: +15% швидкості атаки' },
+        { desc:'Аура охоплює все підземелля' },
     ]},
     { id:'mind_atk', row:'mind', col:'atk', icon:'dl-crystal', name:'Темна магія',      color:'#4488ff',
       rowLbl:'<span class="dl-ico dl-eye"></span> Розум', colLbl:'<span class="dl-ico dl-sword"></span> Атака',
       levels:[
-        { desc:'+6 до магічної атаки' },
-        { desc:'Beam пробиває 30% броні' },
-        { desc:'30% шанс заморозити ціль на 0.8с' },
+        { desc:'+6 до атаки' },
+        { desc:'30% шкоди лорда ігнорує броню' },
+        { desc:'30% шанс заморозити ціль на 1с' },
         { desc:'+10 до атаки' },
-        { desc:'Beam рикошетить на 2 ближніх героїв' },
+        { desc:'Атака рикошетить у 2 ближніх героїв (50% шкоди)' },
     ]},
     { id:'mind_def', row:'mind', col:'def', icon:'dl-swirl', name:'Магічний щит',     color:'#5566ee',
       rowLbl:'<span class="dl-ico dl-eye"></span> Розум', colLbl:'<span class="dl-ico dl-shield"></span> Захист',
       levels:[
-        { desc:'+6 магічної броні' },
-        { desc:'12% ухилення від магічних атак' },
-        { desc:'+8 магічної броні' },
-        { desc:'Відображає 20% магічного урону назад' },
-        { desc:'Щит на 80 HP (відновлюється щохв.)' },
+        { desc:'+6 магічної броні (маги приходять з 9-го тіру героїв)' },
+        { desc:'+8 магічної броні (сумарно 14)' },
+        { desc:'15% ухилення від магічних атак' },
+        { desc:'Відбиває 25% отриманої магічної шкоди в нападника' },
+        { desc:'Перший удар кожного героя по лорду — заблоковано' },
     ]},
     { id:'mind_sup', row:'mind', col:'sup', icon:'dl-moon', name:'Темне прокляття',  color:'#6644cc',
       rowLbl:'<span class="dl-ico dl-eye"></span> Розум', colLbl:'<span class="dl-ico dl-spark"></span> Аура',
       levels:[
-        { desc:'Герої поверху лорда: −12% атаки' },
-        { desc:'Монстри поверху: реген 0.5 HP/с' },
-        { desc:'Герої поверху лорда: −12% ША' },
-        { desc:'Монстри поверху: +20% HP' },
-        { desc:'При смерті монстра: 30% шанс на привидне відродження' },
+        { desc:'Герої на поверсі лорда: −15% атаки' },
+        { desc:'Прокляття діє на ±1 поверх від лорда' },
+        { desc:'Прокляті герої: −25% атаки (сумарно)' },
+        { desc:'Прокляті герої втрачають 0.6% maxHP/с' },
+        { desc:'Дотик прокляття: герой назавжди −10% атаки' },
     ]},
     { id:'soul_atk', row:'soul', col:'atk', icon:'dl-drop', name:'Поглинання душ',  color:'#cc2244',
       rowLbl:'<span class="dl-ico dl-ghost"></span> Душа', colLbl:'<span class="dl-ico dl-sword"></span> Атака',
       levels:[
-        { desc:'15% вампіризм від атак лорда' },
-        { desc:'+5 атаки + кожна 5-а атака миттєва' },
-        { desc:'Вампіризм +15% (сумарно 30%)' },
-        { desc:'+8 до атаки' },
-        { desc:'Вбивство героя → +3 HP назавжди' },
+        { desc:'Вампіризм 15% від шкоди лорда' },
+        { desc:'Вампіризм 30% (сумарно)' },
+        { desc:'Вбивство героя лордом: +2 душі' },
+        { desc:'+10 до атаки' },
+        { desc:'Вбивство героя лордом: +3 maxHP до кінця рівня' },
     ]},
     { id:'soul_def', row:'soul', col:'def', icon:'dl-heart', name:'Безсмертна воля',  color:'#9922cc',
       rowLbl:'<span class="dl-ico dl-ghost"></span> Душа', colLbl:'<span class="dl-ico dl-shield"></span> Захист',
       levels:[
         { desc:'Реген 1.5 HP/с' },
-        { desc:'При смерті: воскресіння з 25% HP (1×/хв)' },
-        { desc:'Реген +2 HP/с (сумарно 3.5)' },
-        { desc:'+40% максHP' },
-        { desc:'Кожні 12с: відновити 8% від maxHP' },
+        { desc:'Реген 3.5 HP/с (сумарно)' },
+        { desc:'+25% максHP' },
+        { desc:'Кожні 12с: відновлення 5% maxHP' },
+        { desc:'Воскресіння з 30% HP (раз на рівень)' },
     ]},
     { id:'soul_sup', row:'soul', col:'sup', icon:'dl-orb', name:'Темний пакт',      color:'#882299',
       rowLbl:'<span class="dl-ico dl-ghost"></span> Душа', colLbl:'<span class="dl-ico dl-spark"></span> Аура',
       levels:[
         { desc:'Всі монстри підземелля: +5% атаки' },
+        { desc:'Всі монстри підземелля: +5% HP (нові спавни)' },
         { desc:'+1 до ліміту монстрів на кожному поверсі' },
-        { desc:'Всі монстри підземелля: +5% HP' },
-        { desc:'Елітних душ після хвилі +15%' },
-        { desc:'1×/хв: рандомний монстр стає елітним' },
+        { desc:'Золоті душі з еліт і босів: +20%' },
+        { desc:'Щохвилини випадковий монстр стає елітним (+60% атаки й HP)' },
     ]},
 ];
 
 // Обчислює ефекти всіх придбаних клітин та застосовує до GAME.*
+// Скидає ВСІ поля, які пише _applyLordGridEffects — єдине місце правди
+function _resetLordGridFlags() {
+    GAME.maxLordHP = _LORD_BASE.maxHP; GAME.lordDmg = _LORD_BASE.dmg; GAME.lordArmor = _LORD_BASE.armor;
+    GAME.lordMagArmor = 0; GAME.lordRegen = 0; GAME.lordAtkSpeedBonus = 0;
+    GAME.lordCritChance = 0; GAME.lordBlockChance = 0; GAME.lordVampire = 0;
+    GAME.lordAoe4 = false; GAME.lordLowHpWard = false;
+    GAME.lordAuraAtk = 0; GAME.lordAuraHp = 0; GAME.lordAuraSpd = 0; GAME.lordAuraRange = 0;
+    GAME.lordPierce = 0; GAME.lordFreeze = 0; GAME.lordRicochet = false;
+    GAME.lordMagDodge = 0; GAME.lordMagReflect = 0; GAME.lordFirstBlock = false;
+    GAME.lordCurseAtk = 0; GAME.lordCurseRange = 0; GAME.lordCurseDot = 0; GAME.lordCurseMark = false;
+    GAME.lordKillSouls = 0; GAME.lordKillHpStack = false;
+    GAME.lordPeriodicHeal = 0; GAME.lordReviveHP = 0;
+    GAME.lordGlobalAtkAura = 0; GAME.lordGlobalHpAura = 0; GAME.lordGlobalCountBonus = 0;
+    GAME.lordEliteSoulBonus = 0; GAME.lordEliteSpawn = false;
+}
+
 function _applyLordGridEffects(p) {
     const g = p.lordGrid || {};
     const ba=g.body_atk||0, bd=g.body_def||0, bs=g.body_sup||0;
     const ma=g.mind_atk||0, md=g.mind_def||0, ms=g.mind_sup||0;
     const sa=g.soul_atk||0, sd=g.soul_def||0, ss=g.soul_sup||0;
 
-    // ── body_atk
+    // ── body_atk: сирий DPS лорда
     if (ba>=1) GAME.lordDmg += 5;
-    if (ba>=2) GAME.lordAtkSpeedBonus += 0.15;
-    if (ba>=3) GAME.lordDmg += 10;
-    if (ba>=4) GAME.lordCritChance = (GAME.lordCritChance||0) + 0.12;
-    GAME.lordAoeEvery4 = ba >= 5;
+    if (ba>=2) GAME.lordDmg += 10;
+    if (ba>=3) GAME.lordAtkSpeedBonus += 0.20;
+    if (ba>=4) GAME.lordCritChance += 0.20;
+    GAME.lordAoe4 = ba >= 5;
 
-    // ── body_def
+    // ── body_def: фізична живучість
     if (bd>=1) GAME.maxLordHP += 80;
-    if (bd>=2) GAME.lordArmor += 4;
-    if (bd>=3) GAME.maxLordHP += 120;
-    if (bd>=4) GAME.lordBlockChance = (GAME.lordBlockChance||0) + 0.08;
-    GAME.lordLowHpArmor = bd >= 5;
+    if (bd>=2) GAME.maxLordHP += 120;
+    if (bd>=3) GAME.lordArmor += 5;
+    if (bd>=4) GAME.lordBlockChance += 0.15;
+    GAME.lordLowHpWard = bd >= 5;
 
-    // ── body_sup (aura per lord floor + range)
-    if (bs>=1) GAME.lordFloorAtkAura += 0.08;
-    if (bs>=2) GAME.lordFloorHpAura  += 0.08;
-    GAME.lordAuraRange   = bs >= 3 ? 2 : 1;
-    if (bs>=4) GAME.lordFloorSpdAura += 0.12;
-    GAME.lordFloorRevive = bs >= 5;
+    // ── body_sup: бойова аура монстрам (лорд ±range; 99 = все підземелля)
+    if (bs>=1) { GAME.lordAuraAtk += 0.10; GAME.lordAuraRange = 1; }
+    if (bs>=2) GAME.lordAuraHp += 0.10;
+    if (bs>=3) GAME.lordAuraRange = 2;
+    if (bs>=4) GAME.lordAuraSpd += 0.15;
+    if (bs>=5) GAME.lordAuraRange = 99;
 
-    // ── mind_atk
+    // ── mind_atk: контроль і пробій
     if (ma>=1) GAME.lordDmg += 6;
-    if (ma>=2) GAME.lordBeamArmorPierce = 0.30;
-    if (ma>=3) GAME.lordBeamFreeze = 0.30;
+    if (ma>=2) GAME.lordPierce = 0.30;
+    if (ma>=3) GAME.lordFreeze = 0.30;
     if (ma>=4) GAME.lordDmg += 10;
-    GAME.lordBeamRicochet = ma >= 5;
+    GAME.lordRicochet = ma >= 5;
 
-    // ── mind_def
+    // ── mind_def: анти-магія
     if (md>=1) GAME.lordMagArmor += 6;
-    if (md>=2) GAME.lordMagDodge  = (GAME.lordMagDodge||0) + 0.12;
-    if (md>=3) GAME.lordMagArmor += 8;
-    if (md>=4) GAME.lordMagReflect = 0.20;
-    GAME.lordMagShield = md >= 5 ? 80 : 0;
+    if (md>=2) GAME.lordMagArmor += 8;
+    if (md>=3) GAME.lordMagDodge += 0.15;
+    if (md>=4) GAME.lordMagReflect = 0.25;
+    GAME.lordFirstBlock = md >= 5;
 
-    // ── mind_sup
-    if (ms>=1) GAME.lordHeroAtkDebuff = (GAME.lordHeroAtkDebuff||0) + 0.12;
-    if (ms>=2) GAME.lordFloorRegen = (GAME.lordFloorRegen||0) + 0.5;
-    if (ms>=3) GAME.lordHeroSpdDebuff = (GAME.lordHeroSpdDebuff||0) + 0.12;
-    if (ms>=4) GAME.lordFloorHpAura += 0.20;
-    GAME.lordGhostSpawn = ms >= 5 ? 0.30 : 0;
+    // ── mind_sup: прокляття героїв (лорд ±curseRange)
+    if (ms>=1) GAME.lordCurseAtk = 0.15;
+    if (ms>=2) GAME.lordCurseRange = 1;
+    if (ms>=3) GAME.lordCurseAtk = 0.25;
+    if (ms>=4) GAME.lordCurseDot = 0.006;   // частка maxHP за секунду
+    GAME.lordCurseMark = ms >= 5;
 
-    // ── soul_atk
+    // ── soul_atk: sustain-офенс
     if (sa>=1) GAME.lordVampire += 0.15;
-    if (sa>=2) { GAME.lordDmg += 5; GAME.lordFastEvery5 = true; }
-    if (sa>=3) GAME.lordVampire += 0.15;
-    if (sa>=4) GAME.lordDmg += 8;
+    if (sa>=2) GAME.lordVampire += 0.15;
+    if (sa>=3) GAME.lordKillSouls = 2;
+    if (sa>=4) GAME.lordDmg += 10;
     GAME.lordKillHpStack = sa >= 5;
 
-    // ── soul_def
+    // ── soul_def: невмирущість
     if (sd>=1) GAME.lordRegen += 1.5;
-    if (sd>=2) GAME.lordRevive = 0.25;
-    if (sd>=3) GAME.lordRegen += 2.0;
-    if (sd>=4) GAME.maxLordHP = Math.round(GAME.maxLordHP * 1.40);
-    GAME.lordPeriodicHeal = sd >= 5;
+    if (sd>=2) GAME.lordRegen += 2.0;
+    if (sd>=3) GAME.maxLordHP = Math.round(GAME.maxLordHP * 1.25);
+    if (sd>=4) GAME.lordPeriodicHeal = 0.05;
+    GAME.lordReviveHP = sd >= 5 ? 0.30 : 0;
 
-    // ── soul_sup
+    // ── soul_sup: пакт підземелля (глобальні)
     if (ss>=1) GAME.lordGlobalAtkAura += 0.05;
-    if (ss>=2) GAME.lordGlobalCountBonus += 1;
-    if (ss>=3) GAME.lordGlobalHpAura += 0.05;
-    GAME.lordEliteSoulBonus = ss >= 4 ? 0.15 : 0;
+    if (ss>=2) GAME.lordGlobalHpAura += 0.05;
+    if (ss>=3) GAME.lordGlobalCountBonus += 1;
+    if (ss>=4) GAME.lordEliteSoulBonus = 0.20;
     GAME.lordEliteSpawn = ss >= 5;
 }
+
+// Чи діє бойова аура/прокляття лорда на поверсі fi (лорд на останньому поверсі)
+function _lordAuraOn(fi)  { return fi != null && fi >= 0 && GAME.lordAuraRange  > 0 && Math.abs((floors.length-1) - fi) <= GAME.lordAuraRange; }
+function _lordCurseOn(fi) { return fi != null && fi >= 0 && GAME.lordCurseAtk   > 0 && Math.abs((floors.length-1) - fi) <= (GAME.lordCurseRange||0); }
 
 // Повертає ціну наступного апгрейду (будь-якої клітини) або 0 якщо всі max
 function _lordUpgNextCost() {
@@ -9946,7 +10110,7 @@ const _RUN_MODS = [
     { id:'warlord_aura', icon:'dl-beast',
       name:()=>_t('mod-aura'),
       desc:()=> { const v = _rms(1, 6); return _lang==='en' ? `All monsters +${v} attack` : `Всі монстри +${v} до атаки`; },
-      apply:() => { GAME.lordGlobalAtkAura = (GAME.lordGlobalAtkAura||0) + _rms(1, 6); } },
+      apply:() => { GAME.monsterFlatAtk = (GAME.monsterFlatAtk||0) + _rms(1, 6); } },
 
     { id:'undying',      icon:'dl-heart',
       name:()=>_t('mod-regen'),
@@ -11094,11 +11258,7 @@ function buyLordGrid(id) {
     p.lordGrid = g;
     _savePerma(p); _permaData = p;
     // Перераховуємо бонуси для поточної гри
-    GAME.maxLordHP = _LORD_BASE.maxHP; GAME.lordDmg = _LORD_BASE.dmg; GAME.lordArmor = _LORD_BASE.armor;
-    GAME.lordMagArmor = 0; GAME.lordRegen = 0; GAME.lordAtkSpeedBonus = 0;
-    GAME.lordCritChance = 0; GAME.lordBlockChance = 0; GAME.lordVampire = 0;
-    GAME.lordFloorAtkAura = 0; GAME.lordFloorHpAura = 0; GAME.lordFloorSpdAura = 0;
-    GAME.lordGlobalAtkAura = 0; GAME.lordGlobalHpAura = 0; GAME.lordGlobalCountBonus = 0;
+    _resetLordGridFlags();
     _applyLordGridEffects(p);
     // Оновлюємо активного лорда
     const lord = units.find(u => u.type === 'lord');
