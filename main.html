@@ -8697,14 +8697,18 @@ function loop(ts) {
             ctx.fillStyle = g; ctx.beginPath(); ctx.arc(ox, oy, r, 0, 6.2832); ctx.fill();
             ctx.textAlign = 'center';
         };
-        if (GAME.soulBonus > 0) {
-            _drawValOrb('+' + GAME.soulBonus, _ax, _ay - 48*_as, 'bold ' + (isPC ? '13px' : '9px') + ' Arial', '#aaeeff');
+        // Показуємо лише ВЛАСНИЙ перма-рівень збирача. GAME.soulBonus містить іще
+        // приховані бафи Донесень і рун-модів — вони діють, але не світяться тут,
+        // інакше психотест втрачає непомітність, а гравець бачить "+8 нізвідки".
+        const _collShown = _soulCollLvl();
+        if (_collShown > 0) {
+            _drawValOrb('+' + _collShown, _ax, _ay - 48*_as, 'bold ' + (isPC ? '13px' : '9px') + ' Arial', '#aaeeff');
         }
         // Назва
         ctx.globalAlpha = 0.7 + _pulse * 0.2;
-        ctx.fillStyle = GAME.soulBonus > 0 ? '#88ddff' : '#8899cc';
+        ctx.fillStyle = _collShown > 0 ? '#88ddff' : '#8899cc';
         ctx.font = (isPC ? '12px' : '8px') + ' Arial'; ctx.textAlign = 'center';
-        ctx.fillText('Збирач душ', _ax, _ay - (GAME.soulBonus > 0 ? 52*_as : 48*_as));
+        ctx.fillText('Збирач душ', _ax, _ay - (_collShown > 0 ? 52*_as : 48*_as));
         ctx.globalAlpha = 1;
         // Ціна — у золотих (елітних) душах
         _drawValOrb(_soulCollCost(), _ax, _ay - 7*_as, (isPC ? '13px' : '9px') + ' Arial', _canAfford ? '#ffee88' : '#887755', true);
