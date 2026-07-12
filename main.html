@@ -5946,13 +5946,14 @@ function checkCityBoss() {
     }
 }
 
-// Іменні мінібоси кампанії: Селена (21), Андрій (45, якщо відштовхнув на 44)
+// Іменні мінібоси кампанії: Селена (21), Андрій (45, якщо відштовхнув на 44).
+// tier закріплює модель героя: Селена — Лицар II, Андрій — Паладін II.
 function _namedBossFor(lvl, mult) {
     const en = _lang === 'en';
-    if (lvl === 21 && mult === 3) return en ? 'Selene' : 'Селена';
+    if (lvl === 21 && mult === 3) return { name: en ? 'Selene' : 'Селена', tier: 12 };
     if (lvl === 45 && mult === 3) {
         const a = _storyChoice('andrii_talk');
-        if (a === 0 || a === 3) return en ? 'Andriy' : 'Андрій'; // «Іди» або «Мовчати» → прийшов з мечем
+        if (a === 0 || a === 3) return { name: en ? 'Andriy' : 'Андрій', tier: 16 }; // «Іди»/«Мовчати» → прийшов з мечем
     }
     return null;
 }
@@ -5989,25 +5990,27 @@ function _namedBossLines(name) {
 }
 
 function spawnBoss(level, mult) {
-    let boss = new Unit('hero', CITY_GATE_X, CFG.surfaceY, -1, level);
+    const _nm = _namedBossFor(GAME.currentLevel || 1, mult);
+    // Іменний бос має закріплену модель (Селена = лицарка, а не «маг за тіром хвилі»)
+    let boss = new Unit('hero', CITY_GATE_X, CFG.surfaceY, -1, _nm ? _nm.tier : level);
     boss.hp *= mult; boss.maxHp = boss.hp;
     boss.dmg *= mult;
     boss.speed *= 0.85;
     boss.heroRank = 'boss';
     boss.color = '#cc00cc';
-    const _nm = _namedBossFor(GAME.currentLevel || 1, mult);
     if (_nm) {
-        boss._heroName = _nm;
+        boss._heroName = _nm.name;
         boss.hp = Math.round(boss.hp * 1.15); boss.maxHp = boss.hp; // іменні трохи міцніші
-        _showStoryTag((_lang === 'en' ? _nm + ' has taken the field' : _nm + ' виходить на бій'));
+        _showStoryTag((_lang === 'en' ? _nm.name + ' has taken the field' : _nm.name + ' виходить на бій'));
         // Сцена: репліки з паузою (герой → Безодня)
-        _namedBossLines(_nm).forEach((L, i) =>
+        _namedBossLines(_nm.name).forEach((L, i) =>
             setTimeout(() => _namedSpeak(L.who, L.text, L.abyss), 1200 + i * 4800));
     }
     boss.size = 34 + mult * 2;
     boss.soulReward = 30 * mult;
     units.push(boss);
-    try { _ctxHintPerm('boss',
+    // Довідка про боса глушиться, коли грає іменна сцена (тости б наклались)
+    if (!_nm) try { _ctxHintPerm('boss',
         'Це бос — збільшені характеристики і найвищий рівень. Не жалій монстрів.',
         'This is a boss — enhanced stats and the highest tier. Don\'t hold back.'); } catch(e) {}
     try {
@@ -11868,7 +11871,7 @@ function triggerWave() {
         setTimeout(() => _psyCheck('wave_end'), 2000);
     }, 8000);
 
-    // КД 60 сек: блокуємо кнопку і показуємо зворотній відлік
+    // КД 30 сек: блокуємо кнопку і показуємо зворотній відлік
     let btn = document.getElementById('btn-wave');
     let remaining = 30;
     if (btn) { btn.disabled = true; btn.classList.remove('atk-ready'); btn.innerHTML = _t('btn-wave-cd', {n:remaining}); }
@@ -12391,7 +12394,10 @@ function _watchAdConvertSouls() {
     let btn = document.getElementById('go-salvage-btn');
     if (btn) btn.disabled = true;
     _playAdStub(() => {
-        // Конвертуємо ВСІ звичайні душі у золоті
+        // Конвертуємо ВСІ звичайні душі у золоті.
+        // Конвертація = «витрата» душ (щоб «зібрано за рівень» не просів) + зароблене золото.
+        GAME._soulsSpentLevel = (GAME._soulsSpentLevel || 0) + souls;
+        GAME._goldEarnedLevel = (GAME._goldEarnedLevel || 0) + gold;
         GAME.eliteSouls = (GAME.eliteSouls || 0) + gold;
         GAME.souls = 0;
         _soulSalvageDone = true;
@@ -12700,6 +12706,8 @@ function confirmResetProgress() {
         _store.del('DLSiege_perma2');
         _store.del('DLSiege_v3');
         _store.del('DLSiege_story');
+        _store.del('DLSiege_retry');
+        _store.del('DLSiege_retry_hell');
         _storyMem = null;
         try { localStorage.removeItem('DL_StoryDone'); } catch(_) {}
         hardReset();
