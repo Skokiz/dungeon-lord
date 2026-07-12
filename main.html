@@ -1333,6 +1333,22 @@
         .story-toast-text { color:#ffddff; font-size:12px; line-height:1.5; }
 
         /* ── Донесення (наративні рішення) ────────────────────────────── */
+        /* Наративний ярлик-наслідок після вибору в Донесенні (без цифр) */
+        #story-tag {
+            position: fixed; bottom: calc(var(--controls-h, 120px) + 46px);
+            left: 50%; transform: translateX(-50%);
+            font-family: var(--font-display); font-style: italic;
+            font-size: 14px; letter-spacing: 0.6px; color: #c9a8f0;
+            text-shadow: 0 0 14px rgba(150,80,255,0.6), 0 1px 3px rgba(0,0,0,0.8);
+            pointer-events: none; z-index: 250; opacity: 0; white-space: nowrap;
+        }
+        #story-tag.show { animation: storyTag 3.2s ease forwards; }
+        @keyframes storyTag {
+            0%   { opacity: 0; transform: translateX(-50%) translateY(10px); }
+            12%  { opacity: 1; transform: translateX(-50%) translateY(0); }
+            78%  { opacity: 1; }
+            100% { opacity: 0; transform: translateX(-50%) translateY(-12px); }
+        }
         #donesnnia-overlay {
             position:fixed; bottom:80px; left:50%; transform:translateX(-50%);
             width:min(480px,94vw);
@@ -2527,7 +2543,7 @@
     </div>
 </div>
 
-<script src="models/i18n.js?v=10"></script>
+<script src="models/i18n.js?v=11"></script>
 <script src="models/draw_slime.js?v=4"></script>
 <script src="models/draw_skeleton.js?v=1"></script>
 <script src="models/hero_flat.js?v=24"></script>
@@ -5602,6 +5618,17 @@ class Unit {
         ctx.shadowBlur = 0;
         ctx.restore();
 
+        // Іменний герой кампанії: ім'я над баром (Селена, Андрій...)
+        if (this._heroName) {
+            ctx.save();
+            ctx.font = `bold ${isPC ? 12 : 9}px Georgia, serif`;
+            ctx.textAlign = 'center';
+            ctx.fillStyle = '#ffd9f0';
+            ctx.shadowColor = '#a030c0'; ctx.shadowBlur = 6;
+            ctx.fillText(this._heroName, this.x, _barTop - (isPC ? 8 : 6));
+            ctx.restore();
+        }
+
         // Іконка рангу (герої) — над баром
         ctx.font = (isPC ? '14px' : '10px') + ' Arial'; ctx.textAlign = 'center';
         if (this.heroRank === 'elite_hp')       ctx.fillText('💚', this.x, dy - (isPC ? 20 : 15));
@@ -5907,6 +5934,17 @@ function checkCityBoss() {
     }
 }
 
+// Іменні мінібоси кампанії: Селена (21), Андрій (45, якщо відштовхнув на 44)
+function _namedBossFor(lvl, mult) {
+    const en = _lang === 'en';
+    if (lvl === 21 && mult === 3) return en ? 'Selene' : 'Селена';
+    if (lvl === 45 && mult === 3) {
+        const a = _storyChoice('andrii_talk');
+        if (a === 0 || a === 3) return en ? 'Andriy' : 'Андрій'; // «Іди» або «Мовчати» → прийшов з мечем
+    }
+    return null;
+}
+
 function spawnBoss(level, mult) {
     let boss = new Unit('hero', CITY_GATE_X, CFG.surfaceY, -1, level);
     boss.hp *= mult; boss.maxHp = boss.hp;
@@ -5914,6 +5952,12 @@ function spawnBoss(level, mult) {
     boss.speed *= 0.85;
     boss.heroRank = 'boss';
     boss.color = '#cc00cc';
+    const _nm = _namedBossFor(GAME.currentLevel || 1, mult);
+    if (_nm) {
+        boss._heroName = _nm;
+        boss.hp = Math.round(boss.hp * 1.15); boss.maxHp = boss.hp; // іменні трохи міцніші
+        _showStoryTag((_lang === 'en' ? _nm + ' has taken the field' : _nm + ' виходить на бій'));
+    }
     boss.size = 34 + mult * 2;
     boss.soulReward = 30 * mult;
     units.push(boss);
@@ -10409,12 +10453,27 @@ function _psyReset() {
 }
 
 // Перевірка чи подія доступна з урахуванням пам'яті
+// ── Кампанійна пам'ять сюжету: вибори і показані події живуть крізь усі рівні ──
+let _storyMem = null;
+function _loadStoryMem() {
+    if (_storyMem) return _storyMem;
+    try { _storyMem = JSON.parse(_store.get('DLSiege_story') || '{}'); } catch(e) { _storyMem = {}; }
+    if (!Array.isArray(_storyMem.shown)) _storyMem.shown = [];
+    if (!_storyMem.memory || typeof _storyMem.memory !== 'object') _storyMem.memory = {};
+    return _storyMem;
+}
+function _saveStoryMem() { try { _store.set('DLSiege_story', JSON.stringify(_loadStoryMem())); } catch(e) {} }
+function _storyShown(id)  { return _loadStoryMem().shown.includes(id); }
+function _storyChoice(id) { const m = _loadStoryMem().memory; return (id in m) ? m[id] : undefined; }
+
 function _psyCheckRequires(ev) {
     if (!ev.requires) return true;
-    const mem = _psyTrack.memory;
     const r = ev.requires;
-    if (!(r.id in mem)) return false; // батьківська подія ще не була
-    if (r.choice !== undefined && mem[r.id] !== r.choice) return false;
+    // Спершу пам'ять рану, потім кампанійна — ланцюги працюють крізь рівні
+    let picked = _psyTrack.memory[r.id];
+    if (picked === undefined) picked = _storyChoice(r.id);
+    if (picked === undefined) return false; // батьківська подія ще не була
+    if (r.choice !== undefined && picked !== r.choice) return false;
     return true;
 }
 
@@ -10451,7 +10510,7 @@ const _DECISION_EVENTS = [
       badge:'⚠️ Попередження', title:'Зрадник у рядах',
       text:'Монстра впіймали при передачі карт підземелля героям. Він чекає вироку.',
       choices:[
-        { text:'→ Публічна страта. Дисципліна понад усе', tags:['dom','pom'], buff:{ soulBonus:5, heroThreatPct:0.5 } },
+        { text:'→ Публічна страта. Дисципліна понад усе', tags:['dom','pom'], buff:{ soulBonus:3, heroThreatPct:0.5 } },
         { text:'→ Замінити шпигуном проти ворога', tags:['zna','kha'], buff:{ eliteChance:-3 } },
         { text:'→ Витягти все що знає і відпустити', tags:['zna'], buff:{ heroThreatPct:-0.5 } },
       ]},
@@ -10459,9 +10518,9 @@ const _DECISION_EVENTS = [
       badge:'🤝 Пропозиція', title:'Пропозиція гільдії',
       text:'Гільдія авантюристів пропонує тимчасовий пакт: 90 секунд без атак в обмін на 60 душ.',
       choices:[
-        { text:'→ Прийняти. Перепочинок важливий', tags:['vyj'], buff:{ soulBonus:8 } },
+        { text:'→ Прийняти. Перепочинок важливий', tags:['vyj'], buff:{ soulBonus:4 } },
         { text:'→ Відхилити з презирством', tags:['per','pom'], buff:{} },
-        { text:'→ Прийняти і порушити в потрібний момент', tags:['kha','dom'], buff:{ heroThreatPct:1, soulBonus:15 } },
+        { text:'→ Прийняти і порушити в потрібний момент', tags:['kha','dom'], buff:{ heroThreatPct:1, soulBonus:6 } },
       ]},
     { id:'dark_relic', trigger:'wave_end', minRound:4, weight:2,
       badge:'🔮 Знахідка', title:'Темна реліквія',
@@ -10476,7 +10535,7 @@ const _DECISION_EVENTS = [
       text:'Герой лежить живим у коридорі після бою. Монстри чекають наказу.',
       choices:[
         { text:'→ Вилікувати і відпустити. Покажемо великодушність', tags:['vyj','zna'], buff:{ captainChance:-3 } },
-        { text:'→ Перетворити на слугу підземелля', tags:['dom','kha'], buff:{ soulBonus:5 } },
+        { text:'→ Перетворити на слугу підземелля', tags:['dom','kha'], buff:{ soulBonus:3 } },
         { text:'→ Принести в жертву. Сила важливіша', tags:['per','dom'], buff:{ eliteChance:-1 } },
       ]},
     { id:'night_raid', trigger:'wave_start', minRound:3, weight:2,
@@ -10499,7 +10558,7 @@ const _DECISION_EVENTS = [
       badge:'⚠️ Інцидент', title:'Дезертири',
       text:'Троє монстрів покинули пости під час атаки. Причина: страх. Решта армії спостерігає.',
       choices:[
-        { text:'→ Стратити перед строєм', tags:['dom'], buff:{ soulBonus:5, heroThreatPct:0.3 } },
+        { text:'→ Стратити перед строєм', tags:['dom'], buff:{ soulBonus:3, heroThreatPct:0.3 } },
         { text:'→ Пробачити. Всі можуть злякатися', tags:['vyj'], buff:{} },
         { text:'→ Призначити на найнебезпечніші завдання', tags:['zna','kha'], buff:{ captainChance:-2 } },
       ]},
@@ -10509,7 +10568,7 @@ const _DECISION_EVENTS = [
       choices:[
         { text:'→ Переговори. Деталі важливі', tags:['zna','vyj'], buff:{ heroThreatPct:-1 } },
         { text:'→ Убити посла. Не ведемо переговорів', tags:['pom','dom'], buff:{ eliteChance:3, heroThreatPct:0.5 } },
-        { text:'→ Погодитися і порушити в потрібний момент', tags:['kha','dom'], buff:{ soulBonus:8 } },
+        { text:'→ Погодитися і порушити в потрібний момент', tags:['kha','dom'], buff:{ soulBonus:4 } },
       ]},
     { id:'trophy', trigger:'wave_end', minRound:2, weight:3,
       badge:'⚔️ Трофей', title:'Зброя переможеного',
@@ -10539,7 +10598,7 @@ const _DECISION_EVENTS = [
       badge:'💀 Пропозиція', title:'Слово Некроманта',
       text:'Некромант пропонує підняти мертвих героїв проти їхніх же — один раз, але потужно.',
       choices:[
-        { text:'→ Погодитися. Ресурси треба використовувати', tags:['kha','zna'], buff:{ soulBonus:6 } },
+        { text:'→ Погодитися. Ресурси треба використовувати', tags:['kha','zna'], buff:{ soulBonus:3 } },
         { text:'→ Відмовитися. Власна армія краща', tags:['dom','per'], buff:{ lordDmg:5 } },
         { text:'→ Використати, потім знищити некроманта', tags:['dom','kha'], buff:{ lordDmg:8, heroThreatPct:0.5 } },
       ]},
@@ -10553,18 +10612,18 @@ const _DECISION_EVENTS = [
       ]},
 
     // ── CONTINUATION: prisoner_knight:0 → відпустили ──
-    { id:'prisoner_return', trigger:'wave_start', minRound:4, weight:2,
+    { id:'prisoner_return', trigger:'wave_start', minRound:4, weight:2, story:true,
       requires: { id:'prisoner_knight', choice:0 },
       badge:'⚔️ Повернення', title:'Лицар повернувся',
       text:'Той лицар якого відпустили — прийшов знову. Але не зі зброєю. Із розгорнутим сувоєм і пропозицією стати інформатором. Каже що воює за монети, не за ідею.',
       choices:[
         { text:'→ Взяти в інформатори. Дворушник хоч і ненадійний, але корисний', tags:['zna','kha'], buff:{ heroThreatPct:-1 } },
         { text:'→ Відмовитись. Хто легко здається — легко зрадить', tags:['per','dom'], buff:{} },
-        { text:'→ Взяти і таємно повідомити місту. Хай воно тепер вирішує', tags:['kha'], buff:{ soulBonus:10 } },
+        { text:'→ Взяти і таємно повідомити місту. Хай воно тепер вирішує', tags:['kha'], buff:{ soulBonus:4 } },
       ]},
 
     // ── CONTINUATION: prisoner_knight:2 → стратили ──
-    { id:'prisoner_revenge', trigger:'wave_start', minRound:4, weight:2,
+    { id:'prisoner_revenge', trigger:'wave_start', minRound:4, weight:2, story:true,
       requires: { id:'prisoner_knight', choice:1 },
       badge:'🩸 Кровна помста', title:'Брат лицаря',
       text:'Брат страченого лицаря взяв командування наступною хвилею. Він не просто б\'ється — він іде прямо до твого поверху. Гінці кажуть: у нього є ім\'я для тебе, і воно не лестиве.',
@@ -10575,7 +10634,7 @@ const _DECISION_EVENTS = [
       ]},
 
     // ── CONTINUATION: village_revolt:0 → взяли під захист ──
-    { id:'village_supply', trigger:'wave_end', minRound:5, weight:2,
+    { id:'village_supply', trigger:'wave_end', minRound:4, weight:2, story:true,
       requires: { id:'village_revolt', choice:0 },
       badge:'📜 Донесення з сіл', title:'Борг повернули',
       text:'Селяни прислали сімох добровольців — людей які не хочуть під владу міста. Вони не монстри, але готові допомагати: перекривати дороги, доносити інформацію, ховати поранених.',
@@ -10586,40 +10645,40 @@ const _DECISION_EVENTS = [
       ]},
 
     // ── CONTINUATION: village_revolt:2 → залякали ──
-    { id:'village_occupied', trigger:'wave_start', minRound:5, weight:2,
+    { id:'village_occupied', trigger:'wave_start', minRound:4, weight:2, story:true,
       requires: { id:'village_revolt', choice:2 },
       badge:'⚠️ Ситуація', title:'Місто окупувало село',
       text:'Почувши про "залякування", місто ввело гарнізон. Тепер ці люди озлоблені і на тебе, і на місто. Незручно для всіх.',
       choices:[
-        { text:'→ Надіслати їм зброю. Хай воюють проти гарнізону', tags:['kha','dom'], buff:{ heroThreatPct:1, soulBonus:8 } },
+        { text:'→ Надіслати їм зброю. Хай воюють проти гарнізону', tags:['kha','dom'], buff:{ heroThreatPct:1, soulBonus:4 } },
         { text:'→ Зробити вигляд що це все не моя ідея', tags:['kha'], buff:{} },
         { text:'→ Послати монстрів прогнати гарнізон — відкрито', tags:['dom','pom'], buff:{ heroThreatPct:2, eliteChance:4 } },
       ]},
 
     // ── CONTINUATION: traitor:1 → зробили шпигуном ──
-    { id:'spy_news', trigger:'wave_start', minRound:6, weight:2,
+    { id:'spy_news', trigger:'wave_start', minRound:4, weight:2, story:true,
       requires: { id:'traitor', choice:1 },
       badge:'🔍 Донесення шпигуна', title:'Розвідка зсередини',
       text:'Твій шпигун прислав шифрований сувій. Міська рада планує підкуп двох твоїх капітанів. Один, схоже, вже погодився.',
       choices:[
-        { text:'→ Вичистити зрадника публічно — дисципліна важливіша за таємницю', tags:['dom','pom'], buff:{ soulBonus:5, heroThreatPct:0.5 } },
+        { text:'→ Вичистити зрадника публічно — дисципліна важливіша за таємницю', tags:['dom','pom'], buff:{ soulBonus:3, heroThreatPct:0.5 } },
         { text:'→ Зробити вигляд що не знаєш — і стежити далі', tags:['zna','kha'], buff:{ heroThreatPct:-0.5 } },
         { text:'→ Підставити зрадника через дезінформацію міській раді', tags:['kha','per'], buff:{ captainChance:-5 } },
       ]},
 
     // ── CONTINUATION: guild_pact:2 → порушили пакт ──
-    { id:'guild_war', trigger:'wave_start', minRound:7, weight:2,
+    { id:'guild_war', trigger:'wave_start', minRound:4, weight:2, story:true,
       requires: { id:'guild_pact', choice:2 },
       badge:'⚠️ Наслідки', title:'Гільдія оголосила полювання',
       text:'Гільдія авантюристів офіційно оголосила відкрите полювання на твого лорда. Тепер кожна хвиля містить двох-трьох їхніх найманців. Репутація — жорстока річ.',
       choices:[
         { text:'→ Виплатити компенсацію. Зупинити ескалацію поки не пізно', tags:['vyj'], buff:{ soulBonus:-15 } },
         { text:'→ Відповісти полюванням на їхнього гільдмайстра', tags:['pom','dom'], buff:{ heroThreatPct:2, eliteChance:5 } },
-        { text:'→ Найняти конкуруючу гільдію підкинути їм клопотів', tags:['kha'], buff:{ heroThreatPct:0.5, soulBonus:5 } },
+        { text:'→ Найняти конкуруючу гільдію підкинути їм клопотів', tags:['kha'], buff:{ heroThreatPct:0.5, soulBonus:3 } },
       ]},
 
     // ── CONTINUATION: dark_relic:2 → поглинули силу ──
-    { id:'relic_awakens', trigger:'wave_end', minRound:7, weight:2,
+    { id:'relic_awakens', trigger:'wave_end', minRound:4, weight:2, story:true,
       requires: { id:'dark_relic', choice:2 },
       badge:'🔮 Пробудження', title:'Реліквія говорить',
       text:'Вночі — голос. Не знаєш чий. Голос каже що "хоче більше". Монстри нервуються. Навіть голем.',
@@ -10631,7 +10690,7 @@ const _DECISION_EVENTS = [
 
     // ── МОНСТРИ: тепліший/гумористичний тон ──
 
-    { id:'slime_petition', trigger:'wave_end', minRound:2, maxRound:25, weight:2,
+    { id:'slime_petition', trigger:'wave_end', maxLevel:25, minRound:2, weight:2,
       badge:'💙 Петиція', title:'Слайми вимагають поваги',
       text:'Делегація слаймів з\'явилась у тронному залі. Вони принесли сувій — на диво рівно написаний, враховуючи що в них немає рук. Основні вимоги: більше темряви, менше факелів, і офіційно припинити называти їх "ці зелені кульки".',
       choices:[
@@ -10640,7 +10699,7 @@ const _DECISION_EVENTS = [
         { text:'→ Оголосити офіційну назву "Бойові Слизові Воїни"', tags:['per'], buff:{ eliteChance:2 } },
       ]},
 
-    { id:'bat_strike', trigger:'wave_start', minRound:3, maxRound:25, weight:2,
+    { id:'bat_strike', trigger:'wave_start', maxLevel:25, minRound:3, weight:2,
       badge:'🦇 Виробничий конфлікт', title:'Страйк кажанів',
       text:'Кажани оголосили страйк. Після перебудови третього коридору їхня ехолокація дає збої і двоє влетіли в стіну. Вони хочуть або перебудови, або компенсації за "виробничу травму". У делегата перев\'язаний ніс.',
       choices:[
@@ -10649,7 +10708,7 @@ const _DECISION_EVENTS = [
         { text:'→ Нагадати що "страйк" не є терміном у їхньому контракті', tags:['dom'], buff:{ soulBonus:2 } },
       ]},
 
-    { id:'golem_poet', trigger:'wave_end', minRound:4, maxRound:25, weight:2,
+    { id:'golem_poet', trigger:'wave_end', maxLevel:25, minRound:4, weight:2,
       badge:'🗿 Культурна подія', title:'Голем написав вірш',
       text:'Голем приніс кам\'яну плиту з висіченим текстом. Ода до підземелля. Один рядок про тебе: "Лорд великий. Лорд темний. Лорд іноді не пояснює навіщо ми це робимо. Але ми все одно йдемо." Автор не підписався — але різець є тільки в одного.',
       choices:[
@@ -10658,7 +10717,7 @@ const _DECISION_EVENTS = [
         { text:'→ Нічого не говорити. Тихо зберегти плиту', tags:['vyj'], buff:{ lordDmg:2 } },
       ]},
 
-    { id:'skeleton_law', trigger:'wave_start', minRound:5, maxRound:25, weight:2,
+    { id:'skeleton_law', trigger:'wave_start', maxLevel:25, minRound:5, weight:2,
       badge:'💀 Юридична суперечка', title:'Скелет і податковий статус',
       text:'Один скелет прийшов з питанням після того як герої кричали "Ти вже мертвий!". Він хоче юридичну ясність: якщо він офіційно мертвий — чи мусить платити замковий податок? І хто взагалі буде його спадкоємцем.',
       choices:[
@@ -10667,7 +10726,7 @@ const _DECISION_EVENTS = [
         { text:'→ Сказати що за такі питання він заборгував ще раунд служби', tags:['dom'], buff:{ heroThreatPct:-0.2 } },
       ]},
 
-    { id:'zombie_menu', trigger:'wave_end', minRound:3, maxRound:25, weight:2,
+    { id:'zombie_menu', trigger:'wave_end', maxLevel:25, minRound:3, weight:2,
       badge:'🧟 Скарга', title:'Зомбі незадоволені меню',
       text:'Зомбі надіслали скаргу. Анонімно, але почерк впізнаваний. Суть: нас годують тільки тими героями що "охолонули". Хочемо свіжого. Орфографічних помилок не рахувати — для нежиті написано непогано.',
       choices:[
@@ -10676,7 +10735,7 @@ const _DECISION_EVENTS = [
         { text:'→ Поставити на перші лінії — хай самі вирішують питання свіжості', tags:['dom'], buff:{ heroThreatPct:-0.5, soulBonus:3 } },
       ]},
 
-    { id:'minotaur_mirror', trigger:'wave_end', minRound:6, maxRound:25, weight:1,
+    { id:'minotaur_mirror', trigger:'wave_end', maxLevel:25, minRound:6, weight:1,
       badge:'🐂 Особиста справа', title:'Мінотавр і дзеркало',
       text:'Мінотавр знайшов у трофейній кімнаті срібне дзеркало і не відходить від нього третій день. Нікого не чіпає. Просто дивиться. Іноді зітхає. Монстри обходять стороною і говорять пошепки.',
       choices:[
@@ -10687,7 +10746,7 @@ const _DECISION_EVENTS = [
 
     // ── ЛОР МІСТА І ПІДЗЕМЕЛЛЯ ──
 
-    { id:'city_legend', trigger:'wave_end', minRound:4, weight:2,
+    { id:'city_legend', trigger:'wave_end', minLevel:4, minRound:2, weight:2, story:true,
       badge:'📜 Міські новини', title:'Нова назва',
       text:'Місто офіційно перейменувало твоє підземелля на картах. Тепер воно — "Прокляте Серце". Туристам заборонено наближатись. Батьки лякають дітей. Барди пишуть балади. Іронічно, але це краще ніж було.',
       choices:[
@@ -10696,7 +10755,7 @@ const _DECISION_EVENTS = [
         { text:'→ Знайти бардів і запропонувати "технічні уточнення" до пісень', tags:['zna'], buff:{ soulBonus:4 } },
       ]},
 
-    { id:'historian_visit', trigger:'wave_start', minRound:6, weight:1,
+    { id:'historian_visit', trigger:'wave_start', minLevel:6, minRound:2, weight:1, story:true,
       badge:'📖 Несподіваний гість', title:'Мандрівний хроніст',
       text:'Старий у мантії з пером пройшов повз охорону — вона просто оторопіла. Каже що пише "Правдиву Хроніку Темних Місць" і хоче почути твою версію подій. Наполегливо. Дуже.',
       choices:[
@@ -10705,7 +10764,7 @@ const _DECISION_EVENTS = [
         { text:'→ Тримати в підземеллі. Може стати корисним — або заручником', tags:['kha','zna'], buff:{ heroThreatPct:-0.5 } },
       ]},
 
-    { id:'ancient_dungeon', trigger:'wave_end', minRound:8, weight:1,
+    { id:'ancient_dungeon', trigger:'wave_end', minLevel:8, minRound:2, weight:1, story:true,
       badge:'🗝️ Відкриття', title:'400 років підземелля',
       text:'Монстри прорили нову кімнату і знайшли стіни з написами. По датах — підземелля існує понад 400 років. Є імена попередніх лордів. Останній запис обривається на середині фрази.',
       choices:[
@@ -10714,36 +10773,36 @@ const _DECISION_EVENTS = [
         { text:'→ Використати для пропаганди: "400 років непереможності"', tags:['kha','pom'], buff:{ eliteChance:3 } },
       ]},
 
-    { id:'hero_memorial', trigger:'wave_start', minRound:5, weight:2,
+    { id:'hero_memorial', trigger:'wave_start', minLevel:5, minRound:2, weight:2, story:true,
       badge:'📜 Міські новини', title:'Пам\'ятник полеглим',
       text:'Місто відкрило пам\'ятник 50 відомим героям що загинули тут. Урочиста промова. Натовп плаче. Твоє підземелля не згадали — тільки "ворожі сили". Зате фотографи є.',
       choices:[
-        { text:'→ Відправити анонімний вінок. Іронічно і стримано', tags:['kha'], buff:{ soulBonus:5 } },
+        { text:'→ Відправити анонімний вінок. Іронічно і стримано', tags:['kha'], buff:{ soulBonus:3 } },
         { text:'→ Готуватися: після таких церемоній завжди іде сплеск мотивації у героїв', tags:['vyj','per'], buff:{ heroThreatPct:0.5 } },
         { text:'→ Знищити пам\'ятник нічним рейдом. Символічно і цілком зрозуміло', tags:['pom','dom'], buff:{ heroThreatPct:2, eliteChance:5 } },
       ]},
 
     // ── ПІЗНЯ ГРА ──
 
-    { id:'legendary_hero', trigger:'wave_start', minRound:9, weight:1,
+    { id:'legendary_hero', trigger:'wave_start', minLevel:18, minRound:3, weight:1, story:true,
       badge:'⚔️ Загроза', title:'Герой з іменем',
       text:'До міста прийшов Кіндред Сонячний — паладин з легендою. Він вижив у п\'яти підземеллях. Місто платить втричі. Він уже вивчає карту.',
       choices:[
-        { text:'→ Перебудувати захист повністю. Інший рівень загрози — інший рівень відповіді', tags:['per','vyj'], buff:{ heroThreatPct:1, soulBonus:10 } },
+        { text:'→ Перебудувати захист повністю. Інший рівень загрози — інший рівень відповіді', tags:['per','vyj'], buff:{ heroThreatPct:1, soulBonus:4 } },
         { text:'→ Розіслати дезінформацію про підземелля', tags:['kha','zna'], buff:{ captainChance:-3 } },
         { text:'→ Чекати. Легенди теж гинуть від пасток і стріл', tags:['dom','kha'], buff:{} },
       ]},
 
-    { id:'dark_lord_message', trigger:'wave_end', minRound:10, weight:1,
+    { id:'dark_lord_message', trigger:'wave_end', minLevel:10, minRound:3, weight:1, story:true,
       badge:'🏰 Дипломатія темряви', title:'Листа від сусіда',
       text:'Ворон приніс листа з чорною пломбою. Тобі пишуть з іншого підземелля. Пропонує "пакт між темними". Обмін інформацією, можливо — спільні дії. Підписано: "Морт Безіменний". Підозріло скромно для лорда.',
       choices:[
         { text:'→ Прийняти пакт. Більше інформації — більше виживання', tags:['zna','kha'], buff:{ heroThreatPct:-1 } },
         { text:'→ Відмовитись. Союзники в темряві — завжди майбутні суперники', tags:['dom','per'], buff:{} },
-        { text:'→ Прийняти і таємно доносити про нього місту. Вищий рівень хитрості', tags:['kha'], buff:{ soulBonus:12 } },
+        { text:'→ Прийняти і таємно доносити про нього місту. Вищий рівень хитрості', tags:['kha'], buff:{ soulBonus:5 } },
       ]},
 
-    { id:'oracle_prophecy', trigger:'wave_end', minRound:7, weight:1,
+    { id:'oracle_prophecy', trigger:'wave_end', minLevel:7, minRound:2, weight:1, story:true,
       badge:'🔮 Знамення', title:'Оракул сказав п\'ять слів',
       text:'Сліпий оракул прийшов без запрошення. Зупинився перед тобою і сказав рівно п\'ять слів: "Твій кінець прийде через прийняте." Потім пішов. Охорона питає що їй робити.',
       choices:[
@@ -10762,7 +10821,7 @@ const _DECISION_EVENTS = [
       ]},
 
     // ── Іменні герої: Марта ────────────────────────────────────────────────────
-    { id:'marta_spy', trigger:'wave_start', minRound:12, maxRound:15, weight:4,
+    { id:'marta_spy', trigger:'wave_start', minLevel:12, maxLevel:15, minRound:3, weight:4, story:true,
       badge:'🕵 Перехоплено', title:'Розвідниця Марта',
       text:'Монстри спіймали дівчину яка замальовувала карту нижніх ярусів. Вона не бігла. Дивилася прямо. "Я хочу знати хто ти. Не для гільдії — для себе." Ім\'я вишите на плащі: Марта.',
       choices:[
@@ -10770,16 +10829,16 @@ const _DECISION_EVENTS = [
         { text:'→ Запропонувати обмін: вона розповідає про місто — ти мовчиш про неї', tags:['zna','kha'], buff:{ soulBonus:4 } },
         { text:'→ Тримати під вартою. Занадто цікава щоб відпускати', tags:['dom'], buff:{ captainChance:2 } },
       ]},
-    { id:'marta_return', trigger:'wave_start', minRound:28, maxRound:31, weight:5,
+    { id:'marta_return', trigger:'wave_start', minLevel:26, maxLevel:31, minRound:3, weight:5, story:true,
       requires: { id:'marta_spy', choice:0 },
       badge:'📜 Лист від розвідниці', title:'Марта повернулась',
       text:'Вона прийшла сама. Без зброї, без захисту. Поклала на підлогу список: імена сімей що шлють героїв, боргові контракти, хто платить за кожен похід. "Я думала: може є спосіб що не вбиває обох."',
       choices:[
-        { text:'→ "Це дорогого варте. Продовжуй."', tags:['zna','vyj'], buff:{ heroThreatPct:-1.5, soulBonus:5 } },
+        { text:'→ "Це дорогого варте. Продовжуй."', tags:['zna','vyj'], buff:{ heroThreatPct:-1.5, soulBonus:3 } },
         { text:'→ "Ти розумієш що я не можу зупинитись?"', tags:['vyj','per'], buff:{ heroThreatPct:-0.5 } },
-        { text:'→ "Мир неможливий. Але ці дані — корисні."', tags:['dom','zna'], buff:{ soulBonus:8 } },
+        { text:'→ "Мир неможливий. Але ці дані — корисні."', tags:['dom','zna'], buff:{ soulBonus:4 } },
       ]},
-    { id:'marta_escaped', trigger:'wave_start', minRound:28, maxRound:31, weight:5,
+    { id:'marta_escaped', trigger:'wave_start', minLevel:26, maxLevel:31, minRound:3, weight:5, story:true,
       requires: { id:'marta_spy', choice:2 },
       badge:'⚠ Ускладнення', title:'Марта втекла',
       text:'Камера порожня. Охоронець оглушений. На стіні вуглем: "Ти міг відпустити." Розвідники кажуть: вона веде наступний загін особисто.',
@@ -10790,7 +10849,7 @@ const _DECISION_EVENTS = [
       ]},
 
     // ── Іменні герої: Старий Вілем ─────────────────────────────────────────────
-    { id:'vitem_first', trigger:'wave_end', minRound:20, maxRound:23, weight:4,
+    { id:'vitem_first', trigger:'wave_end', minLevel:20, maxLevel:23, minRound:3, weight:4, story:true,
       badge:'⚔️ Ветеран', title:'Старий Вілем',
       text:'Він не нападав. Сів посеред коридору і сказав: "Я служив лорду до тебе. П\'ятдесят років. Знаю що він зробив — і чому зупинився. Маєш хвилину?"',
       choices:[
@@ -10798,7 +10857,7 @@ const _DECISION_EVENTS = [
         { text:'→ "Той лорд програв. Його уроки — не мої."', tags:['per','dom'], buff:{ heroThreatPct:0.5 } },
         { text:'→ Відпустити без розмови. Старість не причина щоб зупиняти бій', tags:['kha','vyj'], buff:{ soulBonus:3 } },
       ]},
-    { id:'vitem_second', trigger:'wave_start', minRound:35, maxRound:38, weight:4,
+    { id:'vitem_second', trigger:'wave_start', minLevel:35, maxLevel:38, minRound:3, weight:4, story:true,
       requires: { id:'vitem_first', choice:0 },
       badge:'📜 Листа від ветерана', title:'Вілем пише',
       text:'Папір прийшов через монстра якого не вбили. "Той лорд зупинився тому що знайшов ім\'я. Варан. Він написав його на стіні найнижчого ярусу перш ніж зникнути. Ти вже бачив це ім\'я?"',
@@ -10809,7 +10868,7 @@ const _DECISION_EVENTS = [
       ]},
 
     // ── Іменні герої: Ліра · Шлях миру ────────────────────────────────────────
-    { id:'lira_peace', trigger:'wave_start', minRound:30, maxRound:33, weight:4,
+    { id:'lira_peace', trigger:'wave_start', minLevel:30, maxLevel:33, minRound:3, weight:4, story:true,
       badge:'✦ Пропозиція', title:'Жриця Ліра',
       text:'Жінка в білому зупинилась за п\'ять кроків до воріт. Ніякої зброї. "Я не герой. Я посол богів яких ніхто вже не пам\'ятає. Мені дозволено говорити — якщо ти дозволиш слухати."',
       choices:[
@@ -10817,7 +10876,7 @@ const _DECISION_EVENTS = [
         { text:'→ Мовчки пропустити і вслухатись', tags:['vyj','kha'], buff:{ soulBonus:3 } },
         { text:'→ "Боги мовчали п\'ятсот років. Їхня черга."', tags:['per','dom'], buff:{ lordDmg:3 } },
       ]},
-    { id:'lira_truce', trigger:'wave_start', minRound:43, maxRound:45, weight:5,
+    { id:'lira_truce', trigger:'wave_start', minLevel:43, maxLevel:45, minRound:3, weight:5, story:true,
       requires: { id:'lira_peace', choice:0 },
       badge:'✦ Останній шанс', title:'Ліра: умови виконані',
       text:'Ліра стоїть у тому ж місці. "Умови виконані з обох сторін. Місто готове зупинити атаки назавжди. Взамін — ти не виходиш звідси. Але вже ніхто не гине." Мовчання підземелля здається згодою.',
@@ -10829,7 +10888,7 @@ const _DECISION_EVENTS = [
 
     // ── АКТ III (раунди 26–38): Розлам · Пам'ять прокидається ─────────────
 
-    { id:'memory_fragment', trigger:'wave_start', minRound:26, weight:2,
+    { id:'memory_fragment', trigger:'wave_start', minLevel:26, minRound:3, weight:2, story:true,
       badge:'🌀 Спогад', title:'Уламок пам\'яті',
       text:'Ти прокидаєшся від бою з іменем на язиці. Варан. Воно чуже — але звучить як твоє. Монстри дивляться дивно. Ти говорив вголос.',
       choices:[
@@ -10838,7 +10897,7 @@ const _DECISION_EVENTS = [
         { text:'→ Спитати Безодню. Вона точно знає більше ніж каже', tags:['vyj','dom'], buff:{ heroThreatPct:-0.5, lordDmg:5 } },
       ]},
 
-    { id:'old_soldier', trigger:'wave_end', minRound:30, weight:2,
+    { id:'old_soldier', trigger:'wave_end', minLevel:30, minRound:3, weight:2, story:true,
       badge:'⚔️ Зустріч', title:'Ветеран',
       text:'Старий солдат відмовляється битися. Ліг на підлогу і каже: "Я бачив лорда до тебе. Він теж думав що бореться." Монстри не знають що робити.',
       choices:[
@@ -10847,7 +10906,7 @@ const _DECISION_EVENTS = [
         { text:'→ Зупинити силою. Приклад непокори небезпечніший за одного старця', tags:['dom','per'], buff:{ heroThreatPct:0.5, eliteChance:2 } },
       ]},
 
-    { id:'abyss_whisper', trigger:'wave_start', minRound:33, weight:2,
+    { id:'abyss_whisper', trigger:'wave_start', minLevel:33, minRound:3, weight:2, story:true,
       badge:'🌑 Внутрішній голос', title:'Безодня радить',
       text:'Безодня вперше не наказує — питає. "Ти ще пам\'ятаєш навіщо починав?" Пауза. "Чи хочеш пам\'ятати?"',
       choices:[
@@ -10858,7 +10917,7 @@ const _DECISION_EVENTS = [
 
     // ── АКТ IV (раунди 39–50): Вибір · Перехоплення Безодні ───────────────
 
-    { id:'andrii_talk', trigger:'wave_start', minRound:44, maxRound:44, weight:10,
+    { id:'andrii_talk', trigger:'wave_start', minLevel:44, maxLevel:44, minRound:4, weight:10, story:true,
       badge:'⚔️ Посланець', title:'Герой Андрій',
       text:'Він прийшов без зброї. Поставив щит на підлогу і сказав: "Я не воюю. Я хочу знати хто ти. Місто каже — монстр. Але монстри не будують. Ти будуєш." Безодня наказує: вбий його.',
       choices:[
@@ -10868,7 +10927,7 @@ const _DECISION_EVENTS = [
         { text:'→ Мовчати. Хай сам вирішує', tags:['kha'], buff:{} },
       ]},
 
-    { id:'abyss_intercept_loyalty', trigger:'wave_start', minRound:39, weight:3,
+    { id:'abyss_intercept_loyalty', trigger:'wave_start', minLevel:39, minRound:3, weight:3, story:true,
       type:'abyss',
       badge:'∞ БЕЗОДНЯ', title:'Перша пропозиція',
       text:'Безодня говорить без монстрів, без посередників. Прямо. "П\'ятсот років ти охороняв мене. Тепер я пропоную стати мною. Без болю. Без пам\'яті. Просто — кінець."',
@@ -10878,7 +10937,7 @@ const _DECISION_EVENTS = [
         { text:'→ "П\'ятсот років — і ти думаєш я забув що ти таке?"', tags:['vyj','per'], buff:{ lordDmg:4, heroThreatPct:-0.5 } },
       ]},
 
-    { id:'abyss_offer_freedom', trigger:'wave_end', minRound:43, weight:3,
+    { id:'abyss_offer_freedom', trigger:'wave_end', minLevel:43, minRound:3, weight:3, story:true,
       type:'abyss',
       badge:'∞ БЕЗОДНЯ', title:'Друга пропозиція',
       text:'"Ти захищав їх і вони посилали нових героїв. Ти дав їм час і вони його використали проти тебе. Дозволь мені вирішити це по-іншому. Назавжди."',
@@ -10888,7 +10947,7 @@ const _DECISION_EVENTS = [
         { text:'→ Мовчати. Іноді мовчання — єдина чесна відповідь', tags:['vyj','kha'], buff:{} },
       ]},
 
-    { id:'abyss_confession', trigger:'wave_start', minRound:47, weight:3,
+    { id:'abyss_confession', trigger:'wave_start', minLevel:47, minRound:3, weight:3, story:true,
       type:'abyss',
       badge:'∞ БЕЗОДНЯ', title:'Третя і остання',
       text:'"Варане." Не лорде. Варане. "Я боюсь тебе. Не тому що ти сильний. Тому що ти пам\'ятаєш. І зараз ти вибираєш." Тиша підземелля абсолютна.',
@@ -10897,17 +10956,189 @@ const _DECISION_EVENTS = [
         { text:'→ "Скажи мені що ти — і я вирішу."', tags:['zna','kha'], buff:{ lordDmg:4 } },
         { text:'→ "П\'ятсот років — моя відповідь. Ти вже її знаєш."', tags:['dom','per'], buff:{ lordDmg:6, heroThreatPct:-1 } },
       ]},
+
+    // ═══ АКТ-СПЕЦИФІЧНІ СЮЖЕТНІ ПОДІЇ (рівнева шкала кампанії) ═══════════════
+    { id:'act1_census', trigger:'wave_start', minLevel:2, maxLevel:10, minRound:2, weight:2, story:true,
+      badge:'ДОНЕСЕННЯ З РОЗВІДКИ', title:'Перепис полонених',
+      text:'Управитель кладе на стіл сувій: полонених утричі більше, ніж ротів можна прогодувати. Він чекає рішення з виглядом людини, що вже знає відповідь.',
+      choices:[
+        { text:'→ Відпустити слабких. Менше ротів', tags:['vyj'], buff:{ heroThreatPct:-0.5 }, tag:'Місто вагається' },
+        { text:'→ Всіх у шахти. Робота знайдеться', tags:['dom','pom'], buff:{ soulBonus:2, heroThreatPct:0.5 }, tag:'Душі течуть, місто лютує' },
+        { text:'→ Байдуже. Хай управитель вирішує', tags:['per'], buff:{}, tag:'' },
+      ] },
+
+    { id:'act1_famine', trigger:'wave_end', minLevel:3, maxLevel:12, minRound:1, weight:2, story:true,
+      badge:'ГОЛОСИ ПІДЗЕМЕЛЛЯ', title:'Голод у казематах',
+      text:'Запаси скінчились. Гоблін-інтендант доповідає, що монстри вже поглядають один на одного зовсім не по-колегіальному.',
+      choices:[
+        { text:'→ Реквізувати зерно з ближніх сіл', tags:['dom'], buff:{ soulBonus:1, eliteChance:1 }, tag:'Ситі, але помічені' },
+        { text:'→ Хай їдять полонених. Це підземелля', tags:['pom','kha'], buff:{ soulBonus:2, heroThreatPct:0.5 }, tag:'Жах живить легенди' },
+        { text:'→ Затягнути паски. Дисципліна понад усе', tags:['per','vyj'], buff:{}, tag:'' },
+      ] },
+
+    { id:'act1_spy', trigger:'wave_start', minLevel:4, maxLevel:12, minRound:3, weight:2, story:true,
+      badge:'ДОНЕСЕННЯ З РОЗВІДКИ', title:'Перший шпигун',
+      text:'Серед новобранців знайшли людину з поштовим голубом і надто чистими нігтями. Місто хоче знати, скільки в нас веж. Зворушливо: хтось нарешті рахує.',
+      choices:[
+        { text:'→ Стратити прилюдно. Наочний урок', tags:['dom','pom'], buff:{ soulBonus:1, eliteChance:1 }, tag:'Місто шле кращих' },
+        { text:'→ Згодувати йому фальшиві плани', tags:['kha','zna'], buff:{ heroThreatPct:-1 }, tag:'Герої блукають картою' },
+        { text:'→ Відпустити. Хай доповість правду', tags:['dom','per'], buff:{ eliteChance:2 }, tag:'Виклик прийнято' },
+      ] },
+
+    { id:'act1_tempo', trigger:'wave_end', minLevel:5, maxLevel:12, minRound:2, weight:3, story:true,
+      badge:'ШЕПІТ БЕЗОДНІ', title:'Похвала і батіг',
+      text:'«Ти руйнуєш красиво, зброє моя. Але повільно. Наступне місто чекає, а чекання мені... шкодить. Швидше».',
+      choices:[
+        { text:'→ Прискоритись. Безодня знає краще', tags:['dom'], buff:{ lordDmg:3, heroThreatPct:0.5 }, tag:'Сила з повідцем' },
+        { text:'→ Тримати власний темп', tags:['per','vyj'], buff:{ heroThreatPct:-0.5 }, tag:'Методичність окупається' },
+        { text:'→ Спитати, куди вона поспішає', tags:['zna'], buff:{}, tag:'' },
+      ] },
+
+    { id:'act2_refugees', trigger:'wave_start', minLevel:13, maxLevel:20, minRound:1, weight:3, story:true,
+      badge:'ДОНЕСЕННЯ З РОЗВІДКИ', title:'Біженці з попелища',
+      text:'Колона біженців зі зруйнованого міста перетинає долину. Стара жінка вказує на твою вежу і щось кричить. Розвідник уточнює: не «чудовисько». Вона кричала ім\'я.',
+      choices:[
+        { text:'→ Пропустити колону. Не дивитись', tags:['vyj'], buff:{ heroThreatPct:-0.5 }, tag:'Милосердя множить чутки' },
+        { text:'→ Привести стару. Що за ім\'я?', tags:['zna'], buff:{ heroThreatPct:0.5 }, tag:'Ім\'я повзе табором' },
+        { text:'→ Розігнати. Ім\'я — зброя ворога', tags:['pom','dom'], buff:{ soulBonus:2, heroThreatPct:1 }, tag:'Місто затамувало злобу' },
+      ] },
+
+    { id:'act2_ransom', trigger:'wave_start', minLevel:14, maxLevel:22, minRound:2, weight:2, story:true,
+      badge:'ПАРЛАМЕНТЕР', title:'Викуп за місто',
+      text:'Молодий лицар без шолома стоїть перед брамою. Його звати Дален. Він пропонує скарбницю трьох гільдій, якщо ти оминеш Веллас. Він вірить, що це спрацює. Зворушливо. І небезпечно.',
+      choices:[
+        { text:'→ Узяти викуп. Слово Лорда — товар', tags:['kha','vyj'], buff:{ heroThreatPct:-1 }, tag:'Веллас склав зброю' },
+        { text:'→ Відмовити. Місто впаде за графіком', tags:['dom','per'], buff:{ soulBonus:2, heroThreatPct:0.5 }, tag:'Дален повернеться з армією' },
+        { text:'→ Спитати, чому він вірить чудовиську', tags:['zna'], buff:{}, tag:'' },
+      ] },
+
+    { id:'act2_burial', trigger:'wave_end', minLevel:15, maxLevel:24, minRound:1, weight:2, story:true,
+      badge:'ГОЛОСИ ПІДЗЕМЕЛЛЯ', title:'Прохання могильника',
+      text:'Старий троль-могильник мнеться на порозі: монстри просять дозволу ховати загиблих героїв «як людей». Каже, ті билися чесно. Твої чудовиська сентиментальніші за тебе.',
+      choices:[
+        { text:'→ Дозволити. Мертві не воюють', tags:['per','vyj'], buff:{ heroThreatPct:-0.5 }, tag:'Герої вагаються вбивати' },
+        { text:'→ Заборонити. Трупи — це ресурс', tags:['dom','pom'], buff:{ soulBonus:2, heroThreatPct:0.5 }, tag:'Душі щедріші, гнів густіший' },
+        { text:'→ Мовчки прийти на перший похорон', tags:['zna'], buff:{}, tag:'' },
+      ] },
+
+    { id:'act2_mapseller', trigger:'wave_start', minLevel:16, maxLevel:25, minRound:3, weight:2, story:true,
+      badge:'ГІСТЬ', title:'Торговець картами',
+      text:'Контрабандист продає план оборони наступного міста. Ховаючи золото, раптом питає: «А навіщо тобі саме ці міста? Між ними ж нічого спільного». Ти ловиш себе на тому, що не знаєш.',
+      choices:[
+        { text:'→ Купити карту. Питання зайві', tags:['dom'], buff:{ heroThreatPct:-1, eliteChance:1 }, tag:'Оборона як на долоні' },
+        { text:'→ Купити і чесно сказати: не знаю', tags:['zna'], buff:{ heroThreatPct:-0.5 }, tag:'Питання застрягло в грудях' },
+        { text:'→ Стратити. Надто спостережливий', tags:['pom','kha'], buff:{ soulBonus:1, heroThreatPct:0.5 }, tag:'Торговці оминають долину' },
+      ] },
+
+    { id:'act2_evasion', trigger:'wave_end', minLevel:17, maxLevel:25, minRound:2, weight:3, story:true,
+      requires:{ id:'act2_mapseller', choice:1 },
+      badge:'ШЕПІТ БЕЗОДНІ', title:'Перша ухилка',
+      text:'Ти питаєш Безодню: чому саме ці міста? Пауза тягнеться довше, ніж мала б. «Вони... заважають. Не питай про очевидне, зброє моя». Вперше вона відповіла не одразу.',
+      choices:[
+        { text:'→ Наполягти. Чим саме заважають?', tags:['zna','dom'], buff:{ heroThreatPct:0.5 }, tag:'Безодня стиснула повідець' },
+        { text:'→ Промовчати. Ще не час', tags:['vyj','per'], buff:{ lordDmg:2 }, tag:'Слухняність винагороджено' },
+      ] },
+
+    { id:'act3_diary', trigger:'wave_start', minLevel:26, maxLevel:32, minRound:1, weight:3, story:true,
+      badge:'ЗНАХІДКА', title:'Чужий щоденник',
+      text:'У руїнах храму — щоденник п\'ятисотрічної давнини. Почерк дратує знайомістю. Останній запис: «Якщо ти це читаєш і нічого не пам\'ятаєш — не вір їй». Підпису нема. Він і не потрібен.',
+      choices:[
+        { text:'→ Читати далі. До останньої сторінки', tags:['zna'], buff:{ heroThreatPct:0.5 }, tag:'Безсонна ніч питань' },
+        { text:'→ Спалити. Почерк буває схожим', tags:['vyj'], buff:{ lordDmg:2 }, tag:'Сумнів придушено силою' },
+        { text:'→ Сховати під троном. На потім', tags:['per','kha'], buff:{}, tag:'' },
+      ] },
+
+    { id:'act3_priestess', trigger:'wave_end', minLevel:28, maxLevel:35, minRound:2, weight:2, story:true,
+      requires:{ id:'act2_burial', choice:0 },
+      badge:'ПОЛОНЯНКА', title:'Пропозиція жриці',
+      text:'Стара жриця чула, що ти ховаєш ворогів як людей. Каже: «Я можу показати тобі один твій спогад. Лише один». Безодня в голові шипить: «Не смій. Вона бреше». Надто голосно шипить.',
+      choices:[
+        { text:'→ Дивитися спогад. Хай шипить', tags:['zna','kha'], buff:{ heroThreatPct:1 }, tag:'Безодня карає непослух' },
+        { text:'→ Відмовитись. Ще не час', tags:['vyj'], buff:{ lordDmg:2 }, tag:'Безодня муркоче вдоволено' },
+        { text:'→ Стратити. Відьмам віри нема', tags:['pom'], buff:{ soulBonus:2, heroThreatPct:0.5 }, tag:'Спогад помер з нею' },
+      ] },
+
+    { id:'act3_symbol', trigger:'wave_start', minLevel:29, maxLevel:36, minRound:3, weight:2, story:true,
+      badge:'ГОЛОСИ ПІДЗЕМЕЛЛЯ', title:'Символ на стіні',
+      text:'На стіні тронної зали хтось накреслив половину печатки. Ти піднімаєш руку стерти — і рука сама домальовує другу половину. Ідеально. По пам\'яті, якої в тебе нема.',
+      choices:[
+        { text:'→ Вивчити символ. Рука щось знає', tags:['zna','per'], buff:{ heroThreatPct:0.5 }, tag:'Рука пам\'ятає більше' },
+        { text:'→ Стерти і подвоїти варту', tags:['vyj'], buff:{ captainChance:-1 }, tag:'Зала під замком' },
+        { text:'→ Домалювати ще. Перевірити межу', tags:['kha','zna'], buff:{ lordDmg:3, heroThreatPct:1 }, tag:'Стара сила прокидається' },
+      ] },
+
+    { id:'act3_archivist', trigger:'wave_start', minLevel:30, maxLevel:37, minRound:2, weight:3, story:true,
+      badge:'ПОЛОНЕНИЙ', title:'Архіваріус знає',
+      text:'Полонений архіваріус не просить пощади. Дивиться в упор: «Я знаю, хто ти, Варане. П\'ятдесят печаток. Хочеш — скажу, де лежить решта правди». Безодня мовчить. Занадто старанно.',
+      choices:[
+        { text:'→ Слухати. Кожне слово', tags:['zna'], buff:{ heroThreatPct:0.5 }, tag:'Правда важча за броню' },
+        { text:'→ Стратити на півслові', tags:['pom','vyj'], buff:{ soulBonus:2 }, tag:'Ім\'я поховано з ним' },
+        { text:'→ Ув\'язнити. Хай помовчить поки що', tags:['per'], buff:{}, tag:'' },
+      ] },
+
+    { id:'act3_archive', trigger:'wave_end', minLevel:31, maxLevel:38, minRound:1, weight:3, story:true,
+      requires:{ id:'act3_archivist', choice:0 },
+      badge:'ШЕПІТ БЕЗОДНІ', title:'Наказ про архів',
+      text:'Він не збрехав: у катакомбах — архів, твій підпис на кожному томі. Безодня вперше не шепоче — наказує: «Спали. Негайно. Це отрута». Її голос тремтить. Від люті, звісно.',
+      choices:[
+        { text:'→ Підкоритись. Спалять слуги', tags:['vyj','dom'], buff:{ lordDmg:3 }, tag:'Плата за слухняність' },
+        { text:'→ Сховати архів у скарбниці', tags:['kha','zna'], buff:{ heroThreatPct:1 }, tag:'Безодня щось підозрює' },
+        { text:'→ Спалити самому. Повільно читаючи', tags:['zna','per'], buff:{ heroThreatPct:0.5, soulBonus:1 }, tag:'Попіл, але прочитаний' },
+      ] },
+
+    { id:'act4_pact', trigger:'wave_start', minLevel:39, maxLevel:46, minRound:1, weight:3, story:true,
+      requires:{ id:'act2_ransom', choice:0 },
+      badge:'ПАРЛАМЕНТЕР', title:'Пакт печаток',
+      text:'Посланниця останніх міст прийшла без охорони. «Ти взяв викуп за Веллас — отже, вмієш домовлятись. Не чіпай останні печатки, і ми скажемо, що саме ти запечатав». Безодня кричить. Уперше.',
+      choices:[
+        { text:'→ Слухати умови до кінця', tags:['zna','vyj'], buff:{ heroThreatPct:-1, eliteChance:-1 }, tag:'Мечі опущено, поки що' },
+        { text:'→ Відмовити. Пакти — для слабких', tags:['dom'], buff:{ lordDmg:4, heroThreatPct:1 }, tag:'Війна до останньої печатки' },
+        { text:'→ Мовчати. Хай Безодня кричить', tags:['kha','per'], buff:{}, tag:'' },
+      ] },
+
+    { id:'act4_merge', trigger:'wave_end', minLevel:41, maxLevel:48, minRound:2, weight:3, story:true,
+      badge:'ШЕПІТ БЕЗОДНІ', title:'Пропозиція злиття',
+      text:'«Стань мною, — шепоче Безодня, і вперше це звучить як прохання. — Жодних імен, жодного Варана, жодного болю. Одна воля. Наша». Вона боїться. Ти чуєш це так само ясно, як колись її впевненість.',
+      choices:[
+        { text:'→ Прийняти силу. Ім\'я — це тягар', tags:['dom','kha'], buff:{ lordDmg:6, heroThreatPct:2 }, tag:'Межі стираються' },
+        { text:'→ Відмовити. Ім\'я лишиться моїм', tags:['per','vyj'], buff:{ heroThreatPct:-1 }, tag:'Варан тримає лінію' },
+        { text:'→ Спитати: чого ти боїшся?', tags:['zna'], buff:{}, tag:'' },
+      ] },
+
+    { id:'act4_soldier', trigger:'wave_start', minLevel:42, maxLevel:49, minRound:2, weight:2, story:true,
+      requires:{ id:'act1_census', choice:0 },
+      badge:'ГІСТЬ', title:'Старий солдат',
+      text:'Сивий чоловік біля брами. Колись ти відпустив його з полону — «менше ротів». Він прожив ці роки, виростив онуків і прийшов спитати одне: «Воно було того варте, Лорде?» Зброї при ньому нема.',
+      choices:[
+        { text:'→ Відповісти чесно: не знаю', tags:['zna','vyj'], buff:{ heroThreatPct:-0.5 }, tag:'Чесність розходиться колами' },
+        { text:'→ Прогнати. Лорди не звітують', tags:['dom'], buff:{ soulBonus:1, heroThreatPct:0.5 }, tag:'Двері зачинились назавжди' },
+        { text:'→ Запросити до столу. Хай розкаже', tags:['zna','per'], buff:{}, tag:'' },
+      ] },
+
+    { id:'act4_citadel', trigger:'wave_start', minLevel:46, maxLevel:50, minRound:1, weight:3, story:true,
+      badge:'НІЧ ПЕРЕД ШТУРМОМ', title:'Перша Цитадель',
+      text:'За перевалом — Перша Цитадель, останнє місто-печатка. Ти сам клав її наріжний камінь. Безодня мовчить: усе вже сказано. Лишилось вирішити, ким ти зустрінеш ранок.',
+      choices:[
+        { text:'→ Як зброя. Довести справу до кінця', tags:['dom','pom'], buff:{ lordDmg:6, heroThreatPct:1.5 }, tag:'Безодня на порозі' },
+        { text:'→ Як Варан. Пам\'ять проти сили', tags:['per','zna'], buff:{ heroThreatPct:-1.5, eliteChance:2 }, tag:'Печатка впізнає майстра' },
+        { text:'→ Як щось третє. Ні їхній, ні її', tags:['kha'], buff:{ soulBonus:2, captainChance:2 }, tag:'Ніхто не знає правил' },
+      ] },
+
 ];
 
 // ── Вибір і показ рішення ───────────────────────────────────────────────────
 function _psyPickEvent(trigger) {
     if (!_psyTrack) return null;
     if (Math.random() > 0.40) return null;
+    const _lvl = GAME.currentLevel || 1;
     let pool = _getDecisionEvents().filter(e =>
         e.trigger === trigger &&
         e.minRound <= _psyTrack.rounds &&
         (!e.maxRound || e.maxRound >= _psyTrack.rounds) &&
+        (!e.minLevel || _lvl >= e.minLevel) &&      // сюжетна шкала: рівні кампанії
+        (!e.maxLevel || _lvl <= e.maxLevel) &&
         !_psyTrack.shown.includes(e.id) &&
+        (!e.story || !_storyShown(e.id)) &&          // сюжетні — раз на кампанію
         _psyCheckRequires(e)
     );
     if (!pool.length) return null;
@@ -10949,6 +11180,13 @@ function _resolveDecisionIdx(idx) {
     if (!_psyTrack || !_psyCurrentEv) return;
     // Зберігаємо вибір у пам'ять для continuation-подій
     _psyTrack.memory[_psyCurrentEv.id] = idx;
+    // Сюжетні події — у кампанійну пам'ять: не повторюються, ланцюги крізь рівні
+    if (_psyCurrentEv.story) {
+        const sm = _loadStoryMem();
+        if (!sm.shown.includes(_psyCurrentEv.id)) sm.shown.push(_psyCurrentEv.id);
+        sm.memory[_psyCurrentEv.id] = idx;
+        _saveStoryMem();
+    }
     const choice = _psyCurrentEv.choices[idx];
     (choice.tags || []).forEach(tag => {
         _psyTrack.decisions[tag] = (_psyTrack.decisions[tag] || 0) + 1;
@@ -10965,11 +11203,42 @@ function _resolveDecisionIdx(idx) {
     }
     const ov = document.getElementById('donesnnia-overlay');
     if (ov) ov.classList.remove('visible');
+    // Наративний ярлик-наслідок (без цифр): ручний із choice.tag або авто з buff-профілю
+    const _fbTag = (choice.tag !== undefined) ? choice.tag : _autoStoryTag(b);
+    if (_fbTag) setTimeout(() => _showStoryTag(_fbTag), 350);
     _psyCurrentEv = null;
     _psyTrack.pending = false;
     if (choice.specialAction === 'peace_victory') {
         setTimeout(() => _peacefulVictory(), 600);
     }
+}
+
+// Авто-ярлик для старих подій без ручного tag: найсильніший ефект → фраза
+function _autoStoryTag(b) {
+    if (!b) return '';
+    const en = _lang === 'en';
+    if ((b.soulBonus || 0) > 0)      return en ? 'Souls flow richer'      : 'Душі течуть щедріше';
+    if ((b.soulBonus || 0) < 0)      return en ? 'The treasury bleeds'    : 'Скарбниця кровоточить';
+    if ((b.lordDmg || 0) > 0)        return en ? 'The Lord feels stronger': 'Лорд відчуває силу';
+    if ((b.heroThreatPct || 0) > 0)  return en ? 'The city seethes'       : 'Місто закипає люттю';
+    if ((b.heroThreatPct || 0) < 0)  return en ? 'The city hesitates'     : 'Місто вагається';
+    if ((b.eliteChance || 0) > 0)    return en ? 'They send their best'   : 'Вони шлють найкращих';
+    if ((b.eliteChance || 0) < 0)    return en ? 'Their elite pulls back' : 'Еліта міста відступає';
+    if ((b.captainChance || 0) > 0)  return en ? 'Captains take notice'   : 'Капітани насторожились';
+    if ((b.captainChance || 0) < 0)  return en ? 'The officers waver'     : 'Офіцери вагаються';
+    return '';
+}
+function _showStoryTag(text) {
+    let el = document.getElementById('story-tag');
+    if (!el) {
+        el = document.createElement('div');
+        el.id = 'story-tag';
+        document.body.appendChild(el);
+    }
+    el.textContent = '✦ ' + text;
+    el.classList.remove('show');
+    void el.offsetWidth;
+    el.classList.add('show');
 }
 
 function _peacefulVictory() {
@@ -12382,6 +12651,8 @@ function confirmResetProgress() {
         _store.del('DLSiege_elite');
         _store.del('DLSiege_perma2');
         _store.del('DLSiege_v3');
+        _store.del('DLSiege_story');
+        _storyMem = null;
         try { localStorage.removeItem('DL_StoryDone'); } catch(_) {}
         hardReset();
     }

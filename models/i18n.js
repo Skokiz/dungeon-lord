@@ -430,7 +430,7 @@ const _DECISION_EVENTS_EN = [
       badge:'⚠️ Warning', title:'Traitor in the Ranks',
       text:'A monster was caught passing dungeon maps to heroes. It awaits sentencing.',
       choices:[
-        { text:'→ Public execution. Discipline above all', tags:['dom','pom'], buff:{ soulBonus:5, heroThreatPct:0.5 } },
+        { text:'→ Public execution. Discipline above all', tags:['dom','pom'], buff:{ soulBonus:3, heroThreatPct:0.5 } },
         { text:'→ Turn into a double agent', tags:['zna','kha'], buff:{ eliteChance:-3 } },
         { text:'→ Extract all intel and release', tags:['zna'], buff:{ heroThreatPct:-0.5 } },
       ]},
@@ -438,9 +438,9 @@ const _DECISION_EVENTS_EN = [
       badge:'🤝 Offer', title:'Guild Proposal',
       text:'An adventurers\' guild offers a temporary pact: 90 seconds without attacks in exchange for 60 souls.',
       choices:[
-        { text:'→ Accept. A breather matters', tags:['vyj'], buff:{ soulBonus:8 } },
+        { text:'→ Accept. A breather matters', tags:['vyj'], buff:{ soulBonus:4 } },
         { text:'→ Refuse with contempt', tags:['per','pom'], buff:{} },
-        { text:'→ Accept and break it at the right moment', tags:['kha','dom'], buff:{ heroThreatPct:1, soulBonus:15 } },
+        { text:'→ Accept and break it at the right moment', tags:['kha','dom'], buff:{ heroThreatPct:1, soulBonus:6 } },
       ]},
     { id:'dark_relic', trigger:'wave_end', minRound:4, weight:2,
       badge:'🔮 Discovery', title:'Dark Relic',
@@ -455,7 +455,7 @@ const _DECISION_EVENTS_EN = [
       text:'A hero lies alive in the corridor after battle. The monsters await orders.',
       choices:[
         { text:'→ Heal and release. Show magnanimity', tags:['vyj','zna'], buff:{ captainChance:-3 } },
-        { text:'→ Convert into a dungeon servant', tags:['dom','kha'], buff:{ soulBonus:5 } },
+        { text:'→ Convert into a dungeon servant', tags:['dom','kha'], buff:{ soulBonus:3 } },
         { text:'→ Sacrifice. Power matters more', tags:['per','dom'], buff:{ eliteChance:-1 } },
       ]},
     { id:'night_raid', trigger:'wave_start', minRound:3, weight:2,
@@ -478,7 +478,7 @@ const _DECISION_EVENTS_EN = [
       badge:'⚠️ Incident', title:'Deserters',
       text:'Three monsters abandoned their posts during the attack. Reason: fear. The rest of the army is watching.',
       choices:[
-        { text:'→ Execute before the ranks', tags:['dom'], buff:{ soulBonus:5, heroThreatPct:0.3 } },
+        { text:'→ Execute before the ranks', tags:['dom'], buff:{ soulBonus:3, heroThreatPct:0.3 } },
         { text:'→ Forgive. Anyone can be afraid', tags:['vyj'], buff:{} },
         { text:'→ Assign to the most dangerous tasks', tags:['zna','kha'], buff:{ captainChance:-2 } },
       ]},
@@ -488,7 +488,7 @@ const _DECISION_EVENTS_EN = [
       choices:[
         { text:'→ Negotiate. Details matter', tags:['zna','vyj'], buff:{ heroThreatPct:-1 } },
         { text:'→ Kill the ambassador. We don\'t negotiate', tags:['pom','dom'], buff:{ eliteChance:3, heroThreatPct:0.5 } },
-        { text:'→ Agree and break it when it suits us', tags:['kha','dom'], buff:{ soulBonus:8 } },
+        { text:'→ Agree and break it when it suits us', tags:['kha','dom'], buff:{ soulBonus:4 } },
       ]},
     { id:'trophy', trigger:'wave_end', minRound:2, weight:3,
       badge:'⚔️ Trophy', title:'Weapon of the Fallen',
@@ -518,7 +518,7 @@ const _DECISION_EVENTS_EN = [
       badge:'💀 Offer', title:'The Necromancer\'s Word',
       text:'A necromancer offers to raise dead heroes against their own — once, but powerfully.',
       choices:[
-        { text:'→ Agree. Resources should be used', tags:['kha','zna'], buff:{ soulBonus:6 } },
+        { text:'→ Agree. Resources should be used', tags:['kha','zna'], buff:{ soulBonus:3 } },
         { text:'→ Refuse. Our own army is better', tags:['dom','per'], buff:{ lordDmg:5 } },
         { text:'→ Use it, then eliminate the necromancer', tags:['dom','kha'], buff:{ lordDmg:8, heroThreatPct:0.5 } },
       ]},
@@ -530,16 +530,16 @@ const _DECISION_EVENTS_EN = [
         { text:'→ Let it burn — distracts heroes', tags:['kha'], buff:{ soulBonus:3 } },
         { text:'→ Turn it into a controlled fire-trap', tags:['zna','per'], buff:{ eliteChance:2 } },
       ]},
-    { id:'prisoner_return', trigger:'wave_start', minRound:4, weight:2,
+    { id:'prisoner_return', trigger:'wave_start', minRound:4, weight:2, story:true,
       requires: { id:'prisoner_knight', choice:0 },
       badge:'⚔️ Return', title:'The Knight Returns',
       text:'The knight you released is back — not with a sword, but with an unrolled scroll and an offer to become an informant. Says he fights for coin, not ideology.',
       choices:[
         { text:'→ Take him as an informant. Unreliable, but useful', tags:['zna','kha'], buff:{ heroThreatPct:-1 } },
         { text:'→ Refuse. Those who yield easily betray easily', tags:['per','dom'], buff:{} },
-        { text:'→ Take him and secretly report him to the city. Let them deal with it', tags:['kha'], buff:{ soulBonus:10 } },
+        { text:'→ Take him and secretly report him to the city. Let them deal with it', tags:['kha'], buff:{ soulBonus:4 } },
       ]},
-    { id:'prisoner_revenge', trigger:'wave_start', minRound:4, weight:2,
+    { id:'prisoner_revenge', trigger:'wave_start', minRound:4, weight:2, story:true,
       requires: { id:'prisoner_knight', choice:1 },
       badge:'🩸 Blood Feud', title:'The Knight\'s Brother',
       text:'The executed knight\'s brother has taken command of the next wave. He isn\'t just fighting — he\'s heading straight for your floor. Messengers say: he has a name for you, and it isn\'t flattering.',
@@ -548,7 +548,7 @@ const _DECISION_EVENTS_EN = [
         { text:'→ Try negotiations. Gold quenches even fire', tags:['zna','vyj'], buff:{ heroThreatPct:0.5 } },
         { text:'→ Post a bounty on his head among the heroes themselves', tags:['kha','dom'], buff:{ eliteChance:3 } },
       ]},
-    { id:'village_supply', trigger:'wave_end', minRound:5, weight:2,
+    { id:'village_supply', trigger:'wave_end', minRound:4, weight:2, story:true,
       requires: { id:'village_revolt', choice:0 },
       badge:'📜 Village Report', title:'Debt Repaid',
       text:'The villagers sent seven volunteers — people who don\'t want to live under the city\'s rule. Not monsters, but willing to help: block roads, carry information, hide the wounded.',
@@ -557,34 +557,34 @@ const _DECISION_EVENTS_EN = [
         { text:'→ Take the intelligence only, no people in the dungeon', tags:['zna'], buff:{ heroThreatPct:-0.5 } },
         { text:'→ Refuse. People in the dungeon are a weak point', tags:['per'], buff:{} },
       ]},
-    { id:'village_occupied', trigger:'wave_start', minRound:5, weight:2,
+    { id:'village_occupied', trigger:'wave_start', minRound:4, weight:2, story:true,
       requires: { id:'village_revolt', choice:2 },
       badge:'⚠️ Situation', title:'City Occupied the Village',
       text:'Hearing of the "intimidation," the city sent a garrison. Now these people are angry at both you and the city. Awkward for everyone.',
       choices:[
-        { text:'→ Send them weapons. Let them fight the garrison', tags:['kha','dom'], buff:{ heroThreatPct:1, soulBonus:8 } },
+        { text:'→ Send them weapons. Let them fight the garrison', tags:['kha','dom'], buff:{ heroThreatPct:1, soulBonus:4 } },
         { text:'→ Pretend this wasn\'t our idea', tags:['kha'], buff:{} },
         { text:'→ Send monsters to drive out the garrison — openly', tags:['dom','pom'], buff:{ heroThreatPct:2, eliteChance:4 } },
       ]},
-    { id:'spy_news', trigger:'wave_start', minRound:6, weight:2,
+    { id:'spy_news', trigger:'wave_start', minRound:4, weight:2, story:true,
       requires: { id:'traitor', choice:1 },
       badge:'🔍 Spy Report', title:'Inside Intelligence',
       text:'Your spy sent an encrypted scroll. The city council is planning to bribe two of your captains. One seems to have already agreed.',
       choices:[
-        { text:'→ Expose the traitor publicly — discipline over secrecy', tags:['dom','pom'], buff:{ soulBonus:5, heroThreatPct:0.5 } },
+        { text:'→ Expose the traitor publicly — discipline over secrecy', tags:['dom','pom'], buff:{ soulBonus:3, heroThreatPct:0.5 } },
         { text:'→ Pretend not to know — and keep watching', tags:['zna','kha'], buff:{ heroThreatPct:-0.5 } },
         { text:'→ Set the traitor up through disinformation to the council', tags:['kha','per'], buff:{ captainChance:-5 } },
       ]},
-    { id:'guild_war', trigger:'wave_start', minRound:7, weight:2,
+    { id:'guild_war', trigger:'wave_start', minRound:4, weight:2, story:true,
       requires: { id:'guild_pact', choice:2 },
       badge:'⚠️ Consequences', title:'Guild Declared a Hunt',
       text:'The adventurers\' guild officially declared an open hunt on your lord. Every wave now includes two or three of their assassins. Reputation is brutal.',
       choices:[
         { text:'→ Pay compensation. Stop escalation before it\'s too late', tags:['vyj'], buff:{ soulBonus:-15 } },
         { text:'→ Counter with a hunt on their guildmaster', tags:['pom','dom'], buff:{ heroThreatPct:2, eliteChance:5 } },
-        { text:'→ Hire a rival guild to cause them trouble', tags:['kha'], buff:{ heroThreatPct:0.5, soulBonus:5 } },
+        { text:'→ Hire a rival guild to cause them trouble', tags:['kha'], buff:{ heroThreatPct:0.5, soulBonus:3 } },
       ]},
-    { id:'relic_awakens', trigger:'wave_end', minRound:7, weight:2,
+    { id:'relic_awakens', trigger:'wave_end', minRound:4, weight:2, story:true,
       requires: { id:'dark_relic', choice:2 },
       badge:'🔮 Awakening', title:'The Relic Speaks',
       text:'At night — a voice. You don\'t know whose. The voice says it "wants more." Monsters are nervous. Even the golem.',
@@ -593,7 +593,7 @@ const _DECISION_EVENTS_EN = [
         { text:'→ Give it what it asks. For now', tags:['kha'], buff:{ lordDmg:10, heroThreatPct:1 } },
         { text:'→ Call the witch — let her handle it', tags:['zna','vyj'], buff:{} },
       ]},
-    { id:'slime_petition', trigger:'wave_end', minRound:2, maxRound:25, weight:2,
+    { id:'slime_petition', trigger:'wave_end', maxLevel:25, minRound:2, weight:2,
       badge:'💙 Petition', title:'Slimes Demand Respect',
       text:'A slime delegation appeared in the throne room. They brought a scroll — surprisingly neatly written, considering they have no hands. Key demands: more darkness, fewer torches, and officially stop calling them "those green blobs."',
       choices:[
@@ -601,7 +601,7 @@ const _DECISION_EVENTS_EN = [
         { text:'→ Compromise: new names yes, torches stay', tags:['kha','zna'], buff:{} },
         { text:'→ Declare official title: "Elite Slime Warriors"', tags:['per'], buff:{ eliteChance:2 } },
       ]},
-    { id:'bat_strike', trigger:'wave_start', minRound:3, maxRound:25, weight:2,
+    { id:'bat_strike', trigger:'wave_start', maxLevel:25, minRound:3, weight:2,
       badge:'🦇 Labor Dispute', title:'Bat Strike',
       text:'The bats declared a strike. After rebuilding the third corridor their echolocation misfires and two flew into a wall. They want either reconstruction or compensation for "occupational injury." The delegate\'s nose is bandaged.',
       choices:[
@@ -609,7 +609,7 @@ const _DECISION_EVENTS_EN = [
         { text:'→ Rebuild the corridor. Healthy monsters are effective monsters', tags:['zna','per'], buff:{ heroThreatPct:-0.3 } },
         { text:'→ Remind them "strike" isn\'t in their contract', tags:['dom'], buff:{ soulBonus:2 } },
       ]},
-    { id:'golem_poet', trigger:'wave_end', minRound:4, maxRound:25, weight:2,
+    { id:'golem_poet', trigger:'wave_end', maxLevel:25, minRound:4, weight:2,
       badge:'🗿 Cultural Event', title:'Golem Wrote a Poem',
       text:'The golem brought a stone slab with chiseled text. An ode to the dungeon. One line about you: "Lord is great. Lord is dark. Lord sometimes doesn\'t explain why we do this. But we go anyway." The author didn\'t sign — but only one monster has a chisel.',
       choices:[
@@ -617,7 +617,7 @@ const _DECISION_EVENTS_EN = [
         { text:'→ Order another slab carved — with the lord\'s reply', tags:['dom','per'], buff:{} },
         { text:'→ Say nothing. Quietly keep the slab', tags:['vyj'], buff:{ lordDmg:2 } },
       ]},
-    { id:'skeleton_law', trigger:'wave_start', minRound:5, maxRound:25, weight:2,
+    { id:'skeleton_law', trigger:'wave_start', maxLevel:25, minRound:5, weight:2,
       badge:'💀 Legal Dispute', title:'Skeleton and Tax Status',
       text:'A skeleton came with a question after heroes yelled "You\'re already dead!". It wants legal clarity: if officially dead — must it pay castle tax? And who will be its heir, exactly.',
       choices:[
@@ -625,7 +625,7 @@ const _DECISION_EVENTS_EN = [
         { text:'→ Designate it "Living-For-Dungeon-Purposes." There\'s a seal', tags:['per','dom'], buff:{ soulBonus:4 } },
         { text:'→ Say questions like this mean it owes another round of service', tags:['dom'], buff:{ heroThreatPct:-0.2 } },
       ]},
-    { id:'zombie_menu', trigger:'wave_end', minRound:3, maxRound:25, weight:2,
+    { id:'zombie_menu', trigger:'wave_end', maxLevel:25, minRound:3, weight:2,
       badge:'🧟 Complaint', title:'Zombies Dislike the Menu',
       text:'Zombies filed a complaint. Anonymously, but the handwriting is recognizable. The gist: we\'re only fed heroes that have "cooled down." We want fresh. Don\'t count spelling errors — not bad for undead.',
       choices:[
@@ -633,7 +633,7 @@ const _DECISION_EVENTS_EN = [
         { text:'→ Introduce a "premium menu" for those distinguished in battle', tags:['kha','per'], buff:{ eliteChance:2 } },
         { text:'→ Put them on the front line — let them solve the freshness problem themselves', tags:['dom'], buff:{ heroThreatPct:-0.5, soulBonus:3 } },
       ]},
-    { id:'minotaur_mirror', trigger:'wave_end', minRound:6, maxRound:25, weight:1,
+    { id:'minotaur_mirror', trigger:'wave_end', maxLevel:25, minRound:6, weight:1,
       badge:'🐂 Personal Matter', title:'The Minotaur and the Mirror',
       text:'The minotaur found a silver mirror in the trophy room and hasn\'t moved in three days. Doesn\'t bother anyone. Just looks. Occasionally sighs. Monsters pass by and speak in whispers.',
       choices:[
@@ -641,7 +641,7 @@ const _DECISION_EVENTS_EN = [
         { text:'→ Leave it. Everyone needs something', tags:['vyj'], buff:{ soulBonus:3 } },
         { text:'→ Give it another mirror. Let it figure things out', tags:['kha'], buff:{ captainChance:3 } },
       ]},
-    { id:'city_legend', trigger:'wave_end', minRound:4, weight:2,
+    { id:'city_legend', trigger:'wave_end', minLevel:4, minRound:2, weight:2, story:true,
       badge:'📜 City News', title:'New Name',
       text:'The city officially renamed your dungeon on its maps. Now it\'s "The Cursed Heart." Tourists are banned. Parents scare children with it. Bards write ballads. Ironic, but better than before.',
       choices:[
@@ -649,7 +649,7 @@ const _DECISION_EVENTS_EN = [
         { text:'→ Accept the name. Sounds respectable', tags:['kha','dom'], buff:{} },
         { text:'→ Find the bards and offer "technical corrections" to the songs', tags:['zna'], buff:{ soulBonus:4 } },
       ]},
-    { id:'historian_visit', trigger:'wave_start', minRound:6, weight:1,
+    { id:'historian_visit', trigger:'wave_start', minLevel:6, minRound:2, weight:1, story:true,
       badge:'📖 Unexpected Guest', title:'Traveling Chronicler',
       text:'An old man in a robe with a quill walked past the guards — they just froze. Says he\'s writing "A True Chronicle of Dark Places" and wants your version of events. Insistently. Very.',
       choices:[
@@ -657,7 +657,7 @@ const _DECISION_EVENTS_EN = [
         { text:'→ Expel him. Uninvited scroll-carriers are always a risk', tags:['dom','per'], buff:{} },
         { text:'→ Keep him in the dungeon. Could be useful — or a hostage', tags:['kha','zna'], buff:{ heroThreatPct:-0.5 } },
       ]},
-    { id:'ancient_dungeon', trigger:'wave_end', minRound:8, weight:1,
+    { id:'ancient_dungeon', trigger:'wave_end', minLevel:8, minRound:2, weight:1, story:true,
       badge:'🗝️ Discovery', title:'400 Years of Dungeon',
       text:'Monsters dug a new room and found walls with inscriptions. By the dates — the dungeon is over 400 years old. There are names of previous lords. The last entry cuts off mid-sentence.',
       choices:[
@@ -665,31 +665,31 @@ const _DECISION_EVENTS_EN = [
         { text:'→ Seal it. Others\' legacy is unnecessary burden', tags:['per'], buff:{} },
         { text:'→ Use it for propaganda: "400 years undefeated"', tags:['kha','pom'], buff:{ eliteChance:3 } },
       ]},
-    { id:'hero_memorial', trigger:'wave_start', minRound:5, weight:2,
+    { id:'hero_memorial', trigger:'wave_start', minLevel:5, minRound:2, weight:2, story:true,
       badge:'📜 City News', title:'Monument to the Fallen',
       text:'The city unveiled a monument to 50 known heroes who died here. Ceremonial speech. The crowd weeps. Your dungeon wasn\'t mentioned — only "hostile forces." But there are photographers.',
       choices:[
-        { text:'→ Send an anonymous wreath. Ironic and restrained', tags:['kha'], buff:{ soulBonus:5 } },
+        { text:'→ Send an anonymous wreath. Ironic and restrained', tags:['kha'], buff:{ soulBonus:3 } },
         { text:'→ Prepare: after such ceremonies there\'s always a surge of hero motivation', tags:['vyj','per'], buff:{ heroThreatPct:0.5 } },
         { text:'→ Destroy the monument in a night raid. Symbolic and unambiguous', tags:['pom','dom'], buff:{ heroThreatPct:2, eliteChance:5 } },
       ]},
-    { id:'legendary_hero', trigger:'wave_start', minRound:9, weight:1,
+    { id:'legendary_hero', trigger:'wave_start', minLevel:18, minRound:3, weight:1, story:true,
       badge:'⚔️ Threat', title:'A Hero with a Name',
       text:'Kindred the Sunlit arrived in the city — a paladin with a legend. Survived five dungeons. The city pays triple. He\'s already studying the map.',
       choices:[
-        { text:'→ Completely rebuild the defense. Different threat level, different response', tags:['per','vyj'], buff:{ heroThreatPct:1, soulBonus:10 } },
+        { text:'→ Completely rebuild the defense. Different threat level, different response', tags:['per','vyj'], buff:{ heroThreatPct:1, soulBonus:4 } },
         { text:'→ Spread disinformation about the dungeon', tags:['kha','zna'], buff:{ captainChance:-3 } },
         { text:'→ Wait. Legends also die from traps and arrows', tags:['dom','kha'], buff:{} },
       ]},
-    { id:'dark_lord_message', trigger:'wave_end', minRound:10, weight:1,
+    { id:'dark_lord_message', trigger:'wave_end', minLevel:10, minRound:3, weight:1, story:true,
       badge:'🏰 Dark Diplomacy', title:'Letter from a Neighbor',
       text:'A raven brought a letter with a black seal. You\'re being written to from another dungeon. Offers a "pact between dark ones." Intelligence exchange, possibly joint action. Signed: "Mort the Nameless." Suspiciously modest for a lord.',
       choices:[
         { text:'→ Accept the pact. More information means more survival', tags:['zna','kha'], buff:{ heroThreatPct:-1 } },
         { text:'→ Refuse. Allies in darkness are always future rivals', tags:['dom','per'], buff:{} },
-        { text:'→ Accept and secretly report him to the city. Higher level of cunning', tags:['kha'], buff:{ soulBonus:12 } },
+        { text:'→ Accept and secretly report him to the city. Higher level of cunning', tags:['kha'], buff:{ soulBonus:5 } },
       ]},
-    { id:'oracle_prophecy', trigger:'wave_end', minRound:7, weight:1,
+    { id:'oracle_prophecy', trigger:'wave_end', minLevel:7, minRound:2, weight:1, story:true,
       badge:'🔮 Omen', title:'The Oracle Spoke Five Words',
       text:'A blind oracle came uninvited. Stopped before you and said exactly five words: "Your end will come through acceptance." Then left. The guards ask what to do.',
       choices:[
@@ -707,7 +707,7 @@ const _DECISION_EVENTS_EN = [
       ]},
 
     // ── Named heroes: Marta ─────────────────────────────────────────────────────
-    { id:'marta_spy', trigger:'wave_start', minRound:12, maxRound:15, weight:4,
+    { id:'marta_spy', trigger:'wave_start', minLevel:12, maxLevel:15, minRound:3, weight:4, story:true,
       badge:'🕵 Intercepted', title:'Scout Marta',
       text:'Your monsters caught a girl sketching a map of the lower floors. She didn\'t run. She stared straight at you. «I want to know who you are. Not for the guild — for myself.» Her name is embroidered on the cloak: Marta.',
       choices:[
@@ -715,16 +715,16 @@ const _DECISION_EVENTS_EN = [
         { text:'→ Propose a trade: she tells you about the city, you say nothing about her', tags:['zna','kha'], buff:{ soulBonus:4 } },
         { text:'→ Keep her under guard. Too curious to let go', tags:['dom'], buff:{ captainChance:2 } },
       ]},
-    { id:'marta_return', trigger:'wave_start', minRound:28, maxRound:31, weight:5,
+    { id:'marta_return', trigger:'wave_start', minLevel:26, maxLevel:31, minRound:3, weight:5, story:true,
       requires: { id:'marta_spy', choice:0 },
       badge:'📜 Letter from the scout', title:'Marta returns',
       text:'She came alone. No weapons, no escort. She placed a list on the floor: families sending heroes, debt contracts, who pays for each raid. «I thought — maybe there\'s a way that doesn\'t kill both of us.»',
       choices:[
-        { text:'→ «This is worth a great deal. Continue.»', tags:['zna','vyj'], buff:{ heroThreatPct:-1.5, soulBonus:5 } },
+        { text:'→ «This is worth a great deal. Continue.»', tags:['zna','vyj'], buff:{ heroThreatPct:-1.5, soulBonus:3 } },
         { text:'→ «You understand I cannot stop?»', tags:['vyj','per'], buff:{ heroThreatPct:-0.5 } },
-        { text:'→ «Peace is impossible. But this data is useful.»', tags:['dom','zna'], buff:{ soulBonus:8 } },
+        { text:'→ «Peace is impossible. But this data is useful.»', tags:['dom','zna'], buff:{ soulBonus:4 } },
       ]},
-    { id:'marta_escaped', trigger:'wave_start', minRound:28, maxRound:31, weight:5,
+    { id:'marta_escaped', trigger:'wave_start', minLevel:26, maxLevel:31, minRound:3, weight:5, story:true,
       requires: { id:'marta_spy', choice:2 },
       badge:'⚠ Complication', title:'Marta escaped',
       text:'The cell is empty. The guard knocked out. Written in charcoal on the wall: «You could have let me go.» Scouts report she is now leading the next wave personally.',
@@ -735,7 +735,7 @@ const _DECISION_EVENTS_EN = [
       ]},
 
     // ── Named heroes: Old Vilem ─────────────────────────────────────────────────
-    { id:'vitem_first', trigger:'wave_end', minRound:20, maxRound:23, weight:4,
+    { id:'vitem_first', trigger:'wave_end', minLevel:20, maxLevel:23, minRound:3, weight:4, story:true,
       badge:'⚔️ Veteran', title:'Old Vilem',
       text:'He didn\'t attack. He sat in the middle of the corridor and said: «I served the lord before you. Fifty years. I know what he did — and why he stopped. Do you have a minute?»',
       choices:[
@@ -743,7 +743,7 @@ const _DECISION_EVENTS_EN = [
         { text:'→ «That lord lost. His lessons aren\'t mine.»', tags:['per','dom'], buff:{ heroThreatPct:0.5 } },
         { text:'→ Release without conversation. Age is no reason to halt a battle', tags:['kha','vyj'], buff:{ soulBonus:3 } },
       ]},
-    { id:'vitem_second', trigger:'wave_start', minRound:35, maxRound:38, weight:4,
+    { id:'vitem_second', trigger:'wave_start', minLevel:35, maxLevel:38, minRound:3, weight:4, story:true,
       requires: { id:'vitem_first', choice:0 },
       badge:'📜 Letter from the veteran', title:'Vilem writes',
       text:'Paper arrived via a monster nobody killed. «That lord stopped because he found a name. Varan. He wrote it on the wall of the lowest floor before he disappeared. Have you seen that name yet?»',
@@ -754,7 +754,7 @@ const _DECISION_EVENTS_EN = [
       ]},
 
     // ── Named heroes: Lyra · Path of peace ─────────────────────────────────────
-    { id:'lira_peace', trigger:'wave_start', minRound:30, maxRound:33, weight:4,
+    { id:'lira_peace', trigger:'wave_start', minLevel:30, maxLevel:33, minRound:3, weight:4, story:true,
       badge:'✦ Proposal', title:'Priestess Lyra',
       text:'A woman in white stopped five steps from the gate. No weapons. «I am not a hero. I am an envoy of gods nobody remembers anymore. I am permitted to speak — if you permit me to be heard.»',
       choices:[
@@ -762,7 +762,7 @@ const _DECISION_EVENTS_EN = [
         { text:'→ Let her in silently and listen', tags:['vyj','kha'], buff:{ soulBonus:3 } },
         { text:'→ «Gods were silent for five hundred years. Their turn.»', tags:['per','dom'], buff:{ lordDmg:3 } },
       ]},
-    { id:'lira_truce', trigger:'wave_start', minRound:43, maxRound:45, weight:5,
+    { id:'lira_truce', trigger:'wave_start', minLevel:43, maxLevel:45, minRound:3, weight:5, story:true,
       requires: { id:'lira_peace', choice:0 },
       badge:'✦ Last chance', title:'Lyra: terms fulfilled',
       text:'Lyra stands in the same place. «Terms fulfilled on both sides. The city is ready to stop the attacks — permanently. In return — you do not leave here. But no one else dies.» The dungeon\'s silence almost sounds like consent.',
@@ -774,7 +774,7 @@ const _DECISION_EVENTS_EN = [
 
     // ── ACT III (rounds 26–38): Fracture · Memory stirs ────────────────────
 
-    { id:'memory_fragment', trigger:'wave_start', minRound:26, weight:2,
+    { id:'memory_fragment', trigger:'wave_start', minLevel:26, minRound:3, weight:2, story:true,
       badge:'🌀 Memory', title:'A Shard of the Past',
       text:'You wake from battle with a name on your tongue. Varan. It feels foreign — yet sounds like yours. The monsters stare. You were speaking aloud.',
       choices:[
@@ -783,7 +783,7 @@ const _DECISION_EVENTS_EN = [
         { text:'→ Ask the Abyss. It knows more than it says', tags:['vyj','dom'], buff:{ heroThreatPct:-0.5, lordDmg:5 } },
       ]},
 
-    { id:'old_soldier', trigger:'wave_end', minRound:30, weight:2,
+    { id:'old_soldier', trigger:'wave_end', minLevel:30, minRound:3, weight:2, story:true,
       badge:'⚔️ Encounter', title:'The Veteran',
       text:'An old soldier refuses to fight. He lays on the floor: «I saw the lord before you. He also thought he was winning.» The monsters don\'t know what to do.',
       choices:[
@@ -792,7 +792,7 @@ const _DECISION_EVENTS_EN = [
         { text:'→ Detain him by force. An example of defiance is more dangerous than one old man', tags:['dom','per'], buff:{ heroThreatPct:0.5, eliteChance:2 } },
       ]},
 
-    { id:'abyss_whisper', trigger:'wave_start', minRound:33, weight:2,
+    { id:'abyss_whisper', trigger:'wave_start', minLevel:33, minRound:3, weight:2, story:true,
       badge:'🌑 Inner Voice', title:'The Abyss Advises',
       text:'The Abyss doesn\'t command for once — it asks. «Do you still remember why you began?» A pause. «Do you want to remember?»',
       choices:[
@@ -803,7 +803,7 @@ const _DECISION_EVENTS_EN = [
 
     // ── ACT IV (rounds 39–50): Choice · Abyss Intercepts ───────────────────
 
-    { id:'andrii_talk', trigger:'wave_start', minRound:44, maxRound:44, weight:10,
+    { id:'andrii_talk', trigger:'wave_start', minLevel:44, maxLevel:44, minRound:4, weight:10, story:true,
       badge:'⚔️ Messenger', title:'Hero Andrii',
       text:'He came unarmed. Set his shield on the floor and said: «I\'m not here to fight. I want to know who you are. The city says — a monster. But monsters don\'t build. You build.» The Abyss commands: kill him.',
       choices:[
@@ -813,7 +813,7 @@ const _DECISION_EVENTS_EN = [
         { text:'→ Stay silent. Let him decide for himself', tags:['kha'], buff:{} },
       ]},
 
-    { id:'abyss_intercept_loyalty', trigger:'wave_start', minRound:39, weight:3,
+    { id:'abyss_intercept_loyalty', trigger:'wave_start', minLevel:39, minRound:3, weight:3, story:true,
       type:'abyss',
       badge:'∞ THE ABYSS', title:'First Offer',
       text:'The Abyss speaks without monsters, without intermediaries. Directly. «Five hundred years you guarded me. Now I offer you to become me. No pain. No memory. Simply — an end.»',
@@ -823,7 +823,7 @@ const _DECISION_EVENTS_EN = [
         { text:'→ «Five hundred years — and you think I forgot what you are?»', tags:['vyj','per'], buff:{ lordDmg:4, heroThreatPct:-0.5 } },
       ]},
 
-    { id:'abyss_offer_freedom', trigger:'wave_end', minRound:43, weight:3,
+    { id:'abyss_offer_freedom', trigger:'wave_end', minLevel:43, minRound:3, weight:3, story:true,
       type:'abyss',
       badge:'∞ THE ABYSS', title:'Second Offer',
       text:'«You protected them and they sent more heroes. You gave them time and they used it against you. Let me handle this differently. Permanently.»',
@@ -833,7 +833,7 @@ const _DECISION_EVENTS_EN = [
         { text:'→ Stay silent. Sometimes silence is the only honest answer.', tags:['vyj','kha'], buff:{} },
       ]},
 
-    { id:'abyss_confession', trigger:'wave_start', minRound:47, weight:3,
+    { id:'abyss_confession', trigger:'wave_start', minLevel:47, minRound:3, weight:3, story:true,
       type:'abyss',
       badge:'∞ THE ABYSS', title:'Third and Last',
       text:'«Varan.» Not lord. Varan. «I fear you. Not because you\'re strong. Because you remember. And now you\'re choosing.» The dungeon falls to absolute silence.',
@@ -842,6 +842,174 @@ const _DECISION_EVENTS_EN = [
         { text:'→ «Tell me what you are and I\'ll decide.»', tags:['zna','kha'], buff:{ lordDmg:4 } },
         { text:'→ «Five hundred years — is my answer. You already know it.»', tags:['dom','per'], buff:{ lordDmg:6, heroThreatPct:-1 } },
       ]},
+
+    // ═══ ACT-SPECIFIC STORY EVENTS (campaign level scale) ════════════════════
+    { id:'act1_census', trigger:'wave_start', minLevel:2, maxLevel:10, minRound:2, weight:2, story:true,
+      badge:'SCOUT REPORT', title:'Prisoner Census',
+      text:'The steward lays a scroll on the table: three times more prisoners than mouths we can feed. He awaits your decision with the face of a man who already knows the answer.',
+      choices:[
+        { text:'→ Release the weak. Fewer mouths', tags:['vyj'], buff:{ heroThreatPct:-0.5 }, tag:'The city hesitates' },
+        { text:'→ All to the mines. Work will find them', tags:['dom','pom'], buff:{ soulBonus:2, heroThreatPct:0.5 }, tag:'Souls flow, the city seethes' },
+        { text:'→ Whatever. Let the steward decide', tags:['per'], buff:{}, tag:'' },
+      ] },
+
+    { id:'act1_famine', trigger:'wave_end', minLevel:3, maxLevel:12, minRound:1, weight:2, story:true,
+      badge:'VOICES OF THE DUNGEON', title:'Hunger in the Vaults',
+      text:'The stores are empty. The goblin quartermaster reports that the monsters are eyeing one another in a distinctly non-collegial manner.',
+      choices:[
+        { text:'→ Requisition grain from nearby villages', tags:['dom'], buff:{ soulBonus:1, eliteChance:1 }, tag:'Fed, but noticed' },
+        { text:'→ Let them eat prisoners. It\'s a dungeon', tags:['pom','kha'], buff:{ soulBonus:2, heroThreatPct:0.5 }, tag:'Horror feeds the legends' },
+        { text:'→ Tighten belts. Discipline above all', tags:['per','vyj'], buff:{}, tag:'' },
+      ] },
+
+    { id:'act1_spy', trigger:'wave_start', minLevel:4, maxLevel:12, minRound:3, weight:2, story:true,
+      badge:'SCOUT REPORT', title:'The First Spy',
+      text:'Among the recruits: a man with a carrier pigeon and suspiciously clean fingernails. The city wants to know how many towers we have. Touching — someone is finally counting.',
+      choices:[
+        { text:'→ Execute him publicly. A visual aid', tags:['dom','pom'], buff:{ soulBonus:1, eliteChance:1 }, tag:'The city sends its best' },
+        { text:'→ Feed him falsified plans', tags:['kha','zna'], buff:{ heroThreatPct:-1 }, tag:'Heroes wander the wrong map' },
+        { text:'→ Release him. Let truth be reported', tags:['dom','per'], buff:{ eliteChance:2 }, tag:'Challenge accepted' },
+      ] },
+
+    { id:'act1_tempo', trigger:'wave_end', minLevel:5, maxLevel:12, minRound:2, weight:3, story:true,
+      badge:'WHISPER OF THE ABYSS', title:'Praise and Whip',
+      text:'"You destroy beautifully, my weapon. But slowly. The next city waits, and waiting... disagrees with me. Faster."',
+      choices:[
+        { text:'→ Speed up. The Abyss knows best', tags:['dom'], buff:{ lordDmg:3, heroThreatPct:0.5 }, tag:'Power on a leash' },
+        { text:'→ Keep my own pace', tags:['per','vyj'], buff:{ heroThreatPct:-0.5 }, tag:'Method pays off' },
+        { text:'→ Ask what the hurry is about', tags:['zna'], buff:{}, tag:'' },
+      ] },
+
+    { id:'act2_refugees', trigger:'wave_start', minLevel:13, maxLevel:20, minRound:1, weight:3, story:true,
+      badge:'SCOUT REPORT', title:'Refugees of the Ashes',
+      text:'A refugee column from the razed city crosses the valley. An old woman points at your tower and shouts something. The scout clarifies: not "monster". She was shouting a name.',
+      choices:[
+        { text:'→ Let the column pass. Don\'t look', tags:['vyj'], buff:{ heroThreatPct:-0.5 }, tag:'Mercy breeds rumors' },
+        { text:'→ Bring the old woman. What name?', tags:['zna'], buff:{ heroThreatPct:0.5 }, tag:'The name creeps through camp' },
+        { text:'→ Scatter them. A name is a weapon', tags:['pom','dom'], buff:{ soulBonus:2, heroThreatPct:1 }, tag:'The city hoards its hatred' },
+      ] },
+
+    { id:'act2_ransom', trigger:'wave_start', minLevel:14, maxLevel:22, minRound:2, weight:2, story:true,
+      badge:'ENVOY', title:'Ransom for a City',
+      text:'A young knight stands at the gate, helmet off. His name is Dalen. He offers the treasury of three guilds if you pass Vellas by. He believes this will work. Touching. And dangerous.',
+      choices:[
+        { text:'→ Take the ransom. A Lord\'s word sells', tags:['kha','vyj'], buff:{ heroThreatPct:-1 }, tag:'Vellas lays down arms' },
+        { text:'→ Refuse. The city falls on schedule', tags:['dom','per'], buff:{ soulBonus:2, heroThreatPct:0.5 }, tag:'Dalen will return with an army' },
+        { text:'→ Ask why he trusts a monster', tags:['zna'], buff:{}, tag:'' },
+      ] },
+
+    { id:'act2_burial', trigger:'wave_end', minLevel:15, maxLevel:24, minRound:1, weight:2, story:true,
+      badge:'VOICES OF THE DUNGEON', title:'The Gravedigger\'s Plea',
+      text:'An old troll gravedigger shuffles at the threshold: the monsters ask permission to bury fallen heroes "like people". Says they fought honestly. Your monsters are more sentimental than you.',
+      choices:[
+        { text:'→ Allow it. The dead don\'t fight', tags:['per','vyj'], buff:{ heroThreatPct:-0.5 }, tag:'Heroes hesitate to kill' },
+        { text:'→ Forbid it. Corpses are a resource', tags:['dom','pom'], buff:{ soulBonus:2, heroThreatPct:0.5 }, tag:'Richer souls, thicker wrath' },
+        { text:'→ Attend the first funeral. Silently', tags:['zna'], buff:{}, tag:'' },
+      ] },
+
+    { id:'act2_mapseller', trigger:'wave_start', minLevel:16, maxLevel:25, minRound:3, weight:2, story:true,
+      badge:'VISITOR', title:'The Map Seller',
+      text:'A smuggler sells the defense plans of the next city. Pocketing the gold, he suddenly asks: "Why these cities, exactly? They have nothing in common." You catch yourself not knowing.',
+      choices:[
+        { text:'→ Buy the map. Skip the questions', tags:['dom'], buff:{ heroThreatPct:-1, eliteChance:1 }, tag:'Defenses laid bare' },
+        { text:'→ Buy it and answer honestly: no idea', tags:['zna'], buff:{ heroThreatPct:-0.5 }, tag:'The question stays lodged' },
+        { text:'→ Execute him. Far too observant', tags:['pom','kha'], buff:{ soulBonus:1, heroThreatPct:0.5 }, tag:'Merchants avoid the valley' },
+      ] },
+
+    { id:'act2_evasion', trigger:'wave_end', minLevel:17, maxLevel:25, minRound:2, weight:3, story:true,
+      requires:{ id:'act2_mapseller', choice:1 },
+      badge:'WHISPER OF THE ABYSS', title:'The First Evasion',
+      text:'You ask the Abyss: why these cities? The pause stretches longer than it should. "They... interfere. Don\'t ask the obvious, my weapon." For the first time, she didn\'t answer at once.',
+      choices:[
+        { text:'→ Press her. Interfere with what?', tags:['zna','dom'], buff:{ heroThreatPct:0.5 }, tag:'The Abyss tightens the leash' },
+        { text:'→ Stay silent. Not yet', tags:['vyj','per'], buff:{ lordDmg:2 }, tag:'Obedience rewarded' },
+      ] },
+
+    { id:'act3_diary', trigger:'wave_start', minLevel:26, maxLevel:32, minRound:1, weight:3, story:true,
+      badge:'DISCOVERY', title:'A Stranger\'s Diary',
+      text:'In the temple ruins: a diary, five centuries old. The handwriting is irritatingly familiar. The last entry: "If you read this and remember nothing — do not trust her." No signature. None needed.',
+      choices:[
+        { text:'→ Read on. To the last page', tags:['zna'], buff:{ heroThreatPct:0.5 }, tag:'A sleepless night of questions' },
+        { text:'→ Burn it. Handwriting can look alike', tags:['vyj'], buff:{ lordDmg:2 }, tag:'Doubt crushed by force' },
+        { text:'→ Hide it under the throne. For later', tags:['per','kha'], buff:{}, tag:'' },
+      ] },
+
+    { id:'act3_priestess', trigger:'wave_end', minLevel:28, maxLevel:35, minRound:2, weight:2, story:true,
+      requires:{ id:'act2_burial', choice:0 },
+      badge:'CAPTIVE', title:'The Priestess\' Offer',
+      text:'An old priestess heard you bury enemies like people. She says: "I can show you one of your memories. Only one." The Abyss hisses in your skull: "Don\'t you dare. She lies." It hisses too loudly.',
+      choices:[
+        { text:'→ See the memory. Let her hiss', tags:['zna','kha'], buff:{ heroThreatPct:1 }, tag:'The Abyss punishes defiance' },
+        { text:'→ Refuse. Not yet', tags:['vyj'], buff:{ lordDmg:2 }, tag:'The Abyss purrs, satisfied' },
+        { text:'→ Execute her. No trust for witches', tags:['pom'], buff:{ soulBonus:2, heroThreatPct:0.5 }, tag:'The memory died with her' },
+      ] },
+
+    { id:'act3_symbol', trigger:'wave_start', minLevel:29, maxLevel:36, minRound:3, weight:2, story:true,
+      badge:'VOICES OF THE DUNGEON', title:'Symbol on the Wall',
+      text:'Someone drew half a seal on the throne room wall. You raise your hand to wipe it — and the hand completes the other half instead. Perfectly. From a memory you don\'t have.',
+      choices:[
+        { text:'→ Study the symbol. The hand knows', tags:['zna','per'], buff:{ heroThreatPct:0.5 }, tag:'The hand remembers more' },
+        { text:'→ Wipe it. Double the guard', tags:['vyj'], buff:{ captainChance:-1 }, tag:'The hall under lock' },
+        { text:'→ Draw more. Test the limit', tags:['kha','zna'], buff:{ lordDmg:3, heroThreatPct:1 }, tag:'Old power stirs' },
+      ] },
+
+    { id:'act3_archivist', trigger:'wave_start', minLevel:30, maxLevel:37, minRound:2, weight:3, story:true,
+      badge:'PRISONER', title:'The Archivist Knows',
+      text:'The captive archivist doesn\'t beg. He stares straight at you: "I know who you are, Varan. Fifty seals. Want me to tell you where the rest of the truth lies?" The Abyss stays silent. Too diligently.',
+      choices:[
+        { text:'→ Listen. Every word', tags:['zna'], buff:{ heroThreatPct:0.5 }, tag:'Truth heavier than armor' },
+        { text:'→ Execute him mid-sentence', tags:['pom','vyj'], buff:{ soulBonus:2 }, tag:'The name buried with him' },
+        { text:'→ Imprison him. Silence, for now', tags:['per'], buff:{}, tag:'' },
+      ] },
+
+    { id:'act3_archive', trigger:'wave_end', minLevel:31, maxLevel:38, minRound:1, weight:3, story:true,
+      requires:{ id:'act3_archivist', choice:0 },
+      badge:'WHISPER OF THE ABYSS', title:'The Archive Order',
+      text:'He didn\'t lie: in the catacombs, an archive — your signature on every tome. For the first time the Abyss doesn\'t whisper, she commands: "Burn it. Now. It is poison." Her voice trembles. With rage, surely.',
+      choices:[
+        { text:'→ Obey. Let servants burn it', tags:['vyj','dom'], buff:{ lordDmg:3 }, tag:'Payment for obedience' },
+        { text:'→ Hide the archive in the vault', tags:['kha','zna'], buff:{ heroThreatPct:1 }, tag:'The Abyss grows suspicious' },
+        { text:'→ Burn it yourself. Reading slowly', tags:['zna','per'], buff:{ heroThreatPct:0.5, soulBonus:1 }, tag:'Ashes, but read' },
+      ] },
+
+    { id:'act4_pact', trigger:'wave_start', minLevel:39, maxLevel:46, minRound:1, weight:3, story:true,
+      requires:{ id:'act2_ransom', choice:0 },
+      badge:'ENVOY', title:'The Pact of Seals',
+      text:'An envoy of the last cities, unguarded. "You took ransom for Vellas — so you can bargain. Spare the final seals, and we will tell you what it is you sealed away." The Abyss screams. For the first time.',
+      choices:[
+        { text:'→ Hear the terms to the end', tags:['zna','vyj'], buff:{ heroThreatPct:-1, eliteChance:-1 }, tag:'Swords lowered, for now' },
+        { text:'→ Refuse. Pacts are for the weak', tags:['dom'], buff:{ lordDmg:4, heroThreatPct:1 }, tag:'War to the final seal' },
+        { text:'→ Say nothing. Let the Abyss scream', tags:['kha','per'], buff:{}, tag:'' },
+      ] },
+
+    { id:'act4_merge', trigger:'wave_end', minLevel:41, maxLevel:48, minRound:2, weight:3, story:true,
+      badge:'WHISPER OF THE ABYSS', title:'The Offer of Union',
+      text:'"Become me," the Abyss whispers, and for the first time it sounds like begging. "No names, no Varan, no pain. One will. Ours." She is afraid. You hear it as clearly as you once heard her certainty.',
+      choices:[
+        { text:'→ Take the power. Names are a burden', tags:['dom','kha'], buff:{ lordDmg:6, heroThreatPct:2 }, tag:'The borders blur' },
+        { text:'→ Refuse. The name stays mine', tags:['per','vyj'], buff:{ heroThreatPct:-1 }, tag:'Varan holds the line' },
+        { text:'→ Ask her: what are you afraid of?', tags:['zna'], buff:{}, tag:'' },
+      ] },
+
+    { id:'act4_soldier', trigger:'wave_start', minLevel:42, maxLevel:49, minRound:2, weight:2, story:true,
+      requires:{ id:'act1_census', choice:0 },
+      badge:'VISITOR', title:'The Old Soldier',
+      text:'A grey-haired man at the gate. You once released him from captivity — "fewer mouths". He lived those years, raised grandchildren, and came to ask one thing: "Was it worth it, Lord?" He carries no weapon.',
+      choices:[
+        { text:'→ Answer honestly: I don\'t know', tags:['zna','vyj'], buff:{ heroThreatPct:-0.5 }, tag:'Honesty ripples outward' },
+        { text:'→ Turn him away. Lords don\'t answer', tags:['dom'], buff:{ soulBonus:1, heroThreatPct:0.5 }, tag:'The door shuts forever' },
+        { text:'→ Invite him to the table. Let him talk', tags:['zna','per'], buff:{}, tag:'' },
+      ] },
+
+    { id:'act4_citadel', trigger:'wave_start', minLevel:46, maxLevel:50, minRound:1, weight:3, story:true,
+      badge:'NIGHT BEFORE THE SIEGE', title:'The First Citadel',
+      text:'Beyond the pass: the First Citadel, the last seal-city. You laid its cornerstone yourself. The Abyss is silent — everything has been said. All that remains is to decide who meets the morning.',
+      choices:[
+        { text:'→ As the weapon. Finish the job', tags:['dom','pom'], buff:{ lordDmg:6, heroThreatPct:1.5 }, tag:'The Abyss at the threshold' },
+        { text:'→ As Varan. Memory against power', tags:['per','zna'], buff:{ heroThreatPct:-1.5, eliteChance:2 }, tag:'The seal knows its maker' },
+        { text:'→ As something third. Neither theirs nor hers', tags:['kha'], buff:{ soulBonus:2, captainChance:2 }, tag:'No one knows the rules' },
+      ] },
+
 ];
 
 // ── English psychotype descriptions ──────────────────────────────────────────

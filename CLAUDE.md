@@ -234,9 +234,18 @@ const _sc = (buys, prio, cap) => Math.min((buys + prio * 0.5) / Math.max(cap, 1)
 
 ### Φ Характер — 6 варіантів (Донесення)
 
-15 текстових подій-оверлеїв (overlay `#donesnnia-overlay`) тригеряться на `wave_start`/`wave_end`. Гравець вибирає варіант → теги `{ dom, pom, zna, vyj, kha, per }` інкрементуються, бафи для GAME.* (heroThreatPct, lordDmg тощо) застосовуються непомітно.
+**68 подій** (`_DECISION_EVENTS` uk у main.html + `_DECISION_EVENTS_EN` в i18n.js — метадані мають збігатись побайтово) на `wave_start`/`wave_end`. Вибір → теги `{ dom, pom, zna, vyj, kha, per }` + бафи GAME.* (цифри приховані, але показується **наративний ярлик**).
 
-**Ключові функції:** `_psyReset()`, `_psyBuy(cat)`, `_psyCheck(trigger)`, `_showDecision(ev)`, `_resolveDecisionIdx(idx)`.
+**Дві шкали часу (2026-07):**
+- `minRound`/`maxRound` — хвилі поточного рану (тактичні події, повторюються між ранами)
+- `minLevel`/`maxLevel` — рівні кампанії 1-50 (сюжетні/актові події; іменні арки Марта 12-15, Вітем 20-23, Ліра 30-33/43-45, Андрій 44; гумор монстрів maxLevel:25; 18 нових act1_-act4_)
+- `story:true` — раз на всю кампанію; вибір у кампанійній пам'яті `DLSiege_story` (`_storyShown(id)`/`_storyChoice(id)`), чиститься лише «Скинути все». `requires` перевіряється у пам'яті рану, потім кампанійній — ланцюги крізь рівні (act1_census→act4_soldier).
+
+**Ярлики-наслідки:** `choice.tag` — фраза без цифр → `_showStoryTag()` (#story-tag, 3.2с). Без tag — авто з buff (`_autoStoryTag`). `tag:''` при порожньому buff = тиша.
+
+**Іменні мінібоси:** `_namedBossFor(lvl,mult)` — Селена (21), Андрій (45, якщо andrii_talk вибір 0/3). Ім'я над HP-баром через `u._heroName`, +15% HP.
+
+**Ключові функції:** `_psyReset()`, `_psyBuy(cat)`, `_psyCheck(trigger)`, `_showDecision(ev)`, `_resolveDecisionIdx(idx)`, `_loadStoryMem()/_saveStoryMem()`.
 
 ### Θ Темперамент — 3 варіанти
 
