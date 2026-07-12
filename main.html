@@ -1331,6 +1331,18 @@
         #story-toast.story-toast-hide { opacity:0; }
         .story-toast-lord { font-size:22px; line-height:1; flex-shrink:0; }
         .story-toast-text { color:#ffddff; font-size:12px; line-height:1.5; }
+        /* Спікер діалогової сцени (іменні боси): ім'я-бейдж замість корони */
+        .story-toast-who {
+            flex-shrink:0; align-self:center;
+            font-family: var(--font-display); font-weight:700; font-size:12px;
+            color:#ffd9f0; letter-spacing:0.5px; padding:3px 9px;
+            background:rgba(160,48,192,0.25); border:1px solid rgba(255,150,220,0.4);
+            border-radius:8px; white-space:nowrap;
+        }
+        .story-toast-who.abyss {
+            color:#ff8888; background:rgba(90,10,10,0.45); border-color:rgba(255,80,80,0.45);
+        }
+        .story-toast-text.story-abyss-text { color:#e0a8a8; font-style:italic; }
 
         /* ── Донесення (наративні рішення) ────────────────────────────── */
         /* Наративний ярлик-наслідок після вибору в Донесенні (без цифр) */
@@ -5945,6 +5957,37 @@ function _namedBossFor(lvl, mult) {
     return null;
 }
 
+// Діалогова сцена при виході іменного боса (репліка героя + шепіт Безодні)
+let _namedToastTimer = null;
+function _namedSpeak(who, text, isAbyss) {
+    let toast = document.getElementById('story-toast');
+    if (!toast) { toast = document.createElement('div'); toast.id = 'story-toast'; document.body.appendChild(toast); }
+    toast.innerHTML = '<div class="story-toast-who' + (isAbyss ? ' abyss' : '') + '">' + who + '</div>'
+                    + '<div class="story-toast-text' + (isAbyss ? ' story-abyss-text' : '') + '">' + text + '</div>';
+    toast.className = 'story-toast-show';
+    clearTimeout(_namedToastTimer);
+    _namedToastTimer = setTimeout(function() { toast.className = 'story-toast-hide'; }, 4200);
+}
+function _namedBossLines(name) {
+    const en = _lang === 'en';
+    const ABYSS = en ? 'The Abyss' : 'Безодня';
+    if (name === 'Селена' || name === 'Selene') return en ? [
+        { who: 'Selene', text: 'Varan?.. By the light — it is you. You are Varan!' },
+        { who: ABYSS, abyss: true, text: 'Ignore her. It is manipulation. Kill her.' },
+    ] : [
+        { who: 'Селена', text: 'Варан?.. Клянусь світлом — це ти. Ти — Варан!' },
+        { who: ABYSS, abyss: true, text: 'Ігноруй. Це маніпуляція. Убий її.' },
+    ];
+    if (name === 'Андрій' || name === 'Andriy') return en ? [
+        { who: 'Andriy', text: 'I came to talk once. The city sent me again — not for talking.' },
+        { who: ABYSS, abyss: true, text: 'You see? Words are the weapon of the weak. Finish him.' },
+    ] : [
+        { who: 'Андрій', text: 'Я приходив говорити. Місто прислало мене вдруге — вже не для розмов.' },
+        { who: ABYSS, abyss: true, text: 'Бачиш? Слова — зброя слабких. Добий.' },
+    ];
+    return [];
+}
+
 function spawnBoss(level, mult) {
     let boss = new Unit('hero', CITY_GATE_X, CFG.surfaceY, -1, level);
     boss.hp *= mult; boss.maxHp = boss.hp;
@@ -5957,6 +6000,9 @@ function spawnBoss(level, mult) {
         boss._heroName = _nm;
         boss.hp = Math.round(boss.hp * 1.15); boss.maxHp = boss.hp; // іменні трохи міцніші
         _showStoryTag((_lang === 'en' ? _nm + ' has taken the field' : _nm + ' виходить на бій'));
+        // Сцена: репліки з паузою (герой → Безодня)
+        _namedBossLines(_nm).forEach((L, i) =>
+            setTimeout(() => _namedSpeak(L.who, L.text, L.abyss), 1200 + i * 4800));
     }
     boss.size = 34 + mult * 2;
     boss.soulReward = 30 * mult;
