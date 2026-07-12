@@ -12286,7 +12286,9 @@ function _doGameWinOverlay(lvl, nextLvl, isLast) {
     if (isLast) {
         const _pt = _computePsychotype();
         const _endText = _pt ? (_getEnding(_pt.philKey, _pt.stratKey, _pt.temp) || _t('go-all50')) : _t('go-all50');
-        const _ac = (_psyTrack && _psyTrack.memory) ? _psyTrack.memory['andrii_talk'] : undefined;
+        // Вибір Андрія зроблено на рівні 44 — фінал на 50 читає кампанійну пам'ять
+        let _ac = (_psyTrack && _psyTrack.memory) ? _psyTrack.memory['andrii_talk'] : undefined;
+        if (_ac === undefined) _ac = _storyChoice('andrii_talk');
         const _aLines = [
             _t('andrii-end-0'),
             _t('andrii-end-1'),
