@@ -11900,6 +11900,12 @@ function _toggleGoldMode() {
     });
     updateUI();
 }
+// Ціна наступного ВІЧНОГО поверху — власна черга (як у прокачок):
+// залежить лише від кількості вже куплених вічних, не від ранових покупок.
+function _permaFloorCost() {
+    return r5(200 * Math.pow(1.25, (_permaData.permaFloorLvl || 0)));
+}
+
 // Ставить вічну пастку на поверх, якщо вона куплена для цього depth
 function _applyPermaTrap(f) {
     if (!f || f.hasTrap || f.depth === floors.length - 1) return; // лорд-поверх без пасток
@@ -11926,8 +11932,8 @@ function _addFloorFree() {
 
 function buyFloor() {
     if (_goldMode) {
-        // Вічний поверх: та сама ціна, що звичайний, але в золотих — і назавжди
-        const cost = GAME.floorCost;
+        // Вічний поверх: власна цінова черга (200/250/315... за permaFloorLvl), у золотих
+        const cost = _permaFloorCost();
         if ((GAME.eliteSouls || 0) < cost || floors.length >= _MAX_FLOORS) return;
         _haptic(25); _SFX.buy();
         _psyBuy('floor');
@@ -12048,7 +12054,9 @@ function updateUI() {
         el.eliteSoulsBox.style.display = '';
         el.eliteSouls.innerText = GAME.eliteSouls;
     }
-    el.floorCost.innerHTML    = GAME.floorCost + (_goldMode ? ' <span class="esoul-gem"></span>' : ' <span class="soul-gem"></span>');
+    el.floorCost.innerHTML    = _goldMode
+        ? _permaFloorCost() + ' <span class="esoul-gem"></span>'
+        : GAME.floorCost + ' <span class="soul-gem"></span>';
     // Загроза — піпси замість тексту "0/5" (перебудова лише при зміні)
     {
         const _tm = GAME.maxThreatLevel || 5;
@@ -12078,7 +12086,7 @@ function updateUI() {
     }
 
     if (el.btnFloor) el.btnFloor.disabled = _goldMode
-        ? ((GAME.eliteSouls || 0) < GAME.floorCost || floors.length >= _MAX_FLOORS)
+        ? ((GAME.eliteSouls || 0) < _permaFloorCost() || floors.length >= _MAX_FLOORS)
         : s < GAME.floorCost;
 
     // Бейдж кнопки прокачки — показуємо ціну наступного доступного апгрейду
