@@ -4002,7 +4002,7 @@ class Unit {
             this.armor    = GAME.lordArmor;
             this.magArmor = (GAME.lordMagArmor != null) ? GAME.lordMagArmor : Math.round(GAME.lordArmor * 0.6);
             this.dmgType  = 'mag'; // лорд використовує посох (beam/slam) — магія
-            this.speed = 0;
+            this.speed = 1.5;      // встає з трону і йде до героїв на своєму поверсі
             this.color = '#aa00ff';
             this.size  = isPC ? _LORD_BASE.sizePC : Math.round(_LORD_BASE.sizePC * 0.74);
             this.level = 0;
@@ -4354,6 +4354,33 @@ class Unit {
                     }
                     this.fightTarget = enemy;
                 }
+            }
+        } else if (this.type === 'lord') {
+            // Лорд бачить ВЕСЬ свій поверх: встає з трону, йде до найближчого героя.
+            const _lh = units.filter(u => u.type === 'hero' && isTargetable(u)
+                && u.floorIdx === this.floorIdx && !u.isClimbing);
+            if (_lh.length) {
+                const _t = _lh.reduce((m, u) => Math.abs(u.x - this.x) < Math.abs(m.x - this.x) ? u : m, _lh[0]);
+                if (Math.abs(_t.x - this.x) > range - 12) {
+                    this.state = 'move';
+                    this._roDir = _t.x > this.x ? 1 : -1;
+                    this.x += Math.sign(_t.x - this.x) * this.speed * _dt;
+                    return;
+                }
+                enemy = _t;
+                this.fightTarget = _t;
+            } else {
+                // Героїв нема — повертається і сідає на трон
+                const _tx = _lordThroneX();
+                if (Math.abs(this.x - _tx) > 4) {
+                    this.state = 'move';
+                    this._roDir = _tx > this.x ? 1 : -1;
+                    this.x += Math.sign(_tx - this.x) * this.speed * _dt;
+                } else {
+                    this.state = 'idle';
+                    this._roDir = -1; // з трону дивиться на своє підземелля
+                }
+                return;
             }
         } else {
             enemy = units.find(u => enemyTypes.includes(u.type) && isTargetable(u)
@@ -5833,10 +5860,15 @@ function beginGame() {
     try { _dailyInit(); } catch(e) {}
 }
 
+// X-позиція трону Лорда: правий край його поверху
+function _lordThroneX() {
+    return centerX + CFG.floorW / 2 - (isPC ? 78 : 52);
+}
+
 function spawnLord() {
     units = units.filter(u => u.type !== 'lord');
     let last = floors[floors.length-1];
-    units.push(new Unit('lord', centerX, last.y, floors.length-1));
+    units.push(new Unit('lord', _lordThroneX(), last.y, floors.length-1));
 }
 
 // =================== СПАВН ГЕРОЇВ ===================
@@ -8697,6 +8729,73 @@ function loop(ts) {
     ctx.restore();
 
     floors.forEach(f => f.draw(GAME.cameraY));
+
+    // ── Трон Лорда (правий край його поверху) ──────────────────────────────
+    if (floors.length > 0) {
+        const _tf = floors[floors.length - 1];
+        const tx = _lordThroneX();
+        const ty = _tf.y - GAME.cameraY;
+        const ts = isPC ? 1.35 : 1.0;
+        const _pulseT = 0.5 + 0.5 * Math.sin(_frameNow / 700);
+        ctx.save();
+        // Сяйво за троном
+        {
+            const g = ctx.createRadialGradient(tx, ty - 42*ts, 6, tx, ty - 42*ts, 78*ts);
+            g.addColorStop(0, `rgba(150,60,230,${0.16 + _pulseT * 0.07})`);
+            g.addColorStop(1, 'rgba(80,0,140,0)');
+            ctx.fillStyle = g;
+            ctx.beginPath(); ctx.arc(tx, ty - 42*ts, 78*ts, 0, 6.2832); ctx.fill();
+        }
+        // Постамент — дві сходинки
+        ctx.fillStyle = '#241634';
+        ctx.fillRect(tx - 34*ts, ty - 6*ts, 68*ts, 6*ts);
+        ctx.fillStyle = '#2e1d44';
+        ctx.fillRect(tx - 27*ts, ty - 11*ts, 54*ts, 5*ts);
+        ctx.strokeStyle = 'rgba(0,0,0,0.4)'; ctx.lineWidth = 1;
+        ctx.strokeRect(tx - 34*ts, ty - 6*ts, 68*ts, 6*ts);
+        // Спинка трону: висока темна плита з трьома шпилями
+        const bx = tx, byTop = ty - 92*ts, byBot = ty - 10*ts;
+        ctx.fillStyle = '#1c1030';
+        ctx.beginPath();
+        ctx.moveTo(bx - 24*ts, byBot);
+        ctx.lineTo(bx - 24*ts, byTop + 26*ts);
+        ctx.lineTo(bx - 16*ts, byTop + 12*ts);   // лівий шпиль
+        ctx.lineTo(bx - 9*ts,  byTop + 22*ts);
+        ctx.lineTo(bx,          byTop);           // центральний шпиль
+        ctx.lineTo(bx + 9*ts,  byTop + 22*ts);
+        ctx.lineTo(bx + 16*ts, byTop + 12*ts);   // правий шпиль
+        ctx.lineTo(bx + 24*ts, byTop + 26*ts);
+        ctx.lineTo(bx + 24*ts, byBot);
+        ctx.closePath(); ctx.fill();
+        ctx.strokeStyle = '#4a2a78'; ctx.lineWidth = 1.4; ctx.stroke();
+        // Внутрішня ніша спинки (світліша, куди «сідає» лорд)
+        ctx.fillStyle = 'rgba(90,40,150,0.30)';
+        ctx.beginPath();
+        ctx.moveTo(bx - 15*ts, byBot);
+        ctx.lineTo(bx - 15*ts, byTop + 30*ts);
+        ctx.lineTo(bx,          byTop + 16*ts);
+        ctx.lineTo(bx + 15*ts, byTop + 30*ts);
+        ctx.lineTo(bx + 15*ts, byBot);
+        ctx.closePath(); ctx.fill();
+        // Кристали по боках трону
+        const _crys = (cx, cy, h, w, a) => {
+            ctx.fillStyle = `rgba(216,120,255,${a})`;
+            ctx.beginPath();
+            ctx.moveTo(cx, cy - h);
+            ctx.lineTo(cx + w, cy - h * 0.35);
+            ctx.lineTo(cx + w * 0.6, cy);
+            ctx.lineTo(cx - w * 0.6, cy);
+            ctx.lineTo(cx - w, cy - h * 0.35);
+            ctx.closePath(); ctx.fill();
+            ctx.strokeStyle = 'rgba(255,200,255,0.5)'; ctx.lineWidth = 0.8; ctx.stroke();
+        };
+        ctx.shadowColor = '#cc66ff'; ctx.shadowBlur = 8 + _pulseT * 5;
+        _crys(tx - 30*ts, ty - 8*ts, 26*ts, 7*ts, 0.85);
+        _crys(tx + 31*ts, ty - 8*ts, 34*ts, 8*ts, 0.85);
+        _crys(tx + 24*ts, ty - 6*ts, 16*ts, 5*ts, 0.7);
+        ctx.shadowBlur = 0;
+        ctx.restore();
+    }
 
     // ── Збирач Душ (на поточний рівень: +1 душа за героя) ──────────────────
     if (floors.length > 0) {
@@ -11816,7 +11915,7 @@ function _addFloorFree() {
     let lord = units.find(u => u.type === 'lord');
     let last = floors[floors.length - 1];
     if (lord) {
-        lord.x = centerX; lord.y = last.y;
+        lord.x = _lordThroneX(); lord.y = last.y;
         lord.floorIdx = floors.length - 1;
     } else {
         spawnLord(); // тільки якщо лорда взагалі немає
