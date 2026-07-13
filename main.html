@@ -2784,14 +2784,15 @@ const MONSTER_KIND_NAMES = [
     'water_ele','earth_ele','air_ele','fire_ele','lightning','dark_knight','banshee','lich','abyss','dragon'
 ];
 const MON_DEV_MAX = { atk:15, hp:15, cd:10, count:3 };
-const MON_DEV_COUNT_PRICES = [120, 200, 280]; // індекс = lvl-1; база 120, крок +80 (всі монстри)
+// Ціна «Кількості»: база 120 (+40 за тір монстра), крок рівня 80 (+10 за тір).
+// Слайм: 120/200/280, скелет: 160/250/340, гончі: 200/300/400, ...
 function monStatPrice(stat, targetLvl, kindName) {
     if (targetLvl < 1 || targetLvl > MON_DEV_MAX[stat]) return Infinity;
     // Тир монстра (0=slime .. 19=dragon) → +5 до бази за кожен тир
     let tier = kindName ? Math.max(0, MONSTER_KIND_NAMES.indexOf(kindName)) : 0;
     if (stat === 'atk' || stat === 'hp') return (20 + tier * 5) + (targetLvl - 1) * 15;
     if (stat === 'cd')                    return (30 + tier * 5) + (targetLvl - 1) * 30;
-    if (stat === 'count')                 return MON_DEV_COUNT_PRICES[targetLvl - 1] || Infinity;
+    if (stat === 'count')                 return (120 + tier * 40) + (targetLvl - 1) * (80 + tier * 10);
     return Infinity;
 }
 function _newMonDev() {
