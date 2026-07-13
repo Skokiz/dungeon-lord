@@ -4699,7 +4699,11 @@ class Unit {
                     }
                     if (enemy.type === 'hero' && dmgDealt > 0) {
                         enemy._lastHitBy = this.type;
-                        if (this.type === 'lord') { if (_psyTrack) _psyTrack.combat.lordAttacks++; }
+                        // Θ-темперамент: атаки лорда рахуються лише коли герой ПРОРВАВСЯ
+                        // до трону крізь живу оборону (інакше лічильник накручує АІ, не гравець)
+                        if (this.type === 'lord') {
+                            if (_psyTrack && _lordFightIsChoice(enemy)) _psyTrack.combat.lordAttacks++;
+                        }
                         _SFX.hit();
                         // Іскри при ударі по герою
                         if (dmgDealt >= 2) {
@@ -9783,7 +9787,7 @@ function loop(ts) {
                 try { _liveTutTrigger('first_kill'); } catch(e) {}
                 if (_psyTrack) {
                     _psyTrack.combat.totalKills++;
-                    if (u._lastHitBy === 'lord') _psyTrack.combat.lordKills++;
+                    if (u._lastHitBy === 'lord' && _lordFightIsChoice(u)) _psyTrack.combat.lordKills++;
                     _dailyKillCheck();
                 }
                 // Лорд-грід: Поглинання душ — бонуси за вбивства самим лордом
@@ -11344,7 +11348,12 @@ function _resolveDecisionIdx(idx) {
     const choice = _psyCurrentEv.choices[idx];
     (choice.tags || []).forEach(tag => {
         _psyTrack.decisions[tag] = (_psyTrack.decisions[tag] || 0) + 1;
+        // Φ-тотали за кампанію: філософія — не річ одного рану
+        const sm = _loadStoryMem();
+        if (!sm.philTotals) sm.philTotals = {};
+        sm.philTotals[tag] = (sm.philTotals[tag] || 0) + 1;
     });
+    if ((choice.tags || []).length) _saveStoryMem();
     const b = choice.buff || {};
     if (b.heroThreatPct  !== undefined) GAME.heroThreatPct  = Math.max(0.5, Math.min(15, (GAME.heroThreatPct  || 4) + b.heroThreatPct));
     if (b.eliteChance    !== undefined) GAME.eliteChance    = Math.max(0,   Math.min(100, (GAME.eliteChance    || 0) + b.eliteChance));
@@ -11423,6 +11432,29 @@ function _peacefulVictory() {
 }
 
 // ── Обчислення психотипу ────────────────────────────────────────────────────
+// Θ: бій лорда «за вибором гравця» — герой дійшов до поверху лорда,
+// коли вище стояли живі монстри (тобто гравець дозволив/побудував так).
+// Вимушені бої (оборони нема взагалі) не характеризують темперамент.
+function _lordFightIsChoice(hero) {
+    if (!hero || !floors.length) return false;
+    const lf = floors.length - 1;
+    if (hero.floorIdx !== lf) return false;
+    return units.some(m => m.type === 'monster' && m.hp > 0 && m.floorIdx < lf);
+}
+
+// Φ: доступність тегів у пулі подій (для нормалізації — pom рідкісніший за інші)
+let _tagAvailCache = null;
+function _tagAvail() {
+    if (_tagAvailCache) return _tagAvailCache;
+    const a = { dom: 0, pom: 0, zna: 0, vyj: 0, kha: 0, per: 0 };
+    try {
+        _getDecisionEvents().forEach(e => e.choices.forEach(c =>
+            (c.tags || []).forEach(t => { if (t in a) a[t]++; })));
+    } catch (e) {}
+    _tagAvailCache = a;
+    return a;
+}
+
 function _computePsychotype() {
     if (!_psyTrack) return null;
     const b = _psyTrack.buys;
@@ -11431,23 +11463,27 @@ function _computePsychotype() {
     const c = _psyTrack.combat;
     const rounds = Math.max(_psyTrack.rounds, 1);
 
-    // Σ — Стратегія: нормалізуємо кожну категорію на її власний ліміт
-    // Ліміти відображають реальну стелю кожної категорії за сесію:
-    //   lord:    45 рівнів (9 клітин × 5 рівнів)
+    // Σ — Стратегія: нормалізуємо кожну категорію на її РЕАЛІСТИЧНУ стелю за ран
+    // (старі стелі були неспівмірні: syla=45 робила Силу недосяжною, trap=2-3 — тривіальною)
+    //   lord:    ~9 грід-покупок за ран — активний лорд-білд
     //   monster: rounds × 2 (2 апгрейди/раунд = активна прокачка)
-    //   floor:   _MAX_FLOORS (20)
-    //   trap:    кількість слотів на момент кінця (floors.length - 1)
-    const floorSlots = Math.max((floors ? floors.length - 1 : 1), 1);
-    const caps = { syla: 45, lehion: rounds * 2, fortress: _MAX_FLOORS, trap: floorSlots };
+    //   floor:   ~10 поверхів за ран — активний будівельник
+    //   trap:    слоти, але не менше 4 (щоб 2 пастки не давали миттєве домінування)
+    const floorSlots = Math.max((floors ? floors.length - 1 : 1), 4);
+    const caps = { syla: 9, lehion: rounds * 2, fortress: 10, trap: floorSlots };
+
+    // Вічні поверхи/пастки — постійне втілення стратегії: половинна вага щорану
+    const _pf = (_permaData && _permaData.permaFloorLvl) || 0;
+    const _pt = (_permaData && _permaData.permaTraps) ? _permaData.permaTraps.length : 0;
 
     // Зважена оцінка = (кількість покупок + 0.5 × пріоритетних) / ліміт
     // Кеп 1.0: повне насичення = 1, перевищення не дає переваги
     const _sc = (buys, prio, cap) => Math.min((buys + prio * 0.5) / Math.max(cap, 1), 1.0);
     const scores = {
-        syla:     _sc(b.lord,    pri.lord    || 0, caps.syla),
-        lehion:   _sc(b.monster, pri.monster || 0, caps.lehion),
-        fortress: _sc(b.floor,   pri.floor   || 0, caps.fortress),
-        trap:     _sc(b.trap,    pri.trap    || 0, caps.trap),
+        syla:     _sc(b.lord,             pri.lord    || 0, caps.syla),
+        lehion:   _sc(b.monster,          pri.monster || 0, caps.lehion),
+        fortress: _sc(b.floor + _pf*0.5,  pri.floor   || 0, caps.fortress),
+        trap:     _sc(b.trap  + _pt*0.5,  pri.trap    || 0, caps.trap),
     };
 
     // Скарбниця: менше 1 покупки на раунд → гравець накопичує
@@ -11464,13 +11500,17 @@ function _computePsychotype() {
     // Якщо нічого не домінує + мало витрачав → Скарбниця
     if (stratKey === 'rivnovaha' && hoardScore > 0.4) stratKey = 'skarb';
 
-    // Φ — Філософія: домінуючий тег рішень
-    // Порядок визначає пріоритет при рівних очках: рідкісніший/яскравіший тег виграє
+    // Φ — Філософія: рішення за ВСЮ кампанію (кампанійні тотали накопичуються
+    // у _storyMem.philTotals; на пізніх ранах події рідкісні — ран сам по собі шумний),
+    // нормалізовані на ДОСТУПНІСТЬ тегу в пулі (pom рідкісніший — інакше недосяжний).
+    const _ct = (_loadStoryMem().philTotals) || {};
+    const _avail = _tagAvail();
     const PHIL_ORDER = ['pom', 'kha', 'dom', 'zna', 'per', 'vyj'];
     let philKey = 'vyj';
     let maxPhil = 0;
     for (const k of PHIL_ORDER) {
-        const v = d[k] || 0;
+        const raw = Math.max(d[k] || 0, _ct[k] || 0); // кампанія включає поточний ран
+        const v = raw / Math.max(_avail[k] || 1, 1);
         if (v > maxPhil) { maxPhil = v; philKey = k; }
     }
 
@@ -11883,6 +11923,7 @@ function _placeTrap(f, type) {
     f.hasTrap = true;
     f.trapType = type;
     if (type === 'teleport') f.teleportCooldown = 0;
+    _psyBuy('trap'); // Σ-сигнал при ФАКТИЧНІЙ установці (не при виборі з меню)
     updateUI(); saveGame();
     return true;
 }
@@ -11898,7 +11939,6 @@ function buyTrap(type) {
     if (available.length === 0) return;
 
     _haptic(20);
-    _psyBuy('trap');
     // Якщо тільки один поверх доступний — ставимо одразу
     if (available.length === 1) {
         _placeTrap(available[0], type);
@@ -12769,6 +12809,8 @@ function upgradeSoulBonus() {
     _haptic(20); _SFX.buy();
     _store.set('DLSiege_elite', String(avail - cost));
     GAME.eliteSouls = avail - cost;
+    // Активна інвестиція — не «скарбник»: рахуємо в загальну активність покупок
+    if (_psyTrack) _psyTrack.buys.total++;
     // Персистентно: рівень збирача живе в пермі (не губиться при hardReset)
     _permaData.soulCollLvl = _soulCollLvl() + 1;
     _savePerma(_permaData);
@@ -15813,6 +15855,7 @@ function buyMonGoldenStat(kindName, stat) {
     let cost = monStatPrice(stat, nextLvl, kindName); // та ж ціна, але в золотих
     if ((GAME.eliteSouls || 0) < cost) return;
     GAME.eliteSouls -= cost;
+    _psyBuy('monster'); // golden-гілка Розвитку — теж сигнал Легіону
     // Атомарний persist: золото і golden-рівень зберігаються разом одразу
     _store.set('DLSiege_elite', String(GAME.eliteSouls));
     g[key] = nextLvl;

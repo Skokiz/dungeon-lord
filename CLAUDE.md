@@ -251,9 +251,11 @@ const _sc = (buys, prio, cap) => Math.min((buys + prio * 0.5) / Math.max(cap, 1)
 
 Kill attribution: `enemy._lastHitBy = this.type` при attack-hit. При смерті героя:
 - `_psyTrack.combat.totalKills++`
-- якщо `._lastHitBy === 'lord'` → `lordKills++`
+- якщо `._lastHitBy === 'lord'` **і `_lordFightIsChoice(u)`** → `lordKills++`
 
-Лорд-атаки → `lordAttacks++` при кожному хіті лорда.
+`_lordFightIsChoice(hero)`: герой на поверсі лорда при ЖИВИХ монстрах на верхніх поверхах — бій «за вибором гравця». Без цього лорд-АІ (він сам патрулює поверх з 2026-07) накручував би темперамент. `lordAttacks++` — та сама умова.
+
+**Калібровки психотесту (2026-07):** Σ-стелі: syla 9 (було 45 — Сила була недосяжна), fortress 10, trap ≥4 слоти; вічні поверхи/пастки дають половинну вагу у fortress/trap щорану. Φ: рахується з кампанійних тоталів (`_storyMem.philTotals`) з нормалізацією на доступність тегу (`_tagAvail()` — pom рідкісний у пулі). `_psyBuy('monster')` і в golden-гілці; `_psyBuy('trap')` — при фактичній установці (`_placeTrap`), не при виборі з меню; збирач інкрементить `buys.total` (анти-скарб).
 
 ### `_computePsychotype()` → `_showPsychotypeResult()`
 
