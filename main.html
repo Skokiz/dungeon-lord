@@ -5860,9 +5860,14 @@ function beginGame() {
     try { _dailyInit(); } catch(e) {}
 }
 
-// X-позиція трону Лорда: правий край його поверху
+// X-позиція трону Лорда: завжди на ПРОТИЛЕЖНОМУ боці від драбини-входу героїв
+// (вхід на поверх лорда = драбина попереднього поверху; вони чергуються зигзагом)
 function _lordThroneX() {
-    return centerX + CFG.floorW / 2 - (isPC ? 78 : 52);
+    const off = CFG.floorW / 2 - (isPC ? 78 : 52);
+    const li = floors.length - 1;
+    const entry = (li > 0 && floors[li - 1]) ? floors[li - 1].ladderX
+                : (typeof CAVE_X !== 'undefined' ? CAVE_X : centerX - 1);
+    return entry > centerX ? centerX - off : centerX + off;
 }
 
 function spawnLord() {
