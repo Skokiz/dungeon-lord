@@ -2421,28 +2421,28 @@
                         title="Шипи: завдають шкоди герою при вході на поверх. Натисни поверх щоб встановити.">
                         <span class="sicon"><span class="dl-ico dl-trap"></span></span>
                         <span class="slabel" data-i18n="trap-spike">Шипи</span>
-                        <span class="scost">70 <span class="soul-gem"></span></span>
+                        <span class="scost">55 <span class="soul-gem"></span></span>
                         <span class="sdesc" data-i18n="trap-spike-d">фіз. шкода</span>
                     </button>
                     <button class="sub-btn s-dart" id="btn-trap-dart" onclick="buyTrap('dart')"
                         title="Дротик: обстрілює героя що знаходиться на поверсі. Натисни поверх щоб встановити.">
                         <span class="sicon"><span class="dl-ico dl-dart"></span></span>
                         <span class="slabel" data-i18n="trap-dart">Дротик</span>
-                        <span class="scost">80 <span class="soul-gem"></span></span>
+                        <span class="scost">65 <span class="soul-gem"></span></span>
                         <span class="sdesc" data-i18n="trap-dart-d">дальня атака</span>
                     </button>
                     <button class="sub-btn s-tele" id="btn-trap-tele" onclick="buyTrap('teleport')"
                         title="Телепорт: повертає героя на початок підземелля. Натисни поверх щоб встановити.">
                         <span class="sicon"><span class="dl-ico dl-swirl"></span></span>
                         <span class="slabel" data-i18n="trap-tele">Телепорт</span>
-                        <span class="scost">100 <span class="soul-gem"></span></span>
+                        <span class="scost">80 <span class="soul-gem"></span></span>
                         <span class="sdesc" data-i18n="trap-tele-d">відкидає назад</span>
                     </button>
                     <button class="sub-btn s-summon" id="btn-trap-summon" onclick="buyTrap('summon')"
                         title="Виклик: призиває монстра-захисника на поверсі. Натисни поверх щоб встановити.">
                         <span class="sicon"><span class="dl-ico dl-star"></span></span>
                         <span class="slabel" data-i18n="trap-summon">Виклик</span>
-                        <span class="scost">120 <span class="soul-gem"></span></span>
+                        <span class="scost">100 <span class="soul-gem"></span></span>
                         <span class="sdesc" data-i18n="trap-summon-d">спавн монстра</span>
                     </button>
                 </div>
@@ -11863,9 +11863,34 @@ const TRAP_COSTS = { spike: 55, dart: 65, teleport: 80, summon: 100 };
 // Режим вибору поверху для пастки
 let pendingTrapType = null; // якщо не null — чекаємо кліку на поверх
 
+// Установка пастки на поверх з оплатою за поточним режимом:
+// звичайний — душі цього рану; золотий — золото + пастка назавжди (перма)
+function _placeTrap(f, type) {
+    const cost = TRAP_COSTS[type];
+    if (_goldMode) {
+        if ((GAME.eliteSouls || 0) < cost) return false;
+        GAME.eliteSouls -= cost;
+        _store.set('DLSiege_elite', String(GAME.eliteSouls));
+        if (!_permaData.permaTraps) _permaData.permaTraps = [];
+        _permaData.permaTraps = _permaData.permaTraps.filter(t => t.depth !== f.depth);
+        _permaData.permaTraps.push({ depth: f.depth, type });
+        _savePerma(_permaData);
+        _showToast(_lang === 'en' ? 'Eternal trap set — forever on this floor' : 'Вічна пастка встановлена — назавжди на цьому поверсі');
+    } else {
+        if (GAME.souls < cost) return false;
+        _spend(cost);
+    }
+    f.hasTrap = true;
+    f.trapType = type;
+    if (type === 'teleport') f.teleportCooldown = 0;
+    updateUI(); saveGame();
+    return true;
+}
+
 function buyTrap(type) {
     let cost = TRAP_COSTS[type];
-    if (GAME.souls < cost) return;
+    // Гейт за валютою поточного режиму (у голд-режимі душі не потрібні)
+    if (_goldMode ? (GAME.eliteSouls || 0) < cost : GAME.souls < cost) return;
     _SFX.buy();
 
     // Перевіряємо чи є вільні поверхи
@@ -11876,10 +11901,7 @@ function buyTrap(type) {
     _psyBuy('trap');
     // Якщо тільки один поверх доступний — ставимо одразу
     if (available.length === 1) {
-        _spend(cost);
-        available[0].hasTrap = true;
-        available[0].trapType = type;
-        updateUI(); saveGame();
+        _placeTrap(available[0], type);
         return;
     }
 
@@ -13049,9 +13071,8 @@ function _handleCanvasTap(clientX, clientY) {
     let cy   = (clientY - rect.top) + GAME.cameraY;
     let lordIdx = floors.length - 1;
 
-    // Режим вибору поверху для пастки
+    // Режим вибору поверху для пастки (оплата — всередині _placeTrap за режимом)
     if (pendingTrapType !== null) {
-        let cost = TRAP_COSTS[pendingTrapType];
         let clicked = false;
         floors.forEach(f => {
             if (f.depth === lordIdx || f.hasTrap) return;
@@ -13059,28 +13080,7 @@ function _handleCanvasTap(clientX, clientY) {
             let fx2 = centerX + CFG.floorW / 2;
             // cy вже в world-координатах
             if (cx >= fx1 && cx <= fx2 && cy >= f.y - CFG.floorH && cy <= f.y) {
-                if (_goldMode) {
-                    // Вічна пастка: золото, той самий номінал, лишається назавжди на цьому поверсі
-                    if ((GAME.eliteSouls || 0) >= cost) {
-                        GAME.eliteSouls -= cost;
-                        _store.set('DLSiege_elite', String(GAME.eliteSouls));
-                        f.hasTrap = true;
-                        f.trapType = pendingTrapType;
-                        if (f.trapType === 'teleport') f.teleportCooldown = 0;
-                        if (!_permaData.permaTraps) _permaData.permaTraps = [];
-                        _permaData.permaTraps = _permaData.permaTraps.filter(t => t.depth !== f.depth);
-                        _permaData.permaTraps.push({ depth: f.depth, type: pendingTrapType });
-                        _savePerma(_permaData);
-                        _showToast(_lang === 'en' ? 'Eternal trap set — forever on this floor' : 'Вічна пастка встановлена — назавжди на цьому поверсі');
-                        updateUI(); saveGame();
-                    }
-                } else if (GAME.souls >= cost) {
-                    _spend(cost);
-                    f.hasTrap = true;
-                    f.trapType = pendingTrapType;
-                    if (f.trapType === 'teleport') f.teleportCooldown = 0;
-                    updateUI(); saveGame();
-                }
+                _placeTrap(f, pendingTrapType);
                 pendingTrapType = null;
                 hideTrapPlacementHint();
                 clicked = true;
