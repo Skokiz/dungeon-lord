@@ -11357,7 +11357,7 @@ function _psyPickEvent(trigger) {
         (!e.minLevel || _lvl >= e.minLevel) &&      // сюжетна шкала: рівні кампанії
         (!e.maxLevel || _lvl <= e.maxLevel) &&
         !_psyTrack.shown.includes(e.id) &&
-        (!e.story || !_storyShown(e.id)) &&          // сюжетні — раз на кампанію
+        !_storyShown(e.id) &&                        // КОЖНЕ донесення — раз на кампанію
         _psyCheckRequires(e)
     );
     if (!pool.length) return null;
@@ -11399,8 +11399,8 @@ function _resolveDecisionIdx(idx) {
     if (!_psyTrack || !_psyCurrentEv) return;
     // Зберігаємо вибір у пам'ять для continuation-подій
     _psyTrack.memory[_psyCurrentEv.id] = idx;
-    // Сюжетні події — у кампанійну пам'ять: не повторюються, ланцюги крізь рівні
-    if (_psyCurrentEv.story) {
+    // КОЖНЕ донесення — раз на всю кампанію: вибір і факт показу в кампанійній пам'яті
+    {
         const sm = _loadStoryMem();
         if (!sm.shown.includes(_psyCurrentEv.id)) sm.shown.push(_psyCurrentEv.id);
         sm.memory[_psyCurrentEv.id] = idx;
