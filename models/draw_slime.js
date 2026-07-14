@@ -233,27 +233,36 @@ function drawSlimeMonster(unit, camY) {
         ctx.lineWidth = 2;
         ctx.beginPath(); ctx.ellipse(_cx + _xOff, _cy, _R * _sx * 1.18, _R * _sy * 1.18, 0, 0, Math.PI * 2); ctx.stroke();
     } else if (unit._branch === 'B') {
-        // Ice crystals radiating from top of slime
+        // Крижані кристали: мерехтять по черзі, «дихають» довжиною; ореол обертається
         ctx.shadowBlur = 0;
         const _cAngles = [-Math.PI*0.72, -Math.PI*0.50, -Math.PI*0.28, -Math.PI*0.85, -Math.PI*0.15];
-        _cAngles.forEach(_ang => {
+        _cAngles.forEach((_ang, _ci) => {
+            const _tw = 0.5 + 0.5 * Math.sin(_nowT * 2.4 + _ci * 1.7);   // мерехтіння, у кожного своя фаза
+            const _grow = 0.44 + 0.10 * Math.sin(_nowT * 1.1 + _ci * 2.3); // легке «дихання» довжини
             const _bx = _cx + _xOff + Math.cos(_ang) * _R * _sx * 0.92;
             const _by = _cy + Math.sin(_ang) * _R * _sy * 0.92;
-            const _tx = _bx + Math.cos(_ang) * _R * 0.50;
-            const _ty = _by + Math.sin(_ang) * _R * 0.50;
+            const _tx = _bx + Math.cos(_ang) * _R * _grow;
+            const _ty = _by + Math.sin(_ang) * _R * _grow;
             const _pw = _R * 0.12;
-            ctx.fillStyle = 'rgba(195,235,255,0.88)';
-            ctx.strokeStyle = 'rgba(130,200,255,0.60)'; ctx.lineWidth = 0.9;
+            ctx.fillStyle = `rgba(195,235,255,${0.70 + _tw * 0.25})`;
+            ctx.strokeStyle = `rgba(130,200,255,${0.45 + _tw * 0.30})`; ctx.lineWidth = 0.9;
             ctx.beginPath();
             ctx.moveTo(_tx, _ty);
             ctx.lineTo(_bx - Math.sin(_ang)*_pw, _by + Math.cos(_ang)*_pw);
             ctx.lineTo(_bx + Math.sin(_ang)*_pw, _by - Math.cos(_ang)*_pw);
             ctx.closePath(); ctx.fill(); ctx.stroke();
+            // Іскринка на вістрі найяскравішого кристала
+            if (_tw > 0.88) {
+                ctx.fillStyle = 'rgba(255,255,255,0.9)';
+                ctx.beginPath(); ctx.arc(_tx, _ty, _R * 0.035, 0, Math.PI*2); ctx.fill();
+            }
         });
+        // Морозний ореол повільно обертається (біжучий пунктир)
         ctx.strokeStyle = 'rgba(160,220,255,0.26)'; ctx.lineWidth = 1.8;
         ctx.setLineDash([3, 5]);
+        ctx.lineDashOffset = -_nowT * 6;
         ctx.beginPath(); ctx.ellipse(_cx+_xOff, _cy, _R*_sx*1.25, _R*_sy*1.25, 0, 0, Math.PI*2); ctx.stroke();
-        ctx.setLineDash([]);
+        ctx.setLineDash([]); ctx.lineDashOffset = 0;
     }
 
     // ── Кулак-псевдопод виростає з боку слизня ──────────────────

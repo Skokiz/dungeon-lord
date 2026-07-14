@@ -424,9 +424,11 @@ function drawBansheeMonster(unit, camY) {
     }
     ctx.shadowBlur = 0; ctx.restore();
   } else if (_bsBranch === 'B') {
-    // Phantom: ghostly duplicate outline fading behind
-    ctx.save(); ctx.globalAlpha = 0.22;
-    const _offX = -dir * s * 0.18;
+    // Phantom: примарний двійник дрейфує позаду і «дихає» прозорістю
+    const _phT = _frameNow / 1000;
+    ctx.save(); ctx.globalAlpha = 0.14 + 0.12 * Math.sin(_phT * 1.6);
+    const _offX = -dir * s * (0.15 + 0.06 * Math.sin(_phT * 0.9))
+                + Math.sin(_phT * 2.3) * s * 0.02;
     // Ghost body
     ctx.strokeStyle = '#aabbd8'; ctx.lineWidth = 2.5;
     ctx.beginPath(); ctx.ellipse(bX + _offX, bY, bodyRX * 1.05, bodyRY * 1.05, 0, 0, Math.PI*2); ctx.stroke();

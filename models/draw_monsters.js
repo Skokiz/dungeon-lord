@@ -339,9 +339,11 @@ function drawHoundsMonster(unit, camY) {
     ctx.strokeStyle = '#cc2200'; ctx.lineWidth = OL * 1.6; ctx.lineCap = 'round';
     ctx.beginPath(); ctx.moveTo(bx - dir*s*0.02, by - s*0.06); ctx.lineTo(bx + dir*s*0.18, by + s*0.10); ctx.stroke();
     ctx.beginPath(); ctx.moveTo(bx + dir*s*0.01, by - s*0.01); ctx.lineTo(bx + dir*s*0.14, by + s*0.16); ctx.stroke();
-    // Pack claw badge above head
-    ctx.save(); ctx.shadowColor = '#ff4400'; ctx.shadowBlur = s * 0.12;
-    ctx.strokeStyle = 'rgba(220,70,10,0.60)'; ctx.lineWidth = OL * 1.0;
+    // Pack claw badge above head — жевріє в такт «люті зграї»
+    const _pbT = _frameNow / 1000;
+    const _pbP = 0.5 + 0.5 * Math.sin(_pbT * 2.1);
+    ctx.save(); ctx.shadowColor = '#ff4400'; ctx.shadowBlur = s * (0.08 + _pbP * 0.10);
+    ctx.strokeStyle = `rgba(220,70,10,${(0.45 + _pbP * 0.30).toFixed(3)})`; ctx.lineWidth = OL * 1.0;
     const _px = hx - dir * headR * 0.75, _py = hy - headR * 1.55;
     for (const [da, dl] of [[-0.38, 0.52], [0, 0.62], [0.38, 0.52]]) {
       ctx.beginPath();
@@ -351,8 +353,10 @@ function drawHoundsMonster(unit, camY) {
     }
     ctx.restore();
   } else if (_hBranch === 'B') {
-    // Alpha: golden mane collar + crown spikes
-    ctx.save(); ctx.shadowColor = '#ffaa00'; ctx.shadowBlur = s * 0.22;
+    // Alpha: золота грива сяє з повільним «королівським» пульсом
+    const _alT = _frameNow / 1000;
+    ctx.save(); ctx.shadowColor = '#ffaa00';
+    ctx.shadowBlur = s * (0.16 + 0.10 * (0.5 + 0.5 * Math.sin(_alT * 1.2)));
     ctx.fillStyle = 'rgba(210,160,10,0.68)';
     ctx.beginPath(); ctx.ellipse(bx - dir*s*0.04, by - s*0.20, s*0.20, s*0.11, dir*0.25, 0, Math.PI*2); ctx.fill();
     ctx.strokeStyle = '#ddaa10'; ctx.lineWidth = OL * 1.3;
@@ -1137,9 +1141,11 @@ function drawZombieMonster(unit, camY) {
       ctx.restore();
     }
     ctx.setLineDash([]);
-    // Bone-white glow on arm
-    ctx.save(); ctx.shadowColor = 'rgba(200,215,240,0.40)'; ctx.shadowBlur = s * 0.12;
-    ctx.strokeStyle = 'rgba(215,230,255,0.45)'; ctx.lineWidth = 1.2;
+    // Bone-white glow on arm — некро-енергія тліє нерівним пульсом
+    const _zbT = _frameNow / 1000;
+    const _zbP = 0.5 + 0.4 * Math.sin(_zbT * 1.7) + 0.1 * Math.sin(_zbT * 4.3);
+    ctx.save(); ctx.shadowColor = 'rgba(200,215,240,0.40)'; ctx.shadowBlur = s * (0.08 + _zbP * 0.09);
+    ctx.strokeStyle = `rgba(215,230,255,${(0.28 + _zbP * 0.30).toFixed(3)})`; ctx.lineWidth = 1.2;
     ctx.beginPath(); ctx.ellipse(cx + dir*s*0.20, fY - s*0.85, s*0.05, s*0.13, 0.20, 0, Math.PI*2); ctx.stroke();
     ctx.restore();
   }

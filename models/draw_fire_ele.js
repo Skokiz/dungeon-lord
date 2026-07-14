@@ -301,9 +301,14 @@ function drawFireEleMonster(unit, camY) {
       ctx.moveTo(bX + x0*s, _cY + y0*s); ctx.lineTo(bX + x1*s, _cY + y1*s);
       ctx.stroke();
     }
-    // Lava glow seeping from cracks
-    ctx.strokeStyle = 'rgba(255,60,0,0.30)'; ctx.lineWidth = 2.5;
+    // Лава жевріє з тріщин: повільний нерівний пульс (як вугілля)
+    const _lvT = _frameNow / 1000;
+    const _lvP = 0.5 + 0.35 * Math.sin(_lvT * 1.3) + 0.15 * Math.sin(_lvT * 3.7);
+    ctx.strokeStyle = `rgba(255,60,0,${(0.16 + _lvP * 0.30).toFixed(3)})`; ctx.lineWidth = 2.5;
+    ctx.shadowBlur = s * (0.08 + _lvP * 0.10);
     ctx.beginPath(); ctx.moveTo(bX - s*0.27, _cY); ctx.lineTo(bX - s*0.13, _cY + s*0.18); ctx.stroke();
+    ctx.strokeStyle = `rgba(255,120,20,${(_lvP * 0.22).toFixed(3)})`; ctx.lineWidth = 1.4;
+    ctx.beginPath(); ctx.moveTo(bX + s*0.10, _cY - s*0.15); ctx.lineTo(bX + s*0.26, _cY + s*0.08); ctx.stroke();
     ctx.shadowBlur = 0; ctx.restore();
   }
 

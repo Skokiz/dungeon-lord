@@ -437,9 +437,13 @@ function drawEarthEleMonster(unit, camY) {
     ctx.lineTo(bX - headR*0.22, headCY - headR * 0.60);
     ctx.lineTo(bX + headR*0.52, headCY - headR * 0.60);
     ctx.closePath(); ctx.fill();
-    // Armor shimmer ring
-    ctx.strokeStyle = 'rgba(150,110,70,0.28)'; ctx.lineWidth = 5;
+    // Armor shimmer ring — «шимер», який справді мерехтить (біжуча дуга-відблиск)
+    const _shT = _frameNow / 1000;
+    ctx.strokeStyle = `rgba(150,110,70,${(0.20 + 0.10 * Math.sin(_shT * 1.4)).toFixed(3)})`; ctx.lineWidth = 5;
     ctx.beginPath(); ctx.ellipse(bX, headCY + s*0.10, s*0.40, s*0.55, 0, 0, Math.PI*2); ctx.stroke();
+    const _shA = (_shT * 0.8) % (Math.PI * 2);
+    ctx.strokeStyle = 'rgba(230,240,255,0.35)'; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.ellipse(bX, headCY + s*0.10, s*0.40, s*0.55, 0, _shA, _shA + 0.9); ctx.stroke();
     ctx.shadowBlur = 0; ctx.restore();
   }
 
