@@ -2,7 +2,12 @@
 'use strict';
 
 let _lang = (function() {
-    try { return localStorage.getItem('DL_lang') || 'uk'; } catch(e) { return 'uk'; }
+    try {
+        const saved = localStorage.getItem('DL_lang');
+        if (saved) return saved;
+        const nav = (navigator.language || 'en').toLowerCase();
+        return nav.indexOf('uk') === 0 ? 'uk' : 'en';
+    } catch(e) { return 'en'; }
 })();
 
 // ── UI string tables ──────────────────────────────────────────────────────────
