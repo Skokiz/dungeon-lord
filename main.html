@@ -12629,7 +12629,7 @@ function _watchAdConvertSouls() {
     if (gold < 1) return;
     let btn = document.getElementById('go-salvage-btn');
     if (btn) btn.disabled = true;
-    _playAdStub(() => {
+    _playAd(() => {
         // Конвертуємо ВСІ звичайні душі у золоті.
         // Конвертація = «витрата» душ (щоб «зібрано за рівень» не просів) + зароблене золото.
         GAME._soulsSpentLevel = (GAME._soulsSpentLevel || 0) + souls;
@@ -12643,11 +12643,80 @@ function _watchAdConvertSouls() {
         _showSoulSalvage();               // ховає блок (done=true)
         _haptic(30);
         try { _SFX.buy(); } catch(e) {}
+    }, () => {
+        // Рекламу закрили рано / помилка мережі — повертаємо кнопку, нагороди нема
+        if (btn) btn.disabled = false;
     });
 }
 
+// ═══ РЕКЛАМНИЙ РОУТЕР ═══════════════════════════════════════════════════════
+// Один вхід _playAd(onDone, onFail) → авто-детект платформи:
+//   Telegram Mini App → Adsgram (rewarded, USDt-TON виплати)
+//   CrazyGames        → їхній SDK (обов'язковий за їх політикою)
+//   Poki              → PokiSDK.rewardedBreak
+//   інакше            → локальний стаб (як у розробці)
+// Нагорода видається ЛИШЕ при повному перегляді (onDone); закрив рано → onFail.
+const _ADS = {
+    adsgramBlockId: '',   // ← ВСТАВ СВІЙ blockId з adsgram.ai (Reward-блок)
+};
+let _adsgramCtrl = null;
+
+function _adPlatform() {
+    try {
+        if (window.CrazyGames && window.CrazyGames.SDK) return 'crazygames';
+        if (window.PokiSDK) return 'poki';
+        if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData) return 'telegram';
+    } catch (e) {}
+    return 'stub';
+}
+
+// Динамічне довантаження SDK лише на своїй платформі (детект — по хосту,
+// бо портали хостять гру на своїх CDN; Telegram — по WebApp-контексту)
+(function _adBootstrap() {
+    try {
+        const h = location.hostname || '';
+        const add = (src, onload) => {
+            const s = document.createElement('script'); s.src = src;
+            if (onload) s.onload = () => { try { onload(); } catch (e) {} };
+            document.head.appendChild(s);
+        };
+        if (/crazygames|1001juegos/.test(h))
+            add('https://sdk.crazygames.com/crazygames-sdk-v3.js',
+                () => window.CrazyGames.SDK.init());
+        else if (/poki/.test(h))
+            add('https://game-cdn.poki.com/scripts/v2/poki-sdk.js',
+                () => window.PokiSDK.init().then(() => window.PokiSDK.gameLoadingFinished()));
+        else if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData && _ADS.adsgramBlockId)
+            add('https://sad.adsgram.ai/js/sad.min.js');
+    } catch (e) {}
+})();
+
+function _playAd(onDone, onFail) {
+    const fail = () => { if (typeof onFail === 'function') onFail(); };
+    const p = _adPlatform();
+    try {
+        if (p === 'telegram' && _ADS.adsgramBlockId && window.Adsgram) {
+            if (!_adsgramCtrl) _adsgramCtrl = window.Adsgram.init({ blockId: _ADS.adsgramBlockId });
+            _adsgramCtrl.show().then(r => (r && r.done) ? onDone() : fail()).catch(fail);
+            return;
+        }
+        if (p === 'crazygames') {
+            window.CrazyGames.SDK.ad.requestAd('rewarded', {
+                adFinished: onDone,
+                adError: fail,
+            });
+            return;
+        }
+        if (p === 'poki') {
+            window.PokiSDK.rewardedBreak().then(ok => ok ? onDone() : fail());
+            return;
+        }
+    } catch (e) { /* впадемо у стаб */ }
+    _playAdStub(onDone);
+}
+
 // Заглушка перегляду реклами: показує оверлей 3 сек, потім callback.
-// Точка розширення: тут підключається реальна мережа (Adsgram тощо).
+// (використовується локально та як fallback роутера)
 function _playAdStub(onDone) {
     let ov = document.getElementById('ad-stub-overlay');
     let secEl = document.getElementById('ad-stub-sec');
