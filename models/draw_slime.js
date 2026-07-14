@@ -166,23 +166,72 @@ function drawSlimeMonster(unit, camY) {
 
     // ── Branch visuals ──────────────────────────────────────────
     if (unit._branch === 'A') {
-        // Acid drips hanging from bottom of body
+        // ── Кислота: живий цикл крапель — наростає → відривається → падає → сплеск ──
         ctx.shadowBlur = 0;
-        const _aR = Math.min(255, _baseR + 20), _aG = Math.min(255, _baseG + 50), _aB = 0;
-        const _drips = [-0.40, -0.12, 0.12, 0.40];
-        _drips.forEach((_dx, _i) => {
-            const _drx = _cx + _xOff + _dx * _R * _sx;
-            const _dry = _cy + Math.sqrt(Math.max(0, 1 - _dx*_dx)) * _R * _sy * 0.88;
-            const _dlen = _R * (0.30 + (_i % 2) * 0.18);
-            ctx.strokeStyle = `rgba(${_aR},${_aG},${_aB},0.82)`;
-            ctx.lineWidth = _R * 0.16; ctx.lineCap = 'round';
-            ctx.beginPath(); ctx.moveTo(_drx, _dry); ctx.lineTo(_drx, _dry + _dlen); ctx.stroke();
-            ctx.fillStyle = `rgba(${_aR},${_aG},${_aB},0.88)`;
-            ctx.beginPath(); ctx.arc(_drx, _dry + _dlen, _R * 0.11, 0, Math.PI * 2); ctx.fill();
+        if (unit._sDripSeed === undefined) unit._sDripSeed = Math.random() * 10;
+        const _aR = Math.min(255, _baseR + 20), _aG = Math.min(255, _baseG + 50);
+        const _acidCol = a => `rgba(${_aR},${_aG},0,${a})`;
+        const _drops = [
+            { dx: -0.38, per: 2.6, off: 0.00 },
+            { dx:  0.05, per: 3.3, off: 0.45 },
+            { dx:  0.42, per: 2.2, off: 0.78 },
+        ];
+        _drops.forEach((D, i) => {
+            const p  = ((_nowT + unit._sDripSeed) / D.per + D.off) % 1;
+            const hx = _cx + _xOff + D.dx * _R * _sx;
+            const hy = _cy + Math.sqrt(Math.max(0, 1 - D.dx * D.dx)) * _R * _sy * 0.86;
+            if (p < 0.58) {
+                // Наростання: груша тягнеться вниз, легенько гойдається
+                const g    = p / 0.58;
+                const len  = _R * (0.10 + g * 0.34);
+                const bw   = _R * (0.05 + g * 0.10);
+                const sway = Math.sin(_nowT * 3 + i * 2) * g * _R * 0.03;
+                ctx.fillStyle = _acidCol(0.85);
+                ctx.beginPath();
+                ctx.moveTo(hx - bw * 0.35, hy);
+                ctx.quadraticCurveTo(hx - bw + sway, hy + len * 0.55, hx + sway, hy + len);
+                ctx.quadraticCurveTo(hx + bw + sway, hy + len * 0.55, hx + bw * 0.35, hy);
+                ctx.closePath(); ctx.fill();
+                // Блік на бульбі
+                ctx.fillStyle = 'rgba(255,255,255,0.35)';
+                ctx.beginPath(); ctx.arc(hx + sway - bw * 0.3, hy + len * 0.75, Math.max(0.5, bw * 0.25), 0, Math.PI * 2); ctx.fill();
+            } else if (p < 0.86) {
+                // Падіння: вільна крапля, витягується від швидкості (easeIn)
+                const f  = (p - 0.58) / 0.28;
+                const fy = hy + (_floorY - 2 - hy) * f * f;
+                const dr = _R * 0.12;
+                ctx.fillStyle = _acidCol(0.9);
+                ctx.beginPath();
+                ctx.ellipse(hx, fy, dr * 0.7, dr * (1 + f * 0.5), 0, 0, Math.PI * 2);
+                ctx.fill();
+            } else {
+                // Сплеск: калюжка розтікається і тане + мікробризки
+                const s = (p - 0.86) / 0.14;
+                ctx.fillStyle = _acidCol(0.5 * (1 - s));
+                ctx.beginPath();
+                ctx.ellipse(hx, _floorY - 1, _R * (0.10 + s * 0.22), _R * 0.045 * (1 - s * 0.4), 0, 0, Math.PI * 2);
+                ctx.fill();
+                if (s < 0.5) {
+                    ctx.fillStyle = _acidCol(0.6 * (1 - s * 2));
+                    ctx.beginPath(); ctx.arc(hx - _R * 0.14, _floorY - 3 - s * 6, 1.1, 0, Math.PI * 2); ctx.fill();
+                    ctx.beginPath(); ctx.arc(hx + _R * 0.16, _floorY - 2 - s * 8, 0.9, 0, Math.PI * 2); ctx.fill();
+                }
+            }
         });
-        ctx.strokeStyle = `rgba(${_aR},${_aG},${_aB},0.20)`;
+        // Кипіння: бульбашка спливає в тілі й лопається біля верху
+        {
+            const bp = ((_nowT + unit._sDripSeed) / 1.9) % 1;
+            const bx = _cx + _xOff + Math.sin(unit._sDripSeed + bp * 5) * _R * _sx * 0.35;
+            const by = _cy + _R * _sy * (0.55 - bp * 1.0);
+            const br = _R * 0.09 * (bp < 0.85 ? 1 : (1 - (bp - 0.85) / 0.15));
+            ctx.strokeStyle = 'rgba(255,255,230,0.4)';
+            ctx.lineWidth = 1;
+            ctx.beginPath(); ctx.arc(bx, by, Math.max(0.5, br), 0, Math.PI * 2); ctx.stroke();
+        }
+        // М'яка кислотна аура з пульсом (замість статичного кільця)
+        ctx.strokeStyle = _acidCol(0.10 + 0.06 * Math.sin(_nowT * 2.2 + unit._sDripSeed));
         ctx.lineWidth = 2;
-        ctx.beginPath(); ctx.ellipse(_cx+_xOff, _cy, _R*_sx*1.22, _R*_sy*1.22, 0, 0, Math.PI*2); ctx.stroke();
+        ctx.beginPath(); ctx.ellipse(_cx + _xOff, _cy, _R * _sx * 1.18, _R * _sy * 1.18, 0, 0, Math.PI * 2); ctx.stroke();
     } else if (unit._branch === 'B') {
         // Ice crystals radiating from top of slime
         ctx.shadowBlur = 0;
