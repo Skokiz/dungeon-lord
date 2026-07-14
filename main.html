@@ -6622,6 +6622,7 @@ function loop(ts) {
                 h = (h * 1664525 + 1013904223) >>> 0;
                 const jx = gx + (h % 61), jy = gy + ((h >> 8) % 61);
                 if (jx > dgL && jx < dgR && jy > dgT && jy < dgB) continue; // не в зоні підземелля
+                if (isMobile && ((h >> 12) % 2 === 0)) continue; // мобілка: вдвічі менше вкраплень — менше візуального шуму
                 const sx = jx, sy = jy - GAME.cameraY;
                 const kind = (h >> 16) % 10;
                 if (kind < 4) {
@@ -6684,7 +6685,7 @@ function loop(ts) {
 
     // ── Світлячки над травою ──────────────────────────────────────────────
     {
-        for (let i = 0; i < 12; i++) {
+        for (let i = 0; i < (isMobile ? 7 : 12); i++) {
             const fxp = ((i * 163 + 40) % gW) + Math.sin(_t / 1700 + i * 2.3) * 18;
             const fyp = groundY - 8 - ((i * 97) % 40) + Math.sin(_t / 1300 + i * 1.1) * 7;
             if (fyp > groundY - 2) continue;
@@ -7256,6 +7257,17 @@ function loop(ts) {
     // Зсуваємо місто так, щоб його ворота (x=100 в локальних координатах) стояли на torchLineX
     let cityX = Math.max(4, _torchLineX - 100 * _cityScale);
     CITY_GATE_X = cityX + 100 * _cityScale;
+    // Серпанок обрію за містом: підсвічує небо за силуетами, щоб будівлі
+    // не зливалися з нічним фоном (контраст без перемальовки самого міста)
+    {
+        const _hzH = 130 * _cityScale;
+        const _hz = ctx.createLinearGradient(0, groundY - _hzH, 0, groundY);
+        _hz.addColorStop(0, 'rgba(130,105,200,0)');
+        _hz.addColorStop(0.7, 'rgba(130,105,200,0.10)');
+        _hz.addColorStop(1, 'rgba(160,130,220,0.17)');
+        ctx.fillStyle = _hz;
+        ctx.fillRect(0, groundY - _hzH, cityX + 235 * _cityScale, _hzH);
+    }
     ctx.save();
     ctx.translate(cityX, groundY);
     ctx.scale(_cityScale, _cityScale);
