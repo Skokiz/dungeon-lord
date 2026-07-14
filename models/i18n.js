@@ -73,6 +73,8 @@ uk: {
   'branch-warn':    'Після вибору інша гілка стане недоступною для цього монстра',
   // Monster dev
   'mon-dev-label':  'Розвиток: ',
+  'mon-dev-tab-souls':  'Душі',
+  'mon-dev-tab-golden': 'Золоті',
   // HUD
   'hud-city':       'Місто',
   'hud-lord':       'Володар',
@@ -257,6 +259,8 @@ en: {
   'branch-warn':    'After choosing, the other branch will be locked for this monster',
   // Monster dev
   'mon-dev-label':  'Develop: ',
+  'mon-dev-tab-souls':  'Souls',
+  'mon-dev-tab-golden': 'Golden',
   // HUD
   'hud-city':       'City',
   'hud-lord':       'Lord',

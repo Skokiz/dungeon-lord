@@ -2294,8 +2294,8 @@
             <button class="mon-dev-close" onclick="closeMonsterDev()" title="Закрити">✕</button>
         </div>
         <div class="mon-dev-tabs" id="mon-dev-tabs-top">
-            <button class="mon-dev-tab active" id="mon-dev-tab-souls" onclick="switchMonDevTab('souls')"><span class="soul-gem"></span> Душі</button>
-            <button class="mon-dev-tab golden" id="mon-dev-tab-golden" onclick="switchMonDevTab('golden')"><span class="esoul-gem"></span> Золоті</button>
+            <button class="mon-dev-tab active" id="mon-dev-tab-souls" onclick="switchMonDevTab('souls')"><span class="soul-gem"></span> <span data-i18n="mon-dev-tab-souls">Душі</span> · <b id="mon-dev-bal-souls">0</b></button>
+            <button class="mon-dev-tab golden" id="mon-dev-tab-golden" onclick="switchMonDevTab('golden')"><span class="esoul-gem"></span> <span data-i18n="mon-dev-tab-golden">Золоті</span> · <b id="mon-dev-bal-golden">0</b></button>
         </div>
         <div class="mon-dev-top">
             <div class="mon-dev-portrait" id="mon-dev-portrait">
@@ -2398,19 +2398,11 @@
         <div class="ctrl-circles">
 
             <div class="circle-menu" id="menu-lord">
-                <div class="circle-sub-menu" id="sub-lord">
-                    <button class="sub-btn s-atk" id="btn-lord-upg-open" onclick="openLordUpgrade()"
-                        title="Прокачка Лорда — 3×3 дерево апгрейдів">
-                        <span class="sicon dl-ico dl-flask"></span>
-                        <span class="slabel" data-i18n="ctrl-lord-upg">Прокачка</span>
-                        <span class="scost" id="lord-upg-badge">—</span>
-                    </button>
-
-                </div>
-                <button class="circle-main-btn cmain-lord" id="btn-menu-lord" onclick="toggleMenu('lord')"
-                    title="Прокачати Лорда Підземелля">
+                <button class="circle-main-btn cmain-lord" id="btn-menu-lord" onclick="openLordUpgrade()"
+                    title="Прокачка Лорда — 3×3 дерево апгрейдів" style="position:relative">
                     <span class="icon dl-ico dl-crown"></span>
                     <span data-i18n="ctrl-lord">Лорд</span>
+                    <span id="lord-upg-badge" style="position:absolute;top:-6px;right:-6px;background:#3a2a55;border:1px solid #7a5abb;border-radius:9px;padding:1px 5px;font-size:9px;color:#e8d8ff;pointer-events:none">—</span>
                 </button>
             </div>
 
@@ -2555,7 +2547,7 @@
     </div>
 </div>
 
-<script src="models/i18n.js?v=12"></script>
+<script src="models/i18n.js?v=13"></script>
 <script src="models/draw_slime.js?v=6"></script>
 <script src="models/draw_skeleton.js?v=1"></script>
 <script src="models/hero_flat.js?v=24"></script>
@@ -2717,9 +2709,13 @@ let CFG = {
 };
 // Масштаб наземних елементів для ПК
 const _worldScale = window.innerWidth >= 1200 ? 1.6 : (window.innerWidth >= 768 ? 1.3 : 1.0);
-// Роздільність offscreen-кешів (цегла/драбини/фон). 1× кеш на retina = розмиті
-// стіни, тому рендеримо кеш у тому ж dpr, що й головний canvas.
-const _cacheScale = Math.min(window.devicePixelRatio || 1, window.innerWidth >= 1200 ? 2.5 : 3);
+// Адаптивна якість рендера. Стартуємо з нативного dpr (кап 3 моб / 2.5 ПК) —
+// максимальна чіткість; якщо реальний час кадру стабільно провисає, губернатор
+// у loop() знижує _dprCap крокми по 0.5 до 1.5 і перебудовує кеші.
+// _cacheScale — роздільність offscreen-кешів (цегла/драбини/фон): 1× кеш на
+// retina = розмиті стіни, тому кеш завжди в тому ж dpr, що й головний canvas.
+let _dprCap = Math.min(window.devicePixelRatio || 1, window.innerWidth >= 1200 ? 2.5 : 3);
+let _cacheScale = _dprCap;
 
 // ── Базові стати лорда (фіксовані, прокачка через 3×3 grid) ─────────────────
 const _LORD_BASE = { maxHP:500, dmg:20, armor:5, sizePC:54 };
@@ -6163,6 +6159,7 @@ function spawnMinions() {
 let heroScaleTimer = 0;
 let _dt = 1;          // delta-time: 1.0 = 60fps, 0.5 = 120fps, 2.0 = 30fps
 let _dt_lastTs = 0;   // мітка часу попереднього кадру
+let _perfAcc = 0, _perfN = 0; // акумулятор для губернатора якості
 
 let _frameNow = 0; // cached Date.now() for this frame — use instead of Date.now() in draw code
 
@@ -6192,6 +6189,28 @@ function loop(ts) {
     _dt_lastTs = ts;
     _dt = _dtElapsed / 16.667; // 16.667ms = 1 кадр @ 60fps
 
+    // ── Губернатор якості: кадри стабільно важкі → знижуємо роздільність ──
+    _perfAcc += _dtElapsed; _perfN++;
+    if (_perfN >= 240) {
+        const _avgMs = _perfAcc / _perfN;
+        _perfAcc = 0; _perfN = 0;
+        if (_avgMs > 21 && _dprCap > 1.5) {
+            _dprCap = Math.max(1.5, _dprCap - 0.5);
+            _cacheScale = _dprCap;
+            floors.forEach(f => { f._brickCache = null; f._ladCache = null; });
+            _bgCanvas = null;
+            resize();
+            // Друге зниження = девайс реально слабкий: глушимо shadowBlur
+            // (357 викликів по моделях — найдорожчий ефект canvas на мобільних GPU)
+            if (_dprCap <= 2 && !ctx.__shadowsOff) {
+                try {
+                    Object.defineProperty(ctx, 'shadowBlur', { get: () => 0, set: () => {} });
+                    ctx.__shadowsOff = true;
+                } catch (e) {}
+            }
+        }
+    }
+
     // Таймер складності
     heroScaleTimer += _dt;
     if (heroScaleTimer >= 60) {
@@ -6216,7 +6235,7 @@ function loop(ts) {
     tickDarts();
 
     // Скидаємо трансформацію і перевстановлюємо dpr scale кожен кадр
-    let _dpr = Math.min(window.devicePixelRatio || 1, isPC ? 2.5 : 3);
+    let _dpr = _dprCap;
     if (screenShake > 0) screenShake = Math.max(0, screenShake - _dt);
     let _sx = screenShake > 0 ? (Math.random() - 0.5) * screenShake * 2 : 0;
     let _sy = screenShake > 0 ? (Math.random() - 0.5) * screenShake * 2 : 0;
@@ -6244,8 +6263,8 @@ function loop(ts) {
         _bgCtx.setTransform(_cacheScale, 0, 0, _cacheScale, 0, 0);
         _bgLastCamY = null;
     }
-    let _camMoved = _bgLastCamY === null || Math.abs(_bgLastCamY - GAME.cameraY) > 0.3;
-    let _bgNeedRedraw = _camMoved || (_bgFrame % 4 === 0);
+    let _camMoved = _bgLastCamY === null || Math.abs(_bgLastCamY - GAME.cameraY) > 1.0;
+    let _bgNeedRedraw = _camMoved || (_bgFrame % 6 === 0);
     let groundY = CFG.surfaceY - GAME.cameraY;
     let _t = _frameNow;
     if (_bgNeedRedraw) {
@@ -8823,9 +8842,8 @@ function loop(ts) {
     // ── Збирач Душ (на поточний рівень: +1 душа за героя) ──────────────────
     if (floors.length > 0) {
         let _lordFloor = floors[floors.length - 1];
-        // Збирач — на протилежному від трону боці, щоб лорд його не затуляв
-        const _axOff = isPC ? 120 : 85;
-        let _ax = centerX + (_lordThroneX() > centerX ? -_axOff : _axOff);
+        // Збирач — рівно по центру кімнати лорда
+        let _ax = centerX;
         let _ay = _lordFloor.y - GAME.cameraY; // screen Y поверхні підлоги лорда
         let _t3 = _frameNow;
         let _pulse = 0.5 + 0.5 * Math.sin(_t3 / 600);
@@ -12161,6 +12179,8 @@ function updateUI() {
             lordHp:       document.getElementById('lord-hp'),
             lordHpNum:    document.getElementById('lord-hp-num'),
             monDevOv:     document.getElementById('mon-dev-overlay'),
+            monDevBalS:   document.getElementById('mon-dev-bal-souls'),
+            monDevBalG:   document.getElementById('mon-dev-bal-golden'),
             psyWhisper:   document.getElementById('psy-whisper'),
             storyLabel:   document.getElementById('hud-story-label'),
         };
@@ -12189,6 +12209,11 @@ function updateUI() {
     if (el.eliteSoulsBox) {
         el.eliteSoulsBox.style.display = '';
         el.eliteSouls.innerText = GAME.eliteSouls;
+    }
+    // Баланси у вкладках вікна розвитку монстрів (коли воно відкрите)
+    if (el.monDevOv && el.monDevOv.style.display === 'flex') {
+        if (el.monDevBalS) el.monDevBalS.innerText = GAME.souls;
+        if (el.monDevBalG) el.monDevBalG.innerText = GAME.eliteSouls;
     }
     el.floorCost.innerHTML    = _goldMode
         ? _permaFloorCost() + ' <span class="esoul-gem"></span>'
@@ -13174,7 +13199,7 @@ function _stopStartScreen() {
 }
 
 function resize() {
-    let dpr = Math.min(window.devicePixelRatio || 1, isPC ? 2.5 : 3);
+    let dpr = _dprCap;
     let controls = document.getElementById('controls');
     let controlsH = controls ? controls.getBoundingClientRect().height : 0;
     if (controlsH < 10) controlsH = 120;
@@ -13993,8 +14018,8 @@ const _LT = [
       en:'<span class="dl-ico dl-tower"></span> You made your dungeon stronger — but deadlier heroes are now on their way.',
       target:null, autoMs:10000 },
     { id:'lord',
-      uk:'<span class="dl-ico dl-crown"></span> <b>Прокачай Лорда</b>: натисни <span class="dl-ico dl-crown"></span> → <span class="dl-ico dl-flask"></span> Прокачка. Елітні душі <span class="esoul-gem"></span> — назавжди.',
-      en:'<span class="dl-ico dl-crown"></span> <b>Upgrade the Lord</b>: tap <span class="dl-ico dl-crown"></span> → <span class="dl-ico dl-flask"></span> Upgrade. Elite souls <span class="esoul-gem"></span> are permanent.',
+      uk:'<span class="dl-ico dl-crown"></span> <b>Прокачай Лорда</b>: натисни кнопку <span class="dl-ico dl-crown"></span> Лорд. Елітні душі <span class="esoul-gem"></span> — назавжди.',
+      en:'<span class="dl-ico dl-crown"></span> <b>Upgrade the Lord</b>: tap the <span class="dl-ico dl-crown"></span> Lord button. Elite souls <span class="esoul-gem"></span> are permanent.',
       target:'btn-menu-lord', pos:'above', autoMs:12000, last:true },
 ];
 
