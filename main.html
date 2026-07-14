@@ -2717,6 +2717,9 @@ let CFG = {
 };
 // Масштаб наземних елементів для ПК
 const _worldScale = window.innerWidth >= 1200 ? 1.6 : (window.innerWidth >= 768 ? 1.3 : 1.0);
+// Роздільність offscreen-кешів (цегла/драбини/фон). 1× кеш на retina = розмиті
+// стіни, тому рендеримо кеш у тому ж dpr, що й головний canvas.
+const _cacheScale = Math.min(window.devicePixelRatio || 1, window.innerWidth >= 1200 ? 2.5 : 3);
 
 // ── Базові стати лорда (фіксовані, прокачка через 3×3 grid) ─────────────────
 const _LORD_BASE = { maxHP:500, dmg:20, armor:5, sizePC:54 };
@@ -2883,8 +2886,9 @@ function _buildBrickCache(fw, fh, wallW, depth) {
     const W = fw + wallW * 2;
     const H = fh + 15;
     const c = document.createElement('canvas');
-    c.width = W; c.height = H;
+    c.width = Math.ceil(W * _cacheScale); c.height = Math.ceil(H * _cacheScale);
     const b = c.getContext('2d');
+    b.scale(_cacheScale, _cacheScale);
 
     // Seeded RNG (детерміновано на основі глибини)
     let s = depth * 9973 + 31337;
@@ -2895,7 +2899,7 @@ function _buildBrickCache(fw, fh, wallW, depth) {
     b.fillStyle = '#161220';
     b.fillRect(wallW, 0, fw, fh);
 
-    const bRowH = 17;
+    const bRowH = isMobile ? 13 : 17;
     const bRows = Math.ceil(fh / bRowH);
     // Палітра каменів: сіро-фіолетові + рідкісний зеленавий
     const BSTONES = ['#2b2836','#2f2b3c','#262230','#332f42','#2d293a','#282434'];
@@ -2903,9 +2907,9 @@ function _buildBrickCache(fw, fh, wallW, depth) {
         const ry = r * bRowH;
         const rh = Math.min(bRowH, fh - ry);
         if (rh < 4) break;
-        let bx = wallW - (r % 2) * 26 - rnd() * 8;
+        let bx = wallW - (r % 2) * (isMobile ? 16 : 26) - rnd() * 8;
         while (bx < wallW + fw) {
-            const bw = 30 + rnd() * 34;
+            const bw = isMobile ? (20 + rnd() * 22) : (30 + rnd() * 34);
             const bx0 = Math.max(bx, wallW);
             const bx1 = Math.min(bx + bw, wallW + fw);
             if (bx1 > bx0 + 3) {
@@ -3189,8 +3193,9 @@ function _buildBrickCache(fw, fh, wallW, depth) {
 function _buildLadderCache(tw, trim, lh, depth) {
     const w = tw + trim * 2;
     const c = document.createElement('canvas');
-    c.width = Math.ceil(w); c.height = Math.max(4, Math.ceil(lh));
+    c.width = Math.ceil(w * _cacheScale); c.height = Math.max(4, Math.ceil(lh * _cacheScale));
     const b = c.getContext('2d');
+    b.scale(_cacheScale, _cacheScale);
     let s = depth * 7919 + 1234;
     const rnd = () => { s = (s * 1664525 + 1013904223) >>> 0; return s / 0xffffffff; };
     const cx = w / 2;
@@ -3287,7 +3292,7 @@ class Floor {
             || this._brickCache._ww !== wallW) {
             this._brickCache = _buildBrickCache(fw, fh, wallW, this.depth);
         }
-        ctx.drawImage(this._brickCache, fx - wallW, fty);
+        ctx.drawImage(this._brickCache, fx - wallW, fty, fw + wallW * 2, fh + 15);
 
         // Глибші поверхи темніші — відчуття спуску в безодню (м'яко)
         let _dd = Math.min(0.16, this.depth * 0.013);
@@ -3303,7 +3308,7 @@ class Floor {
         // плити з тоновою варіацією (детерміновано по глибині)
         let _fls = this.depth * 331 + 7;
         let _flp = (n) => { _fls = (_fls * 1664525 + 1013904223) & 0xffffffff; return Math.abs(_fls % n); };
-        let tileW = isPC ? 55 : 40;
+        let tileW = isPC ? 55 : (isMobile ? 32 : 40);
         for (let tx = fx; tx < fx + fw; tx += tileW) {
             let twd = Math.min(tileW, fx + fw - tx);
             let tone = _flp(4);
@@ -3439,7 +3444,7 @@ class Floor {
             if (!this._ladCache || this._ladCache._lh !== lh || this._ladCache._lw !== lw) {
                 this._ladCache = _buildLadderCache(tw, _tw2, lh, this.depth);
             }
-            ctx.drawImage(this._ladCache, ladX - lw / 2, ladderTopY - camY);
+            ctx.drawImage(this._ladCache, ladX - lw / 2, ladderTopY - camY, lw, lh);
         }
 
         // ── 7. Пастки ────────────────────────────────────────────────────
@@ -6211,7 +6216,7 @@ function loop(ts) {
     tickDarts();
 
     // Скидаємо трансформацію і перевстановлюємо dpr scale кожен кадр
-    let _dpr = Math.min(window.devicePixelRatio || 1, 2);
+    let _dpr = Math.min(window.devicePixelRatio || 1, isPC ? 2.5 : 3);
     if (screenShake > 0) screenShake = Math.max(0, screenShake - _dt);
     let _sx = screenShake > 0 ? (Math.random() - 0.5) * screenShake * 2 : 0;
     let _sy = screenShake > 0 ? (Math.random() - 0.5) * screenShake * 2 : 0;
@@ -6232,10 +6237,11 @@ function loop(ts) {
 
     // ── Фон: offscreen cache — оновлюємо кожні 4 кадри або при зміні камери ──
     _bgFrame++;
-    if (!_bgCanvas || _bgCanvas.width !== Math.round(gW) || _bgCanvas.height !== Math.round(gH)) {
+    if (!_bgCanvas || _bgCanvas.width !== Math.round(gW * _cacheScale) || _bgCanvas.height !== Math.round(gH * _cacheScale)) {
         _bgCanvas = document.createElement('canvas');
-        _bgCanvas.width = Math.round(gW); _bgCanvas.height = Math.round(gH);
+        _bgCanvas.width = Math.round(gW * _cacheScale); _bgCanvas.height = Math.round(gH * _cacheScale);
         _bgCtx = _bgCanvas.getContext('2d');
+        _bgCtx.setTransform(_cacheScale, 0, 0, _cacheScale, 0, 0);
         _bgLastCamY = null;
     }
     let _camMoved = _bgLastCamY === null || Math.abs(_bgLastCamY - GAME.cameraY) > 0.3;
@@ -13168,7 +13174,7 @@ function _stopStartScreen() {
 }
 
 function resize() {
-    let dpr = Math.min(window.devicePixelRatio || 1, isPC ? 2.5 : 2);
+    let dpr = Math.min(window.devicePixelRatio || 1, isPC ? 2.5 : 3);
     let controls = document.getElementById('controls');
     let controlsH = controls ? controls.getBoundingClientRect().height : 0;
     if (controlsH < 10) controlsH = 120;
