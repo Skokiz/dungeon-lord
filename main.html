@@ -12706,11 +12706,15 @@ const _ADS = {
 };
 let _adsgramCtrl = null;
 
+// Telegram Mini App визначаємо по URL (#tgWebAppData=...) — window.Telegram
+// НЕ існує, поки сторінка сама не завантажить telegram-web-app.js
+const _isTMA = /tgWebApp/.test(location.hash) || /tgWebApp/.test(location.search);
+
 function _adPlatform() {
     try {
         if (window.CrazyGames && window.CrazyGames.SDK) return 'crazygames';
         if (window.PokiSDK) return 'poki';
-        if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData) return 'telegram';
+        if (_isTMA && window.Adsgram) return 'telegram';
     } catch (e) {}
     return 'stub';
 }
@@ -12731,8 +12735,11 @@ function _adPlatform() {
         else if (/poki/.test(h))
             add('https://game-cdn.poki.com/scripts/v2/poki-sdk.js',
                 () => window.PokiSDK.init().then(() => window.PokiSDK.gameLoadingFinished()));
-        else if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData && _ADS.adsgramBlockId)
-            add('https://sad.adsgram.ai/js/sad.min.js');
+        else if (_isTMA && _ADS.adsgramBlockId)
+            add('https://telegram.org/js/telegram-web-app.js', () => {
+                try { window.Telegram.WebApp.ready(); window.Telegram.WebApp.expand(); } catch (e) {}
+                add('https://sad.adsgram.ai/js/sad.min.js');
+            });
     } catch (e) {}
 })();
 
