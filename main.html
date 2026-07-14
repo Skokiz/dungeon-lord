@@ -672,10 +672,10 @@
         @media (max-width: 360px) {
             #hud { padding: 5px 6px; }
             .resource-box { font-size: 13px; padding: 4px 8px; border-radius: 8px; }
-            .hud-right { font-size: 10px; padding: 4px 7px; border-radius: 8px; }
-            .hp-bar { width: 90px; height: 15px; }
-            .hp-num { font-size: 8px; }
-            .threat-line { font-size: 9px; }
+            .hud-right { font-size: 11px; padding: 4px 7px; border-radius: 8px; }
+            .hp-bar { width: 100px; height: 16px; }
+            .hp-num { font-size: 9px; }
+            .threat-line { font-size: 10px; }
             #pause-toggle-btn { font-size: 11px; padding: 4px 10px; }
             #btn-hard-reset { font-size: 8px; padding: 2px 5px; }
 
@@ -708,10 +708,10 @@
         @media (min-width: 361px) and (max-width: 414px) {
             #hud { padding: 7px 8px; }
             .resource-box { font-size: 15px; padding: 5px 10px; border-radius: 9px; }
-            .hud-right { font-size: 11px; padding: 5px 9px; border-radius: 9px; }
-            .hp-bar { width: 108px; height: 17px; }
-            .hp-num { font-size: 9px; }
-            .threat-line { font-size: 10px; }
+            .hud-right { font-size: 12px; padding: 5px 9px; border-radius: 9px; }
+            .hp-bar { width: 118px; height: 18px; }
+            .hp-num { font-size: 10px; }
+            .threat-line { font-size: 11px; }
             #pause-toggle-btn { font-size: 12px; padding: 5px 13px; }
             #btn-hard-reset { font-size: 9px; padding: 3px 6px; }
 
@@ -2713,7 +2713,7 @@ const isPC = window.innerWidth >= 1200;
 let CFG = {
     floorH: window.innerWidth >= 1200 ? 155 : (window.innerWidth >= 768 ? 140 : 120),
     floorW: Math.min(window.innerWidth - 60, window.innerWidth < 768 ? 380 : 600),
-    surfaceY: window.innerWidth >= 1200 ? 320 : (window.innerWidth >= 768 ? 260 : 200),
+    surfaceY: window.innerWidth >= 1200 ? 320 : (window.innerWidth >= 768 ? 260 : 270),
 };
 // Масштаб наземних елементів для ПК
 const _worldScale = window.innerWidth >= 1200 ? 1.6 : (window.innerWidth >= 768 ? 1.3 : 1.0);
@@ -8817,7 +8817,9 @@ function loop(ts) {
     // ── Збирач Душ (на поточний рівень: +1 душа за героя) ──────────────────
     if (floors.length > 0) {
         let _lordFloor = floors[floors.length - 1];
-        let _ax = centerX + (isPC ? 120 : 85);
+        // Збирач — на протилежному від трону боці, щоб лорд його не затуляв
+        const _axOff = isPC ? 120 : 85;
+        let _ax = centerX + (_lordThroneX() > centerX ? -_axOff : _axOff);
         let _ay = _lordFloor.y - GAME.cameraY; // screen Y поверхні підлоги лорда
         let _t3 = _frameNow;
         let _pulse = 0.5 + 0.5 * Math.sin(_t3 / 600);

@@ -2,6 +2,10 @@
 
 Dark fantasy tower defense — UK/EN. Граєш за Dungeon Lord, захищаєш підземелля від героїв монстрами. Чистий HTML5 Canvas + vanilla JS, без фреймворків і build-системи.
 
+## Пріоритет платформ
+
+**Мобільний (портрет, Telegram Mini App) — основна платформа.** Кожну UI/рендер-зміну верифікуй у мобільному в'юпорті (360×800, dpr2, touch) ПЕРЕД десктопом. Дистрибуція: Telegram (t.me/DungeonLordGameBot/play), GitHub Pages, CrazyGames/Poki (подача).
+
 ## Запуск
 
 Відкрити `main.html` у браузері. Для превʼю — `test/unit_studio.html` або `test/monster_studio.html`. Ніякого build.
