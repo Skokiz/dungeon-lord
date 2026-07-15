@@ -96,7 +96,8 @@
         ═══════════════════════════════════════════════════ */
         #hud {
             position: absolute;
-            top: env(safe-area-inset-top, 0px); left: 0; right: 0;
+            /* --tg-top-inset: відступ від Telegram у фулскрін-режимі (статус-бар + кнопки TG) */
+            top: calc(env(safe-area-inset-top, 0px) + var(--tg-top-inset, 0px)); left: 0; right: 0;
             pointer-events: none;
             display: flex;
             justify-content: space-between;
@@ -156,7 +157,7 @@
         /* Кнопка паузи — абсолютно над canvas */
         #pause-toggle-btn {
             position: absolute;
-            top: calc(6px + env(safe-area-inset-top, 0px)); left: 50%; transform: translateX(-50%);
+            top: calc(6px + env(safe-area-inset-top, 0px) + var(--tg-top-inset, 0px)); left: 50%; transform: translateX(-50%);
             background: var(--surface-1); border: 1px solid var(--border-soft);
             color: var(--text-mid); border-radius: var(--radius-s);
             font-weight: 500;
@@ -6329,6 +6330,7 @@ let _dt_lastTs = 0;   // мітка часу попереднього кадру
 let _perfAcc = 0, _perfN = 0; // акумулятор для губернатора якості
 
 let _frameNow = 0; // cached Date.now() for this frame — use instead of Date.now() in draw code
+let _loopBeat = 0; // час останнього кадру ІГРОВОГО циклу (аварійна сітка реанімації)
 
 // Offscreen canvas для фону: зірки + гори + місяць коштують ~3-5ms/frame.
 // Оновлюємо кожні 4 кадри або при зміні cameraY > 0.5px (паралакс).
@@ -6353,6 +6355,7 @@ const ABILITY_ICONS = {
 function loop(ts) {
     if (GAME_PAUSED || GAME.gameOver) return;
     _frameNow = Date.now();
+    _loopBeat = _frameNow; // живість циклу для аварійної сітки (_frameNow перезаписує бестіарій)
     // ── Delta-time: нормалізуємо швидкість гри до 60fps ──────────────────
     let _dtElapsed = _dt_lastTs ? Math.min(ts - _dt_lastTs, 50) : 16.667;
     _dt_lastTs = ts;
@@ -11624,6 +11627,9 @@ function _psyPickEvent(trigger) {
 }
 
 function _psyCheck(trigger) {
+    // Таймери wave_end переживають кінець раунду — донесення поверх екрана
+    // перемоги/поразки не показуємо
+    if (GAME.gameOver) return;
     if (!_psyTrack || _psyTrack.pending) return;
     let ev = _psyPickEvent(trigger);
     if (!ev) return;
@@ -12539,6 +12545,35 @@ function updateUI() {
     }
 }
 
+// ── Аварійна сітка ігрового циклу ───────────────────────────────────────────
+// Необроблений виняток у loop() обриває ланцюг requestAnimationFrame — гра
+// "зависає" без жодного сліду (скарга з iPad/Telegram). Робимо фриз видимим
+// (рядок з помилкою на екрані — можна заскрінити й прислати) і реанімуємо
+// цикл, але тільки якщо він СПРАВДІ мертвий (>1с без кадру, не пауза/кінець
+// гри) і не більше 5 разів — вічний рестарт вічної помилки нам не потрібен.
+let _crashRestarts = 0;
+window.addEventListener('error', (ev) => {
+    try {
+        let box = document.getElementById('crash-line');
+        if (!box) {
+            box = document.createElement('div');
+            box.id = 'crash-line';
+            box.style.cssText = 'position:fixed;bottom:2px;left:2px;right:2px;z-index:99999;' +
+                'background:rgba(60,0,10,0.92);color:#ffb0b0;font:10px monospace;' +
+                'padding:3px 6px;border-radius:4px;pointer-events:none;white-space:pre-wrap';
+            document.body.appendChild(box);
+        }
+        box.textContent = '⚠ ' + (ev.message || 'error') + ' @ ' +
+            String(ev.filename || '').split('/').pop() + ':' + (ev.lineno || 0);
+        setTimeout(() => {
+            if (!GAME_PAUSED && !GAME.gameOver && Date.now() - _loopBeat > 1000 && _crashRestarts < 5) {
+                _crashRestarts++;
+                requestAnimationFrame(loop);
+            }
+        }, 1200); // даємо циклу 1.2с довести, що він живий, перш ніж реанімувати
+    } catch (e) {}
+});
+
 // ── Авто-пригасання HP-панелі ───────────────────────────────────────────────
 // На коротких екранах (Telegram Mini App) камера підтягує поверхню під HUD,
 // і панель закриває модель входу в підземелля. Коли значення не міняються
@@ -12792,6 +12827,18 @@ function _getActLabel(act) {
     return L[(act || 1) - 1] || '';
 }
 
+// Раунд закінчився з відкритим донесенням — ховаємо його: вибір поверх
+// екрана перемоги/поразки вже нічого не змінює, а нерозв'язане донесення
+// повернеться в пул наступного рану (в кампанійну пам'ять пише лише resolve)
+function _closeOpenDecision() {
+    try {
+        const ov = document.getElementById('donesnnia-overlay');
+        if (ov) ov.classList.remove('visible');
+        _psyCurrentEv = null;
+        if (_psyTrack) _psyTrack.pending = false;
+    } catch (e) {}
+}
+
 function _showLevelBeat(level, onDone) {
     const lvls = _getStoryLevels ? _getStoryLevels() : null;
     const entry = lvls ? lvls[level - 1] : null;
@@ -12822,6 +12869,7 @@ function _showLevelBeat(level, onDone) {
 function gameWin() {
     GAME.gameOver = true;
     _soulSalvageDone = false;
+    _closeOpenDecision();
 
     try { _Music.stop(true); } catch(e) {}
     _SFX.win();
@@ -12874,6 +12922,7 @@ function _doGameWinOverlay(lvl, nextLvl, isLast) {
 function gameOver() {
     GAME.gameOver = true;
     _soulSalvageDone = false;
+    _closeOpenDecision();
     try {
         if (GAME.cityHP / GAME.maxCityHP < 0.05)
             _ctxHint('almost_win',
@@ -13018,7 +13067,30 @@ function _adPlatform() {
                 () => window.PokiSDK.init().then(() => window.PokiSDK.gameLoadingFinished()));
         else if (_isTMA && _ADS.adsgramBlockId)
             add('https://telegram.org/js/telegram-web-app.js', () => {
-                try { window.Telegram.WebApp.ready(); window.Telegram.WebApp.expand(); } catch (e) {}
+                try {
+                    const wa = window.Telegram.WebApp;
+                    wa.ready(); wa.expand();
+                    // Планшети відкривають Mini App невеликим модальним вікном —
+                    // просимо справжній фулскрін (Bot API 8.0+); де не підтримано,
+                    // метод просто кидає і ми лишаємось у expand-режимі
+                    try { if (wa.isVersionAtLeast && wa.isVersionAtLeast('8.0')) wa.requestFullscreen(); } catch (e) {}
+                    // Вертикальні свайпи в грі — це скрол поверхів, не "закрити застосунок"
+                    try { wa.disableVerticalSwipes && wa.disableVerticalSwipes(); } catch (e) {}
+                    // У фулскріні HUD не має лізти під статус-бар і кнопки Telegram
+                    const _applyInsets = () => {
+                        try {
+                            const t = ((wa.safeAreaInset && wa.safeAreaInset.top) || 0) +
+                                      ((wa.contentSafeAreaInset && wa.contentSafeAreaInset.top) || 0);
+                            document.documentElement.style.setProperty('--tg-top-inset', t + 'px');
+                        } catch (e) {}
+                    };
+                    _applyInsets();
+                    if (wa.onEvent) {
+                        wa.onEvent('safeAreaChanged', _applyInsets);
+                        wa.onEvent('contentSafeAreaChanged', _applyInsets);
+                        wa.onEvent('fullscreenChanged', _applyInsets);
+                    }
+                } catch (e) {}
                 add('https://sad.adsgram.ai/js/sad.min.js');
             });
     } catch (e) {}
