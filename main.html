@@ -12342,6 +12342,10 @@ function buyFloor() {
     _spend(GAME.floorCost);
     _addFloorFree();
     try { _liveTutTrigger('floor_bought'); _proEvent('floor'); } catch(e) {}
+    // Перша покупка поверху: чесне попередження про ціну росту
+    try { _abyssIntro('floor2',
+        'Глибше — сильніше. Але знай: місто відчуває, як росте твоє підземелля, і посилає міцніших героїв.',
+        'Deeper means stronger. But know this: the City feels your dungeon grow — and sends tougher heroes.'); } catch(e) {}
     updateUI(); saveGame();
 }
 
@@ -14562,12 +14566,12 @@ function _abyssHide() {
 const _introShown = {};
 function _abyssIntro(key, uk, en) {
     if (_introShown[key]) return;
+    if (_proActive()) return; // пролог не перебиваємо (і НЕ палимо прапорець — покажемо пізніше)
     try {
         if (localStorage.getItem('DL_intro_' + key)) { _introShown[key] = true; return; }
         localStorage.setItem('DL_intro_' + key, '1');
     } catch(e) {}
     _introShown[key] = true;
-    if (_proActive()) return; // пролог не перебиваємо
     _showLoreTip('<b style="color:#9a6ae0">🌀 ' + (_lang === 'en' ? 'THE ABYSS' : 'БЕЗОДНЯ') + ':</b> '
         + (_lang === 'en' ? en : uk));
 }
