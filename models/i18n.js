@@ -75,6 +75,7 @@ uk: {
   'mon-dev-label':  'Розвиток: ',
   'mon-dev-tab-souls':  'Душі',
   'mon-dev-tab-golden': 'Золоті',
+  'btn-gold-label':     'Вічне',
   // HUD
   'hud-city':       'Місто',
   'hud-lord':       'Володар',
@@ -93,7 +94,7 @@ uk: {
   'trap-summon':    'Виклик',
   'trap-summon-d':  'спавн монстра',
   'ctrl-bestiary':  'Бестіарій',
-  'btn-floor':      'Побудувати поверх',
+  'btn-floor':      'Новий поверх',
   'btn-floor-perma':'Вічний поверх',
   'btn-wave':       'АТАКА',
   'btn-wave-cd':    '⚔️ АТАКА ({n}с)',
@@ -261,6 +262,7 @@ en: {
   'mon-dev-label':  'Develop: ',
   'mon-dev-tab-souls':  'Souls',
   'mon-dev-tab-golden': 'Golden',
+  'btn-gold-label':     'Perma',
   // HUD
   'hud-city':       'City',
   'hud-lord':       'Lord',

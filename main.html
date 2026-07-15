@@ -202,11 +202,14 @@
             flex: 0 0 auto; align-self: stretch; width: 52px;
             background: var(--surface-2); border: 1px solid var(--border-soft);
             border-radius: var(--radius-m); cursor: pointer;
-            display: flex; align-items: center; justify-content: center;
+            display: flex; flex-direction: column; gap: 3px;
+            align-items: center; justify-content: center;
             -webkit-appearance: none; touch-action: manipulation;
             transition: background 0.15s, border-color 0.15s, box-shadow 0.15s;
         }
         #btn-gold-mode .esoul-gem { width: 20px; height: 20px; filter: grayscale(0.75) brightness(0.8); transition: filter 0.15s; }
+        #btn-gold-label { font-size: 8.5px; letter-spacing: 0.4px; color: #776699; text-transform: uppercase; transition: color 0.15s; }
+        #controls.gold-mode #btn-gold-label { color: var(--gold); }
         #controls.gold-mode #btn-gold-mode {
             background: rgba(60,44,6,0.9); border-color: var(--gold);
             box-shadow: 0 0 14px rgba(242,193,78,0.45);
@@ -1488,6 +1491,14 @@
         .lug-cell-icon { font-size:24px; line-height:1; margin-top:2px; }
         .lug-cell-name { font-size:10.5px; color:#ccaaee; text-align:center; font-weight:600; line-height:1.3; }
         .lug-pips { display:flex; gap:3px; margin-top:3px; }
+        /* Ціна наступного рівня прямо на картці */
+        .lug-cost {
+            font-size:9.5px; font-weight:600; color:#665a88;
+            display:flex; align-items:center; gap:3px; margin-top:2px;
+        }
+        .lug-cost .esoul-gem { width:9px; height:9px; }
+        .lug-cost.ok { color:var(--gold,#f2c14e); }
+        .lug-cost-max { color:#5a7a5a; letter-spacing:1px; }
         .lug-pip {
             width:8px; height:8px; border-radius:50%;
             background:rgba(255,255,255,.09); border:1px solid rgba(255,255,255,.13);
@@ -1506,7 +1517,10 @@
             border-radius:10px; padding:16px; display:flex;
             flex-direction:column; gap:10px; min-height:300px;
         }
-        .lud-empty { flex:1; display:flex; align-items:center; justify-content:center; color:#442255; font-size:13px; text-align:center; }
+        .lud-empty { flex:1; display:flex; align-items:center; justify-content:center; color:#8a72b8; font-size:13px; text-align:center; line-height:1.5; }
+        @media (max-width: 420px) {
+            .lord-upg-detail { min-height: 150px; padding: 12px; }
+        }
         .lud-title { font-size:15px; font-weight:bold; color:var(--cc,#cc88ff); }
         .lud-sub { font-size:11px; color:#664488; margin-top:1px; }
         .lud-sep { height:1px; background:#2a1050; margin:2px 0; }
@@ -2025,6 +2039,13 @@
             filter: grayscale(1);
             pointer-events: none;
         }
+        /* Вузькі телефони: менший аватар, щоб статам вистачало ширини */
+        @media (max-width: 420px) {
+            .bc-avatar { width: 96px; }
+            .bc-mon-canvas { width: 96px; height: 96px; }
+            .bc-card { min-height: 104px; }
+            .bc-stats { padding: 9px 12px 9px 11px; }
+        }
         .bc-locked-floor {
             position: absolute; bottom: 5px; left: 50%; transform: translateX(-50%);
             background: rgba(60,30,100,0.7);
@@ -2074,11 +2095,12 @@
             display: flex; align-items: center; gap: 6px;
             padding: 4px 4px 4px 0;
             border-bottom: 1px solid rgba(100,60,180,0.08);
+            min-width: 0; /* дозволяє клітинці стискатись — інакше грід розпирає картку */
         }
         .bc-stat-cell:nth-last-child(-n+2) { border-bottom: none; }
         .bc-stat-cell.bc-full { grid-column: 1 / -1; }
         .bc-sc-icon { font-size: 11px; width: 14px; text-align: center; flex-shrink: 0; color: #8d7ab8; }
-        .bc-sc-lbl  { font-size: 10.5px; color: #7766aa; flex: 1; min-width: 0; white-space: nowrap; }
+        .bc-sc-lbl  { font-size: 10.5px; color: #7766aa; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .bc-sc-val  { font-size: 12px; font-weight: 700; color: #dde0ff; white-space: nowrap; flex-shrink: 0; }
         .bc-sc-val.cv-atk  { color: #ffbb66; }
         .bc-sc-val.cv-hp   { color: #ff7788; }
@@ -2332,7 +2354,7 @@
     <div class="lord-upg-body">
       <div id="lord-upg-grid"></div>
       <div class="lord-upg-detail" id="lord-upg-detail">
-        <div class="lud-empty">Оберіть клітину<br>для перегляду деталей</div>
+        <div class="lud-empty">Торкнись здібності, щоб побачити деталі</div>
       </div>
     </div>
   </div>
@@ -2381,7 +2403,7 @@
                 <div class="hp-bar"><div id="lord-hp" class="hp-fill" style="width:100%;background:#7744bb"></div><span class="hp-num" id="lord-hp-num">500 / 500</span></div>
                 <div class="threat-line"><span data-i18n="hud-threat">Загроза — </span><span id="difficulty-level">0</span><span class="hud-max">/<span id="max-threat">5</span></span></div>
                 <div class="threat-line"><span data-i18n="hud-heroes">Сила героїв — </span><span id="hero-scale">100</span>%<span class="hud-max">/<span id="max-hero-scale">100</span>%</span></div>
-                <div id="hud-story-label" style="font-size:9px;letter-spacing:1.5px;color:#5a3a7a;text-transform:uppercase;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:160px;margin-left:auto"></div>
+                <div id="hud-story-label" style="font-size:9px;letter-spacing:0.7px;color:#5a3a7a;text-transform:uppercase;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;margin-left:auto"></div>
                 <div id="psy-whisper"></div>
             </div>
         </div>
@@ -2460,10 +2482,11 @@
             <button id="btn-gold-mode" onclick="_toggleGoldMode()"
                 title="Золотий режим: поверхи і пастки купуються за золоті душі й лишаються назавжди">
                 <span class="esoul-gem"></span>
+                <span id="btn-gold-label" data-i18n="btn-gold-label">Вічне</span>
             </button>
             <button class="rect-btn btn-floor" id="btn-floor" onclick="buyFloor()"
                 title="Побудувати новий підземний поверх для монстрів і пасток">
-                <span id="btn-floor-label" data-i18n="btn-floor">Побудувати поверх</span><br><small id="floor-cost-lbl">100💀</small>
+                <span id="btn-floor-label" data-i18n="btn-floor">Новий поверх</span><br><small id="floor-cost-lbl">100💀</small>
             </button>
             <button class="rect-btn btn-wave atk-ready" id="btn-wave" onclick="triggerWave()"
                 title="Викликати наступну хвилю: монстри йдуть на місто. Урон по місту дає душі.">
@@ -2547,7 +2570,7 @@
     </div>
 </div>
 
-<script src="models/i18n.js?v=13"></script>
+<script src="models/i18n.js?v=14"></script>
 <script src="models/draw_slime.js?v=6"></script>
 <script src="models/draw_skeleton.js?v=1"></script>
 <script src="models/hero_flat.js?v=24"></script>
@@ -11774,11 +11797,15 @@ function _renderLordUpgrade() {
             }
             pips += '</div>';
 
+            const costChip = maxed
+                ? `<div class="lug-cost lug-cost-max">MAX</div>`
+                : `<div class="lug-cost${canAfford ? ' ok' : ''}">${nextCost} <span class="esoul-gem"></span></div>`;
             html += `<div class="${cls}" style="--cc:${def.color}" onclick="_lugSelect('${id}')">`
                   + (canAfford ? '<div class="lug-afford-dot"></div>' : '')
                   + `<div class="lug-cell-icon"><span class="dl-ico ${def.icon}" style="color:${def.color}"></span></div>`
                   + `<div class="lug-cell-name">${def.name}</div>`
                   + pips
+                  + costChip
                   + '</div>';
         });
         html += '</div>';
@@ -11809,7 +11836,9 @@ function _lugRenderDetail(p, eliteSouls) {
     const det = document.getElementById('lord-upg-detail');
     if (!det) return;
     if (!_lugSelected) {
-        det.innerHTML = '<div class="lud-empty">Оберіть клітину<br>для перегляду деталей</div>';
+        det.innerHTML = '<div class="lud-empty">' + (_lang === 'en'
+            ? 'Tap an ability to see its details'
+            : 'Торкнись здібності, щоб побачити деталі') + '</div>';
         return;
     }
     const def = _LORD_GRID_DEF.find(d => d.id === _lugSelected);
@@ -12349,8 +12378,31 @@ function spawnHitBurst(x, y, color, n, power) {
     }
 }
 function spawnDmgText(x, y, text, color = '#ffffff', big = false) {
-    dmgTexts.push({ x, y, text, color, big, life: 50, maxLife: 50,
-        vx: (Math.random() - 0.5) * 0.8, vy: -1.4 });
+    // Агрегація: чисті числа одного кольору з одного місця зливаємо в один
+    // попап (сумуємо), щоб активний бій не перетворювався на рій цифр
+    const m = /^(-?)(\d+)$/.exec(text);
+    if (m) {
+        for (let i = dmgTexts.length - 1; i >= 0; i--) {
+            const t = dmgTexts[i];
+            if (!t._numSign || t.color !== color || t._numSign !== (m[1] || '+')) continue;
+            if (Math.abs(t.x - x) > 46 || Math.abs(t.y - y) > 40) continue;
+            if (t.maxLife - t.life > 22) continue; // застарий — хай доживає
+            t._numVal += parseInt(m[2], 10);
+            t.text = (m[1] ? '-' : '') + t._numVal;
+            t.life = Math.max(t.life, 34);
+            t.big = t.big || big;
+            return;
+        }
+    }
+    const e = { x, y, text, color, big, life: 50, maxLife: 50,
+        vx: (Math.random() - 0.5) * 0.8, vy: -1.4 };
+    if (m) { e._numSign = m[1] || '+'; e._numVal = parseInt(m[2], 10); }
+    dmgTexts.push(e);
+    // Жорсткий кап: понад 40 попапів — прибираємо найстаріший звичайний
+    if (dmgTexts.length > 40) {
+        const idx = dmgTexts.findIndex(t => !t.big);
+        dmgTexts.splice(idx >= 0 ? idx : 0, 1);
+    }
 }
 
 // ── Орби душ: вилітають з вбитого ворога і летять до HUD-лічильника ────────
@@ -15495,7 +15547,7 @@ function _renderBestiary() {
                     + '</div>'
                 : '<div class="bc-stat-cell">'
                     + '<span class="bc-sc-icon dl-ico dl-bolt"></span>'
-                    + '<span class="bc-sc-lbl">Швидк.</span>'
+                    + '<span class="bc-sc-lbl">ША</span>'
                     + '<span class="bc-sc-val cv-spd">' + atkSpd.toFixed(2) + '/с</span>'
                     + '</div>';
 
