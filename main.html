@@ -12946,8 +12946,11 @@ const _ADS = {
 let _adsgramCtrl = null;
 
 // Telegram Mini App визначаємо по URL (#tgWebAppData=...) — window.Telegram
-// НЕ існує, поки сторінка сама не завантажить telegram-web-app.js
-const _isTMA = /tgWebApp/.test(location.hash) || /tgWebApp/.test(location.search);
+// НЕ існує, поки сторінка сама не завантажить telegram-web-app.js.
+// sessionStorage-прапорець ставить index.html перед редиректом (страховка,
+// якщо хеш загубиться по дорозі).
+const _isTMA = /tgWebApp/.test(location.hash) || /tgWebApp/.test(location.search)
+    || (function () { try { return sessionStorage.getItem('DL_tma') === '1'; } catch (e) { return false; } })();
 
 function _adPlatform() {
     try {
