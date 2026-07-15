@@ -3665,9 +3665,11 @@ class Floor {
         ctx.fillText(this.depth + 1, centerX, fy - 28);
 
         // ── 9б. Таймер спавну монстрів (по центру поверху) ───────────────
+        // ВАЖЛИВО: та сама формула і лічильник, що у spawnMinions (інакше
+        // кільце бреше: рахує без монстрів у дорозі і зі старим інтервалом)
         if (!isLordFloor) {
-            let monCount     = units.filter(u => u.type === 'monster' && u.floorIdx === this.depth && !u._summoned).length;
-            let spawnInterval = 4 + this.depth * 3;
+            let monCount      = _floorMonCount(this);
+            let spawnInterval = _spawnIntervalFor(this);
             let cr       = isMobile ? 12 : (isPC ? 20 : 15);
             let timerY   = fty + cr + 6;  // близько до стелі, з невеликим відступом
 
@@ -6241,6 +6243,17 @@ function makeEliteAtk(hero) {
 }
 
 // =================== СПАВН МОНСТРІВ ===================
+// Єдине джерело правди для спавн-таймера: ці ж значення читає кільце-відлік
+// у Floor.draw. Монстри в дорозі від лорда (_deployTo) належать цільовому поверху.
+function _spawnIntervalFor(f) {
+    const _kindName = (typeof _floorKindName === 'function') ? _floorKindName(f) : null;
+    const _cdLvl = _kindName ? getMonStatLvl(_kindName, 'cd') : 0;
+    return Math.max(1, Math.round((5 + f.depth * 3) * (1 - 0.05 * _cdLvl)));
+}
+function _floorMonCount(f) {
+    return units.filter(u => u.type === 'monster' && !u._summoned
+        && ((u._deployTo != null ? u._deployTo : u.floorIdx) === f.depth)).length;
+}
 function spawnMinions() {
     if (GAME.gameOver || GAME_PAUSED) return;
     let lordFloor = floors.length - 1;
@@ -6248,8 +6261,7 @@ function spawnMinions() {
     floors.forEach(f => {
         if (f.depth === lordFloor) return;
         // Монстри в дорозі (деплой від лорда) вже належать цільовому поверху
-        let count = units.filter(u => u.type==='monster' && !u._summoned
-            && ((u._deployTo != null ? u._deployTo : u.floorIdx) === f.depth)).length;
+        let count = _floorMonCount(f);
         // Per-kind countLvl впливає на максимум; cdLvl скорочує інтервал спавна на 10% за рівень.
         let _maxMon = _floorMaxMonsters(f);
         // legacy floor-button сумісність: якщо ручні апгрейди подняли f.maxMonsters вище, шануємо це
@@ -6259,10 +6271,7 @@ function spawnMinions() {
         if (count < _maxMon) {
             // 1-й поверх: 5 сек, кожен наступний +3 сек (в тіках по 1 сек).
             // +1с до всіх: балансова компенсація спавну від лорда (живий щит)
-            let _baseInterval = 5 + f.depth * 3;
-            let _kindName = _floorKindName(f);
-            let _cdLvl = getMonStatLvl(_kindName, 'cd');
-            let spawnInterval = Math.max(1, Math.round(_baseInterval * (1 - 0.05 * _cdLvl)));
+            let spawnInterval = _spawnIntervalFor(f);
             f.spawnTimer += 1; // +1 за кожну секунду (setInterval 1000ms)
             if (f.spawnTimer >= spawnInterval) {
                 let spawnCount = f.isBatFloor ? 2 : 1;
@@ -13542,7 +13551,7 @@ canvas.addEventListener('touchend', e => {
 canvas.addEventListener('touchcancel', () => { isDragging = false; }, { passive: true });
 
 // ─── Лор-тултіпи: жартівливі описи ключових елементів по тапу ──────────────
-let _loreTipEl = null, _loreTipTimer = null;
+let _loreTipEl = null, _loreTipTimer = null, _loreLastKey = null;
 function _showLoreTip(html) {
     if (!_loreTipEl) {
         _loreTipEl = document.createElement('div');
@@ -13609,6 +13618,8 @@ function _handleCanvasTap(clientX, clientY) {
             const _cCost = (typeof _soulCollCost === 'function') ? _soulCollCost() : 0;
             if ((GAME.eliteSouls || 0) < _cCost) {
                 // Грошей нема — замість мовчання розповідаємо, що це таке
+                if (_loreDismissed && _loreLastKey === 'collector') return; // повторний тап — закрити
+                _loreLastKey = 'collector';
                 _showLoreTip(_lang === 'en'
                     ? '<b>Soul Collector</b>. A crystal accountant: +1 soul per kill for every level. Upgrades cost golden souls and are permanent — much like its appetite. Next level: <b>' + _cCost + '</b> 🟡'
                     : '<b>Збирач душ</b>. Кристал-бухгалтер: +1 душа з кожного вбитого за кожен рівень. Апгрейд за золоті — вічний, як і його апетит. Наступний рівень: <b>' + _cCost + '</b> 🟡');
@@ -13652,12 +13663,17 @@ function _handleCanvasTap(clientX, clientY) {
     });
 
     // ── Лор-описи: тап по лорду / трону / драбинах / воротах / місту ────────
-    if (_loreDismissed) return; // тап-закриття не відкриває новий опис
-    const _lore = (uk, en) => { _showLoreTip(_lang === 'en' ? en : uk); };
+    // Повторний тап по ТОМУ Ж об'єкту — закриває; тап по іншому — показує його
+    const _lore = (key, uk, en) => {
+        if (_loreDismissed && _loreLastKey === key) return;
+        _loreLastKey = key;
+        _showLoreTip(_lang === 'en' ? en : uk);
+    };
     // Лорд
     const _lu = units.find(u => u.type === 'lord');
     if (_lu && Math.abs(cx - _lu.x) < 36 && cy > _lu.y - _lu.size * 2.1 && cy < _lu.y + 6) {
-        _lore('<b>♛ Володар</b> — це ти. П\'ятсот років стажу, корона в комплекті, відпустки не передбачені. Впаде він — впаде все.',
+        _lore('lord',
+              '<b>♛ Володар</b> — це ти. П\'ятсот років стажу, корона в комплекті, відпустки не передбачені. Впаде він — впаде все.',
               '<b>♛ The Lord</b> — that\'s you. Five hundred years on the job, crown included, no vacations. If he falls, everything falls.');
         return;
     }
@@ -13665,7 +13681,8 @@ function _handleCanvasTap(clientX, clientY) {
     if (floors.length > 0) {
         const _tf = floors[floors.length - 1];
         if (Math.abs(cx - _lordThroneX()) < 42 && cy > _tf.y - CFG.floorH && cy <= _tf.y) {
-            _lore('<b>Трон</b>. Чистий обсидіан, нуль ергономіки. Володар однаково щоразу повертається сюди — статус зобов\'язує.',
+            _lore('throne',
+                  '<b>Трон</b>. Чистий обсидіан, нуль ергономіки. Володар однаково щоразу повертається сюди — статус зобов\'язує.',
                   '<b>The Throne</b>. Pure obsidian, zero ergonomics. The Lord keeps coming back anyway — status obliges.');
             return;
         }
@@ -13675,24 +13692,26 @@ function _handleCanvasTap(clientX, clientY) {
         const _ladderTxtUk = '<b>Драбини</b>. Священне перемир\'я підземелля: на щаблях не б\'ються. Герой і монстр чемно розминуться і вдадуть, що не помітили одне одного.';
         const _ladderTxtEn = '<b>Ladders</b>. The dungeon\'s sacred truce: no fighting on the rungs. Hero and monster politely squeeze past and pretend they never met.';
         if (Math.abs(cx - CAVE_X) < 16 && cy > CFG.surfaceY && cy < (floors[0] ? floors[0].y : CFG.surfaceY)) {
-            _lore(_ladderTxtUk, _ladderTxtEn); return;
+            _lore('ladder', _ladderTxtUk, _ladderTxtEn); return;
         }
         for (let i = 1; i < floors.length; i++) {
             const _pf = floors[i - 1];
             if (Math.abs(cx - _pf.ladderX) < 16 && cy > _pf.y && cy < floors[i].y) {
-                _lore(_ladderTxtUk, _ladderTxtEn); return;
+                _lore('ladder', _ladderTxtUk, _ladderTxtEn); return;
             }
         }
     }
     // Ворота підземелля
     if (cy < CFG.surfaceY + 10 && cy > CFG.surfaceY - 140 && Math.abs(cx - CAVE_X) < 90) {
-        _lore('<b>Ворота Підземелля</b>. Вхід безкоштовний, героям завжди раді. Про відсутність виходу вони дізнаються трохи згодом.',
+        _lore('gate',
+              '<b>Ворота Підземелля</b>. Вхід безкоштовний, героям завжди раді. Про відсутність виходу вони дізнаються трохи згодом.',
               '<b>Dungeon Gates</b>. Free entry, heroes always welcome. They learn about the exit situation a bit later.');
         return;
     }
     // Місто
     if (cy < CFG.surfaceY + 10 && cy > CFG.surfaceY - 160 && cx < CITY_GATE_X + 115) {
-        _lore('<b>Місто</b>. Постачає героїв, платить їм за твою голову і пише скарги в раду. Дипломатія в них проста: «вбити Володаря».',
+        _lore('city',
+              '<b>Місто</b>. Постачає героїв, платить їм за твою голову і пише скарги в раду. Дипломатія в них проста: «вбити Володаря».',
               '<b>The City</b>. Supplies heroes, pays bounties for your head and files complaints. Their diplomacy is simple: "slay the Lord".');
         return;
     }
