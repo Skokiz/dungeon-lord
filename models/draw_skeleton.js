@@ -141,15 +141,17 @@ function _skArm(sx,sy,upperA,elbowBend,dim){
 
 const _skE = p => p*p*(3-2*p);
 
-function drawSkeleton(ctx_,x,y,t,dir=1,sc=0.38,atk=0,branch=''){
+function drawSkeleton(ctx_,x,y,t,dir=1,sc=0.38,atk=0,branch='',runF=0){
   const _lp = (a,b,f) => a+(b-a)*f;
   const spd=2.2, wc=Math.sin(t*spd), wc_c=Math.cos(t*spd);
-  const bob=(1-Math.abs(wc))*3.5, hipT=wc_c*0.035;
-  const legA_F=wc*0.52, legA_B=-legA_F;
-  const knee_F=0.08+Math.max(0,wc_c)*0.85, knee_B=0.08+Math.max(0,-wc_c)*0.85;
+  const bob=(1-Math.abs(wc))*(3.5+runF*2.5), hipT=wc_c*0.035;
+  // runF 0..1 — комедійний спринт: крок коротшає (дрібне перебирання),
+  // сам темп ніг задає викликач через t (фаза від пройденої відстані)
+  const legA_F=wc*(0.52-runF*0.14), legA_B=-legA_F;
+  const knee_F=0.08+Math.max(0,wc_c)*(0.85+runF*0.35), knee_B=0.08+Math.max(0,-wc_c)*(0.85+runF*0.35);
   let armA_B=-wc*0.40, elbow_B=0.20+Math.max(0,wc_c)*0.40;
 
-  let armA_F, elbow_F, jawOpen=Math.abs(Math.sin(t*1.1))*0.28, atkTilt=0;
+  let armA_F, elbow_F, jawOpen=Math.abs(Math.sin(t*1.1))*0.28 + runF*Math.abs(Math.sin(t*5.0))*0.65, atkTilt=0;
   const ap = atk || 0;
   if (ap > 0) {
     if      (ap < 0.22) { const f=_skE(ap/0.22);
@@ -164,6 +166,15 @@ function drawSkeleton(ctx_,x,y,t,dir=1,sc=0.38,atk=0,branch=''){
     }
   } else {
     armA_F=-wc*0.40; elbow_F=0.20+Math.max(0,-wc_c)*0.40;
+    // Спринт: руки відкинуті назад "нарутою", лікті майже прямі,
+    // легке тріпотіння кистей на вітрі
+    if (runF > 0.05) {
+      const _flap = Math.sin(t*5.0)*0.12*runF;
+      armA_F = _lp(armA_F, -1.05 + _flap, runF);
+      armA_B = _lp(armA_B, -0.95 - _flap, runF);
+      elbow_F = _lp(elbow_F, 0.12, runF);
+      elbow_B = _lp(elbow_B, 0.12, runF);
+    }
   }
 
   // Branch-specific back arm pose (must follow armA_F/elbow_F assignment)
@@ -180,7 +191,8 @@ function drawSkeleton(ctx_,x,y,t,dir=1,sc=0.38,atk=0,branch=''){
   const _bwx = _bex + Math.sin(_belbA)*17, _bwy = _bey + Math.cos(_belbA)*17;
 
   const HX=0,HY=0,SPINE_TOP=-44,RIB_Y=SPINE_TOP-2,SHL_Y=SPINE_TOP+4,SHL_X=13,NECK_Y=SPINE_TOP-10,HEAD_Y=NECK_Y-20;
-  ctx_.save(); ctx_.translate(x,y-bob*sc); ctx_.rotate(0.05+hipT+atkTilt); ctx_.scale(dir*sc,sc);
+  // Спринт: корпус завалюється вперед (у напрямку бігу — тому *dir через scale нижче не діє на rotate, враховуємо dir тут)
+  ctx_.save(); ctx_.translate(x,y-bob*sc); ctx_.rotate((0.05+hipT+atkTilt)+runF*0.30*dir); ctx_.scale(dir*sc,sc);
 
   // Back leg + arm
   _skLeg(4,HY,legA_B,knee_B,true); _skArm(-SHL_X,SHL_Y,armA_B,elbow_B,true);
@@ -333,7 +345,8 @@ function drawSkeleton(ctx_,x,y,t,dir=1,sc=0.38,atk=0,branch=''){
   // Neck + skull (eye colour reflects branch)
   const _eyeCol = branch==='A' ? '#4488ff' : branch==='B' ? '#ff3300' : '#30ff60';
   _skBone(HX,SPINE_TOP,HX,NECK_Y,2.8);
-  _skSkull(HX,HEAD_Y,wc*0.06,jawOpen,_eyeCol);
+  // Спринт: череп закинутий назад — ледве встигає за власним тілом
+  _skSkull(HX,HEAD_Y,wc*0.06 - runF*0.34,jawOpen,_eyeCol);
   ctx_.restore();
 }
 
@@ -353,10 +366,11 @@ function drawSkeletonMonster(unit, camY) {
     const _skDt  = Math.min((_frameNow - unit._skLastT) / 1000, 0.05);
     unit._skLastT = _frameNow;
 
+    const _skDx = Math.abs(unit.x - unit._skPrevX);
     if (unit.state === 'fight') {
         const _skH = units.find(u => u.type === 'hero' && u.floorIdx === unit.floorIdx && u.hp > 0);
         if (_skH) unit._skDir = _skH.x > unit.x ? 1 : -1;
-    } else if (Math.abs(unit.x - unit._skPrevX) > 0.2) {
+    } else if (_skDx > 0.2) {
         unit._skDir = unit.x > unit._skPrevX ? 1 : -1;
     }
     unit._skPrevX = unit.x;
@@ -370,10 +384,25 @@ function drawSkeletonMonster(unit, camY) {
         if (unit._skAtkP >= 1) unit._skAtkP = 0;
     }
 
-    unit._skT += _skDt * (unit.state === 'idle' ? 0.8 : 2.2);
+    const _skSc = unit.size * 0.015;
 
-    const _skSc   = unit.size * 0.015;
+    // Фаза ходьби від ПРОЙДЕНОЇ ВІДСТАНІ, не від часу: ступня рухається разом
+    // із землею на будь-якій швидкості (раніше на швидких юнітах скелет "їхав
+    // на ковзанах"). Крок ≈ довжина маху ноги (~50px кістки × масштаб);
+    // півкроку відповідає Δt = π/2.2 у фазових одиницях sin(t·2.2).
+    if (_skDx > 0.05) {
+        unit._skT += _skDx * (Math.PI / 2.2) / (25 * _skSc);
+    } else {
+        unit._skT += _skDt * (unit.state === 'idle' ? 0.8 : 2.2);
+    }
+
+    // Фактор спринту 0..1 (згладжений): вмикає комедію — нахил корпуса,
+    // руки назад, закинутий череп, щелепа теліпається
+    const _skV = _skDt > 0 ? _skDx / _skDt : 0;                    // px/с
+    const _skRunTgt = Math.max(0, Math.min(1, (_skV - 55) / 160));
+    unit._skRunF = (unit._skRunF || 0) + ((_skRunTgt - (unit._skRunF || 0)) * Math.min(1, _skDt * 6));
+
     const _skHipY = (unit.y - camY) - 50 * _skSc;
-    drawSkeleton(ctx, unit.x, _skHipY, unit._skT, unit._skDir, _skSc, unit._skAtkP || 0, unit._branch || '');
+    drawSkeleton(ctx, unit.x, _skHipY, unit._skT, unit._skDir, _skSc, unit._skAtkP || 0, unit._branch || '', unit._skRunF || 0);
     unit._hpBarY = _skHipY - 80 * _skSc - 22;
 }
