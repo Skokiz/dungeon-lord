@@ -12983,12 +12983,26 @@ function _adPlatform() {
 })();
 
 function _playAd(onDone, onFail) {
-    const fail = () => { if (typeof onFail === 'function') onFail(); };
     const p = _adPlatform();
+    const fail = (reason) => {
+        // Показуємо гравцю ПРИЧИНУ (no fill / закрито рано / помилка мережі),
+        // інакше фейл виглядає як "кнопка не працює"
+        try {
+            if (p !== 'stub') {
+                const d = reason && (reason.description || reason.error || reason.message);
+                // _showLoreTip (z-index 9000) — видимий і над вікном кінця раунду
+                _showLoreTip((_lang === 'en' ? '📺 <b>Ad unavailable.</b> Try again in a moment.' : '📺 <b>Реклама недоступна.</b> Спробуй ще раз за хвилинку.')
+                    + (d && typeof d === 'string' ? '<br><span style="color:#8877aa;font-size:11px">' + d + '</span>' : ''));
+            }
+        } catch (e) {}
+        if (typeof onFail === 'function') onFail();
+    };
     try {
         if (p === 'telegram' && _ADS.adsgramBlockId && window.Adsgram) {
             if (!_adsgramCtrl) _adsgramCtrl = window.Adsgram.init({ blockId: _ADS.adsgramBlockId });
-            _adsgramCtrl.show().then(r => (r && r.done) ? onDone() : fail()).catch(fail);
+            // Adsgram: resolve = переглянуто (частина версій SDK резолвить БЕЗ
+            // об'єкта результату — трактуємо resolve як успіх, reject як фейл)
+            _adsgramCtrl.show().then(r => (!r || r.done !== false) ? onDone() : fail(r)).catch(fail);
             return;
         }
         if (p === 'crazygames') {
