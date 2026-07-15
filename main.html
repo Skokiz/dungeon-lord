@@ -2576,7 +2576,7 @@
 <script src="models/i18n.js?v=14"></script>
 <script src="models/draw_slime.js?v=6"></script>
 <script src="models/draw_skeleton.js?v=1"></script>
-<script src="models/hero_flat.js?v=24"></script>
+<script src="models/hero_flat.js?v=25"></script>
 <script src="models/draw_monsters.js?v=25"></script>
 <script src="models/draw_shadow.js?v=2"></script>
 <script src="models/draw_minotaur.js?v=6"></script>
@@ -5333,6 +5333,24 @@ class Unit {
     }
 
     moveMonster() {
+        // ── Деплой: монстр вийшов з-під плаща лорда і крокує на свій поверх ──
+        if (this._deployTo != null) {
+            if (this.waveActive || this.floorIdx === this._deployTo) {
+                this._deployTo = null; // прибув (або хвиля перехопила — йде в атаку)
+            } else {
+                let prev = floors[this.floorIdx - 1];
+                let ladX = prev ? prev.ladderX : CAVE_X;
+                if (this.isClimbingUp) {
+                    this.y -= this.speed * 2 * _dt; this.x = ladX;
+                    let tY = prev ? prev.y : CFG.surfaceY;
+                    if (this.y <= tY) { this.y = tY; this.floorIdx--; this.isClimbingUp = false; }
+                } else {
+                    if (Math.abs(this.x - ladX) > 10) this.x += (ladX - this.x > 0 ? 1 : -1) * this.speed * 1.6 * _dt;
+                    else { this.x = ladX; this.isClimbingUp = true; }
+                }
+                return;
+            }
+        }
         if (this.waveActive) {
             // Поверхня — біжить до міста
             if (this.floorIdx < 0) {
@@ -5641,6 +5659,8 @@ class Unit {
             }
             const _roDt = Math.min((_frameNow - this._roLastT) / 1000, 0.05);
             this._roLastT = _frameNow;
+            // Анімація відкриття плаща (спавн монстра): 1 → 0 за ~1.1с
+            if (this._cloakT > 0) this._cloakT = Math.max(0, this._cloakT - _roDt / 1.1);
             // Дивимось на найближчого ворога при бою
             if (this.state === 'fight') {
                 const _roe = units.find(u => u.type==='hero' && u.floorIdx===this.floorIdx && u.hp>0);
@@ -6182,9 +6202,12 @@ function makeEliteAtk(hero) {
 function spawnMinions() {
     if (GAME.gameOver || GAME_PAUSED) return;
     let lordFloor = floors.length - 1;
+    const _lordU = units.find(u => u.type === 'lord');
     floors.forEach(f => {
         if (f.depth === lordFloor) return;
-        let count = units.filter(u => u.type==='monster' && u.floorIdx===f.depth && !u._summoned).length;
+        // Монстри в дорозі (деплой від лорда) вже належать цільовому поверху
+        let count = units.filter(u => u.type==='monster' && !u._summoned
+            && ((u._deployTo != null ? u._deployTo : u.floorIdx) === f.depth)).length;
         // Per-kind countLvl впливає на максимум; cdLvl скорочує інтервал спавна на 10% за рівень.
         let _maxMon = _floorMaxMonsters(f);
         // legacy floor-button сумісність: якщо ручні апгрейди подняли f.maxMonsters вище, шануємо це
@@ -6202,7 +6225,12 @@ function spawnMinions() {
                 let spawnCount = f.isBatFloor ? 2 : 1;
                 for (let _sc = 0; _sc < spawnCount; _sc++) {
                     if (count + _sc < _maxMon) {
-                        let _newMon = new Unit('monster', centerX + (_sc - 0.5) * 22, f.y, f.depth, f.depth + 1);
+                        // Народження з-під плаща лорда: спавн біля нього, потім
+                        // монстр сам іде драбинами на свій поверх (_deployTo)
+                        const _spX = (_lordU ? _lordU.x : centerX) + (_sc - 0.5) * 26 + (Math.random() - 0.5) * 10;
+                        let _newMon = new Unit('monster', _spX, floors[lordFloor].y, lordFloor, f.depth + 1);
+                        _newMon._deployTo = f.depth;
+                        if (_lordU) _lordU._cloakT = 1; // тригер анімації плаща
                         units.push(_newMon);
                         // WATER_ELE: відроджений дух забирає свій щит (20%) назад від донора
                         if (_newMon.ability === 'absorb') {

@@ -2613,6 +2613,62 @@ function drawLordStudio(ctx, p) {
   });
 
   // ═══════════════════════════════════════════════════════════════════════
+  //  CLOAK OPENING — мантія розходиться, з темряви виходить монстр
+  //  unit._cloakT: 1 → 0 (декей у грі). Крива: швидко відкрив, плавно закрив.
+  // ═══════════════════════════════════════════════════════════════════════
+  {
+    const _ct = p.unit && p.unit._cloakT ? p.unit._cloakT : 0;
+    if (_ct > 0.02) {
+      const _prog = 1 - _ct;                              // 0 → 1
+      const _open = _prog < 0.3 ? _prog / 0.3              // різке відкриття
+                  : _prog < 0.6 ? 1                        // тримає
+                  : 1 - (_prog - 0.6) / 0.4;               // плавно стуляється
+      const _w = 15 * _open;                               // півширина прорізу на подолі
+      if (_w > 0.5) {
+        // Темний проріз від пояса до подолу
+        const slit = ctx.createLinearGradient(0, sy(60), 0, sy(94));
+        slit.addColorStop(0, 'rgba(6,0,14,0)');
+        slit.addColorStop(0.35, 'rgba(6,0,14,0.92)');
+        slit.addColorStop(1, 'rgba(10,2,22,0.96)');
+        ctx.fillStyle = slit;
+        ctx.beginPath();
+        ctx.moveTo(sx(50), sy(58));
+        ctx.bezierCurveTo(sx(50 - _w*0.35), sy(72), sx(50 - _w), sy(86), sx(50 - _w), sy(94));
+        ctx.lineTo(sx(50 + _w), sy(94));
+        ctx.bezierCurveTo(sx(50 + _w), sy(86), sx(50 + _w*0.35), sy(72), sx(50), sy(58));
+        ctx.closePath(); ctx.fill();
+        // Фіолетове світіння порталу зсередини
+        const pg = ctx.createRadialGradient(sx(50), sy(88), 1*S, sx(50), sy(88), 14*_open*S);
+        pg.addColorStop(0, `rgba(170,80,255,${0.55 * _open})`);
+        pg.addColorStop(1, 'rgba(90,20,180,0)');
+        ctx.fillStyle = pg;
+        ctx.beginPath(); ctx.arc(sx(50), sy(88), 14*_open*S, 0, Math.PI*2); ctx.fill();
+        // Світла кромка відворотів (мантія відгорнулась)
+        ctx.strokeStyle = `rgba(210,140,255,${0.5 * _open})`;
+        ctx.lineWidth = 1.2*S;
+        ctx.beginPath();
+        ctx.moveTo(sx(50), sy(58));
+        ctx.bezierCurveTo(sx(50 - _w*0.35), sy(72), sx(50 - _w), sy(86), sx(50 - _w), sy(94));
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(sx(50), sy(58));
+        ctx.bezierCurveTo(sx(50 + _w*0.35), sy(72), sx(50 + _w), sy(86), sx(50 + _w), sy(94));
+        ctx.stroke();
+        // Душі-пасма вилітають з прорізу
+        for (let _wi = 0; _wi < 3; _wi++) {
+          const _ph = (_prog * 1.6 + _wi * 0.33) % 1;
+          const _wxp = sx(50) + Math.sin(_prog * 9 + _wi * 2.2) * 4 * S;
+          const _wyp = sy(88) - _ph * 26 * S;
+          ctx.globalAlpha = (1 - _ph) * 0.5 * _open;
+          ctx.fillStyle = '#c090ff';
+          ctx.beginPath(); ctx.arc(_wxp, _wyp, (0.9 + (1 - _ph) * 1.3) * S, 0, Math.PI*2); ctx.fill();
+        }
+        ctx.globalAlpha = 1;
+      }
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════
   //  COLLAR — standing fur-trimmed collar behind neck
   // ═══════════════════════════════════════════════════════════════════════
   // dark collar back plate
