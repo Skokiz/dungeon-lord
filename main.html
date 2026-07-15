@@ -1424,12 +1424,14 @@
         /* ── Прокачка Лорда (Grid 3×3) ───────────────────────────────── */
         #lord-upg-overlay { background:rgba(6,3,14,.93); backdrop-filter:blur(3px); z-index:225; }
         .overlay-close-btn {
-            background:rgba(80,40,140,.5); border:1px solid rgba(140,80,220,.4);
-            color:#cc88ff; border-radius:8px; font-size:14px;
-            padding:5px 14px; cursor:pointer; flex-shrink:0;
+            background:rgba(95,50,165,.65); border:1.5px solid rgba(190,130,255,.75);
+            color:#f0e0ff; border-radius:11px; font-size:19px; font-weight:600;
+            min-width:44px; min-height:44px; padding:5px 14px;
+            cursor:pointer; flex-shrink:0;
+            box-shadow:0 0 10px rgba(160,90,255,.35);
             -webkit-appearance:none; touch-action:manipulation;
         }
-        .overlay-close-btn:hover { background:rgba(100,50,180,.7); }
+        .overlay-close-btn:hover { background:rgba(120,60,205,.8); box-shadow:0 0 14px rgba(180,110,255,.55); }
         /* lord stats strip */
         .lord-upg-stats {
             display:grid; grid-template-columns:repeat(3,1fr); gap:8px;
@@ -1503,6 +1505,17 @@
         .lug-cost .esoul-gem { width:9px; height:9px; }
         .lug-cost.ok { color:var(--gold,#f2c14e); }
         .lug-cost-max { color:#5a7a5a; letter-spacing:1px; }
+        /* Вузькі екрани: компактні картки — грід і гілка розвитку влазять разом */
+        @media (max-width: 480px) {
+            .lug-cell { min-height:76px; padding:7px 4px 6px; gap:3px; border-radius:8px; }
+            .lug-cell-icon { font-size:17px; margin-top:0; }
+            .lug-cell-name { font-size:9px; min-height:22px; line-height:1.15; }
+            .lug-pips { gap:2px; margin-top:1px; }
+            .lug-pip { width:6px; height:6px; }
+            .lug-cost { font-size:8.5px; margin-top:1px; }
+            .lus-chip { font-size:10.5px; padding:3px 4px; }
+            .lus-chip b { font-size:11px; }
+        }
         .lug-pip {
             width:8px; height:8px; border-radius:50%;
             background:rgba(255,255,255,.09); border:1px solid rgba(255,255,255,.13);
@@ -1577,11 +1590,12 @@
         .mon-dev-title { font-size: 18px; font-weight: 700; color:#e8d8ff; letter-spacing: 0.5px; }
         .mon-dev-title .mon-dev-kind { color:#bb88ff; }
         .mon-dev-close {
-            background: rgba(60,30,90,0.6); border: 1px solid #6a3aaa; color:#fff;
-            width: 28px; height: 28px; border-radius: 6px; cursor: pointer;
-            font-size: 14px; line-height: 1; padding: 0;
+            background: rgba(95,50,165,0.65); border: 1.5px solid rgba(190,130,255,0.75); color:#f0e0ff;
+            width: 44px; height: 44px; border-radius: 11px; cursor: pointer;
+            font-size: 19px; font-weight: 600; line-height: 1; padding: 0;
+            box-shadow: 0 0 10px rgba(160,90,255,0.35);
         }
-        .mon-dev-close:hover { background: rgba(120,40,180,0.7); }
+        .mon-dev-close:hover { background: rgba(120,60,205,0.8); box-shadow: 0 0 14px rgba(180,110,255,0.55); }
 
         .mon-dev-top {
             display:flex; gap:14px; align-items:flex-start; margin-bottom: 14px;
@@ -1954,13 +1968,14 @@
         #bestiary-header-left .bh-progress { font-size: 10px; color: #7755aa; letter-spacing: 0.3px; }
         #bestiary-header-left .bh-progress span { color: #aa77ee; font-weight: 600; }
         #bestiary-close-btn {
-            background: rgba(80,40,140,0.4); border: 1px solid rgba(140,80,220,0.35);
-            color: #cc88ff; border-radius: 9px; font-size: 13px;
-            padding: 6px 14px; cursor: pointer;
+            background: rgba(95,50,165,0.65); border: 1.5px solid rgba(190,130,255,0.75);
+            color: #f0e0ff; border-radius: 11px; font-size: 19px; font-weight: 600;
+            min-width: 44px; min-height: 44px; padding: 6px 14px; cursor: pointer;
+            box-shadow: 0 0 10px rgba(160,90,255,0.35);
             -webkit-appearance: none; touch-action: manipulation;
-            transition: background 0.12s;
+            transition: background 0.12s, box-shadow 0.12s;
         }
-        #bestiary-close-btn:hover { background: rgba(110,55,200,0.65); }
+        #bestiary-close-btn:hover { background: rgba(120,60,205,0.8); box-shadow: 0 0 14px rgba(180,110,255,0.55); }
         #bestiary-grid {
             display: flex;
             flex-direction: column;
@@ -5337,6 +5352,10 @@ class Unit {
         if (this._deployTo != null) {
             if (this.waveActive || this.floorIdx === this._deployTo) {
                 this._deployTo = null; // прибув (або хвиля перехопила — йде в атаку)
+            } else if (units.some(u => u.type === 'hero' && u.floorIdx === this.floorIdx
+                       && u.hp > 0 && !u.isClimbing && Math.abs(u.x - this.x) < 210)) {
+                // Ворог на шляху — зупиняємось і б'ємось (провалюємось у
+                // звичайну бойову логіку); шлях продовжиться після бою
             } else {
                 let prev = floors[this.floorIdx - 1];
                 let ladX = prev ? prev.ladderX : CAVE_X;
@@ -5708,6 +5727,16 @@ class Unit {
                 unit: this
             };
             this._hpBarY = drawLordStudio(ctx, _lordP);
+            ctx.restore();
+            // Підпис — гравець одразу бачить, кого він захищає
+            ctx.save();
+            ctx.globalAlpha = 0.8;
+            ctx.fillStyle = '#c9a9f0';
+            ctx.font = '600 ' + (isPC ? '11px' : '9px') + ' Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText(_lang === 'en' ? '♛ LORD' : '♛ ВОЛОДАР', this.x,
+                (this._hpBarY != null ? this._hpBarY : _flY - _H) - (isPC ? 12 : 9));
+            ctx.globalAlpha = 1;
             ctx.restore();
 
         } else {
@@ -13470,6 +13499,24 @@ canvas.addEventListener('touchend', e => {
 
 canvas.addEventListener('touchcancel', () => { isDragging = false; }, { passive: true });
 
+// ─── Лор-тултіпи: жартівливі описи ключових елементів по тапу ──────────────
+let _loreTipEl = null, _loreTipTimer = null;
+function _showLoreTip(html) {
+    if (!_loreTipEl) {
+        _loreTipEl = document.createElement('div');
+        _loreTipEl.id = 'lore-tip';
+        _loreTipEl.style.cssText = 'position:fixed;top:13%;left:50%;transform:translateX(-50%);z-index:9000;'
+            + 'max-width:min(420px,86vw);background:rgba(20,8,42,0.96);border:1px solid rgba(170,110,255,0.5);'
+            + 'border-radius:12px;padding:10px 16px;color:#e8dcff;font-size:13px;line-height:1.5;'
+            + 'box-shadow:0 6px 28px rgba(80,20,160,0.45);pointer-events:none;opacity:0;transition:opacity 0.25s';
+        document.body.appendChild(_loreTipEl);
+    }
+    _loreTipEl.innerHTML = html;
+    _loreTipEl.style.opacity = '1';
+    clearTimeout(_loreTipTimer);
+    _loreTipTimer = setTimeout(() => { if (_loreTipEl) _loreTipEl.style.opacity = '0'; }, 4200);
+}
+
 // ─── Обробник кліку / тапу по canvas ───────────────────────────────────────
 // Викликається і з 'click' (desktop), і з touchend (iOS/Android)
 function _handleCanvasTap(clientX, clientY) {
@@ -13543,6 +13590,51 @@ function _handleCanvasTap(clientX, clientY) {
         }
     });
 
+    // ── Лор-описи: тап по лорду / трону / драбинах / воротах / місту ────────
+    const _lore = (uk, en) => { _showLoreTip(_lang === 'en' ? en : uk); };
+    // Лорд
+    const _lu = units.find(u => u.type === 'lord');
+    if (_lu && Math.abs(cx - _lu.x) < 36 && cy > _lu.y - _lu.size * 2.1 && cy < _lu.y + 6) {
+        _lore('<b>♛ Володар</b> — це ти. П\'ятсот років стажу, корона в комплекті, відпустки не передбачені. Впаде він — впаде все.',
+              '<b>♛ The Lord</b> — that\'s you. Five hundred years on the job, crown included, no vacations. If he falls, everything falls.');
+        return;
+    }
+    // Трон
+    if (floors.length > 0) {
+        const _tf = floors[floors.length - 1];
+        if (Math.abs(cx - _lordThroneX()) < 42 && cy > _tf.y - CFG.floorH && cy <= _tf.y) {
+            _lore('<b>Трон</b>. Чистий обсидіан, нуль ергономіки. Володар однаково щоразу повертається сюди — статус зобов\'язує.',
+                  '<b>The Throne</b>. Pure obsidian, zero ergonomics. The Lord keeps coming back anyway — status obliges.');
+            return;
+        }
+    }
+    // Драбини (священне перемир\'я)
+    {
+        const _ladderTxtUk = '<b>Драбини</b>. Священне перемир\'я підземелля: на щаблях не б\'ються. Герой і монстр чемно розминуться і вдадуть, що не помітили одне одного.';
+        const _ladderTxtEn = '<b>Ladders</b>. The dungeon\'s sacred truce: no fighting on the rungs. Hero and monster politely squeeze past and pretend they never met.';
+        if (Math.abs(cx - CAVE_X) < 16 && cy > CFG.surfaceY && cy < (floors[0] ? floors[0].y : CFG.surfaceY)) {
+            _lore(_ladderTxtUk, _ladderTxtEn); return;
+        }
+        for (let i = 1; i < floors.length; i++) {
+            const _pf = floors[i - 1];
+            if (Math.abs(cx - _pf.ladderX) < 16 && cy > _pf.y && cy < floors[i].y) {
+                _lore(_ladderTxtUk, _ladderTxtEn); return;
+            }
+        }
+    }
+    // Ворота підземелля
+    if (cy < CFG.surfaceY + 10 && cy > CFG.surfaceY - 140 && Math.abs(cx - CAVE_X) < 90) {
+        _lore('<b>Ворота Підземелля</b>. Вхід безкоштовний, героям завжди раді. Про відсутність виходу вони дізнаються трохи згодом.',
+              '<b>Dungeon Gates</b>. Free entry, heroes always welcome. They learn about the exit situation a bit later.');
+        return;
+    }
+    // Місто
+    if (cy < CFG.surfaceY + 10 && cy > CFG.surfaceY - 160 && cx < CITY_GATE_X + 115) {
+        _lore('<b>Місто</b>. Постачає героїв, платить їм за твою голову і пише скарги в раду. Дипломатія в них проста: «вбити Володаря».',
+              '<b>The City</b>. Supplies heroes, pays bounties for your head and files complaints. Their diplomacy is simple: "slay the Lord".');
+        return;
+    }
+    // Збирач душ (тап повз кнопку апгрейду обробився вище)
 }
 
 // Desktop click → той самий обробник (пропускаємо якщо вже оброблено touchend)
