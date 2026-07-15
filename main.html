@@ -2766,7 +2766,21 @@ const _worldScale = window.innerWidth >= 1200 ? 1.6 : (window.innerWidth >= 768 
 // _cacheScale — роздільність offscreen-кешів (цегла/драбини/фон): 1× кеш на
 // retina = розмиті стіни, тому кеш завжди в тому ж dpr, що й головний canvas.
 let _dprCap = Math.min(window.devicePixelRatio || 1, window.innerWidth >= 1200 ? 2.5 : 3);
-let _cacheScale = _dprCap;
+
+// ── Зум світу ────────────────────────────────────────────────────────────────
+// Логічний вьюпорт: на широких екранах світ рендериться крупніше (Z>1), а вся
+// ігрова математика лишається в логічних px. Формула: Z = clamp(W/1536, 1, 2.5)
+// → логічна ширина будь-якого десктопа ≥1536px сходиться рівно до 1536, тож
+// поверх (900) займає стабільні ~59% екрана і на 1920, і на 4K. Мобільні — Z=1
+// (референс). gW/gH — ЛОГІЧНІ розміри: фізичні = gW*_zoom (CSS) = gW*_zoom*dpr
+// (backing store). Тапи/драги конвертуються назад діленням на _zoom.
+function _calcZoom() {
+    const w = window.innerWidth;
+    if (w < 768) return 1;
+    return Math.max(1, Math.min(2.5, w / 1536));
+}
+let _zoom = _calcZoom();
+let _cacheScale = _dprCap * _zoom;
 
 // ── Базові стати лорда (фіксовані, прокачка через 3×3 grid) ─────────────────
 const _LORD_BASE = { maxHP:500, dmg:20, armor:5, sizePC:54 };
@@ -4091,6 +4105,10 @@ class Unit {
         }
 
         this.maxHp = this.hp;
+        // Нормалізація темпу до довжини поверху: юніт проходить 1% поверху за
+        // однаковий час на будь-якому екрані (380 — референсна довжина поверху
+        // телефона, там множник = 1). Ширший поверх → пропорційно швидші px/с.
+        this.speed *= CFG.floorW / 380;
         this.state = 'idle';
         this.fightTarget = null;
         this.attackCooldown = 0;
@@ -6368,7 +6386,7 @@ function loop(ts) {
         _perfAcc = 0; _perfN = 0;
         if (_avgMs > 21 && _dprCap > 1.5) {
             _dprCap = Math.max(1.5, _dprCap - 0.5);
-            _cacheScale = _dprCap;
+            _cacheScale = _dprCap * _zoom;
             floors.forEach(f => { f._brickCache = null; f._ladCache = null; });
             _bgCanvas = null;
             resize();
@@ -6411,7 +6429,7 @@ function loop(ts) {
     if (screenShake > 0) screenShake = Math.max(0, screenShake - _dt);
     let _sx = screenShake > 0 ? (Math.random() - 0.5) * screenShake * 2 : 0;
     let _sy = screenShake > 0 ? (Math.random() - 0.5) * screenShake * 2 : 0;
-    ctx.setTransform(_dpr, 0, 0, _dpr, _sx * _dpr, _sy * _dpr);
+    ctx.setTransform(_dpr * _zoom, 0, 0, _dpr * _zoom, _sx * _dpr * _zoom, _sy * _dpr * _zoom);
 
     ctx.fillStyle = '#0d0820';
     ctx.fillRect(0, 0, gW, gH);
@@ -12671,7 +12689,8 @@ function spawnSoulFly(wx, wy, n, gold) {
                     : document.querySelector('#hud .resource-box');
     if (!el) return;
     const r = el.getBoundingClientRect();
-    const tx = r.left + r.height * 0.55, ty = r.top + r.height * 0.5;
+    // DOM-координати фізичні → ділимо на зум, бо орб малюється в логічних px
+    const tx = (r.left + r.height * 0.55) / _zoom, ty = (r.top + r.height * 0.5) / _zoom;
     const sx = wx, sy = wy - GAME.cameraY;
     for (let i = 0; i < n; i++) {
         // Контрольна точка: розкид убік і вгору — дуга, а не пряма
@@ -13590,14 +13609,19 @@ function resize() {
     // Оновлюємо CSS змінну щоб #canvas-wrap знав висоту controls
     document.documentElement.style.setProperty('--controls-h', controlsH + 'px');
     let oldCenterX = centerX;
-    gW = window.innerWidth;
-    gH = window.innerHeight - controlsH;
-    if (gH < 100) gH = window.innerHeight * 0.6;
-    canvas.width  = Math.round(gW * dpr);
-    canvas.height = Math.round(gH * dpr);
-    canvas.style.width  = gW + 'px';
-    canvas.style.height = gH + 'px';
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    _zoom = _calcZoom();
+    let cssW = window.innerWidth;
+    let cssH = window.innerHeight - controlsH;
+    if (cssH < 100) cssH = window.innerHeight * 0.6;
+    // gW/gH — логічні: фізичний розмір ділимо на зум світу
+    gW = cssW / _zoom;
+    gH = cssH / _zoom;
+    canvas.width  = Math.round(cssW * dpr);
+    canvas.height = Math.round(cssH * dpr);
+    canvas.style.width  = cssW + 'px';
+    canvas.style.height = cssH + 'px';
+    ctx.setTransform(dpr * _zoom, 0, 0, dpr * _zoom, 0, 0);
+    _cacheScale = _dprCap * _zoom;
     centerX = gW / 2;
     CFG.floorW = Math.min(gW - (isMobile ? 60 : 200), isMobile ? 380 : (gW >= 1200 ? 900 : (gW >= 768 ? 750 : 600)));
     CAVE_X = centerX + CFG.floorW * 0.35;
@@ -13611,7 +13635,7 @@ function resize() {
 
 // =================== DRAG/TOUCH ===================
 canvas.addEventListener('mousedown',  e => { isDragging=true; lastDragY=e.clientY; });
-canvas.addEventListener('mousemove',  e => { if(!isDragging)return; let d=lastDragY-e.clientY; lastDragY=e.clientY; if(manualCameraY===null)manualCameraY=GAME.cameraY; manualCameraY+=d; cameraReturnTimer=0; });
+canvas.addEventListener('mousemove',  e => { if(!isDragging)return; let d=(lastDragY-e.clientY)/_zoom; lastDragY=e.clientY; if(manualCameraY===null)manualCameraY=GAME.cameraY; manualCameraY+=d; cameraReturnTimer=0; });
 canvas.addEventListener('mouseup',    ()=> isDragging=false);
 canvas.addEventListener('mouseleave', ()=> isDragging=false);
 let _touchStartX=0, _touchStartY=0, _touchMoved=false, _skipNextClick=false;
@@ -13631,7 +13655,7 @@ canvas.addEventListener('touchstart', e => {
 canvas.addEventListener('touchmove', e => {
     if (isDragging && e.touches.length === 1) {
         e.preventDefault();
-        let d = lastDragY - e.touches[0].clientY;
+        let d = (lastDragY - e.touches[0].clientY) / _zoom;
         if (Math.abs(d) > 4) _touchMoved = true;
         lastDragY = e.touches[0].clientY;
         if (manualCameraY === null) manualCameraY = GAME.cameraY;
@@ -13683,8 +13707,9 @@ function _hideLoreTip() {
 // Викликається і з 'click' (desktop), і з touchend (iOS/Android)
 function _handleCanvasTap(clientX, clientY) {
     let rect = canvas.getBoundingClientRect();
-    let cx   = clientX - rect.left;
-    let cy   = (clientY - rect.top) + GAME.cameraY;
+    // Фізичні CSS px → логічні світові (canvas рендериться із зумом _zoom)
+    let cx   = (clientX - rect.left) / _zoom;
+    let cy   = (clientY - rect.top) / _zoom + GAME.cameraY;
     let lordIdx = floors.length - 1;
     _hudWake(); // тап по полю повертає пригаслу HP-панель
 
