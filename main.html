@@ -1370,7 +1370,7 @@
             100% { opacity: 0; transform: translateX(-50%) translateY(-12px); }
         }
         #donesnnia-overlay {
-            position:fixed; bottom:80px; left:50%; transform:translateX(-50%);
+            position:fixed; top:50%; left:50%; transform:translate(-50%,-50%);
             width:min(480px,94vw);
             background:linear-gradient(160deg,#0d0520 0%,#080218 100%);
             border:1px solid #6a2aaa; border-radius:12px;
@@ -1382,8 +1382,8 @@
         #donesnnia-overlay.visible { display:flex; animation:don-in .3s ease;
             box-shadow: 0 4px 32px #1a004080, 0 0 0 100vmax rgba(4,2,12,0.72); }
         @keyframes don-in {
-            from { opacity:0; transform:translateX(-50%) translateY(16px); }
-            to   { opacity:1; transform:translateX(-50%) translateY(0); }
+            from { opacity:0; transform:translate(-50%,-50%) translateY(16px); }
+            to   { opacity:1; transform:translate(-50%,-50%); }
         }
         .don-badge { font-size:10px; color:#7744aa; text-transform:uppercase; letter-spacing:1px; }
         .don-title { font-size:13px; font-weight:bold; color:#cc88ff; }
