@@ -126,7 +126,11 @@
             border-radius: var(--radius-m);
             border: 1px solid var(--border-soft);
             text-align: right;
+            transition: opacity 0.8s ease;
         }
+        /* Авто-пригасання: на коротких екранах (TMA) панель висить рівно над
+           входом у підземелля — коли цифри статичні, даємо бачити світ крізь неї */
+        .hud-right.hud-dim { opacity: 0.28; }
         .hp-label       { color: #d98a8a; display: block; font-weight: 600; }
         .hp-label-lord  { color: var(--accent); display: block; margin-top: 3px; font-weight: 600; }
         .hp-bar         { background: #16101f; border-radius: 4px; overflow: hidden; margin-top: 2px; position: relative;
@@ -12535,6 +12539,28 @@ function updateUI() {
     }
 }
 
+// ── Авто-пригасання HP-панелі ───────────────────────────────────────────────
+// На коротких екранах (Telegram Mini App) камера підтягує поверхню під HUD,
+// і панель закриває модель входу в підземелля. Коли значення не міняються
+// 4с — панель пригасає (CSS .hud-dim); урон місту/лорду, зміна загрози/сили
+// героїв або тап по canvas повертають повну видимість.
+let _hudDimSig = '', _hudDimLast = 0;
+function _hudWake() {
+    _hudDimLast = performance.now();
+    const p = document.querySelector('.hud-right');
+    if (p) p.classList.remove('hud-dim');
+}
+setInterval(() => {
+    const p = document.querySelector('.hud-right');
+    if (!p) return;
+    const _l = units.find(u => u.type === 'lord');
+    const sig = Math.ceil(GAME.cityHP) + '|' + (_l ? Math.ceil(_l.hp) : -1) + '|' +
+                (document.getElementById('difficulty-level') || {}).textContent + '|' +
+                (document.getElementById('hero-scale') || {}).textContent;
+    if (sig !== _hudDimSig) { _hudDimSig = sig; _hudDimLast = performance.now(); }
+    p.classList.toggle('hud-dim', performance.now() - _hudDimLast > 4000);
+}, 500);
+
 // =================== УТИЛІТИ ===================
 // Замість ctx.roundRect (не підтримується в старих браузерах)
 function ctxRoundRect(ctx, x, y, w, h, r) {
@@ -13588,6 +13614,8 @@ function _handleCanvasTap(clientX, clientY) {
     let cx   = clientX - rect.left;
     let cy   = (clientY - rect.top) + GAME.cameraY;
     let lordIdx = floors.length - 1;
+    _hudWake(); // тап по полю повертає пригаслу HP-панель
+
     // Відкритий лор-опис: цей тап його закриває (кнопки нижче працюють як завжди)
     const _loreDismissed = _hideLoreTip();
 
