@@ -353,6 +353,23 @@
             pointer-events: auto;
             animation: overlayFadeIn 0.18s ease-out;
         }
+        /* Повідомлення (лор-тіп, голос Безодні) створюються JS-ом з інлайн-позицією
+           внизу/по центру і лягають поверх кнопок відкритих вікон (дерево еволюцій,
+           грід лорда). Коли видима будь-яка модалка — піднімаємо їх у верхню кромку:
+           там лише заголовок вікна, жодного інтерактиву. !important бо інлайн-стилі. */
+        body:has(.overlay-base[style*="flex"]) #lore-tip,
+        body:has(#bestiary-overlay[style*="flex"]) #lore-tip,
+        body:has(#help-modal[style*="flex"]) #lore-tip,
+        body:has(#donesnnia-overlay.visible) #lore-tip {
+            top: calc(env(safe-area-inset-top, 0px) + var(--tg-top-inset, 0px) + 8px) !important;
+        }
+        body:has(.overlay-base[style*="flex"]) #abyss-voice,
+        body:has(#bestiary-overlay[style*="flex"]) #abyss-voice,
+        body:has(#help-modal[style*="flex"]) #abyss-voice,
+        body:has(#donesnnia-overlay.visible) #abyss-voice {
+            bottom: auto !important;
+            top: calc(env(safe-area-inset-top, 0px) + var(--tg-top-inset, 0px) + 8px) !important;
+        }
 
         #game-over {
             background: rgba(0,0,0,0.93);
