@@ -2551,7 +2551,7 @@
         </div>
         <div class="help-row">
             <span class="hi"><span class="dl-ico dl-crown"></span></span>
-            <span data-i18n="help-lord-row" data-i18n-html><b>Володар</b> — твій персонаж що атакує героїв на поверхні.</span>
+            <span data-i18n="help-lord-row" data-i18n-html><b>Володар</b> — це ти: сидить на троні найглибшого поверху і б'ється сам, якщо герої дійдуть. Загине він — кінець.</span>
         </div>
         <div class="help-row">
             <span class="hi"><span class="dl-ico dl-beast"></span></span>
@@ -2593,7 +2593,7 @@
     </div>
 </div>
 
-<script src="models/i18n.js?v=14"></script>
+<script src="models/i18n.js?v=15"></script>
 <script src="models/draw_slime.js?v=6"></script>
 <script src="models/draw_skeleton.js?v=1"></script>
 <script src="models/hero_flat.js?v=25"></script>
@@ -10063,7 +10063,7 @@ function loop(ts) {
                 }
                 let reward = (u.soulReward || (u.heroRank === 'boss' ? 80 : u.heroRank.startsWith('elite') ? 25 : 10)) + (GAME.soulBonus || 0);
                 GAME.souls += reward;
-                try { _liveTutTrigger('first_kill'); } catch(e) {}
+                try { _liveTutTrigger('first_kill'); _proEvent('kill'); } catch(e) {}
                 if (_psyTrack) {
                     _psyTrack.combat.totalKills++;
                     if (u._lastHitBy === 'lord' && _lordFightIsChoice(u)) _psyTrack.combat.lordKills++;
@@ -10606,6 +10606,7 @@ function openLordUpgrade() {
     _renderLordUpgrade();
     const ov = document.getElementById('lord-upg-overlay');
     if (ov) ov.style.display = 'flex';
+    try { _proEvent('lord'); } catch(e) {}
 }
 function closeLordUpgrade() {
     const ov = document.getElementById('lord-upg-overlay');
@@ -11621,6 +11622,10 @@ function _psyCheck(trigger) {
 function _showDecision(ev) {
     const ov = document.getElementById('donesnnia-overlay');
     if (!ov) return;
+    // Перше донесення в житті профілю — Безодня представляє механіку виборів
+    try { _abyssIntro('decision',
+        'Розвідники шепочуть, Володарю. Слухай — і вибирай. Підземелля пам\'ятає кожне твоє рішення.',
+        'The scouts whisper, my Lord. Listen — and choose. The dungeon remembers every decision you make.'); } catch(e) {}
     _psyCurrentEv = ev;
     const isAbyss = ev.type === 'abyss';
     ov.className = isAbyss ? 'don-abyss' : '';
@@ -12327,13 +12332,14 @@ function buyFloor() {
     _psyBuy('floor');
     _spend(GAME.floorCost);
     _addFloorFree();
-    try { _liveTutTrigger('floor_bought'); } catch(e) {}
+    try { _liveTutTrigger('floor_bought'); _proEvent('floor'); } catch(e) {}
     updateUI(); saveGame();
 }
 
 function triggerWave() {
     if (GAME.isWave || GAME.waveCooldownActive) return;
     _haptic([15, 30, 40]);
+    try { _proEvent('wave'); } catch(e) {}
     GAME.isWave = true;
     GAME.waveCooldownActive = true;
     if (_psyTrack) { _psyTrack.rounds++; _psyTrack.firstBuyDone = false; }
@@ -12430,6 +12436,10 @@ function updateUI() {
     if (el.eliteSoulsBox) {
         el.eliteSoulsBox.style.display = '';
         el.eliteSouls.innerText = GAME.eliteSouls;
+        // Перша золота душа профілю — Безодня пояснює різницю валют
+        if ((GAME.eliteSouls || 0) > 0) try { _abyssIntro('golden',
+            'Це — інше, Володарю. Золоті душі не згорають між облогами. Вони — назавжди. Витрачай мудро.',
+            'This one is different, my Lord. Golden souls do not burn between sieges. They are forever. Spend them wisely.'); } catch(e) {}
     }
     // Баланси у вкладках вікна розвитку монстрів (коли воно відкрите)
     if (el.monDevOv && el.monDevOv.style.display === 'flex') {
@@ -14365,6 +14375,8 @@ const _ltS = { idx: -1, lastIdx: -1, timer: null, done: false };
 
 function _liveTutInit() {
     try { if (localStorage.getItem('DL_tut_done')) return; } catch(e) {}
+    // Рівень 1 — сюжетний пролог голосом Безодні; інші рівні — легасі-бабли
+    if ((GAME.currentLevel || 1) === 1) { _prologueStart(); return; }
     _liveTutShow(0);
 }
 
@@ -14418,6 +14430,110 @@ function _tutNext() {
     const ci = _ltS.idx >= 0 ? _ltS.idx : _ltS.lastIdx;
     if (ci >= 0 && _LT[ci] && _LT[ci].last) { _liveTutEnd(); }
     else { _liveTutHide(); }
+}
+
+// ═══ ПРОЛОГ «Пробудження Володаря» ═══════════════════════════════════════════
+// Навчання на 1-му рівні кампанії голосом Безодні: кожен крок — репліка +
+// конкретна дія-гейт (кроки з gate не зникають, доки дію не зроблено).
+const _PRO_STEPS = [
+    { id:'wake',  gate:null, autoMs:8000,
+      uk:'Ти прокинувся, Володарю. П\'ятсот років тиші — і знову кроки нагорі. Місто прислало героїв по твою голову.',
+      en:'You are awake, my Lord. Five hundred years of silence — and footsteps above again. The City has sent heroes for your head.' },
+    { id:'kill',  gate:'kill', target:null,
+      uk:'Мої діти зустрінуть їх. Дивись: <b>кожен вбитий герой лишає душу</b>. Душі — твоя сила і твоя валюта.',
+      en:'My children will greet them. Watch: <b>every slain hero leaves a soul</b>. Souls are your power and your currency.' },
+    { id:'wave',  gate:'wave', target:'btn-wave',
+      uk:'Тепер — помста. Натисни <b>АТАКА</b>, і мої діти підуть нагору. Місто мусить платити за кожного посланого героя.',
+      en:'Now — vengeance. Press <b>ATTACK</b> and my children will storm the surface. The City must pay for every hero it sends.' },
+    { id:'floor', gate:'floor', target:'btn-floor',
+      uk:'Тобі тісно, Володарю. <b>Копай глибше</b> — новий поверх означає нових дітей і нові пастки на шляху героїв.',
+      en:'This place is too small for you, my Lord. <b>Dig deeper</b> — a new floor means new children and new traps in the heroes\' way.' },
+    { id:'lord',  gate:'lord', target:'btn-menu-lord',
+      uk:'І не забувай про себе. Відкрий <b>свою силу</b> — якщо герої колись дійдуть до трону, зустрінь їх гідно.',
+      en:'And do not forget yourself. Open <b>your power</b> — if heroes ever reach the throne, greet them properly.' },
+    { id:'done',  gate:null, autoMs:7000,
+      uk:'Далі — сам. Пам\'ятай: підземелля дивиться. І пам\'ятає кожен твій вибір.',
+      en:'From here — on your own. Remember: the dungeon watches. And it remembers every choice you make.' },
+];
+let _proIdx = -1, _proTimer = null, _abyssEl = null;
+function _proActive() { return _proIdx >= 0 && _proIdx < _PRO_STEPS.length; }
+
+function _prologueStart() {
+    _ltS.done = true; // легасі-бабли мовчать
+    _proIdx = -1;
+    _proNext();
+}
+function _proNext() {
+    clearTimeout(_proTimer); _proTimer = null;
+    _proIdx++;
+    if (_proIdx >= _PRO_STEPS.length) { _prologueEnd(); return; }
+    const s = _PRO_STEPS[_proIdx];
+    _abyssSay(_lang === 'en' ? s.en : s.uk, s.target);
+    if (!s.gate && s.autoMs) _proTimer = setTimeout(_proNext, s.autoMs);
+}
+// Ігрові події смикають гейти: kill / wave / floor / lord
+function _proEvent(ev) {
+    if (!_proActive()) return;
+    const s = _PRO_STEPS[_proIdx];
+    if (s && s.gate === ev) _proNext();
+}
+function _prologueEnd() {
+    _proIdx = _PRO_STEPS.length;
+    clearTimeout(_proTimer); _proTimer = null;
+    _abyssHide();
+    try { localStorage.setItem('DL_tut_done', '1'); } catch(e) {}
+}
+
+// ── Бабл голосу Безодні ──────────────────────────────────────────────────────
+function _abyssSay(html, targetId) {
+    if (!_abyssEl) {
+        _abyssEl = document.createElement('div');
+        _abyssEl.id = 'abyss-voice';
+        _abyssEl.style.cssText = 'position:fixed;left:50%;transform:translateX(-50%);'
+            + 'bottom:calc(var(--controls-h,120px) + 14px);z-index:8900;'
+            + 'max-width:min(460px,92vw);background:linear-gradient(180deg,rgba(24,6,50,0.97),rgba(12,2,30,0.97));'
+            + 'border:1px solid rgba(150,80,255,0.55);border-radius:14px;padding:12px 14px 9px;'
+            + 'color:#e2d4ff;font-size:13.5px;line-height:1.55;box-shadow:0 8px 32px rgba(90,20,190,0.5)';
+        _abyssEl.innerHTML =
+              '<div id="abyss-hdr" style="font-size:10px;letter-spacing:2px;color:#9a6ae0;margin-bottom:5px"></div>'
+            + '<div id="abyss-text"></div>'
+            + '<div style="text-align:right;margin-top:8px">'
+            +   '<button id="abyss-skip" style="background:none;border:none;color:#7a66a0;font-size:11px;cursor:pointer;padding:7px 8px"></button> '
+            +   '<button id="abyss-ok" style="background:rgba(95,50,165,.6);border:1px solid rgba(190,130,255,.6);color:#f0e0ff;border-radius:9px;padding:7px 18px;font-size:13px;cursor:pointer"></button>'
+            + '</div>';
+        document.body.appendChild(_abyssEl);
+        document.getElementById('abyss-skip').onclick = () => _prologueEnd();
+        document.getElementById('abyss-ok').onclick = () => {
+            const s = _PRO_STEPS[_proIdx];
+            if (s && !s.gate) _proNext();          // без гейта — рухаємось далі
+            else _abyssEl.style.display = 'none';  // з гейтом — ховаємо, підсвітка чекає дію
+        };
+    }
+    document.getElementById('abyss-hdr').textContent = _lang === 'en' ? '🌀 THE ABYSS' : '🌀 БЕЗОДНЯ';
+    document.getElementById('abyss-text').innerHTML = html;
+    document.getElementById('abyss-ok').textContent = _lang === 'en' ? 'Got it' : 'Зрозуміло';
+    document.getElementById('abyss-skip').textContent = _lang === 'en' ? 'Skip tutorial' : 'Пропустити навчання';
+    _abyssEl.style.display = 'block';
+    document.querySelectorAll('.tut-highlight').forEach(e => e.classList.remove('tut-highlight'));
+    if (targetId) { const t = document.getElementById(targetId); if (t) t.classList.add('tut-highlight'); }
+}
+function _abyssHide() {
+    if (_abyssEl) _abyssEl.style.display = 'none';
+    document.querySelectorAll('.tut-highlight').forEach(e => e.classList.remove('tut-highlight'));
+}
+
+// ── Perma-інтро пізніх механік: раз на профіль, у момент першої появи ────────
+const _introShown = {};
+function _abyssIntro(key, uk, en) {
+    if (_introShown[key]) return;
+    try {
+        if (localStorage.getItem('DL_intro_' + key)) { _introShown[key] = true; return; }
+        localStorage.setItem('DL_intro_' + key, '1');
+    } catch(e) {}
+    _introShown[key] = true;
+    if (_proActive()) return; // пролог не перебиваємо
+    _showLoreTip('<b style="color:#9a6ae0">🌀 ' + (_lang === 'en' ? 'THE ABYSS' : 'БЕЗОДНЯ') + ':</b> '
+        + (_lang === 'en' ? en : uk));
 }
 
 // ── HELP MODAL ────────────────────────────────────────────────────────────────
@@ -15596,6 +15712,9 @@ const MON_DEV_TREES = {
 
 function openMonsterDev(kindName) {
     if (!MONSTER_KIND_NAMES.includes(kindName)) return;
+    try { _abyssIntro('dna',
+        'Мої діти можуть стати сильнішими. Годуй їх душами — а на роздоріжжі еволюції вибір буде незворотним.',
+        'My children can grow stronger. Feed them souls — and at the evolution crossroads, the choice will be final.'); } catch(e) {}
     _monDevState.kindName = kindName;
     _monDevState.tab = 'souls';
     let ov = document.getElementById('mon-dev-overlay');
