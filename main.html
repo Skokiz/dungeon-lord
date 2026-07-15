@@ -13521,6 +13521,15 @@ function _showLoreTip(html) {
     clearTimeout(_loreTipTimer);
     _loreTipTimer = setTimeout(() => { if (_loreTipEl) _loreTipEl.style.opacity = '0'; }, 4200);
 }
+// Повторний тап по екрану ховає відкритий опис (повертає true, якщо ховав)
+function _hideLoreTip() {
+    if (_loreTipEl && _loreTipEl.style.opacity === '1') {
+        _loreTipEl.style.opacity = '0';
+        clearTimeout(_loreTipTimer);
+        return true;
+    }
+    return false;
+}
 
 // ─── Обробник кліку / тапу по canvas ───────────────────────────────────────
 // Викликається і з 'click' (desktop), і з touchend (iOS/Android)
@@ -13529,6 +13538,8 @@ function _handleCanvasTap(clientX, clientY) {
     let cx   = clientX - rect.left;
     let cy   = (clientY - rect.top) + GAME.cameraY;
     let lordIdx = floors.length - 1;
+    // Відкритий лор-опис: цей тап його закриває (кнопки нижче працюють як завжди)
+    const _loreDismissed = _hideLoreTip();
 
     // Режим вибору поверху для пастки (оплата — всередині _placeTrap за режимом)
     if (pendingTrapType !== null) {
@@ -13558,6 +13569,14 @@ function _handleCanvasTap(clientX, clientY) {
         let _dy = cy - GAME._soulAltarWorldY;
         let _r  = GAME._soulAltarR || 22;
         if (_dx * _dx + _dy * _dy <= _r * _r) {
+            const _cCost = (typeof _soulCollCost === 'function') ? _soulCollCost() : 0;
+            if ((GAME.eliteSouls || 0) < _cCost) {
+                // Грошей нема — замість мовчання розповідаємо, що це таке
+                _showLoreTip(_lang === 'en'
+                    ? '<b>Soul Collector</b>. A crystal accountant: +1 soul per kill for every level. Upgrades cost golden souls and are permanent — much like its appetite. Next level: <b>' + _cCost + '</b> 🟡'
+                    : '<b>Збирач душ</b>. Кристал-бухгалтер: +1 душа з кожного вбитого за кожен рівень. Апгрейд за золоті — вічний, як і його апетит. Наступний рівень: <b>' + _cCost + '</b> 🟡');
+                return;
+            }
             upgradeSoulBonus();
             return;
         }
@@ -13596,6 +13615,7 @@ function _handleCanvasTap(clientX, clientY) {
     });
 
     // ── Лор-описи: тап по лорду / трону / драбинах / воротах / місту ────────
+    if (_loreDismissed) return; // тап-закриття не відкриває новий опис
     const _lore = (uk, en) => { _showLoreTip(_lang === 'en' ? en : uk); };
     // Лорд
     const _lu = units.find(u => u.type === 'lord');
