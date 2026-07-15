@@ -6268,10 +6268,14 @@ function makeEliteAtk(hero) {
 // =================== СПАВН МОНСТРІВ ===================
 // Єдине джерело правди для спавн-таймера: ці ж значення читає кільце-відлік
 // у Floor.draw. Монстри в дорозі від лорда (_deployTo) належать цільовому поверху.
+// Ядро формули — його ж показує вікно розвитку монстра (глибина = levelIdx-1)
+function _spawnIntervalCalc(depth, cdLvl) {
+    return Math.max(1, Math.round((5 + depth * 3) * (1 - 0.05 * cdLvl)));
+}
 function _spawnIntervalFor(f) {
     const _kindName = (typeof _floorKindName === 'function') ? _floorKindName(f) : null;
     const _cdLvl = _kindName ? getMonStatLvl(_kindName, 'cd') : 0;
-    return Math.max(1, Math.round((5 + f.depth * 3) * (1 - 0.05 * _cdLvl)));
+    return _spawnIntervalCalc(f.depth, _cdLvl);
 }
 function _floorMonCount(f) {
     return units.filter(u => u.type === 'monster' && !u._summoned
@@ -16509,8 +16513,9 @@ function _renderMonsterDev() {
     let countLvl = getMonStatLvl(kind, 'count');
     let dmgEff = (baseInfo.atk * (1 + 0.1 * atkLvl));
     let hpEff  = (baseInfo.hp  * (1 + 0.1 * hpLvl));
-    let baseInterval = 4 + (levelIdx - 1) * 3;
-    let intervalEff = Math.max(0.5, baseInterval * (1 - 0.05 * cdLvl));
+    // Спавн: ТА САМА формула, що реально тікає в spawnMinions (глибина поверху
+    // цього виду = levelIdx-1); таймер цілочисельний — показуємо без десяткових
+    let intervalEff = _spawnIntervalCalc(levelIdx - 1, cdLvl);
     let countMaxBase = (levelIdx === 6 ? 4 : 2);
     let countEff = countMaxBase + countLvl;
     let countCap = countMaxBase + 3;
@@ -16519,7 +16524,7 @@ function _renderMonsterDev() {
     const _si = c => `<span class="dl-ico ${c}"></span>`;
     statsHtml += `<div class="stat-row"><span class="stat-name">${_si('dl-sword')} Атака</span><span class="stat-val">${dmgEff.toFixed(1)}</span></div>`;
     statsHtml += `<div class="stat-row"><span class="stat-name">${_si('dl-heart')} ХП</span><span class="stat-val">${hpEff.toFixed(1)}</span></div>`;
-    statsHtml += `<div class="stat-row"><span class="stat-name">${_si('dl-clock')} Спавн</span><span class="stat-val">${intervalEff.toFixed(1)}с</span></div>`;
+    statsHtml += `<div class="stat-row"><span class="stat-name">${_si('dl-clock')} Спавн</span><span class="stat-val">${intervalEff}с</span></div>`;
     statsHtml += `<div class="stat-row"><span class="stat-name">${_si('dl-group')} Кільк.</span><span class="stat-val">${countEff}/${countCap}</span></div>`;
     statsHtml += `<div class="stat-row"><span class="stat-name">${_si(baseInfo.dmgType==='mag'?'dl-spark':'dl-sword')} Тип атаки</span><span class="stat-val">${baseInfo.dmgType==='mag'?'Магія':'Фізика'}</span></div>`;
     const armorStr = baseInfo.armor > 0 ? `${baseInfo.armor}` + (baseInfo.magArmor > 0 ? ` / ${baseInfo.magArmor}` : '') : (baseInfo.magArmor > 0 ? `0 / ${baseInfo.magArmor}` : '—');
