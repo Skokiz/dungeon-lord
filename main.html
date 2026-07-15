@@ -1586,6 +1586,10 @@
         .mon-dev-header {
             display:flex; align-items:center; justify-content:space-between;
             border-bottom: 1px solid #4a2e74; padding-bottom: 10px; margin-bottom: 12px;
+            /* Хрестик доступний завжди: шапка липне до верху при скролі вікна */
+            position: sticky; top: -18px; z-index: 6;
+            background: linear-gradient(180deg, #1a1228 0%, #171026 100%);
+            margin-top: -18px; padding-top: 18px;
         }
         .mon-dev-title { font-size: 18px; font-weight: 700; color:#e8d8ff; letter-spacing: 0.5px; }
         .mon-dev-title .mon-dev-kind { color:#bb88ff; }
@@ -1923,6 +1927,7 @@
 
         @media (max-width: 480px) {
             .mon-dev-card { padding: 12px 14px 10px 14px; }
+            .mon-dev-header { top: -12px; margin-top: -12px; padding-top: 12px; }
             .mon-dev-portrait { width: 80px; height: 80px; }
             .mon-dev-portrait-emoji { font-size: 40px; }
             .mon-stat-btn { padding: 6px 4px; min-height: 68px; }
@@ -3901,7 +3906,8 @@ class Unit {
             let _kHpBonus  = 1 + 0.10 * _kHpLvl;
 
             // ── HP ────────────────────────────────────────────────────────
-            this.hp = (80 + n * 20 + GAME.monsterHpBonus) * (1 + (GAME.monsterHpPct || 0)) * kind.hpMult * _kHpBonus;
+            // 0.93 — балансовий нерф базових статів після спавну від лорда
+            this.hp = (80 + n * 20 + GAME.monsterHpBonus) * 0.93 * (1 + (GAME.monsterHpPct || 0)) * kind.hpMult * _kHpBonus;
             // Лорд-грід: HP-аури (Темний пакт глобально + бойова аура за поверхом)
             {
                 let _lgHp = 1 + (GAME.lordGlobalHpAura || 0) + (_lordAuraOn(floorIdx) ? (GAME.lordAuraHp || 0) : 0);
@@ -3909,7 +3915,7 @@ class Unit {
             }
 
             // ── DMG ───────────────────────────────────────────────────────
-            let scaledAtk = kind.baseAtk + (n < 5 ? n * 1 : 4 + (n - 4) * 2);
+            let scaledAtk = (kind.baseAtk + (n < 5 ? n * 1 : 4 + (n - 4) * 2)) * 0.93;
             let dmgVariance = 0.9 + Math.random() * 0.2;
             this.rawBaseDmg = scaledAtk;
             this._dmgVariance = dmgVariance;
@@ -3946,7 +3952,9 @@ class Unit {
             // ── Phase 4: ability-specific init (еволюція — у Phase 5, після maxHp) ─
         } else if (type === 'hero') {
             let n = this.level - 1;
-            let scale = 1 + GAME.heroScalePercent / 100;
+            // Базові стати героя = 0.40 історичної бази; heroScalePercent —
+            // бонус підсилення (0..300%) поверх неї, а не різання бази
+            let scale = 0.40 * (1 + GAME.heroScalePercent / 100);
 
             // ── Типи героїв за рівнем (10 типів × 2 рівні = 20 рівнів) ────
             // Tier II: успадковує + посилює пасив Tier I
@@ -6249,8 +6257,9 @@ function spawnMinions() {
         // Синхронізуємо f.maxMonsters щоб всі legacy-читачі (UI кнопки, дисплеї) бачили новий максимум
         f.maxMonsters = _maxMon;
         if (count < _maxMon) {
-            // 1-й поверх: 4 сек, кожен наступний +3 сек (в тіках по 1 сек)
-            let _baseInterval = 4 + f.depth * 3;
+            // 1-й поверх: 5 сек, кожен наступний +3 сек (в тіках по 1 сек).
+            // +1с до всіх: балансова компенсація спавну від лорда (живий щит)
+            let _baseInterval = 5 + f.depth * 3;
             let _kindName = _floorKindName(f);
             let _cdLvl = getMonStatLvl(_kindName, 'cd');
             let spawnInterval = Math.max(1, Math.round(_baseInterval * (1 - 0.05 * _cdLvl)));
@@ -6372,7 +6381,7 @@ function loop(ts) {
             }
             // extraHeroChance і heroScalePercent теж обмежені рівнем складності
             GAME.extraHeroChance  = Math.min(50, GAME.difficultyLevel * 4);
-            GAME.heroScalePercent = GAME.heroScaleBase + GAME.difficultyLevel * GAME.heroThreatPct;
+            GAME.heroScalePercent = Math.min(300, GAME.heroScaleBase + GAME.difficultyLevel * GAME.heroThreatPct);
         }
     }
 
@@ -10639,7 +10648,7 @@ const _RUN_MODS = [
     { id:'iron_walls',   icon:'dl-tower',
       name:()=>_t('mod-iron'),
       desc:()=> _lang==='en' ? 'Monsters gain HP based on level' : 'Монстри отримують бонус HP залежно від рівня',
-      apply:() => { GAME.monsterHpBonus = Math.round((GAME.monsterHpBonus||0) + (40 + GAME.heroScalePercent * 0.5)); } },
+      apply:() => { GAME.monsterHpBonus = Math.round((GAME.monsterHpBonus||0) + (40 + GAME.heroScalePercent * 0.3)); } },
 
     { id:'dark_pact',    icon:'dl-moon',
       name:()=>_t('mod-pact'),
@@ -12443,8 +12452,8 @@ function updateUI() {
             if (_mx) _mx.style.display = 'none';
         }
     }
-    el.heroScale.innerText    = 100 + GAME.heroScalePercent;
-    el.maxHeroScale.innerText = 100 + GAME.heroScaleBase + GAME.maxThreatLevel * GAME.heroThreatPct;
+    el.heroScale.innerText    = '+' + Math.round(GAME.heroScalePercent);
+    el.maxHeroScale.innerText = '+' + Math.min(300, GAME.heroScaleBase + GAME.maxThreatLevel * GAME.heroThreatPct);
 
     // HUD city + act label + threat badge
     if (el.storyLabel && typeof _getStoryLevels === 'function') {
@@ -12738,6 +12747,9 @@ function _showLevelBeat(level, onDone) {
     const lvls = _getStoryLevels ? _getStoryLevels() : null;
     const entry = lvls ? lvls[level - 1] : null;
     if (!entry) { onDone(); return; }
+    // Без сюжетного тексту й без special-моменту beat-екран виглядає як
+    // "гра зависла" — показувати нічого, одразу вікно перемоги
+    if (!entry.beat && !entry.special) { onDone(); return; }
 
     const el = document.getElementById('level-beat');
     if (!el) { onDone(); return; }
@@ -12755,7 +12767,7 @@ function _showLevelBeat(level, onDone) {
     el.onclick = null; // prevent backdrop click for special moments
 
     el.style.display = 'flex';
-    if (!entry.special) { _timer = setTimeout(proceed, 5000); }
+    if (!entry.special) { _timer = setTimeout(proceed, 3200); }
 }
 
 function gameWin() {
@@ -13223,12 +13235,10 @@ function upgradeSoulBonus() {
 }
 
 function getLevelConfig(lvl) {
-    // Початковий % сили героїв (heroScalePercent):
-    //   Рівні 1–11: лінійно від 40% до 100% (+6%/рівень) — м'який старт, крутіший ріст
-    //   Рівні 12+:  без змін, 50-й лишається 125%
-    let heroBase;
-    if (lvl <= 11) heroBase = -66 + lvl * 6;                     // 1→-60 (40%), 6→-30 (70%), 11→0 (100%)
-    else           heroBase = Math.round((lvl - 11) * 0.65);     // 12→1%, 20→6%, 30→12%, 50→25%
+    // Сила героїв (heroScalePercent) = БОНУС ПІДСИЛЕННЯ поверх базових статів:
+    //   0% на 1-му рівні → +5%/рівень кампанії (плавно), глобальний кап +300%.
+    //   Загроза протягом рівня і сюжетні вибори (heroThreatPct) додають зверху.
+    let heroBase = Math.min(300, (lvl - 1) * 5);
 
     // maxThreat: +5 на рівнях 4,9,14,19,24,29,34,39,44,49
     const maxThreat = 5 + Math.floor((lvl + 1) / 5) * 5;
@@ -14173,9 +14183,18 @@ function _dailyActivate() {
             _showToast(_t('toast-streak', {n: _dailyState.streak, b: b}));
         }, 500);
     }
-    _dailyRenderPanel();
+    _dailyFlash(3000); // показати список на старті й сховати
+}
+
+// Панель завдань не висить постійно: зринає на пару секунд і зникає
+let _dailyHideTimer = null;
+function _dailyFlash(ms) {
     const panel = document.getElementById('daily-panel');
-    if (panel) panel.style.display = 'block';
+    if (!panel) return;
+    _dailyRenderPanel();
+    panel.style.display = 'block';
+    clearTimeout(_dailyHideTimer);
+    _dailyHideTimer = setTimeout(() => { panel.style.display = 'none'; }, ms || 2000);
 }
 
 function _dailyRenderPanel() {
@@ -14202,7 +14221,7 @@ function _questDone(type) {
     GAME._goldEarnedLevel = (GAME._goldEarnedLevel || 0) + 5;
     _store.set('DLSiege_elite', String(GAME.eliteSouls));
     _showToast(_t('toast-quest'));
-    _dailyRenderPanel();
+    _dailyFlash(2000); // виконаний пункт: показати оновлений список на 2с
 }
 
 function _dailyKillCheck() {
@@ -14463,7 +14482,7 @@ if (location.search.includes('preview')) { (function() {
     const PV_ALL = [...PV_HEROES, ...PV_MONSTERS];
 
     if (!floors.length) floors.push({ y: 400, depth: 0 });
-    GAME.heroScalePercent = Math.max(GAME.heroScalePercent, 20);
+    GAME.heroScalePercent = Math.max(GAME.heroScalePercent, 0);
 
     function pvMakeUnit(e) {
         let u;
