@@ -1432,15 +1432,16 @@
         .overlay-close-btn:hover { background:rgba(100,50,180,.7); }
         /* lord stats strip */
         .lord-upg-stats {
-            display:flex; flex-wrap:wrap; gap:8px;
+            display:grid; grid-template-columns:repeat(3,1fr); gap:8px;
             padding:10px 12px; margin-bottom:14px;
             background:rgba(0,0,0,.3); border:1px solid #2a1050; border-radius:8px;
         }
         .lus-chip {
-            display:flex; align-items:center; gap:5px;
+            display:flex; align-items:center; justify-content:center; gap:5px;
             font-size:12px; color:#c0a8e8;
-            padding:3px 8px; background:rgba(60,20,100,.4);
+            padding:4px 6px; background:rgba(60,20,100,.4);
             border:1px solid #3a1a6a; border-radius:6px;
+            white-space:nowrap; min-width:0; overflow:hidden;
         }
         .lus-chip b { color:#e8d4ff; font-size:13px; }
         .lord-upg-card {
@@ -1489,7 +1490,10 @@
         }
         .lug-cell.maxed { border-color:#ffcc4499; background:rgba(40,28,8,.65); }
         .lug-cell-icon { font-size:24px; line-height:1; margin-top:2px; }
-        .lug-cell-name { font-size:10.5px; color:#ccaaee; text-align:center; font-weight:600; line-height:1.3; }
+        .lug-cell-name {
+            font-size:10.5px; color:#ccaaee; text-align:center; font-weight:600; line-height:1.3;
+            min-height:28px; display:flex; align-items:center; justify-content:center;
+        }
         .lug-pips { display:flex; gap:3px; margin-top:3px; }
         /* Ціна наступного рівня прямо на картці */
         .lug-cost {
@@ -2421,10 +2425,9 @@
 
             <div class="circle-menu" id="menu-lord">
                 <button class="circle-main-btn cmain-lord" id="btn-menu-lord" onclick="openLordUpgrade()"
-                    title="Прокачка Лорда — 3×3 дерево апгрейдів" style="position:relative">
+                    title="Прокачка Лорда — 3×3 дерево апгрейдів">
                     <span class="icon dl-ico dl-crown"></span>
                     <span data-i18n="ctrl-lord">Лорд</span>
-                    <span id="lord-upg-badge" style="position:absolute;top:-6px;right:-6px;background:#3a2a55;border:1px solid #7a5abb;border-radius:9px;padding:1px 5px;font-size:9px;color:#e8d8ff;pointer-events:none">—</span>
                 </button>
             </div>
 
@@ -3685,36 +3688,60 @@ class Floor {
             }
         }
 
-        // ── 10. Ліміт монстрів ───────────────────────────────────────────
+        // ── 10. Ліміт монстрів + кнопка розвитку: єдина капсульна мова ────
+        // Обидва елементи сидять на одній лінії над підлогою: зліва плашка
+        // з лімітом, справа кругла ДНК-кнопка. Стиль спільний з UI-панелями.
         if (!isLordFloor) {
             let _sumCnt = units.filter(u=>u.type==='monster'&&u.floorIdx===this.depth&&u._summoned).length;
-            ctx.fillStyle = 'rgba(255,255,255,0.28)';
-            ctx.font = (isPC ? '16px' : '12px') + ' Arial';
-            ctx.textAlign = 'left';
             let _maxCap = (this.isBatFloor ? 10 : 5);
             let _maxNew = (typeof _floorMaxMonsters === 'function') ? _floorMaxMonsters(this) : this.maxMonsters;
             let _maxShown = Math.max(this.maxMonsters || 0, _maxNew || 0);
-            ctx.fillText((this.isBatFloor ? '🦇' : '🧟') + ' ' + _maxShown + '/' + _maxCap, fx + 5, fy - 5);
-            // Призвані — окремий рядок якщо є
-            if (_sumCnt > 0) {
-                ctx.fillStyle = 'rgba(180,120,255,0.70)';
-                ctx.fillText('✦ ' + _sumCnt + '/5', fx + 5, fy - 18);
-            }
-
-            // ── Кнопка "Розвиток монстра" (Phase 2) — мала іконка ───────────
-            let _dbS = isMobile ? 26 : (isPC ? 38 : 32);
-            let _dbX = fx + fw - _dbS - 6;
-            let _dbY = fy - _dbS - 4;
-            this._devBtnX = _dbX; this._devBtnY = _dbY + camY; this._devBtnW = _dbS; this._devBtnH = _dbS;
+            const _capH = isMobile ? 18 : (isPC ? 26 : 22);
+            const _capFs = isMobile ? 10 : (isPC ? 14 : 12);
+            const _capY = fy - _capH - 4;
             ctx.save();
-            ctx.fillStyle = 'rgba(60,30,100,0.78)';
-            ctxRoundRect(ctx, _dbX, _dbY, _dbS, _dbS, 6); ctx.fill();
-            ctx.strokeStyle = 'rgba(160,90,220,0.85)'; ctx.lineWidth = 1; ctx.stroke();
-            ctx.fillStyle = '#e8d8ff';
-            ctx.textAlign = 'center';
+            ctx.font = '600 ' + _capFs + 'px Arial';
             ctx.textBaseline = 'middle';
-            ctx.font = (isMobile ? '14px' : (isPC ? '20px' : '16px')) + ' Arial';
-            ctx.fillText('🧬', _dbX + _dbS/2, _dbY + _dbS/2 + 1);
+            // Плашка ліміту
+            {
+                const _txt = _maxShown + '/' + _maxCap;
+                const _ico = this.isBatFloor ? '🦇' : '🧟';
+                const _capW = ctx.measureText(_ico + ' ' + _txt).width + 16;
+                ctx.fillStyle = 'rgba(18,9,38,0.72)';
+                ctxRoundRect(ctx, fx + 6, _capY, _capW, _capH, _capH / 2); ctx.fill();
+                ctx.strokeStyle = 'rgba(150,100,220,0.30)'; ctx.lineWidth = 1; ctx.stroke();
+                ctx.textAlign = 'left';
+                ctx.fillStyle = 'rgba(235,225,255,0.75)';
+                ctx.fillText(_ico + ' ' + _txt, fx + 14, _capY + _capH / 2 + 0.5);
+                // Призвані — маленький бейдж поруч
+                if (_sumCnt > 0) {
+                    const _sTxt = '✦ ' + _sumCnt + '/5';
+                    const _sW = ctx.measureText(_sTxt).width + 12;
+                    ctx.fillStyle = 'rgba(50,25,90,0.72)';
+                    ctxRoundRect(ctx, fx + 6 + _capW + 5, _capY, _sW, _capH, _capH / 2); ctx.fill();
+                    ctx.strokeStyle = 'rgba(180,120,255,0.35)'; ctx.stroke();
+                    ctx.fillStyle = 'rgba(200,150,255,0.85)';
+                    ctx.fillText(_sTxt, fx + 12 + _capW + 5, _capY + _capH / 2 + 0.5);
+                }
+            }
+            // Кругла ДНК-кнопка на тій самій лінії, правий край
+            {
+                const _dbS = isMobile ? 26 : (isPC ? 36 : 30);
+                const _dbX = fx + fw - _dbS - 6;
+                const _dbY = fy - _dbS - 4;
+                this._devBtnX = _dbX; this._devBtnY = _dbY + camY; this._devBtnW = _dbS; this._devBtnH = _dbS;
+                const _dcx = _dbX + _dbS / 2, _dcy = _dbY + _dbS / 2;
+                const _dp = 0.5 + 0.5 * Math.sin(_frameNow / 900 + this.depth);
+                ctx.fillStyle = 'rgba(18,9,38,0.78)';
+                ctx.beginPath(); ctx.arc(_dcx, _dcy, _dbS / 2, 0, Math.PI * 2); ctx.fill();
+                ctx.strokeStyle = `rgba(170,105,235,${0.45 + _dp * 0.30})`;
+                ctx.lineWidth = 1.2;
+                ctx.stroke();
+                ctx.fillStyle = '#e8d8ff';
+                ctx.textAlign = 'center';
+                ctx.font = (isMobile ? '13px' : (isPC ? '18px' : '15px')) + ' Arial';
+                ctx.fillText('🧬', _dcx, _dcy + 1);
+            }
             ctx.textBaseline = 'alphabetic';
             ctx.restore();
         }
@@ -5402,9 +5429,42 @@ class Unit {
 
         // Обводки для рангів — тільки для боса (еліти без квадратів)
         if (this.type === 'hero' && this.heroRank === 'boss') {
-            let pulse = 0.6 + 0.4 * Math.sin(_frameNow / 200);
-            ctx.strokeStyle = `rgba(255,0,255,${pulse})`; ctx.lineWidth = 4;
-            ctx.beginPath(); ctx.arc(this.x, dy + this.size/2, this.size/2 + 6, 0, Math.PI*2); ctx.stroke();
+            // Темна аура: дихаючий ореол + рунне коло на підлозі + пасма диму,
+            // що тануть. Малюється ПІД моделлю — бос виглядає загрозою, не ялинкою.
+            const _bt = _frameNow / 1000;
+            const _bcx = this.x, _bfy = this.y - camY;
+            const _bcy = _bfy - this.size * 0.55;
+            const _bp  = 0.5 + 0.5 * Math.sin(_bt * 2.2);
+            // Ореол за силуетом
+            const _bg = ctx.createRadialGradient(_bcx, _bcy, this.size * 0.15, _bcx, _bcy, this.size * 0.95);
+            _bg.addColorStop(0,   `rgba(28,0,48,${0.36 + _bp * 0.14})`);
+            _bg.addColorStop(0.65,`rgba(84,18,132,${0.17 + _bp * 0.09})`);
+            _bg.addColorStop(1,   'rgba(0,0,0,0)');
+            ctx.fillStyle = _bg;
+            ctx.beginPath(); ctx.arc(_bcx, _bcy, this.size * 0.95, 0, Math.PI * 2); ctx.fill();
+            // Рунне коло: два еліпси-пунктири обертаються протилежно
+            ctx.save();
+            ctx.setLineDash([7, 9]);
+            ctx.lineDashOffset = _bt * 26;
+            ctx.strokeStyle = `rgba(200,130,255,${0.48 + _bp * 0.28})`;
+            ctx.lineWidth = 2.2;
+            ctx.beginPath(); ctx.ellipse(_bcx, _bfy, this.size * 0.74, this.size * 0.20, 0, 0, Math.PI * 2); ctx.stroke();
+            ctx.setLineDash([3, 13]);
+            ctx.lineDashOffset = -_bt * 42;
+            ctx.strokeStyle = `rgba(255,214,130,${0.26 + _bp * 0.18})`;
+            ctx.lineWidth = 1.4;
+            ctx.beginPath(); ctx.ellipse(_bcx, _bfy, this.size * 0.94, this.size * 0.27, 0, 0, Math.PI * 2); ctx.stroke();
+            ctx.restore();
+            // Пасма темного диму піднімаються і тануть
+            for (let _wi = 0; _wi < 3; _wi++) {
+                const _ph = (_bt * 0.5 + _wi * 0.333) % 1;
+                const _wx = _bcx + Math.sin(_bt * 1.6 + _wi * 2.1) * this.size * 0.38;
+                const _wy = _bfy - 4 - _ph * this.size * 1.35;
+                ctx.globalAlpha = (1 - _ph) * (1 - _ph) * 0.30;
+                ctx.fillStyle = '#7a3ac0';
+                ctx.beginPath(); ctx.arc(_wx, _wy, 1.6 + (1 - _ph) * 3.2, 0, Math.PI * 2); ctx.fill();
+            }
+            ctx.globalAlpha = 1;
         }
 
         // ── Тінь під юнітом (flat ellipse, без градієнту — дешевше) ────
@@ -6189,6 +6249,8 @@ let _frameNow = 0; // cached Date.now() for this frame — use instead of Date.n
 // Offscreen canvas для фону: зірки + гори + місяць коштують ~3-5ms/frame.
 // Оновлюємо кожні 4 кадри або при зміні cameraY > 0.5px (паралакс).
 let _bgCanvas = null, _bgCtx = null, _bgLastCamY = null, _bgFrame = 0;
+// Місто: offscreen-спрайт + золотий силует-контур (читабельність на телефонах)
+let _cityCv = null, _cityCtx = null, _cityOl = null, _cityOlCtx = null, _cityFrame = -1;
 let _vinCanvas = null; // кешована глобальна віньєтка
 
 // ── Іконки пасивів героїв та здібностей монстрів (module-level, not recreated per frame) ──
@@ -7261,6 +7323,17 @@ function loop(ts) {
         ctx.closePath(); ctx.fill();
     }
 
+    // ── Золотий контур: чіткий силует входу на малих екранах ──────────
+    {
+        ctx.strokeStyle = 'rgba(255,214,150,0.48)';
+        ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.arc(caveX, cavBot, archR + 3, Math.PI, 0); ctx.stroke();
+        ctx.strokeStyle = 'rgba(255,214,150,0.26)';
+        ctx.lineWidth = 1.4;
+        ctx.beginPath(); ctx.moveTo(caveX - archR - wallThk, cavBot); ctx.lineTo(caveX - archR - wallThk, wallTop - 2); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(caveX + archR + wallThk, cavBot); ctx.lineTo(caveX + archR + wallThk, wallTop - 2); ctx.stroke();
+    }
+
     // ── Підпис ────────────────────────────────────────────────────────
     {
         let la=0.55+0.2*Math.sin(_t/600);
@@ -7291,9 +7364,29 @@ function loop(ts) {
         ctx.fillStyle = _hz;
         ctx.fillRect(0, groundY - _hzH, cityX + 235 * _cityScale, _hzH);
     }
-    ctx.save();
-    ctx.translate(cityX, groundY);
-    ctx.scale(_cityScale, _cityScale);
+    // ── Місто → offscreen-спрайт із золотим контуром силуету ────────────────
+    // Локальний простір x∈[-15,215], y∈[-165,25]; перемальовка кожні 4 кадри
+    // (флікер вікон @15fps непомітний), контур = 8 зсувів + source-in заливка.
+    const _ctW = 230, _ctH = 190;
+    const _ctK = _cityScale * _cacheScale;
+    if (!_cityCv || _cityCv._k !== _ctK) {
+        _cityCv = document.createElement('canvas');
+        _cityCv.width = Math.ceil(_ctW * _ctK); _cityCv.height = Math.ceil(_ctH * _ctK);
+        _cityCv._k = _ctK;
+        _cityCtx = _cityCv.getContext('2d');
+        _cityOl = document.createElement('canvas');
+        _cityOl.width = _cityCv.width; _cityOl.height = _cityCv.height;
+        _cityOlCtx = _cityOl.getContext('2d');
+        _cityFrame = -1;
+    }
+    const _ctRedraw = _cityFrame < 0 || (_bgFrame - _cityFrame) >= 4 || _bgFrame < _cityFrame;
+    const _ctxSavedCity = ctx;
+    if (_ctRedraw) {
+    _cityFrame = _bgFrame;
+    ctx = _cityCtx;
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.clearRect(0, 0, _cityCv.width, _cityCv.height);
+    ctx.setTransform(_ctK, 0, 0, _ctK, 15 * _ctK, 165 * _ctK);
     let _cy = -140;
     let _diffType = GAME.difficultyType || 1;
     let _cityType = Math.min(10, Math.max(1, Math.ceil(_diffType / 5)));
@@ -8803,7 +8896,24 @@ function loop(ts) {
         ctx.globalAlpha=1;
     }
 
-    ctx.restore();
+    // ── кінець рендера міста в offscreen: будуємо контур ────────────────────
+    ctx = _ctxSavedCity;
+    {
+        const _oc = _cityOlCtx;
+        _oc.setTransform(1, 0, 0, 1, 0, 0);
+        _oc.clearRect(0, 0, _cityOl.width, _cityOl.height);
+        const _d = Math.max(1, 1.1 * _ctK);
+        [[-_d,0],[_d,0],[0,-_d],[0,_d],[-_d,-_d],[_d,-_d],[-_d,_d],[_d,_d]]
+            .forEach(([ox, oy]) => _oc.drawImage(_cityCv, ox, oy));
+        _oc.globalCompositeOperation = 'source-in';
+        _oc.fillStyle = 'rgba(255,214,150,0.42)';
+        _oc.fillRect(0, 0, _cityOl.width, _cityOl.height);
+        _oc.globalCompositeOperation = 'source-over';
+    }
+    } // end _ctRedraw
+    // На екран: золотий контур під спрайтом міста
+    ctx.drawImage(_cityOl, cityX - 15 * _cityScale, groundY - 165 * _cityScale, _ctW * _cityScale, _ctH * _cityScale);
+    ctx.drawImage(_cityCv, cityX - 15 * _cityScale, groundY - 165 * _cityScale, _ctW * _cityScale, _ctH * _cityScale);
 
     floors.forEach(f => f.draw(GAME.cameraY));
 
@@ -12207,7 +12317,6 @@ function updateUI() {
             heroScale:    document.getElementById('hero-scale'),
             maxHeroScale: document.getElementById('max-hero-scale'),
             btnFloor:     document.getElementById('btn-floor'),
-            lordUpgBadge: document.getElementById('lord-upg-badge'),
             btnTrapSpike: document.getElementById('btn-trap-spike'),
             btnTrapTele:  document.getElementById('btn-trap-tele'),
             btnTrapSummon:document.getElementById('btn-trap-summon'),
@@ -12290,12 +12399,6 @@ function updateUI() {
     if (el.btnFloor) el.btnFloor.disabled = _goldMode
         ? ((GAME.eliteSouls || 0) < _permaFloorCost() || floors.length >= _MAX_FLOORS)
         : s < GAME.floorCost;
-
-    // Бейдж кнопки прокачки — показуємо ціну наступного доступного апгрейду
-    if (el.lordUpgBadge) {
-        const _nextCost = _lordUpgNextCost();
-        el.lordUpgBadge.textContent = _nextCost ? _nextCost + '💀' : '✓';
-    }
 
     const lordFloorIdx = floors.length - 1;
     const hasFreeTrapFloor = floors.some(f => f.depth !== lordFloorIdx && !f.hasTrap);
