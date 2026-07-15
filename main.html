@@ -5310,7 +5310,12 @@ class Unit {
                 this.y += 2 * _dt;
                 if (this.y >= cur.y) { this.y = cur.y; this.isClimbing = false; }
             } else {
-                if (Math.abs(this.x - centerX) > 30) this.x += (centerX - this.x > 0 ? 1 : -1) * this.speed * _dt;
+                // Лордів поверх: герой іде ДО Володаря (не до центру — лорд
+                // з троном/АІ більше не стоїть у центрі, і герой не діставав
+                // його своїм радіусом атаки 38 проти лордових 60)
+                const _lordT = units.find(u => u.type === 'lord' && u.hp > 0);
+                const _hx = _lordT ? _lordT.x : centerX;
+                if (Math.abs(this.x - _hx) > 26) this.x += (_hx - this.x > 0 ? 1 : -1) * this.speed * _dt;
             }
         }
     }
