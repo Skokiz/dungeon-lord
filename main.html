@@ -2594,7 +2594,7 @@
 </div>
 
 <script src="models/i18n.js?v=15"></script>
-<script src="models/draw_slime.js?v=6"></script>
+<script src="models/draw_slime.js?v=7"></script>
 <script src="models/draw_skeleton.js?v=1"></script>
 <script src="models/hero_flat.js?v=25"></script>
 <script src="models/draw_monsters.js?v=25"></script>
@@ -16471,9 +16471,11 @@ function _monDevBaseInfoFor(level) {
     };
     let info = BASE_BY_LEVEL[level] || BASE_BY_LEVEL[20];
     let n = level - 1;
-    let scaledAtk = info.atk + (n < 5 ? n * 1 : 4 + (n - 4) * 2);
-    let scaledHp  = (80 + n * 20) * info.hpMult;
-    return { atk: scaledAtk, hp: Math.round(scaledHp), dmgType: info.dmgType,
+    // 0.93 — той самий балансовий нерф, що в конструкторі Unit: описи
+    // характеристик показують РЕАЛЬНІ поточні значення, не старі базові
+    let scaledAtk = (info.atk + (n < 5 ? n * 1 : 4 + (n - 4) * 2)) * 0.93;
+    let scaledHp  = (80 + n * 20) * 0.93 * info.hpMult;
+    return { atk: Math.round(scaledAtk * 10) / 10, hp: Math.round(scaledHp), dmgType: info.dmgType,
              armor: info.armor, magArmor: info.magArmor, regen: info.regen, atkSpd: info.atkSpd };
 }
 

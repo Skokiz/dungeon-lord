@@ -79,14 +79,31 @@ function drawSlimeMonster(unit, camY) {
         _xOff = unit._sDir * _windup * _R * 0.25;
         _angry = _windup;
     } else if (unit.state === 'move') {
-        const air = Math.max(0, Math.sin(unit._sHopPh * Math.PI));
-        _sx = 1 + (1 - air) * 0.24 - air * 0.12;
-        _sy = 1 - (1 - air) * 0.18 + air * 0.18;
-        if (unit._sHopPh > 0.82) {
-            const spk = Math.sin((unit._sHopPh - 0.82) / 0.18 * Math.PI) * 0.14;
-            _sx += spk;  _sy -= spk * 0.7;
+        // Стрибок у 3 фази: анітисипація (притискається до підлоги і
+        // розпливається вбоки) → політ зі стретчем → сплюск на приземленні
+        const ph = unit._sHopPh;
+        if (ph < 0.28) {
+            // Присідання перед стрибком: тисне до землі, плющиться в сторони
+            const e = (ph / 0.28) * (ph / 0.28); // сильніше в кінці
+            _sx = 1 + 0.38 * e;
+            _sy = 1 - 0.30 * e;
+            _yOff = 0;
+        } else if (ph < 0.78) {
+            // Політ: різкий вихід зі squash у stretch, апекс — витягнутий
+            const t = (ph - 0.28) / 0.50;
+            const air = Math.sin(t * Math.PI);
+            const rel = Math.min(1, t * 2.5); // швидка нормалізація форми на злеті
+            _sx = 1.38 - 0.48 * rel - air * 0.06;
+            _sy = 0.70 + 0.42 * rel + air * 0.10;
+            _yOff = air * _R * 0.85;
+        } else {
+            // Приземлення: пружний сплюск і повернення до форми
+            const t = (ph - 0.78) / 0.22;
+            const spk = Math.sin(t * Math.PI) * 0.28;
+            _sx = 0.90 + 0.10 * t + spk;
+            _sy = 1.12 - 0.12 * t - spk * 0.8;
+            _yOff = 0;
         }
-        _yOff = air * _R * 0.75;
     } else {
         const w = Math.sin(_frameNow / 680) * 1.5;
         _sx = 1 + w * 0.004;  _sy = 1 - w * 0.004;
@@ -100,9 +117,9 @@ function drawSlimeMonster(unit, camY) {
     unit._hpBarY = _cy - _R * _sy - 12;
 
     // ── Dust on landing ─────────────────────────────────────────
-    if (unit.state === 'move' && unit._sHopPh > 0.82 && unit._sHopPh < 0.98) {
+    if (unit.state === 'move' && unit._sHopPh > 0.78 && unit._sHopPh < 0.96) {
         ctx.shadowBlur = 0;
-        const da = Math.sin((unit._sHopPh - 0.82) / 0.16 * Math.PI) * 0.32;
+        const da = Math.sin((unit._sHopPh - 0.78) / 0.18 * Math.PI) * 0.32;
         ctx.fillStyle = `rgba(80,50,110,${da})`;
         ctx.beginPath(); ctx.ellipse(_cx + _xOff, _floorY, _R*_sx*1.15, _R*0.19, 0, 0, Math.PI*2); ctx.fill();
     }
