@@ -357,15 +357,23 @@
            внизу/по центру і лягають поверх кнопок відкритих вікон (дерево еволюцій,
            грід лорда). Коли видима будь-яка модалка — піднімаємо їх у верхню кромку:
            там лише заголовок вікна, жодного інтерактиву. !important бо інлайн-стилі. */
-        body:has(.overlay-base[style*="flex"]) #lore-tip,
-        body:has(#bestiary-overlay[style*="flex"]) #lore-tip,
-        body:has(#help-modal[style*="flex"]) #lore-tip,
+        /* Матчимо САМЕ display:flex (обидва серіалізовані варіанти) — просто
+           "flex" ловив і сховані вікна з інлайн flex-direction (level-beat) */
+        body:has(.overlay-base[style*="display: flex"]) #lore-tip,
+        body:has(.overlay-base[style*="display:flex"]) #lore-tip,
+        body:has(#bestiary-overlay[style*="display: flex"]) #lore-tip,
+        body:has(#bestiary-overlay[style*="display:flex"]) #lore-tip,
+        body:has(#help-modal[style*="display: flex"]) #lore-tip,
+        body:has(#help-modal[style*="display:flex"]) #lore-tip,
         body:has(#donesnnia-overlay.visible) #lore-tip {
             top: calc(env(safe-area-inset-top, 0px) + var(--tg-top-inset, 0px) + 8px) !important;
         }
-        body:has(.overlay-base[style*="flex"]) #abyss-voice,
-        body:has(#bestiary-overlay[style*="flex"]) #abyss-voice,
-        body:has(#help-modal[style*="flex"]) #abyss-voice,
+        body:has(.overlay-base[style*="display: flex"]) #abyss-voice,
+        body:has(.overlay-base[style*="display:flex"]) #abyss-voice,
+        body:has(#bestiary-overlay[style*="display: flex"]) #abyss-voice,
+        body:has(#bestiary-overlay[style*="display:flex"]) #abyss-voice,
+        body:has(#help-modal[style*="display: flex"]) #abyss-voice,
+        body:has(#help-modal[style*="display:flex"]) #abyss-voice,
         body:has(#donesnnia-overlay.visible) #abyss-voice {
             bottom: auto !important;
             top: calc(env(safe-area-inset-top, 0px) + var(--tg-top-inset, 0px) + 8px) !important;
@@ -12657,11 +12665,93 @@ window.addEventListener('error', (ev) => {
         setTimeout(() => {
             if (!GAME_PAUSED && !GAME.gameOver && Date.now() - _loopBeat > 1000 && _crashRestarts < 5) {
                 _crashRestarts++;
-                requestAnimationFrame(loop);
+                _wdRestart();
             }
         }, 1200); // даємо циклу 1.2с довести, що він живий, перш ніж реанімувати
     } catch (e) {}
 });
+
+// ── Вартовий rAF-ланцюга ────────────────────────────────────────────────────
+// Ланцюг requestAnimationFrame може померти БЕЗ винятку (гонки авто-паузи при
+// згортанні, дивацтва вебв'ю Telegram Desktop) — гра "просто зависає" без
+// червоного рядка. Вартовий щосекунди перевіряє пульс кадрів (_loopBeat) і
+// реанімує цикл. Подвійний ланцюг неможливий: рестарт-колбек запускає loop
+// лише якщо пульс ДОСІ мертвий на момент його виконання.
+let _wdQueued = false, _wdCount = 0;
+function _wdRestart() {
+    if (_wdQueued) return;
+    _wdQueued = true;
+    requestAnimationFrame((ts) => {
+        _wdQueued = false;
+        if (Date.now() - _loopBeat > 500) { _wdCount++; loop(ts); }
+    });
+}
+setInterval(() => {
+    try {
+        if (GAME_PAUSED || GAME.gameOver || !GAME.gameStarted) return;
+        if (document.hidden) return; // прихована вкладка легітимно не малює
+        if (Date.now() - _loopBeat > 2500) _wdRestart();
+    } catch (e) {}
+}, 1000);
+
+// Promise-помилки не проходять через 'error' — показуємо і їх
+window.addEventListener('unhandledrejection', (ev) => {
+    try {
+        const r = ev && ev.reason;
+        const msg = (r && (r.message || r.description)) || String(r);
+        let box = document.getElementById('crash-line');
+        if (!box) {
+            box = document.createElement('div');
+            box.id = 'crash-line';
+            box.style.cssText = 'position:fixed;bottom:2px;left:2px;right:2px;z-index:99999;' +
+                'background:rgba(60,0,10,0.92);color:#ffb0b0;font:10px monospace;' +
+                'padding:3px 6px;border-radius:4px;pointer-events:none;white-space:pre-wrap';
+            document.body.appendChild(box);
+        }
+        box.textContent = '⚠ promise: ' + msg;
+    } catch (e) {}
+});
+
+// ── Чорна скринька ──────────────────────────────────────────────────────────
+// Раз на 2с пишемо зріз стану в localStorage. Якщо сесія обірвалась не через
+// gameWin/gameOver/перезапуск (заліз фриз) — наступний запуск покаже, на чому
+// все стало: рівень, хвиля, бос, кількість юнітів. Це можна заскрінити.
+setInterval(() => {
+    try {
+        if (!GAME || GAME.gameOver || GAME_PAUSED) return;
+        if (!units.length) return; // гра ще не йде
+        localStorage.setItem('DL_blackbox', JSON.stringify({
+            t: Date.now(), bg: (typeof _bgFrame !== 'undefined') ? _bgFrame : -1,
+            lvl: GAME.currentLevel, wave: !!GAME.isWave,
+            units: units.length, city: Math.round(GAME.cityHP),
+            boss: units.some(u => u.heroRank === 'boss' && u.hp > 0),
+            w: window.innerWidth, h: window.innerHeight,
+            wd: _wdCount, cr: (typeof _crashRestarts !== 'undefined') ? _crashRestarts : 0,
+        }));
+        localStorage.removeItem('DL_bb_clean');
+    } catch (e) {}
+}, 2000);
+function _bbMarkClean() { try { localStorage.setItem('DL_bb_clean', '1'); } catch (e) {} }
+window.addEventListener('beforeunload', _bbMarkClean);
+// Звіт про обірвану сесію — раз, при наступному завантаженні
+(function _bbReport() {
+    try {
+        const raw = localStorage.getItem('DL_blackbox');
+        if (!raw || localStorage.getItem('DL_bb_clean') === '1') return;
+        const b = JSON.parse(raw);
+        if (!b || Date.now() - b.t < 15000) return; // щойно самі писали — не звітуємо
+        console.warn('DL blackbox (обірвана сесія):', b);
+        setTimeout(() => {
+            try {
+                _showLoreTip('⚠ <b>Минула сесія обірвалась.</b> Рівень ' + b.lvl
+                    + (b.wave ? ', під час хвилі' : '') + (b.boss ? ', на полі був бос' : '')
+                    + ', юнітів: ' + b.units + ', місто: ' + b.city
+                    + '.<br><span style="color:#8877aa;font-size:11px">Скрінь це повідомлення, якщо гра зависала</span>');
+            } catch (e) {}
+        }, 2500);
+        localStorage.removeItem('DL_blackbox');
+    } catch (e) {}
+})();
 
 // ── Авто-пригасання HP-панелі ───────────────────────────────────────────────
 // На коротких екранах (Telegram Mini App) камера підтягує поверхню під HUD,
@@ -12968,6 +13058,7 @@ function gameWin() {
     GAME.gameOver = true;
     _soulSalvageDone = false;
     _closeOpenDecision();
+    try { _bbMarkClean(); } catch(e) {}
 
     try { _Music.stop(true); } catch(e) {}
     _SFX.win();
@@ -13021,6 +13112,7 @@ function gameOver() {
     GAME.gameOver = true;
     _soulSalvageDone = false;
     _closeOpenDecision();
+    try { _bbMarkClean(); } catch(e) {}
     try {
         if (GAME.cityHP / GAME.maxCityHP < 0.05)
             _ctxHint('almost_win',
