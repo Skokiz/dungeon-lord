@@ -343,6 +343,9 @@
             display: none; flex-direction: column;
             justify-content: center; align-items: center;
             pointer-events: none;
+            /* Фулскрін TMA: вікна (і їхні хрестики) не лізуть під кнопки Telegram */
+            padding-top: calc(env(safe-area-inset-top, 0px) + var(--tg-top-inset, 0px));
+            box-sizing: border-box;
         }
         /* Коли оверлей показаний — відновлюємо pointer-events і fade-in */
         @keyframes overlayFadeIn {
@@ -926,7 +929,11 @@
             /* Story */
             #story-lord-canvas { width: 110px; height: 160px; }
             .story-lord-name { font-size: 12px; }
-            .story-bubble-wrap { max-width: 600px; margin-left: 100px; }
+            /* Планшет/ПК: бульку — в горизонтальний центр, аватар тримається її лівого
+               краю. #story-screen у селекторі: базові правила йдуть ПІСЛЯ медіа-блоків
+               і без вищої специфічності перебивали ці. */
+            #story-screen .story-bubble-wrap { max-width: 600px; margin: 0 auto; }
+            #story-screen .story-lord-wrap { left: max(12px, calc(50% - 410px)); }
             #story-text { font-size: 16px; }
             .story-choice-btn { font-size: 14px; padding: 12px 14px; }
 
@@ -1015,10 +1022,10 @@
             #btn-close-instructions { font-size: 18px; padding: 14px 42px; }
 
             /* Story */
-            .story-lord-wrap { left: 20px; bottom: 100px; }
+            #story-screen .story-lord-wrap { left: max(20px, calc(50% - 505px)); bottom: calc(16vh + 72px); }
             #story-lord-canvas { width: 130px; height: 190px; }
             .story-lord-name { font-size: 13px; }
-            .story-bubble-wrap { max-width: 700px; margin-left: 120px; }
+            #story-screen .story-bubble-wrap { max-width: 700px; margin: 0 auto; }
             .story-bubble { padding: 20px 24px 16px; border-radius: 22px; }
             #story-text { font-size: 18px; min-height: 60px; }
             #story-tap-hint { font-size: 13px; }
@@ -1053,7 +1060,8 @@
             /* скролиться сам — кнопка завжди досяжна */
             overflow-y: auto; -webkit-overflow-scrolling: touch;
             display: flex; align-items: flex-start; justify-content: center;
-            z-index: 9999; padding: 12px 12px 24px;
+            z-index: 9999;
+            padding: calc(12px + env(safe-area-inset-top, 0px) + var(--tg-top-inset, 0px)) 12px 24px;
         }
         #help-box {
             background: linear-gradient(155deg, #1a0930 0%, #0e051e 100%);
@@ -1153,7 +1161,8 @@
             display:none; flex-direction:column; align-items:center;
             justify-content:center; overflow-y:auto;
             box-sizing:border-box;
-            padding:24px 16px 32px; gap:16px; z-index:350;
+            padding:calc(24px + env(safe-area-inset-top, 0px) + var(--tg-top-inset, 0px)) 16px 32px;
+            gap:16px; z-index:350;
         }
         /* Центрування, але зі скролом коли карток стане більше */
         #soul-dungeon-screen > :first-child { margin-top:auto; }
@@ -1244,7 +1253,8 @@
             background:rgba(5,3,15,0.97);
             display:none; flex-direction:column; align-items:center;
             justify-content:flex-start; overflow-y:auto;
-            padding:24px 18px 32px; gap:14px; z-index:350; }
+            padding:calc(24px + env(safe-area-inset-top, 0px) + var(--tg-top-inset, 0px)) 18px 32px;
+            gap:14px; z-index:350; }
         #instructions-screen h2 { color:#ffdd66; text-align:center; margin:0; }
         .instr-section { width:100%; max-width:420px; }
         .instr-section h3 { color:#cc88ff; font-size:14px; margin:0 0 6px; }
@@ -1265,12 +1275,14 @@
             position:fixed; top:0; left:0; width:100%; height:100%;
             background:rgba(4,2,12,0.96);
             display:none; flex-direction:column; align-items:center;
-            justify-content:flex-end; padding:0 0 28px;
+            /* 16vh знизу — булька ближче до центру екрана, не притиснута до кнопок */
+            justify-content:flex-end; padding:0 0 16vh;
             z-index:500; gap:0; }
 
         /* Лорд аватар (знизу ліворуч, виходить за межі бульки) */
         .story-lord-wrap {
-            position:absolute; left:12px; bottom:80px;
+            /* тримається на 52px вище нижньої кромки бульки (padding сторі-екрана) */
+            position:absolute; left:12px; bottom:calc(16vh + 52px);
             display:flex; flex-direction:column; align-items:center; gap:4px;
             pointer-events:none; }
         #story-lord-canvas { width:90px; height:130px; }
@@ -1343,7 +1355,8 @@
 
         /* Кнопка пропуску */
         #story-skip-btn {
-            position:absolute; top:14px; right:14px;
+            position:absolute; right:14px;
+            top:calc(14px + env(safe-area-inset-top, 0px) + var(--tg-top-inset, 0px));
             background:transparent; border:1px solid #442266;
             border-radius:8px; color:#664488;
             font-size:11px; padding:5px 12px;
@@ -1981,6 +1994,7 @@
             justify-content: center;
             align-items: center;
             padding: 16px;
+            padding-top: calc(16px + env(safe-area-inset-top, 0px) + var(--tg-top-inset, 0px));
             box-sizing: border-box;
         }
         #bestiary-panel {
@@ -2257,19 +2271,19 @@
     </div>
     <div class="instr-section">
         <h3 data-i18n="instr-souls-h">💀 Душі</h3>
-        <p data-i18n="instr-souls">Вбивай героїв — отримуй Душі 💀. Купуй нові поверхи, монстрів, пастки, покращуй Лорда і монстрів.</p>
+        <p data-i18n="instr-souls">Вбивай героїв — отримуй Душі 💀. Купуй нові поверхи, пастки, покращуй монстрів через Розвиток.</p>
     </div>
     <div class="instr-section">
         <h3><span class="esoul-gem"></span> <span data-i18n="instr-elite-h">Елітні Душі</span></h3>
-        <p data-i18n="instr-elite">З елітних героїв випадає 1💀, з босів — 3💀. Вони зберігаються між рівнями. Використовуй їх у Душі Підземелля для назавжди-покращень.</p>
+        <p data-i18n="instr-elite">З елітних героїв випадає 2, з босів — 6 золотих душ. Вони зберігаються між рівнями. Витрачай у Душі Підземелля, на золоті гілки Розвитку і на Збирач душ.</p>
     </div>
     <div class="instr-section">
         <h3 data-i18n="instr-floor-h">🏗️ Поверхи</h3>
-        <p data-i18n="instr-floor">Будуй нові поверхи кнопкою "Побудувати поверх". Кожен поверх може мати монстрів і пастки.</p>
+        <p data-i18n="instr-floor">Будуй нові поверхи кнопкою «Новий поверх». Кожен поверх може мати монстрів і пастки.</p>
     </div>
     <div class="instr-section">
         <h3 data-i18n="instr-mon-h">⚔️ Монстри</h3>
-        <p data-i18n="instr-mon">Виклик монстра коштує душі. Покращуй атаку і HP монстрів глобально через меню.</p>
+        <p data-i18n="instr-mon">Монстри виникають на поверхах автоматично. Покращуй їхню атаку, ХП і кількість у меню Розвитку.</p>
     </div>
     <div class="instr-section">
         <h3 data-i18n="instr-trap-h">🌀 Пастки</h3>
@@ -2629,7 +2643,7 @@
     </div>
 </div>
 
-<script src="models/i18n.js?v=15"></script>
+<script src="models/i18n.js?v=16"></script>
 <script src="models/draw_slime.js?v=7"></script>
 <script src="models/draw_skeleton.js?v=2"></script>
 <script src="models/hero_flat.js?v=25"></script>
@@ -17309,12 +17323,12 @@ const StoryManager = (function() {
                 loadFn: _generatePersonalizedStory,
             },
             // Навчання — органічно вплетене в монолог лорда
-            { text: '⚔️ До ділу. Зліва з\'являються герої. Вони йдуть убити мене та розграбувати підземелля. Так, безжальні. Принаймні намагаються.' },
-            { text: '🏙️ Справа — місто. Твоя мета: знизити HP міста ❤️ до нуля, поки герої не вб\'ють мого Лорда 💜. Тобто мене. Якщо мене вб\'ють — гра скінчена. Це погано. Для мене особисто.' },
+            { text: '⚔️ До ділу. <b>Зліва — місто</b>. З нього лізуть герої і йдуть до входу в моє підземелля <b>справа</b> — убити мене та розграбувати все, що погано прибите. Так, безжальні. Принаймні намагаються.' },
+            { text: '🏙️ Твоя мета: знизити HP міста ❤️ до нуля, поки герої не вб\'ють мого Лорда 💜. Тобто мене. Якщо мене вб\'ють — гра скінчена. Це погано. Для мене особисто.' },
             { text: '💀 За вбитих героїв отримуєш Душі 💀. На них купляй монстрів, нові поверхи і пастки. Не витрачай все одразу — якщо не любиш жити небезпечно. Хоча судячи з того, що ти тут...' },
             { text: '🏗️ Будуй нові поверхи — більше рівнів, більше монстрів-захисників. Кожен поверх можна покращити. Чим глибше — тим страшніші сусіди.' },
             { text: '🌀 Пастки — найкращі друзі ледаря. Шипи 🗡️ — миттєвий удар, Дротик 🪃 — отруйний, Телепорт 🌀 — відправляє героя назад (чемно), Монстр 👾 — виклик підсиленого захисника.' },
-            { text: '⚔️ Кнопка ХВИЛЯ дає буст усім монстрам на 8 секунд. Є й кнопка «Покращити Лорда» — це мені дуже подобається. Натискай частіше. Наполягаю.' },
+            { text: '⚔️ Кнопка <b>АТАКА</b> жене всіх моїх дітей нагору — 8 секунд суцільного штурму міста. Є й кнопка <b>ЛОРД</b> — прокачка мене. Це мені дуже подобається. Натискай частіше. Наполягаю.' },
             { text: '👑 Ну що ж. Готовий? Не бійся помилок — тут кожна поразка «спланована розробником для покращення ігрового досвіду». Офіційна позиція. Так і запиши.' },
         ];
     }
