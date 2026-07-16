@@ -2670,6 +2670,16 @@ const canvas = document.getElementById('gameCanvas');
 // ctx — let, не const, щоб можна було тимчасово переключати на portrait-canvas у меню розвитку
 let ctx = canvas.getContext('2d');
 
+// Телефони: shadowBlur вимкнений ЗАВЖДИ (не чекаючи губернатора) — по моделях
+// ~350 викликів, на мобільних GPU це головне джерело лагів у насичених боях.
+// Ефекти "сяйва" мають дешеві fallback-и (ореоли з напівпрозорих дисків).
+if (window.innerWidth < 768) {
+    try {
+        Object.defineProperty(ctx, 'shadowBlur', { get: () => 0, set: () => {} });
+        ctx.__shadowsOff = true;
+    } catch (e) {}
+}
+
 // ═══════════════════════════════════════════════════════════
 // Skeleton + Slime drawing moved to models/draw_skeleton.js, models/draw_slime.js
 // drawSlug below remains inline (not yet extracted)
@@ -5552,57 +5562,8 @@ class Unit {
         dy -= _bob;
         dx  = this.x - this.size / 2; // перераховуємо на випадок якщо x змінився
 
-        // Обводки для рангів — тільки для боса (еліти без квадратів)
-        if (this.type === 'hero' && this.heroRank === 'boss') {
-            // Темна аура: дихаючий ореол + рунне коло на підлозі + пасма диму,
-            // що тануть. Малюється ПІД моделлю — бос виглядає загрозою, не ялинкою.
-            const _bt = _frameNow / 1000;
-            const _bcx = this.x, _bfy = this.y - camY;
-            const _bcy = _bfy - this.size * 0.55;
-            const _bp  = 0.5 + 0.5 * Math.sin(_bt * 2.2);
-            // Ореол за силуетом — кешований спрайт (createRadialGradient щокадру
-            // помітно дорогий на iOS); "дихання" — модуляцією globalAlpha
-            const _bR = Math.ceil(this.size * 0.95);
-            if (!this._auraCv || this._auraCv._r !== _bR) {
-                const c = document.createElement('canvas');
-                c.width = c.height = _bR * 2;
-                const g = c.getContext('2d');
-                const gr = g.createRadialGradient(_bR, _bR, this.size * 0.15, _bR, _bR, _bR);
-                gr.addColorStop(0,    'rgba(28,0,48,0.46)');
-                gr.addColorStop(0.65, 'rgba(84,18,132,0.23)');
-                gr.addColorStop(1,    'rgba(0,0,0,0)');
-                g.fillStyle = gr;
-                g.beginPath(); g.arc(_bR, _bR, _bR, 0, Math.PI * 2); g.fill();
-                c._r = _bR;
-                this._auraCv = c;
-            }
-            ctx.globalAlpha = 0.78 + _bp * 0.30;
-            ctx.drawImage(this._auraCv, _bcx - _bR, _bcy - _bR);
-            ctx.globalAlpha = 1;
-            // Рунне коло: два еліпси-пунктири обертаються протилежно
-            ctx.save();
-            ctx.setLineDash([7, 9]);
-            ctx.lineDashOffset = _bt * 26;
-            ctx.strokeStyle = `rgba(200,130,255,${0.48 + _bp * 0.28})`;
-            ctx.lineWidth = 2.2;
-            ctx.beginPath(); ctx.ellipse(_bcx, _bfy, this.size * 0.74, this.size * 0.20, 0, 0, Math.PI * 2); ctx.stroke();
-            ctx.setLineDash([3, 13]);
-            ctx.lineDashOffset = -_bt * 42;
-            ctx.strokeStyle = `rgba(255,214,130,${0.26 + _bp * 0.18})`;
-            ctx.lineWidth = 1.4;
-            ctx.beginPath(); ctx.ellipse(_bcx, _bfy, this.size * 0.94, this.size * 0.27, 0, 0, Math.PI * 2); ctx.stroke();
-            ctx.restore();
-            // Пасма темного диму піднімаються і тануть
-            for (let _wi = 0; _wi < 3; _wi++) {
-                const _ph = (_bt * 0.5 + _wi * 0.333) % 1;
-                const _wx = _bcx + Math.sin(_bt * 1.6 + _wi * 2.1) * this.size * 0.38;
-                const _wy = _bfy - 4 - _ph * this.size * 1.35;
-                ctx.globalAlpha = (1 - _ph) * (1 - _ph) * 0.30;
-                ctx.fillStyle = '#7a3ac0';
-                ctx.beginPath(); ctx.arc(_wx, _wy, 1.6 + (1 - _ph) * 3.2, 0, Math.PI * 2); ctx.fill();
-            }
-            ctx.globalAlpha = 1;
-        }
+        // Бос — без аури/ореолів/диму (лагали на телефонах): його читає розмір
+        // (34 + mult*2), фіолетовий тінт моделі і ☠️-бейдж над головою
 
         // ── Тінь під юнітом (flat ellipse, без градієнту — дешевше) ────
         {
