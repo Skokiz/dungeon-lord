@@ -96,8 +96,9 @@
         ═══════════════════════════════════════════════════ */
         #hud {
             position: absolute;
-            /* --tg-top-inset: відступ від Telegram у фулскрін-режимі (статус-бар + кнопки TG) */
-            top: calc(env(safe-area-inset-top, 0px) + var(--tg-top-inset, 0px)); left: 0; right: 0;
+            /* --tg-top-inset уже містить статус-бар + кнопки TG, а env() — лише статус-бар:
+               MAX, не сума (сума рахувала статус-бар двічі — панель провалювалась) */
+            top: calc(max(env(safe-area-inset-top, 0px), var(--tg-top-inset, 0px))); left: 0; right: 0;
             pointer-events: none;
             display: flex;
             justify-content: space-between;
@@ -157,7 +158,7 @@
         /* Кнопка паузи — абсолютно над canvas */
         #pause-toggle-btn {
             position: absolute;
-            top: calc(6px + env(safe-area-inset-top, 0px) + var(--tg-top-inset, 0px)); left: 50%; transform: translateX(-50%);
+            top: calc(6px + max(env(safe-area-inset-top, 0px), var(--tg-top-inset, 0px))); left: 50%; transform: translateX(-50%);
             background: var(--surface-1); border: 1px solid var(--border-soft);
             color: var(--text-mid); border-radius: var(--radius-s);
             font-weight: 500;
@@ -344,7 +345,7 @@
             justify-content: center; align-items: center;
             pointer-events: none;
             /* Фулскрін TMA: вікна (і їхні хрестики) не лізуть під кнопки Telegram */
-            padding-top: calc(env(safe-area-inset-top, 0px) + var(--tg-top-inset, 0px));
+            padding-top: calc(max(env(safe-area-inset-top, 0px), var(--tg-top-inset, 0px)));
             box-sizing: border-box;
         }
         /* Коли оверлей показаний — відновлюємо pointer-events і fade-in */
@@ -369,7 +370,7 @@
         body:has(#help-modal[style*="display: flex"]) #lore-tip,
         body:has(#help-modal[style*="display:flex"]) #lore-tip,
         body:has(#donesnnia-overlay.visible) #lore-tip {
-            top: calc(env(safe-area-inset-top, 0px) + var(--tg-top-inset, 0px) + 8px) !important;
+            top: calc(max(env(safe-area-inset-top, 0px), var(--tg-top-inset, 0px)) + 8px) !important;
         }
         body:has(.overlay-base[style*="display: flex"]) #abyss-voice,
         body:has(.overlay-base[style*="display:flex"]) #abyss-voice,
@@ -379,7 +380,7 @@
         body:has(#help-modal[style*="display:flex"]) #abyss-voice,
         body:has(#donesnnia-overlay.visible) #abyss-voice {
             bottom: auto !important;
-            top: calc(env(safe-area-inset-top, 0px) + var(--tg-top-inset, 0px) + 8px) !important;
+            top: calc(max(env(safe-area-inset-top, 0px), var(--tg-top-inset, 0px)) + 8px) !important;
         }
 
         #game-over {
@@ -1061,7 +1062,7 @@
             overflow-y: auto; -webkit-overflow-scrolling: touch;
             display: flex; align-items: flex-start; justify-content: center;
             z-index: 9999;
-            padding: calc(12px + env(safe-area-inset-top, 0px) + var(--tg-top-inset, 0px)) 12px 24px;
+            padding: calc(12px + max(env(safe-area-inset-top, 0px), var(--tg-top-inset, 0px))) 12px 24px;
         }
         #help-box {
             background: linear-gradient(155deg, #1a0930 0%, #0e051e 100%);
@@ -1161,7 +1162,7 @@
             display:none; flex-direction:column; align-items:center;
             justify-content:center; overflow-y:auto;
             box-sizing:border-box;
-            padding:calc(24px + env(safe-area-inset-top, 0px) + var(--tg-top-inset, 0px)) 16px 32px;
+            padding:calc(24px + max(env(safe-area-inset-top, 0px), var(--tg-top-inset, 0px))) 16px 32px;
             gap:16px; z-index:350;
         }
         /* Центрування, але зі скролом коли карток стане більше */
@@ -1253,7 +1254,7 @@
             background:rgba(5,3,15,0.97);
             display:none; flex-direction:column; align-items:center;
             justify-content:flex-start; overflow-y:auto;
-            padding:calc(24px + env(safe-area-inset-top, 0px) + var(--tg-top-inset, 0px)) 18px 32px;
+            padding:calc(24px + max(env(safe-area-inset-top, 0px), var(--tg-top-inset, 0px))) 18px 32px;
             gap:14px; z-index:350; }
         #instructions-screen h2 { color:#ffdd66; text-align:center; margin:0; }
         .instr-section { width:100%; max-width:420px; }
@@ -1356,7 +1357,7 @@
         /* Кнопка пропуску */
         #story-skip-btn {
             position:absolute; right:14px;
-            top:calc(14px + env(safe-area-inset-top, 0px) + var(--tg-top-inset, 0px));
+            top:calc(14px + max(env(safe-area-inset-top, 0px), var(--tg-top-inset, 0px)));
             background:transparent; border:1px solid #442266;
             border-radius:8px; color:#664488;
             font-size:11px; padding:5px 12px;
@@ -1994,7 +1995,7 @@
             justify-content: center;
             align-items: center;
             padding: 16px;
-            padding-top: calc(16px + env(safe-area-inset-top, 0px) + var(--tg-top-inset, 0px));
+            padding-top: calc(16px + max(env(safe-area-inset-top, 0px), var(--tg-top-inset, 0px)));
             box-sizing: border-box;
         }
         #bestiary-panel {
@@ -2646,7 +2647,7 @@
 
 <script src="models/i18n.js?v=16"></script>
 <script src="models/draw_slime.js?v=7"></script>
-<script src="models/draw_skeleton.js?v=2"></script>
+<script src="models/draw_skeleton.js?v=3"></script>
 <script src="models/hero_flat.js?v=25"></script>
 <script src="models/draw_monsters.js?v=25"></script>
 <script src="models/draw_shadow.js?v=2"></script>
