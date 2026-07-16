@@ -6086,7 +6086,11 @@ function beginGame() {
     GAME.gameStarted = true;
     loop();
     scheduleNextEnemy();
-    setInterval(spawnMinions, 1000);
+    // ОДИН інтервал на сесію (страховка від стакання, якщо рестарт колись
+    // перестане бути reload-ом); тік 250мс — чесні дробові інтервали спавна
+    clearInterval(_spawnIvId);
+    _spawnLastTick = Date.now();
+    _spawnIvId = setInterval(spawnMinions, 250);
     setTimeout(function() { try { _liveTutInit(); } catch(e) {} }, 1200);
     try { _dailyInit(); } catch(e) {}
 }
@@ -6110,8 +6114,13 @@ function spawnLord() {
 // =================== СПАВН ГЕРОЇВ ===================
 let _nextEnemyDeadline = 0; // абсолютний час (Date.now()) наступного спавну
 
+// Токен ланцюга: новий виклик інвалідовує всі попередні таймаути. Страховка:
+// сьогодні рестарт рівня = location.reload, але якщо це колись зміниться —
+// висячий таймаут старого рану не оживе і не почне плодити паралельні ланцюги.
+let _enemyChain = 0;
 function scheduleNextEnemy() {
     if (GAME.gameOver) return;
+    const _chain = ++_enemyChain;
     // База: 11s на рівні 1 → 7s на рівні 50 (лінійно) + 2.5s за кожен поверх з монстрами
     let monsterFloors = Math.max(1, floors.length - 1);
     let baseDelay = 11 - ((GAME.currentLevel || 1) - 1) / 49 * 4;
@@ -6119,7 +6128,7 @@ function scheduleNextEnemy() {
     _nextEnemyDeadline = Date.now() + delay;
 
     function _trySpawn() {
-        if (GAME.gameOver) return;
+        if (_chain !== _enemyChain || GAME.gameOver) return;
         let remaining = _nextEnemyDeadline - Date.now();
         if (GAME_PAUSED) {
             // Пауза: чекаємо виходу, дедлайн зсуваємо вперед
@@ -6316,9 +6325,10 @@ function makeEliteAtk(hero) {
 // =================== СПАВН МОНСТРІВ ===================
 // Єдине джерело правди для спавн-таймера: ці ж значення читає кільце-відлік
 // у Floor.draw. Монстри в дорозі від лорда (_deployTo) належать цільовому поверху.
-// Ядро формули — його ж показує вікно розвитку монстра (глибина = levelIdx-1)
+// Ядро формули — його ж показує вікно розвитку монстра (глибина = levelIdx-1).
+// Дробове (без округлення): тік спавна 250мс, тож 4.5с — це реальні 4.5с
 function _spawnIntervalCalc(depth, cdLvl) {
-    return Math.max(1, Math.round((5 + depth * 3) * (1 - 0.05 * cdLvl)));
+    return Math.max(1, (5 + depth * 3) * (1 - 0.05 * cdLvl));
 }
 function _spawnIntervalFor(f) {
     const _kindName = (typeof _floorKindName === 'function') ? _floorKindName(f) : null;
@@ -6329,7 +6339,13 @@ function _floorMonCount(f) {
     return units.filter(u => u.type === 'monster' && !u._summoned
         && ((u._deployTo != null ? u._deployTo : u.floorIdx) === f.depth)).length;
 }
+let _spawnIvId = null, _spawnLastTick = 0;
 function spawnMinions() {
+    // Реальний час між тіками (кап 1.5с — фонова вкладка не «надолужує»);
+    // оновлюємо ДО guard-а, щоб пауза не накопичувала борг
+    const _now = Date.now();
+    const _sdt = Math.min(1.5, (_now - _spawnLastTick) / 1000);
+    _spawnLastTick = _now;
     if (GAME.gameOver || GAME_PAUSED) return;
     let lordFloor = floors.length - 1;
     const _lordU = units.find(u => u.type === 'lord');
@@ -6347,7 +6363,7 @@ function spawnMinions() {
             // 1-й поверх: 5 сек, кожен наступний +3 сек (в тіках по 1 сек).
             // +1с до всіх: балансова компенсація спавну від лорда (живий щит)
             let spawnInterval = _spawnIntervalFor(f);
-            f.spawnTimer += 1; // +1 за кожну секунду (setInterval 1000ms)
+            f.spawnTimer += _sdt; // реальні секунди (тік 250мс — чесні дробові інтервали)
             if (f.spawnTimer >= spawnInterval) {
                 let spawnCount = f.isBatFloor ? 2 : 1;
                 for (let _sc = 0; _sc < spawnCount; _sc++) {
@@ -6433,11 +6449,15 @@ function loop(ts) {
 
     // ── Губернатор якості: кадри стабільно важкі → знижуємо роздільність ──
     _perfAcc += _dtElapsed; _perfN++;
-    if (_perfN >= 240) {
+    if (_perfN >= 120) { // при 20fps 240 кадрів = 12с страждань — реагуємо вдвічі швидше
         const _avgMs = _perfAcc / _perfN;
         _perfAcc = 0; _perfN = 0;
-        if (_avgMs > 21 && _dprCap > 1.5) {
-            _dprCap = Math.max(1.5, _dprCap - 0.5);
+        GAME._lastAvgMs = Math.round(_avgMs * 10) / 10; // телеметрія у чорну скриньку
+        // Підлога рендера: телефони не нижче 1.5 (каша), а ПК з dpr=1 (TG Desktop
+        // у фулскріні = 2М пікселів) можуть у 0.75 — інакше губернатор безсилий
+        const _dprFloor = isPC ? 0.75 : 1.5;
+        if (_avgMs > 21 && _dprCap > _dprFloor) {
+            _dprCap = Math.max(_dprFloor, _dprCap - 0.5);
             _cacheScale = _dprCap * _zoom;
             floors.forEach(f => { f._brickCache = null; f._ladCache = null; });
             _bgCanvas = null;
@@ -12741,6 +12761,7 @@ setInterval(() => {
             boss: units.some(u => u.heroRank === 'boss' && u.hp > 0),
             w: window.innerWidth, h: window.innerHeight,
             wd: _wdCount, cr: (typeof _crashRestarts !== 'undefined') ? _crashRestarts : 0,
+            ms: GAME._lastAvgMs || 0, dpr: (typeof _dprCap !== 'undefined') ? _dprCap : 0,
         }));
         localStorage.removeItem('DL_bb_clean');
     } catch (e) {}
@@ -12766,6 +12787,20 @@ window.addEventListener('beforeunload', _bbMarkClean);
         localStorage.removeItem('DL_blackbox');
     } catch (e) {}
 })();
+
+// ── Живий FPS-метр (дебаг): додай #fps до URL гри ──────────────────────────
+if (/[?#&]fps/.test(location.href)) {
+    const _fpsEl = document.createElement('div');
+    _fpsEl.style.cssText = 'position:fixed;top:40%;left:2px;z-index:99999;background:rgba(0,0,0,0.8);' +
+        'color:#0f0;font:11px monospace;padding:2px 6px;pointer-events:none;border-radius:4px';
+    document.body.appendChild(_fpsEl);
+    setInterval(() => {
+        try {
+            _fpsEl.textContent = (GAME._lastAvgMs || 0) + 'ms/кадр · dpr ' + _dprCap
+                + ' · юнітів ' + units.length + ' · Z' + _zoom.toFixed(2);
+        } catch (e) {}
+    }, 500);
+}
 
 // ── Авто-пригасання HP-панелі ───────────────────────────────────────────────
 // На коротких екранах (Telegram Mini App) камера підтягує поверхню під HUD,
@@ -16722,7 +16757,7 @@ function _renderMonsterDev() {
     let dmgEff = (baseInfo.atk * (1 + 0.1 * atkLvl));
     let hpEff  = (baseInfo.hp  * (1 + 0.1 * hpLvl));
     // Спавн: ТА САМА формула, що реально тікає в spawnMinions (глибина поверху
-    // цього виду = levelIdx-1); таймер цілочисельний — показуємо без десяткових
+    // цього виду = levelIdx-1); показуємо в десятих — 4.5с означає реальні 4.5с
     let intervalEff = _spawnIntervalCalc(levelIdx - 1, cdLvl);
     let countMaxBase = (levelIdx === 6 ? 4 : 2);
     let countEff = countMaxBase + countLvl;
@@ -16732,7 +16767,7 @@ function _renderMonsterDev() {
     const _si = c => `<span class="dl-ico ${c}"></span>`;
     statsHtml += `<div class="stat-row"><span class="stat-name">${_si('dl-sword')} Атака</span><span class="stat-val">${dmgEff.toFixed(1)}</span></div>`;
     statsHtml += `<div class="stat-row"><span class="stat-name">${_si('dl-heart')} ХП</span><span class="stat-val">${hpEff.toFixed(1)}</span></div>`;
-    statsHtml += `<div class="stat-row"><span class="stat-name">${_si('dl-clock')} Спавн</span><span class="stat-val">${intervalEff}с</span></div>`;
+    statsHtml += `<div class="stat-row"><span class="stat-name">${_si('dl-clock')} Спавн</span><span class="stat-val">${intervalEff.toFixed(1)}с</span></div>`;
     statsHtml += `<div class="stat-row"><span class="stat-name">${_si('dl-group')} Кільк.</span><span class="stat-val">${countEff}/${countCap}</span></div>`;
     statsHtml += `<div class="stat-row"><span class="stat-name">${_si(baseInfo.dmgType==='mag'?'dl-spark':'dl-sword')} Тип атаки</span><span class="stat-val">${baseInfo.dmgType==='mag'?'Магія':'Фізика'}</span></div>`;
     const armorStr = baseInfo.armor > 0 ? `${baseInfo.armor}` + (baseInfo.magArmor > 0 ? ` / ${baseInfo.magArmor}` : '') : (baseInfo.magArmor > 0 ? `0 / ${baseInfo.magArmor}` : '—');
