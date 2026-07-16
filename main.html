@@ -2245,6 +2245,7 @@
         <span id="start-vol-label">38%</span>
     </div>
     <button id="btn-reset-progress" onclick="confirmResetProgress()" data-i18n="btn-reset">↺ Скинути все</button>
+    <div id="build-stamp" style="position:absolute;bottom:6px;right:10px;font-size:9px;color:#443366;letter-spacing:0.5px"></div>
 </div>
 
 <!-- ── РУН-МОДИФІКАТОРИ ── -->
@@ -2666,6 +2667,15 @@
 <script src="models/draw_dragon.js?v=3"></script>
 
 <script>
+// Версія збірки: видима внизу стартового екрана і в #fps-метрі — щоб миттєво
+// відрізняти "фікс не працює" від "вебв'ю грає в закешовану стару збірку"
+const DL_BUILD = '2026-07-16.2';
+try {
+    console.log('Dungeon Lord build', DL_BUILD);
+    const _bst = document.getElementById('build-stamp');
+    if (_bst) _bst.textContent = 'build ' + DL_BUILD;
+} catch (e) {}
+
 const canvas = document.getElementById('gameCanvas');
 // ctx — let, не const, щоб можна було тимчасово переключати на portrait-canvas у меню розвитку
 let ctx = canvas.getContext('2d');
@@ -12736,6 +12746,7 @@ setInterval(() => {
         if (!GAME || GAME.gameOver || GAME_PAUSED) return;
         if (!units.length) return; // гра ще не йде
         localStorage.setItem('DL_blackbox', JSON.stringify({
+            b: DL_BUILD,
             t: Date.now(), bg: (typeof _bgFrame !== 'undefined') ? _bgFrame : -1,
             lvl: GAME.currentLevel, wave: !!GAME.isWave,
             units: units.length, city: Math.round(GAME.cityHP),
@@ -12746,7 +12757,7 @@ setInterval(() => {
         }));
         localStorage.removeItem('DL_bb_clean');
     } catch (e) {}
-}, 2000);
+}, 5000); // localStorage на iOS синхронний — не частіше разу на 5с
 function _bbMarkClean() { try { localStorage.setItem('DL_bb_clean', '1'); } catch (e) {} }
 window.addEventListener('beforeunload', _bbMarkClean);
 // Звіт про обірвану сесію — раз, при наступному завантаженні
@@ -12778,7 +12789,7 @@ if (/[?#&]fps/.test(location.href)) {
     setInterval(() => {
         try {
             _fpsEl.textContent = (GAME._lastAvgMs || 0) + 'ms/кадр · dpr ' + _dprCap
-                + ' · юнітів ' + units.length + ' · Z' + _zoom.toFixed(2);
+                + ' · юнітів ' + units.length + ' · Z' + _zoom.toFixed(2) + ' · ' + DL_BUILD;
         } catch (e) {}
     }, 500);
 }
