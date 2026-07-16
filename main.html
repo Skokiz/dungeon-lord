@@ -13312,7 +13312,11 @@ function _adPlatform() {
                         try {
                             const t = ((wa.safeAreaInset && wa.safeAreaInset.top) || 0) +
                                       ((wa.contentSafeAreaInset && wa.contentSafeAreaInset.top) || 0);
-                            document.documentElement.style.setProperty('--tg-top-inset', t + 'px');
+                            // Підлога 6% висоти екрана: навіть якщо Telegram не
+                            // повідомив інсети, HUD стоїть нижче кнопок TG і
+                            // не липне до верхньої кромки (айфони → планшети)
+                            const _minInset = Math.round(window.innerHeight * 0.06);
+                            document.documentElement.style.setProperty('--tg-top-inset', Math.max(t, _minInset) + 'px');
                         } catch (e) {}
                     };
                     _applyInsets();
@@ -13321,6 +13325,7 @@ function _adPlatform() {
                         wa.onEvent('contentSafeAreaChanged', _applyInsets);
                         wa.onEvent('fullscreenChanged', _applyInsets);
                     }
+                    window.addEventListener('resize', _applyInsets); // поворот екрана міняє 6%-підлогу
                 } catch (e) {}
                 add('https://sad.adsgram.ai/js/sad.min.js');
             });
