@@ -2813,7 +2813,9 @@ let _worldScale = window.innerWidth >= 1200 ? 1.6 : (window.innerWidth >= 768 ? 
 // у loop() знижує _dprCap крокми по 0.5 до 1.5 і перебудовує кеші.
 // _cacheScale — роздільність offscreen-кешів (цегла/драбини/фон): 1× кеш на
 // retina = розмиті стіни, тому кеш завжди в тому ж dpr, що й головний canvas.
-let _dprCap = Math.min(window.devicePixelRatio || 1, window.innerWidth >= 1200 ? 2.5 : 3);
+// Кап 2.5 і на телефонах: dpr-3 айфони — це 2.4М px канваса, різниця чіткості
+// 2.5 vs 3 на 5-6" екрані невидима, а пікселів на третину менше
+let _dprCap = Math.min(window.devicePixelRatio || 1, 2.5);
 
 // ── Зум світу ────────────────────────────────────────────────────────────────
 // Логічний вьюпорт: на широких екранах світ рендериться крупніше (Z>1), а вся
@@ -5558,13 +5560,25 @@ class Unit {
             const _bcx = this.x, _bfy = this.y - camY;
             const _bcy = _bfy - this.size * 0.55;
             const _bp  = 0.5 + 0.5 * Math.sin(_bt * 2.2);
-            // Ореол за силуетом
-            const _bg = ctx.createRadialGradient(_bcx, _bcy, this.size * 0.15, _bcx, _bcy, this.size * 0.95);
-            _bg.addColorStop(0,   `rgba(28,0,48,${0.36 + _bp * 0.14})`);
-            _bg.addColorStop(0.65,`rgba(84,18,132,${0.17 + _bp * 0.09})`);
-            _bg.addColorStop(1,   'rgba(0,0,0,0)');
-            ctx.fillStyle = _bg;
-            ctx.beginPath(); ctx.arc(_bcx, _bcy, this.size * 0.95, 0, Math.PI * 2); ctx.fill();
+            // Ореол за силуетом — кешований спрайт (createRadialGradient щокадру
+            // помітно дорогий на iOS); "дихання" — модуляцією globalAlpha
+            const _bR = Math.ceil(this.size * 0.95);
+            if (!this._auraCv || this._auraCv._r !== _bR) {
+                const c = document.createElement('canvas');
+                c.width = c.height = _bR * 2;
+                const g = c.getContext('2d');
+                const gr = g.createRadialGradient(_bR, _bR, this.size * 0.15, _bR, _bR, _bR);
+                gr.addColorStop(0,    'rgba(28,0,48,0.46)');
+                gr.addColorStop(0.65, 'rgba(84,18,132,0.23)');
+                gr.addColorStop(1,    'rgba(0,0,0,0)');
+                g.fillStyle = gr;
+                g.beginPath(); g.arc(_bR, _bR, _bR, 0, Math.PI * 2); g.fill();
+                c._r = _bR;
+                this._auraCv = c;
+            }
+            ctx.globalAlpha = 0.78 + _bp * 0.30;
+            ctx.drawImage(this._auraCv, _bcx - _bR, _bcy - _bR);
+            ctx.globalAlpha = 1;
             // Рунне коло: два еліпси-пунктири обертаються протилежно
             ctx.save();
             ctx.setLineDash([7, 9]);
@@ -6457,7 +6471,8 @@ function loop(ts) {
         // у фулскріні = 2М пікселів) можуть у 0.75 — інакше губернатор безсилий
         const _dprFloor = isPC ? 0.75 : 1.5;
         if (_avgMs > 21 && _dprCap > _dprFloor) {
-            _dprCap = Math.max(_dprFloor, _dprCap - 0.5);
+            // сильний лаг (>30мс = <33fps) — падаємо одразу на повний крок
+            _dprCap = Math.max(_dprFloor, _dprCap - (_avgMs > 30 ? 1.0 : 0.5));
             _cacheScale = _dprCap * _zoom;
             floors.forEach(f => { f._brickCache = null; f._ladCache = null; });
             _bgCanvas = null;
@@ -10344,11 +10359,16 @@ function loop(ts) {
         p.life -= _dt; p.x += p.vx * _dt; p.y += p.vy * _dt; p.vy += 0.06 * _dt;
         let a = Math.pow(p.life / p.maxLife, 0.8);
         let col = _PC[p.color] || p.color;
-        ctx.globalAlpha = a;
         ctx.fillStyle = col;
-        if (p.glow) { ctx.shadowColor = col; ctx.shadowBlur = p.size * 3.5; }
+        // "Сяйво" БЕЗ shadowBlur: у бою живуть сотні glow-партиклів, а shadow —
+        // найдорожча операція мобільного GPU (головне джерело лагів на босі).
+        // Великий напівпрозорий ореол + яскраве ядро виглядають так само.
+        if (p.glow) {
+            ctx.globalAlpha = a * 0.28;
+            ctx.beginPath(); ctx.arc(p.x, p.y - GAME.cameraY, p.size * 2.4, 0, Math.PI * 2); ctx.fill();
+        }
+        ctx.globalAlpha = a;
         ctx.beginPath(); ctx.arc(p.x, p.y - GAME.cameraY, p.size, 0, Math.PI * 2); ctx.fill();
-        if (p.glow) ctx.shadowBlur = 0;
         if (p.life <= 0) particles.splice(i, 1);
     }
     ctx.globalAlpha = 1;
