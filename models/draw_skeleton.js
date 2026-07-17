@@ -141,7 +141,7 @@ function _skArm(sx,sy,upperA,elbowBend,dim){
 
 const _skE = p => p*p*(3-2*p);
 
-function drawSkeleton(ctx_,x,y,t,dir=1,sc=0.38,atk=0,branch='',runF=0){
+function drawSkeleton(ctx_,x,y,t,dir=1,sc=0.38,atk=0,branch='',runF=0,evo=0){
   const _lp = (a,b,f) => a+(b-a)*f;
   const spd=2.2, wc=Math.sin(t*spd), wc_c=Math.cos(t*spd);
   const bob=(1-Math.abs(wc))*(3.5+runF*2.5), hipT=wc_c*0.035;
@@ -214,6 +214,32 @@ function drawSkeleton(ctx_,x,y,t,dir=1,sc=0.38,atk=0,branch='',runF=0){
   // Spine
   const smid=SPINE_TOP*0.5; _skBone(HX,HY-3,HX+1,smid,3.2); _skBone(HX+1,smid,HX,SPINE_TOP,3.0);
   _skRibcage(HX,RIB_Y);
+
+  // ── Ево 3+: вогник відродження в грудній клітці (некро-іскра, без shadowBlur) ──
+  if (evo >= 3) {
+    const _emb = 0.55 + 0.45 * Math.sin(t*3.1);
+    const _embCol = branch==='A' ? '#66aaff' : branch==='B' ? '#ff7744' : '#55ee77';
+    ctx_.globalAlpha = 0.28 * _emb;
+    ctx_.fillStyle = _embCol;
+    ctx_.beginPath(); ctx_.arc(0, RIB_Y+9, 7.5, 0, Math.PI*2); ctx_.fill();
+    ctx_.globalAlpha = 0.85 * _emb;
+    ctx_.beginPath(); ctx_.arc(0, RIB_Y+9, 3, 0, Math.PI*2); ctx_.fill();
+    ctx_.globalAlpha = 1;
+  }
+
+  // ── Ево 8+: кістяні наплічники з окантовкою кольору гілки ──
+  if (evo >= 8) {
+    const _pCol = branch==='A' ? '#5a5a99' : '#7a3a22';
+    for (const px of [-SHL_X, SHL_X]) {
+      ctx_.beginPath();
+      ctx_.ellipse(px, SHL_Y-3, 8.5, 6, px<0?-0.25:0.25, Math.PI*0.95, Math.PI*2.05);
+      ctx_.lineWidth=3; ctx_.strokeStyle=_SK.outline; ctx_.stroke();
+      ctx_.fillStyle=_SK.bone; ctx_.fill();
+      ctx_.beginPath();
+      ctx_.ellipse(px, SHL_Y-3, 8.5, 6, px<0?-0.25:0.25, Math.PI*0.95, Math.PI*2.05);
+      ctx_.lineWidth=1.4; ctx_.strokeStyle=_pCol; ctx_.stroke();
+    }
+  }
 
   // ── Shield (Branch A) — прив'язаний до зап'ястя лівої руки ──
   if (branch === 'A') {
@@ -346,7 +372,34 @@ function drawSkeleton(ctx_,x,y,t,dir=1,sc=0.38,atk=0,branch='',runF=0){
   const _eyeCol = branch==='A' ? '#4488ff' : branch==='B' ? '#ff3300' : '#30ff60';
   _skBone(HX,SPINE_TOP,HX,NECK_Y,2.8);
   // Спринт: череп закинутий назад — ледве встигає за власним тілом
-  _skSkull(HX,HEAD_Y,wc*0.06 - runF*0.34,jawOpen,_eyeCol);
+  const _skullTilt = wc*0.06 - runF*0.34;
+  _skSkull(HX,HEAD_Y,_skullTilt,jawOpen,_eyeCol);
+
+  // ── Ево 10: корона фіналіста (A — срібна діадема, B — залізна з шипами) ──
+  if (evo >= 10) {
+    ctx_.save(); ctx_.translate(HX,HEAD_Y); ctx_.rotate(_skullTilt);
+    const _cy = -22; // над бровами черепа
+    if (branch === 'B') {
+      ctx_.fillStyle='#4a3a34'; ctx_.strokeStyle=_SK.outline; ctx_.lineWidth=1.6;
+      ctx_.beginPath(); ctx_.rect(-12,_cy,24,5); ctx_.fill(); ctx_.stroke();
+      for (const sx of [-9,-3,3,9]) {
+        ctx_.beginPath(); ctx_.moveTo(sx-2.4,_cy); ctx_.lineTo(sx,_cy-7); ctx_.lineTo(sx+2.4,_cy);
+        ctx_.closePath(); ctx_.fillStyle='#5a453c'; ctx_.fill(); ctx_.stroke();
+      }
+      ctx_.fillStyle='#ff5533';
+      ctx_.beginPath(); ctx_.arc(0,_cy+2.5,1.6,0,Math.PI*2); ctx_.fill();
+    } else {
+      ctx_.fillStyle='#c8d2e8'; ctx_.strokeStyle=_SK.outline; ctx_.lineWidth=1.4;
+      ctx_.beginPath(); ctx_.rect(-11,_cy,22,3.5); ctx_.fill(); ctx_.stroke();
+      for (const sx of [-7,0,7]) {
+        ctx_.beginPath(); ctx_.moveTo(sx-2,_cy); ctx_.lineTo(sx,_cy-6); ctx_.lineTo(sx+2,_cy);
+        ctx_.closePath(); ctx_.fill(); ctx_.stroke();
+      }
+      ctx_.fillStyle='#66aaff';
+      ctx_.beginPath(); ctx_.arc(0,_cy+1.7,1.5,0,Math.PI*2); ctx_.fill();
+    }
+    ctx_.restore();
+  }
   ctx_.restore();
 }
 
@@ -408,6 +461,6 @@ function drawSkeletonMonster(unit, camY) {
     unit._skRunF = (unit._skRunF || 0) + ((_skRunTgt - (unit._skRunF || 0)) * Math.min(1, _skDt * 6));
 
     const _skHipY = (unit.y - camY) - 50 * _skSc;
-    drawSkeleton(ctx, unit.x, _skHipY, unit._skT, unit._skDir, _skSc, unit._skAtkP || 0, unit._branch || '', unit._skRunF || 0);
+    drawSkeleton(ctx, unit.x, _skHipY, unit._skT, unit._skDir, _skSc, unit._skAtkP || 0, unit._branch || '', unit._skRunF || 0, unit._evoLvl || 0);
     unit._hpBarY = _skHipY - 80 * _skSc - 22;
 }
