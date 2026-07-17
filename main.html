@@ -1243,6 +1243,20 @@
         .run-mod-name { color:#eeddff; font-weight:bold; font-size:13px;
             text-align:center; line-height:1.3; }
         .run-mod-desc { color:#998899; font-size:11px; text-align:center; line-height:1.5; }
+        /* ── Рідкість благословень: колір рамки/бейджа ── */
+        .run-mod-rarity { font-size:9px; letter-spacing:1.2px; text-transform:uppercase; font-weight:700; }
+        .run-mod-card.r-common { border-color:#8a92a8; box-shadow:0 0 12px rgba(150,160,185,0.18); }
+        .run-mod-card.r-common .run-mod-rarity { color:#9aa4b8; }
+        .run-mod-card.r-common .run-mod-icon { color:#c8d0e0; }
+        .run-mod-card.r-rare { border-color:#3f7fe0; box-shadow:0 0 16px rgba(70,140,255,0.30); }
+        .run-mod-card.r-rare .run-mod-rarity { color:#66a2ff; }
+        .run-mod-card.r-rare .run-mod-icon { color:#7ab2ff; }
+        .run-mod-card.r-epic { border-color:#a03fe0; box-shadow:0 0 18px rgba(180,70,255,0.38); }
+        .run-mod-card.r-epic .run-mod-rarity { color:#c66eff; }
+        .run-mod-card.r-epic .run-mod-icon { color:#d28aff; }
+        .run-mod-card.r-legend { border-color:#e0a81f; box-shadow:0 0 22px rgba(255,200,80,0.45); }
+        .run-mod-card.r-legend .run-mod-rarity { color:#ffcc55; }
+        .run-mod-card.r-legend .run-mod-icon { color:#ffd77a; }
 
         /* ── Milestone title ── */
         #lord-title { font-size:11px; color:#7744aa; letter-spacing:2px;
@@ -6025,20 +6039,25 @@ function startGame(level) {
     GAME.lordRegenPct = 0;
     GAME._lordReviveUsed = false;
     GAME._lordHealT = 0; GAME._eliteSpawnT = 0;
+    GAME.runBuffs = null;      // бафи минулого рану вмирають ДО перерахунку гріда
+    _runEliteMult = 1;
     _resetLordGridFlags();
     _applyLordGridEffects(_permaData);
 
-    // ── Рун-модифікатор ──────────────────────────────────────────────────────
-    _runEliteMult = 1;
+    // ── Рун-модифікатор: apply() лише наповнює GAME.runBuffs (+разові дари) ──
     GAME.monsterFlatAtk = 0;
     if (_currentRunMod) { _currentRunMod.apply(); _currentRunMod = null; }
 
-    // Монстри: бонуси від perma
-    GAME.monsterHpBonus       = 0; // скидаємо; тільки RunMod може додавати
+    // Монстри: бонуси від perma (ПЕРЕЗАПИСУЮТЬ поля — тому ран-бафи нижче)
+    GAME.monsterHpBonus       = 0;
     GAME.monsterHpPct         = _permaData.mobVitLvl * 0.15; // 15% за рівень perma
     GAME.monsterArmorBonus    = _permaData.mobVitLvl * 1.5;
     GAME.monsterDmgPct        = _permaData.mobAtkLvl * 0.10;
     GAME.monsterAtkSpeedBonus = _permaData.mobAtkLvl * 0.1;
+    // Ран-бафи поверх перми: монстри/души/герої одразу, лорд — інкремент тут
+    // (грід рахувався, коли runBuffs ще був порожній)
+    _applyRunBuffsRest();
+    _applyRunBuffsLord();
     GAME.mobAtkCost = r5(75 * Math.pow(1.40, _permaData.mobAtkLvl));
     GAME.mobVitCost = r5(60 * Math.pow(1.35, _permaData.mobVitLvl));
 
@@ -6070,6 +6089,8 @@ function beginGame() {
     if (!units.some(u => u.type === 'lord')) spawnLord();
     resize(); // примусово перераховуємо розміри canvas перед першим кадром
     GAME.gameStarted = true;
+    // Відновлення сейва посеред раунду — ПІСЛЯ повної ініціалізації рівня
+    if (_resumeSave) { _applyRunResume(_resumeSave); _resumeSave = null; }
     loop();
     scheduleNextEnemy();
     // ОДИН інтервал на сесію (страховка від стакання, якщо рестарт колись
@@ -10721,6 +10742,36 @@ function _applyLordGridEffects(p) {
     if (ss>=3) GAME.lordGlobalCountBonus += 1;
     if (ss>=4) GAME.lordEliteSoulBonus = 0.20;
     GAME.lordEliteSpawn = ss >= 5;
+
+    // Ран-бафи лорда — ПІСЛЯ гріда, бо _resetLordGridFlags скидає lordDmg/
+    // lordRegen/maxLordHP при кожному перерахунку (це затирало старі бафи)
+    _applyRunBuffsLord();
+}
+
+// ── Ран-бафи (благословення рану) ───────────────────────────────────────────
+// Єдине сховище ефектів благословення: GAME.runBuffs. Прямі записи в GAME.*
+// затиралися: грід лорда скидає свої поля при перерахунку, startGame
+// перезаписує monster*-поля пермою, загроза щохвилини перераховує
+// heroScalePercent. Разові подарунки (душі/золоті) мод видає сам у apply().
+function _applyRunBuffsLord() {
+    const b = GAME.runBuffs; if (!b) return;
+    if (b.lordDmgPct) GAME.lordDmg = Math.round(GAME.lordDmg * (1 + b.lordDmgPct / 100));
+    if (b.lordHp)     GAME.maxLordHP += b.lordHp;
+    if (b.lordRegen)  GAME.lordRegen += b.lordRegen;
+    if (b.lordArmor)  GAME.lordArmor += b.lordArmor;
+    if (b.lordAspd)   GAME.lordAtkSpeedBonus += b.lordAspd;
+}
+function _applyRunBuffsRest() {
+    const b = GAME.runBuffs; if (!b) return;
+    if (b.monHpFlat)     GAME.monsterHpBonus += b.monHpFlat;
+    if (b.monHpPct)      GAME.monsterHpPct += b.monHpPct;
+    if (b.monDmgPct)     GAME.monsterDmgPct += b.monDmgPct;
+    if (b.monAspd)       GAME.monsterAtkSpeedBonus += b.monAspd;
+    if (b.monFlatAtk)    GAME.monsterFlatAtk += b.monFlatAtk;
+    if (b.soulBonus)     GAME.soulBonus += b.soulBonus;
+    if (b.heroScale)     { GAME.heroScaleBase += b.heroScale; GAME.heroScalePercent += b.heroScale; }
+    if (b.eliteMult)     _runEliteMult = b.eliteMult;
+    if (b.eliteChance)   GAME.eliteChance = (GAME.eliteChance || 0) + b.eliteChance;
 }
 
 // Чи діє бойова аура/прокляття лорда на поверсі fi (лорд на останньому поверсі)
@@ -10769,64 +10820,152 @@ function _rms(min, max) {
     return Math.round(min + (max - min) * f);
 }
 
+// Рідкість благословень: шанс на СЛОТ (3 слоти в пікері) + колір картки
+const _RM_RARITY = {
+    common: { w: 55, cls: 'r-common', label: () => _lang === 'en' ? 'Common'    : 'Звичайне'   },
+    rare:   { w: 30, cls: 'r-rare',   label: () => _lang === 'en' ? 'Rare'      : 'Рідкісне'   },
+    epic:   { w: 12, cls: 'r-epic',   label: () => _lang === 'en' ? 'Epic'      : 'Епічне'     },
+    legend: { w: 3,  cls: 'r-legend', label: () => _lang === 'en' ? 'Legendary' : 'Легендарне' },
+};
+const _rb = () => (GAME.runBuffs = GAME.runBuffs || {});
+
 const _RUN_MODS = [
-    { id:'blood_frenzy', icon:'dl-ghost',
-      name:()=>_t('mod-blood'),
-      desc:()=> _lang==='en' ? '+1 soul per enemy killed' : '+1 душа за кожного вбитого ворога',
-      apply:() => { GAME.soulBonus = (GAME.soulBonus||0) + 1; } },
-
-    { id:'elite_surge',  icon:'dl-bolt',
-      name:()=>_t('mod-elite'),
-      desc:()=> _lang==='en' ? '2× elite soul rewards per kill' : 'Вдвічі більше душ від еліт та босів',
-      apply:() => { _runEliteMult = 2; } },
-
-    { id:'lord_fury',    icon:'dl-flame',
-      name:()=>_t('mod-fury'),
-      desc:()=> { const v = _rms(10, 35); return _lang==='en' ? `Lord damage +${v}%` : `Урон Лорда +${v}%`; },
-      apply:() => { const v = _rms(10, 35); GAME.lordDmg = Math.round(GAME.lordDmg * (1 + v / 100)); } },
-
-    { id:'iron_walls',   icon:'dl-tower',
-      name:()=>_t('mod-iron'),
-      desc:()=> _lang==='en' ? 'Monsters gain HP based on level' : 'Монстри отримують бонус HP залежно від рівня',
-      apply:() => { GAME.monsterHpBonus = Math.round((GAME.monsterHpBonus||0) + (40 + GAME.heroScalePercent * 0.3)); } },
-
-    { id:'dark_pact',    icon:'dl-moon',
-      name:()=>_t('mod-pact'),
-      desc:()=> { const e = _rms(2, 10), t = _rms(5, 20); return _lang==='en' ? `+${e} elite souls, heroes +${t}% stronger` : `+${e} елітних душ, герої +${t}% сильніші`; },
-      apply:() => { GAME.eliteSouls += _rms(2, 10); GAME.heroScalePercent += _rms(5, 20); } },
-
-    { id:'soul_well',    icon:'dl-drop',
+    // ── Звичайні ──────────────────────────────────────────────────────────
+    { id:'soul_well', r:'common', icon:'dl-drop',
       name:()=>_t('mod-well'),
-      desc:()=> { const v = _rms(30, 100); return _lang==='en' ? `+${v} souls` : `+${v} душ`; },
+      desc:()=> { const v = _rms(30, 100); return _lang==='en' ? `+${v} souls right away` : `+${v} душ одразу`; },
       apply:() => { GAME.souls += _rms(30, 100); } },
 
-    { id:'warlord_aura', icon:'dl-beast',
+    { id:'warlord_aura', r:'common', icon:'dl-beast',
       name:()=>_t('mod-aura'),
       desc:()=> { const v = _rms(1, 6); return _lang==='en' ? `All monsters +${v} attack` : `Всі монстри +${v} до атаки`; },
-      apply:() => { GAME.monsterFlatAtk = (GAME.monsterFlatAtk||0) + _rms(1, 6); } },
+      apply:() => { _rb().monFlatAtk = _rms(1, 6); } },
 
-    { id:'undying',      icon:'dl-heart',
+    { id:'lord_plate', r:'common', icon:'dl-shield',
+      name:()=> _lang==='en' ? 'Obsidian Plate' : 'Обсидіановий обладунок',
+      desc:()=> { const v = _rms(3, 8); return _lang==='en' ? `Lord armor +${v}` : `Броня Лорда +${v}`; },
+      apply:() => { _rb().lordArmor = _rms(3, 8); } },
+
+    { id:'swift_staff', r:'common', icon:'dl-bolt',
+      name:()=> _lang==='en' ? 'Swift Staff' : 'Швидкий посох',
+      desc:()=> { const v = _rms(10, 20); return _lang==='en' ? `Lord attack speed +${v}%` : `Швидкість атаки Лорда +${v}%`; },
+      apply:() => { _rb().lordAspd = _rms(10, 20) / 100; } },
+
+    // ── Рідкісні ──────────────────────────────────────────────────────────
+    { id:'blood_frenzy', r:'rare', icon:'dl-ghost',
+      name:()=>_t('mod-blood'),
+      desc:()=> _lang==='en' ? '+1 soul per enemy killed' : '+1 душа за кожного вбитого ворога',
+      apply:() => { _rb().soulBonus = 1; } },
+
+    { id:'lord_fury', r:'rare', icon:'dl-flame',
+      name:()=>_t('mod-fury'),
+      desc:()=> { const v = _rms(10, 35); return _lang==='en' ? `Lord damage +${v}%` : `Урон Лорда +${v}%`; },
+      apply:() => { _rb().lordDmgPct = _rms(10, 35); } },
+
+    { id:'iron_walls', r:'rare', icon:'dl-tower',
+      name:()=>_t('mod-iron'),
+      desc:()=> { const v = _rms(35, 110); return _lang==='en' ? `All monsters +${v} HP` : `Всі монстри +${v} ХП`; },
+      apply:() => { _rb().monHpFlat = _rms(35, 110); } },
+
+    { id:'undying', r:'rare', icon:'dl-heart',
       name:()=>_t('mod-regen'),
       desc:()=> { const hp = _rms(50, 200); return _lang==='en' ? `+${hp} Lord HP and +1 HP/s regen` : `+${hp} HP Лорда і +1 HP/с реген`; },
-      apply:() => { GAME.maxLordHP += _rms(50, 200); GAME.lordRegen = (GAME.lordRegen||0) + 1; } },
+      apply:() => { const b = _rb(); b.lordHp = _rms(50, 200); b.lordRegen = 1; } },
+
+    { id:'stone_skin', r:'rare', icon:'dl-crystal',
+      name:()=> _lang==='en' ? 'Stone Skin' : 'Кам\'яна шкіра',
+      desc:()=> { const v = _rms(10, 20); return _lang==='en' ? `Monster HP +${v}%` : `ХП монстрів +${v}%`; },
+      apply:() => { _rb().monHpPct = _rms(10, 20) / 100; } },
+
+    { id:'sharp_claws', r:'rare', icon:'dl-trap',
+      name:()=> _lang==='en' ? 'Sharpened Claws' : 'Гострі пазурі',
+      desc:()=> { const v = _rms(8, 18); return _lang==='en' ? `Monster damage +${v}%` : `Урон монстрів +${v}%`; },
+      apply:() => { _rb().monDmgPct = _rms(8, 18) / 100; } },
+
+    // ── Епічні ────────────────────────────────────────────────────────────
+    { id:'elite_surge', r:'epic', icon:'dl-bolt',
+      name:()=>_t('mod-elite'),
+      desc:()=> _lang==='en' ? '2× gold souls from elites and bosses' : 'Вдвічі більше золотих душ від еліт та босів',
+      apply:() => { _rb().eliteMult = 2; } },
+
+    { id:'frenzy', r:'epic', icon:'dl-spark',
+      name:()=> _lang==='en' ? 'Battle Frenzy' : 'Бойовий шал',
+      desc:()=> { const v = _rms(12, 22); return _lang==='en' ? `Monster attack speed +${v}%` : `Швидкість атаки монстрів +${v}%`; },
+      apply:() => { _rb().monAspd = _rms(12, 22) / 100; } },
+
+    { id:'dark_pact', r:'epic', icon:'dl-moon',
+      name:()=>_t('mod-pact'),
+      desc:()=> { const e = _rms(2, 10), t = _rms(5, 20); return _lang==='en' ? `+${e} gold souls now, but heroes +${t}% stronger` : `+${e} золотих зараз, але герої +${t}% сильніші`; },
+      apply:() => { GAME.eliteSouls += _rms(2, 10); _rb().heroScale = _rms(5, 20); } },
+
+    // ── Легендарні ────────────────────────────────────────────────────────
+    { id:'abyss_gift', r:'legend', icon:'dl-crown',
+      name:()=> _lang==='en' ? 'Gift of the Abyss' : 'Дар Безодні',
+      desc:()=> { const v = _rms(4, 12); return _lang==='en' ? `+${v} gold souls right away` : `+${v} золотих душ одразу`; },
+      apply:() => { GAME.eliteSouls += _rms(4, 12); } },
+
+    { id:'colossus', r:'legend', icon:'dl-bone',
+      name:()=> _lang==='en' ? 'Legion of Colossi' : 'Легіон колосів',
+      desc:()=> { const a = _rms(2, 8); return _lang==='en' ? `Monster HP +25% and +${a} attack` : `ХП монстрів +25% і +${a} до атаки`; },
+      apply:() => { const b = _rb(); b.monHpPct = 0.25; b.monFlatAtk = _rms(2, 8); } },
+
+    { id:'warpath', r:'legend', icon:'dl-flame',
+      name:()=> _lang==='en' ? 'Warpath' : 'Стежка війни',
+      desc:()=> { return _lang==='en' ? `+2 souls per kill and Lord damage +25%` : `+2 душі за вбивство і урон Лорда +25%`; },
+      apply:() => { const b = _rb(); b.soulBonus = 2; b.lordDmgPct = 25; } },
 ];
 
+// 3 слоти: кожен ролить рідкість за вагою, потім випадковий НЕвзятий мод цієї
+// рідкості (якщо тир вичерпано — деградація до простішого, далі будь-який)
 function _pickRunMods() {
-    return [..._RUN_MODS].sort(() => Math.random() - 0.5).slice(0, 3);
+    const taken = new Set();
+    const order = ['legend', 'epic', 'rare', 'common'];
+    const roll = () => {
+        const total = Object.values(_RM_RARITY).reduce((s, r) => s + r.w, 0);
+        let x = Math.random() * total;
+        for (const [k, r] of Object.entries(_RM_RARITY)) { x -= r.w; if (x <= 0) return k; }
+        return 'common';
+    };
+    const out = [];
+    for (let slot = 0; slot < 3; slot++) {
+        let rar = roll();
+        let pool = [];
+        // деградація рідкості, якщо в тирі не лишилось невзятих
+        for (let oi = order.indexOf(rar); oi < order.length && !pool.length; oi++)
+            pool = _RUN_MODS.filter(m => m.r === order[oi] && !taken.has(m.id));
+        if (!pool.length) pool = _RUN_MODS.filter(m => !taken.has(m.id));
+        const m = pool[Math.floor(Math.random() * pool.length)];
+        taken.add(m.id);
+        out.push(m);
+    }
+    return out;
 }
 
 function _showRunModPicker(level) {
+    // Є сейв цього рівня посеред раунду → пропускаємо вибір благословення
+    // (воно вже в GAME.runBuffs) і сюжетну вставку, відновлюємось одразу
+    const _saved = _loadRunSave(level);
+    if (_saved) {
+        _resumeSave = _saved;
+        _currentRunMod = null;
+        startGame(level);
+        return;
+    }
     const mods = _pickRunMods();
     const overlay = document.getElementById('run-mod-overlay');
     const title   = document.getElementById('run-mod-title');
     const cards   = document.getElementById('run-mod-cards');
     if (title) title.textContent = _t('mod-pick-title');
-    cards.innerHTML = mods.map((m, i) => `
-        <div class="run-mod-card" onclick="_selectRunMod(${i})">
+    cards.innerHTML = mods.map((m, i) => {
+        const rar = _RM_RARITY[m.r] || _RM_RARITY.common;
+        return `
+        <div class="run-mod-card ${rar.cls}" onclick="_selectRunMod(${i})">
+            <div class="run-mod-rarity">${rar.label()}</div>
             <div class="run-mod-icon"><span class="dl-ico ${m.icon}"></span></div>
             <div class="run-mod-name">${m.name()}</div>
             <div class="run-mod-desc">${m.desc()}</div>
-        </div>`).join('');
+        </div>`;
+    }).join('');
     overlay._pendingMods  = mods;
     overlay._pendingLevel = level;
     overlay.style.display = 'flex';
@@ -12757,6 +12896,7 @@ setInterval(() => {
             ms: GAME._lastAvgMs || 0, dpr: (typeof _dprCap !== 'undefined') ? _dprCap : 0,
         }));
         localStorage.removeItem('DL_bb_clean');
+        saveGame(); // сейв посеред раунду тим самим 5с-каденсом
     } catch (e) {}
 }, 5000); // localStorage на iOS синхронний — не частіше разу на 5с
 function _bbMarkClean() { try { localStorage.setItem('DL_bb_clean', '1'); } catch (e) {} }
@@ -13033,13 +13173,71 @@ const _store = (() => {
     }
 })();
 
+// Сейв посеред раунду: рівень, хвиля (в GAME.waveCount), економіка, поверхи,
+// ХП лорда, психотрекінг. Пишеться раз на 5с + при згортанні. Читає
+// _loadRunSave → відновлення в _applyRunResume наприкінці startGame.
 function saveGame() {
     try {
+        if (!GAME.gameStarted || GAME.gameOver) return;
+        const lord = units.find(u => u.type === 'lord');
         _store.set('DLSiege_v3', JSON.stringify({
+            v: 4, inRun: true, ts: Date.now(),
+            lvl: GAME.currentLevel || 1,
+            hell: !!_hellMode,
+            lordHp: lord ? Math.round(lord.hp) : null,
             game: GAME,
-            floors: floors.map(f => ({ depth:f.depth, hasTrap:f.hasTrap, trapType:f.trapType, maxMonsters:f.maxMonsters, floorUpgradeCost:f.floorUpgradeCost }))
+            psy: _psyTrack ? { rounds:_psyTrack.rounds, buys:_psyTrack.buys, priority:_psyTrack.priority,
+                               decisions:_psyTrack.decisions, shown:_psyTrack.shown, memory:_psyTrack.memory } : null,
+            floors: floors.map(f => ({ depth:f.depth, hasTrap:f.hasTrap, trapType:f.trapType,
+                                       maxMonsters:f.maxMonsters, floorUpgradeCost:f.floorUpgradeCost,
+                                       spawnTimer:f.spawnTimer || 0 }))
         }));
     } catch(e) { /* ігноруємо помилку серіалізації */ }
+}
+
+function _loadRunSave(level) {
+    try {
+        const raw = _store.get('DLSiege_v3');
+        if (!raw) return null;
+        const s = JSON.parse(raw);
+        if (!s || s.v !== 4 || !s.inRun) return null;
+        if (s.lvl !== level || !!s.hell !== !!_hellMode) return null;
+        return s;
+    } catch (e) { return null; }
+}
+function _clearRunSave() { try { _store.del('DLSiege_v3'); } catch (e) {} }
+
+let _resumeSave = null; // сейв, що чекає застосування наприкінці startGame
+function _applyRunResume(s) {
+    try {
+        Object.assign(GAME, s.game);
+        GAME.gameOver = false; GAME.isWave = false; GAME.waveCooldownActive = false;
+        GAME.gameStarted = true;
+        _runEliteMult = (GAME.runBuffs && GAME.runBuffs.eliteMult) || 1;
+        // Поверхи: добудовуємо до збереженої кількості безкоштовно (лорд/трон
+        // переїжджають усередині _addFloorFree), потім відновлюємо стан кожного
+        const _savedFloorCost = s.game.floorCost;
+        while (floors.length < s.floors.length) _addFloorFree();
+        GAME.floorCost = _savedFloorCost;
+        s.floors.forEach((sf, i) => {
+            const f = floors[i]; if (!f) return;
+            f.hasTrap = sf.hasTrap; f.trapType = sf.trapType;
+            f.maxMonsters = sf.maxMonsters; f.floorUpgradeCost = sf.floorUpgradeCost;
+            f.spawnTimer = sf.spawnTimer || 0;
+        });
+        const lord = units.find(u => u.type === 'lord');
+        if (lord) {
+            lord.maxHp = GAME.maxLordHP;
+            lord.hp    = Math.min(s.lordHp != null ? s.lordHp : GAME.maxLordHP, GAME.maxLordHP);
+            lord.dmg   = GAME.lordDmg;
+            lord.armor = GAME.lordArmor;
+        }
+        if (s.psy && _psyTrack) { Object.assign(_psyTrack, s.psy); _psyTrack.pending = false; }
+        updateUI();
+        try { _showLoreTip((_lang === 'en'
+            ? '↺ <b>Run restored.</b> Wave ' + (GAME.waveCount || 0) + ', the dungeon remembers.'
+            : '↺ <b>Ран відновлено.</b> Хвиля ' + (GAME.waveCount || 0) + ' — підземелля нічого не забуває.')); } catch (e) {}
+    } catch (e) { console.warn('resume failed', e); }
 }
 
 function hardReset() { _store.del('DLSiege_v3'); location.reload(); }
@@ -13101,6 +13299,7 @@ function gameWin() {
     _soulSalvageDone = false;
     _closeOpenDecision();
     try { _bbMarkClean(); } catch(e) {}
+    _clearRunSave(); // раунд завершено — сейв посеред раунду більше не валідний
 
     try { _Music.stop(true); } catch(e) {}
     _SFX.win();
@@ -13155,6 +13354,7 @@ function gameOver() {
     _soulSalvageDone = false;
     _closeOpenDecision();
     try { _bbMarkClean(); } catch(e) {}
+    _clearRunSave(); // поразка — рестарт рівня має бути з нуля
     try {
         if (GAME.cityHP / GAME.maxCityHP < 0.05)
             _ctxHint('almost_win',
@@ -14234,8 +14434,9 @@ function togglePause() {
 // Авто-пауза при згортанні вкладки (тільки якщо гра вже запущена)
 document.addEventListener('visibilitychange', () => {
     if (!GAME.gameStarted || GAME.gameOver) return;
-    if (document.hidden && !GAME_PAUSED) {
-        togglePause();
+    if (document.hidden) {
+        try { saveGame(); } catch (e) {}  // згортання = останній шанс зберегтись
+        if (!GAME_PAUSED) togglePause();
     }
 });
 
