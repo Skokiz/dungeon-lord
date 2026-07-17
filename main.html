@@ -4008,8 +4008,8 @@ class Unit {
             // ── Per-kind dev bonuses (нова система — за замовч. 0, ефект нейтральний) ──
             let _kAtkLvl = getMonStatLvl(kind.name, 'atk');
             let _kHpLvl  = getMonStatLvl(kind.name, 'hp');
-            let _kAtkBonus = 1 + 0.10 * _kAtkLvl;
-            let _kHpBonus  = 1 + 0.10 * _kHpLvl;
+            let _kAtkBonus = 1 + 0.08 * _kAtkLvl;
+            let _kHpBonus  = 1 + 0.08 * _kHpLvl;
 
             // ── HP ────────────────────────────────────────────────────────
             // 0.93 — балансовий нерф базових статів після спавну від лорда
@@ -5905,6 +5905,7 @@ class Unit {
         if (this.heroRank === 'elite_hp')       ctx.fillText('💚', this.x, dy - (isPC ? 20 : 15));
         else if (this.heroRank === 'elite_atk') ctx.fillText('🔥', this.x, dy - (isPC ? 20 : 15));
         else if (this.heroRank === 'boss')      ctx.fillText('☠️', this.x, dy - (isPC ? 22 : 16));
+        else if (this._rage > 0)                ctx.fillText('😡', this.x, dy - (isPC ? 20 : 15));
 
         // Емодзі виду монстра над головою
         if (this.type === 'monster' && this.monsterEmoji) {
@@ -6021,6 +6022,8 @@ function startGame(level) {
     GAME.currentLevel = level;
     GAME.eliteSouls = getStoredEliteSouls(); // завантажуємо збережені золоті душі
     GAME._lowHpCommented = false; // скидаємо флаг low-HP коментаря
+    GAME.waveCount = 0;
+    GAME.rageUntil = 0; GAME.rageMult = 1; GAME.rageGold = 0; // лють героїв — з нуля
 
     // ── Завантаження постійних прокачок ────────────────────────────────────
     _permaData = _loadPerma();
@@ -6129,10 +6132,10 @@ let _enemyChain = 0;
 function scheduleNextEnemy() {
     if (GAME.gameOver) return;
     const _chain = ++_enemyChain;
-    // База: 11s на рівні 1 → 7s на рівні 50 (лінійно) + 2.5s за кожен поверх з монстрами
+    // База: 11s на рівні 1 → 7s на рівні 50 (лінійно) + 1s за кожен поверх з монстрами
     let monsterFloors = Math.max(1, floors.length - 1);
     let baseDelay = 11 - ((GAME.currentLevel || 1) - 1) / 49 * 4;
-    let delay = (baseDelay + (monsterFloors - 1) * 2.5) * 1000;
+    let delay = (baseDelay + (monsterFloors - 1) * 1.0) * 1000;
     _nextEnemyDeadline = Date.now() + delay;
 
     function _trySpawn() {
@@ -6183,6 +6186,24 @@ function spawnEnemy() {
     if (GAME.gameOver) return;
     GAME.waveCount++;
     try { _showWaveBanner(GAME.waveCount); } catch(e) {}
+
+    // ── ЛЮТЬ ГЕРОЇВ: кожні 50 хвиль. Хвиля 50: 5 хвиль ×2 статів, +1 золота
+    // з КОЖНОГО героя; хвиля 100: 6 хвиль ×3, +2; 150: 7 хвиль ×4, +3; і далі.
+    {
+        const _rk = Math.floor(GAME.waveCount / 50);
+        if (_rk >= 1 && GAME.waveCount % 50 === 0) {
+            GAME.rageUntil = GAME.waveCount + (4 + _rk) - 1; // включно з поточною
+            GAME.rageMult  = 1 + _rk;
+            GAME.rageGold  = _rk;
+            try {
+                _SFX.donesnnia();
+                _showLoreTip((_lang === 'en'
+                    ? '🔥 <b>HERO RAGE!</b> ×' + GAME.rageMult + ' stats for ' + (4 + _rk) + ' waves — but every hero drops +' + _rk + ' gold soul.'
+                    : '🔥 <b>ЛЮТЬ ГЕРОЇВ!</b> ×' + GAME.rageMult + ' статів на ' + (4 + _rk) + ' хвиль — але кожен герой несе +' + _rk + ' золоту душу.'));
+            } catch (e) {}
+        }
+    }
+    const _rageOn = GAME.rageUntil && GAME.waveCount <= GAME.rageUntil;
     try {
         if (GAME.waveCount === 1) _liveTutTrigger('hero_first');
         else if (GAME.waveCount === 3) _liveTutTrigger('lord');
@@ -6207,6 +6228,13 @@ function spawnEnemy() {
         let r = Math.random() * 100;
         if      (r < wp.captainChance)                     makeEliteAtk(hero);
         else if (r < wp.captainChance + wp.eliteChance)    makeEliteHp(hero);
+        // Лють: множник статів поверх усього + маркер для золотого дропу
+        if (_rageOn) {
+            hero.hp *= GAME.rageMult; hero.maxHp = hero.hp;
+            hero.baseDmg = (hero.baseDmg || hero.dmg) * GAME.rageMult;
+            hero.dmg = Math.round(hero.baseDmg * (hero._dmgVariance || 1));
+            hero._rage = GAME.rageGold;
+        }
         units.push(hero);
     }
 
@@ -10219,6 +10247,15 @@ function loop(ts) {
                 }
                 let reward = (u.soulReward || (u.heroRank === 'boss' ? 80 : u.heroRank.startsWith('elite') ? 25 : 10)) + (GAME.soulBonus || 0);
                 GAME.souls += reward;
+                // Лють героїв: КОЖЕН герой (навіть звичайний) несе +N золотих
+                if (u._rage > 0) {
+                    let _rg = u._rage * _runEliteMult;
+                    GAME.eliteSouls += _rg;
+                    GAME._goldEarnedLevel = (GAME._goldEarnedLevel || 0) + _rg;
+                    _store.set('DLSiege_elite', String(GAME.eliteSouls));
+                    spawnSoulFly(u.x, u.y - u.size * 0.5, Math.min(_rg, 3), true);
+                    spawnDmgText(u.x, u.y - u.size - 30, '+' + _rg + ' 🔥', '#ffd700', false);
+                }
                 try { _liveTutTrigger('first_kill'); _proEvent('kill'); } catch(e) {}
                 if (_psyTrack) {
                     _psyTrack.combat.totalKills++;
@@ -11200,7 +11237,19 @@ function _psyReset() {
         shown:     [],
         pending:   false,
         memory:    {}, // { eventId: choiceIndex } — пам'ять минулих виборів
+        axes:      _psyAxesDefault(),
     };
+}
+// ── Поведінкові осі (психотип v2) ───────────────────────────────────────────
+// Не "що купив", а "як поводився": ризик (АТАКА під тиском), проактивність
+// (покупки до бою vs у паніці), імпульсивність (час роздумів у донесеннях).
+function _psyAxesDefault() {
+    return { riskR:0, riskS:0, pro:0, rea:0, decFast:0, decSlow:0, decN:0, decSumMs:0 };
+}
+function _psyAxes() {
+    if (!_psyTrack) return null;
+    if (!_psyTrack.axes) _psyTrack.axes = _psyAxesDefault(); // старі сейви без осей
+    return _psyTrack.axes;
 }
 
 // Перевірка чи подія доступна з урахуванням пам'яті
@@ -11237,6 +11286,9 @@ function _psyBuy(cat) {
         _psyTrack.priority[cat] = (_psyTrack.priority[cat] || 0) + 1;
         _psyTrack.firstBuyDone = true;
     }
+    // Вісь проактивності: купує в тиші (план) чи під час штурму (реакція)
+    const ax = _psyAxes();
+    if (ax) { if (GAME.isWave) ax.rea++; else ax.pro++; }
 }
 
 // ── Пул подій ──────────────────────────────────────────────────────────────
@@ -11919,6 +11971,7 @@ function _showDecision(ev) {
         'Розвідники шепочуть, Володарю. Слухай — і вибирай. Підземелля пам\'ятає кожне твоє рішення.',
         'The scouts whisper, my Lord. Listen — and choose. The dungeon remembers every decision you make.'); } catch(e) {}
     _psyCurrentEv = ev;
+    _psyDecShownAt = Date.now(); // вісь імпульсивності: старт таймера роздумів
     const isAbyss = ev.type === 'abyss';
     ov.className = isAbyss ? 'don-abyss' : '';
     _SFX.donesnnia();
@@ -11934,8 +11987,20 @@ function _showDecision(ev) {
     ov.classList.add('visible');
 }
 
+let _psyDecShownAt = 0;
 function _resolveDecisionIdx(idx) {
     if (!_psyTrack || !_psyCurrentEv) return;
+    // Вісь імпульсивності: <3.5с = імпульсивний вибір, >10с = рефлексивний
+    try {
+        const ax = _psyAxes();
+        if (ax && _psyDecShownAt) {
+            const dt = Date.now() - _psyDecShownAt;
+            ax.decN++; ax.decSumMs += Math.min(dt, 60000);
+            if (dt < 3500) ax.decFast++;
+            else if (dt > 10000) ax.decSlow++;
+            _psyDecShownAt = 0;
+        }
+    } catch (e) {}
     // Зберігаємо вибір у пам'ять для continuation-подій
     _psyTrack.memory[_psyCurrentEv.id] = idx;
     // КОЖНЕ донесення — раз на всю кампанію: вибір і факт показу в кампанійній пам'яті
@@ -12114,17 +12179,35 @@ function _computePsychotype() {
         if (v > maxPhil) { maxPhil = v; philKey = k; }
     }
 
-    // Ω — Темперамент: % вбивств лорда особисто
-    // Мала вибірка: менше 1 вбивства на кожні 5 раундів (5*kills < rounds)
-    // Тоді — порівнюємо середню кількість атак лорда за раунд з порогом 25
+    // ── Поведінкові осі (0..1): живляться десятками дрібних сигналів ────────
+    const ax = _psyTrack.axes || _psyAxesDefault();
+    const _axVal = (a, b) => (a + b) > 0 ? a / (a + b) : 0.5; // 0.5 = нема даних
+    const axes = {
+        risk:    _axVal(ax.riskR, ax.riskS),          // безстрашність
+        proact:  _axVal(ax.pro, ax.rea),              // план vs паніка
+        impulse: ax.decN > 0 ? _axVal(ax.decFast, ax.decN - ax.decFast) : 0.5,
+        aggro:   0, // заповнюється нижче від lordRate
+    };
+    const _axSamples = ax.riskR + ax.riskS + ax.pro + ax.rea + ax.decN;
+
+    // Ω — Темперамент: особиста участь лорда, ПІДСИЛЕНА віссю ризику.
+    // Гравець, що не пускає лорда в бій, але тисне АТАКУ під тиском — не
+    // "крижаний", а розважливо-зухвалий (cyn).
     const lordRate = c.totalKills > 0 ? c.lordKills / c.totalKills : 0;
+    axes.aggro = Math.min(1, lordRate / 0.4);
     const smallSample = 5 * c.totalKills < rounds;
     let temp;
     if (smallSample) {
-        temp = (c.lordAttacks / rounds) >= 25 ? 'cyn' : 'cold';
+        temp = (c.lordAttacks / rounds) >= 25 ? 'cyn' : (axes.risk >= 0.7 ? 'cyn' : 'cold');
     } else {
-        temp = lordRate >= 0.30 ? 'hot' : lordRate < 0.08 ? 'cold' : 'cyn';
+        temp = (lordRate >= 0.30 || (lordRate >= 0.2 && axes.risk >= 0.7)) ? 'hot'
+             : (lordRate < 0.08 && axes.risk < 0.55) ? 'cold' : 'cyn';
     }
+
+    // Впевненість вердикту: скільки поведінкових спостережень назбирано
+    // (30 сигналів осей + 10 боїв + 5 рішень ≈ повна впевненість)
+    const confidence = Math.round(100 * Math.min(1,
+        (_axSamples / 30) * 0.5 + Math.min(c.totalKills / 40, 1) * 0.3 + Math.min((ax.decN + Object.values(d).reduce((s,v)=>s+v,0)) / 6, 1) * 0.2));
 
     const STRAT = { syla:'Сила', lehion:'Легіон', fortress:'Фортеця', trap:'Хитрість', skarb:'Скарбниця', rivnovaha:'Рівновага' };
     const PHIL  = { dom:'Владика', pom:'Месник', zna:'Знавець', vyj:'Прагматик', kha:'Хаотик', per:'Архітект' };
@@ -12140,7 +12223,30 @@ function _computePsychotype() {
              tempName: TEMP[temp], tempDesc: TDESC[temp],
              buys: b, priority: pri, scores, hoardScore,
              decisions: d, noDecisions: maxPhil === 0,
-             lordAttacks: c.lordAttacks, totalKills: c.totalKills, rounds };
+             lordAttacks: c.lordAttacks, totalKills: c.totalKills, rounds,
+             axes, confidence };
+}
+
+// ── Психотип C: траєкторія особистості ──────────────────────────────────────
+// Знімок осей/типу кожні 10 рівнів кампанії. Люди міняються — фіксуємо шлях
+// («Почав Прагматиком — став Владикою»), Безодня коментує зсуви стилю.
+function _psySnapshot(lvl) {
+    if (lvl % 10 !== 0) return;
+    const pt = _computePsychotype(); if (!pt) return;
+    const sm = _loadStoryMem();
+    if (!Array.isArray(sm.psySnaps)) sm.psySnaps = [];
+    if (sm.psySnaps.some(s => s.lvl === lvl)) return; // один знімок на рівень
+    const prev = sm.psySnaps[sm.psySnaps.length - 1];
+    sm.psySnaps.push({ lvl, strat: pt.stratKey, phil: pt.philKey, temp: pt.temp,
+                       sn: pt.stratName, pn: pt.philName, axes: pt.axes });
+    _saveStoryMem();
+    if (prev && prev.strat !== pt.stratKey) {
+        const prevName = prev.sn || prev.strat;
+        setTimeout(() => { try { _showLoreTip('🌀 <b>' + (_lang === 'en' ? 'THE ABYSS' : 'БЕЗОДНЯ') + ':</b> '
+            + (_lang === 'en'
+                ? 'You walked the path of "' + prevName + '". Now — "' + pt.stratName + '". The dungeon notices how you change.'
+                : 'Ти йшов шляхом «' + prevName + '». Тепер — «' + pt.stratName + '». Підземелля помічає, як ти змінюєшся.')); } catch (e) {} }, 2600);
+    }
 }
 
 function _showPsychotypeResult() {
@@ -12193,8 +12299,40 @@ function _showPsychotypeResult() {
             <div>⚔️ ${tempStat}</div>
             <div>${pt.noDecisions ? _t('psy-no-dec') : `📜 ${philRows}`}</div>
             <div>${_t('psy-rounds', {n: pt.rounds})}</div>
-        </div>`;
+        </div>
+        ${_psyAxesHtml(pt)}
+        ${_psyTrajectoryHtml(pt)}`;
     el.style.display = 'block';
+}
+
+// Осі поведінки — компактні бари в панелі результату
+function _psyAxesHtml(pt) {
+    if (!pt.axes) return '';
+    const en = _lang === 'en';
+    const rows = [
+        [en ? 'Fearlessness' : 'Безстрашність', pt.axes.risk],
+        [en ? 'Planning'     : 'Планування',    pt.axes.proact],
+        [en ? 'Impulse'      : 'Імпульсивність', pt.axes.impulse],
+        [en ? 'Aggression'   : 'Агресія',        pt.axes.aggro],
+    ].map(([lbl, v]) => {
+        const bar = Math.round(Math.min(1, Math.max(0, v)) * 10);
+        return `<div>${lbl}: <span style="font-family:monospace;font-size:10px;color:#9a6ae0">${'█'.repeat(bar)}${'░'.repeat(10-bar)}</span> ${Math.round(v*100)}%</div>`;
+    }).join('');
+    return `<hr class="psy-divider"><div class="psy-stats-title">${en ? 'Behavior axes' : 'Осі поведінки'}
+        <span style="color:#6a5a8a;font-weight:400">· ${en ? 'confidence' : 'впевненість'} ${pt.confidence}%</span></div>
+        <div class="psy-stats">${rows}</div>`;
+}
+
+// Траєкторія кампанії: «Рівень 10: Прагматик-Фортеця → ... → фінал»
+function _psyTrajectoryHtml(pt) {
+    const sm = _loadStoryMem();
+    const snaps = Array.isArray(sm.psySnaps) ? sm.psySnaps : [];
+    if (snaps.length < 1) return '';
+    const en = _lang === 'en';
+    const steps = snaps.map(s => `<b>${s.lvl}</b>: ${s.pn || s.phil}-${s.sn || s.strat}`);
+    steps.push(`<b>${en ? 'now' : 'зараз'}</b>: ${pt.philName}-${pt.stratName}`);
+    return `<hr class="psy-divider"><div class="psy-stats-title">${en ? 'Your path' : 'Твій шлях'}</div>
+        <div class="psy-stats"><div>${steps.join(' → ')}</div></div>`;
 }
 
 
@@ -12636,6 +12774,17 @@ function triggerWave() {
     if (GAME.isWave || GAME.waveCooldownActive) return;
     _haptic([15, 30, 40]);
     try { _proEvent('wave'); } catch(e) {}
+    // Вісь ризику: АТАКА під тиском (поранений лорд / герої вже в підземеллі)
+    // = безстрашність; у безпечний момент = обачність
+    try {
+        const ax = _psyAxes();
+        if (ax) {
+            const _lu = units.find(u => u.type === 'lord');
+            const _heroesIn = units.filter(u => u.type === 'hero' && u.hp > 0 && u.floorIdx >= 0).length;
+            const _danger = (_lu && _lu.hp < _lu.maxHp * 0.6) || _heroesIn >= 3;
+            if (_danger) ax.riskR++; else ax.riskS++;
+        }
+    } catch (e) {}
     GAME.isWave = true;
     GAME.waveCooldownActive = true;
     if (_psyTrack) { _psyTrack.rounds++; _psyTrack.firstBuyDone = false; }
@@ -13198,7 +13347,8 @@ function saveGame() {
             lordHp: lord ? Math.round(lord.hp) : null,
             game: GAME,
             psy: _psyTrack ? { rounds:_psyTrack.rounds, buys:_psyTrack.buys, priority:_psyTrack.priority,
-                               decisions:_psyTrack.decisions, shown:_psyTrack.shown, memory:_psyTrack.memory } : null,
+                               decisions:_psyTrack.decisions, shown:_psyTrack.shown, memory:_psyTrack.memory,
+                               axes:_psyTrack.axes } : null,
             floors: floors.map(f => ({ depth:f.depth, hasTrap:f.hasTrap, trapType:f.trapType,
                                        maxMonsters:f.maxMonsters, floorUpgradeCost:f.floorUpgradeCost,
                                        spawnTimer:f.spawnTimer || 0 }))
@@ -13318,6 +13468,7 @@ function gameWin() {
     const _nextLvl = Math.min(_lvl + 1, 50);
     const _isLast = _lvl >= 50;
     if (_isLast && !_hellMode) _store.set('DLSiege_beaten50', '1');
+    try { _psySnapshot(_lvl); } catch (e) {}  // траєкторія психотипу (кожні 10 рівнів)
     saveProgress(_nextLvl);
     commitEliteSouls();
     _showLevelBeat(_lvl, () => _doGameWinOverlay(_lvl, _nextLvl, _isLast));
@@ -15803,8 +15954,8 @@ const MON_DEV_EMOJI = {
     lightning:'⚡', dark_knight:'⚔️', banshee:'😱', lich:'🧛', abyss:'🕳', dragon:'🐉'
 };
 const MON_DEV_STAT_META = [
-    { key:'atk',   ico:'dl-sword', label:'Атака',     bonus:lvl => `+${lvl*10}%` },
-    { key:'hp',    ico:'dl-heart', label:'ХП',        bonus:lvl => `+${lvl*10}%` },
+    { key:'atk',   ico:'dl-sword', label:'Атака',     bonus:lvl => `+${lvl*8}%` },
+    { key:'hp',    ico:'dl-heart', label:'ХП',        bonus:lvl => `+${lvl*8}%` },
     { key:'cd',    ico:'dl-clock', label:'Колдаун',   bonus:lvl => `−${lvl*5}%` },
     { key:'count', ico:'dl-group', label:'Кількість', bonus:lvl => `+${lvl}` },
 ];
@@ -16813,6 +16964,10 @@ function _renderMonsterTree(kind) {
     let L = _evoLayout();
     let aLocked = (branch === 'B');
     let bLocked = (branch === 'A');
+    // Заливка вузлів гілки — ЛИШЕ якщо гілка явно вибрана: без цього обидві
+    // гілки малювались "прокачаними" від спільного прогресу (баг золотого табу)
+    let aActive = (branch === 'A');
+    let bActive = (branch === 'B');
 
     // Допоміжна — статус ноду по spent
     function nodeState(threshold) {
@@ -16917,11 +17072,11 @@ function _renderMonsterTree(kind) {
 
     // ── Внутрішні з'єднання гілок ──────────────────────────────────────
     for (let i = 0; i < L.branchA.length - 1; i++) {
-        let f = spent >= MON_TREE_THRESHOLDS[tree.branchA.nodes[i+1].lvl];
+        let f = aActive && spent >= MON_TREE_THRESHOLDS[tree.branchA.nodes[i+1].lvl];
         svg += LINE(L.branchA[i].cx+N2-2, AY, L.branchA[i+1].cx-N2+2, AY, lc(f,aLocked,'A'), lg(f,aLocked));
     }
     for (let i = 0; i < L.branchB.length - 1; i++) {
-        let f = spent >= MON_TREE_THRESHOLDS[tree.branchB.nodes[i+1].lvl];
+        let f = bActive && spent >= MON_TREE_THRESHOLDS[tree.branchB.nodes[i+1].lvl];
         svg += LINE(L.branchB[i].cx+N2-2, BY, L.branchB[i+1].cx-N2+2, BY, lc(f,bLocked,'B'), lg(f,bLocked));
     }
 
@@ -16931,8 +17086,8 @@ function _renderMonsterTree(kind) {
     const TP = p => ({ cx: PX(p.cx, p.cy), cy: PY(p.cx, p.cy) });
     let html = `<div class="evo-tree" style="width:${VB_W}px;height:${VB_H}px;${vert?'margin:0 auto;':''}">` + svg;
     tree.trunk.forEach((n, i) => { html += _evoNodeHtml(n, spent, false, TP(L.trunk[i]), ''); });
-    tree.branchA.nodes.forEach((n, i) => { html += _evoNodeHtml(n, spent, aLocked, TP(L.branchA[i]), 'branch-a'); });
-    tree.branchB.nodes.forEach((n, i) => { html += _evoNodeHtml(n, spent, bLocked, TP(L.branchB[i]), 'branch-b'); });
+    tree.branchA.nodes.forEach((n, i) => { html += _evoNodeHtml(n, aActive ? spent : 0, aLocked, TP(L.branchA[i]), 'branch-a'); });
+    tree.branchB.nodes.forEach((n, i) => { html += _evoNodeHtml(n, bActive ? spent : 0, bLocked, TP(L.branchB[i]), 'branch-b'); });
     html += '</div>';
     wrap.innerHTML = html;
 }
@@ -17015,8 +17170,8 @@ function _renderMonsterDev() {
     let hpLvl    = getMonStatLvl(kind, 'hp');
     let cdLvl    = getMonStatLvl(kind, 'cd');
     let countLvl = getMonStatLvl(kind, 'count');
-    let dmgEff = (baseInfo.atk * (1 + 0.1 * atkLvl));
-    let hpEff  = (baseInfo.hp  * (1 + 0.1 * hpLvl));
+    let dmgEff = (baseInfo.atk * (1 + 0.08 * atkLvl));
+    let hpEff  = (baseInfo.hp  * (1 + 0.08 * hpLvl));
     // Спавн: ТА САМА формула, що реально тікає в spawnMinions (глибина поверху
     // цього виду = levelIdx-1); показуємо в десятих — 4.5с означає реальні 4.5с
     let intervalEff = _spawnIntervalCalc(levelIdx - 1, cdLvl);
