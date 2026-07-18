@@ -11355,7 +11355,7 @@ const _DECISION_EVENTS = [
       choices:[
         { text:'→ Вилікувати і відпустити. Покажемо великодушність', tags:['vyj','zna'], buff:{ captainChance:-3 } },
         { text:'→ Перетворити на слугу підземелля', tags:['dom','kha'], buff:{ soulBonus:3 } },
-        { text:'→ Принести в жертву. Сила важливіша', tags:['per','dom'], buff:{ eliteChance:-1 } },
+        { text:'→ Принести в жертву. Сила важливіша', tags:['per','dom'], buff:{ lordDmg:3 } },
       ]},
     { id:'night_raid', trigger:'wave_start', minRound:3, weight:2,
       badge:'🌑 Нічна розвідка', title:'Нічний рейд',
@@ -11491,7 +11491,7 @@ const _DECISION_EVENTS = [
       badge:'⚠️ Наслідки', title:'Гільдія оголосила полювання',
       text:'Гільдія авантюристів офіційно оголосила відкрите полювання на твого лорда. Тепер кожна хвиля містить двох-трьох їхніх найманців. Репутація — жорстока річ.',
       choices:[
-        { text:'→ Виплатити компенсацію. Зупинити ескалацію поки не пізно', tags:['vyj'], buff:{ soulBonus:-15 } },
+        { text:'→ Виплатити компенсацію. Зупинити ескалацію поки не пізно', tags:['vyj'], buff:{ souls:-100 } },
         { text:'→ Відповісти полюванням на їхнього гільдмайстра', tags:['pom','dom'], buff:{ heroThreatPct:2, eliteChance:5 } },
         { text:'→ Найняти конкуруючу гільдію підкинути їм клопотів', tags:['kha'], buff:{ heroThreatPct:0.5, soulBonus:3 } },
       ]},
@@ -11632,9 +11632,9 @@ const _DECISION_EVENTS = [
 
     { id:'mercenary_offer', trigger:'wave_start', minRound:4, weight:2,
       badge:'💰 Пропозиція', title:'Найманці без принципів',
-      text:'Загін "Залізні Зуби" пропонує свої послуги. Ціна: 20 душ за хвилю. Вони добрі, але не лояльні. І їх можна найняти і проти тебе.',
+      text:'Загін "Залізні Зуби" пропонує свої послуги. Ціна: 80 душ, одразу. Вони добрі, але не лояльні. І їх можна найняти і проти тебе.',
       choices:[
-        { text:'→ Найняти. Ефективність понад лояльність', tags:['kha','zna'], buff:{ soulBonus:-10, heroThreatPct:-1.5 } },
+        { text:'→ Найняти. Ефективність понад лояльність', tags:['kha','zna'], buff:{ souls:-80, heroThreatPct:-1.5 } },
         { text:'→ Відмовити. Своя армія надійніша', tags:['dom','per'], buff:{} },
         { text:'→ Найняти і підставити місту — хай воно платить їм далі', tags:['kha'], buff:{ eliteChance:-2, heroThreatPct:-0.5 } },
       ]},
@@ -12040,6 +12040,8 @@ function _resolveDecisionIdx(idx) {
     if (b.eliteChance    !== undefined) GAME.eliteChance    = Math.max(0,   Math.min(100, (GAME.eliteChance    || 0) + b.eliteChance));
     if (b.captainChance  !== undefined) GAME.captainChance  = Math.max(0,   Math.min(100, (GAME.captainChance  || 0) + b.captainChance));
     if (b.soulBonus      !== undefined) GAME.soulBonus      = Math.max(0,   (GAME.soulBonus       || 0) + b.soulBonus);
+    // Разова зміна душ (плата/дар) — НЕ плутати з soulBonus (постійний за-кіл)
+    if (b.souls          !== undefined) GAME.souls          = Math.max(0,   (GAME.souls           || 0) + b.souls);
     if (b.lordDmg        !== undefined) {
         GAME.lordDmg = (GAME.lordDmg || 20) + b.lordDmg;
         const lord = units.find(u => u.type === 'lord');
