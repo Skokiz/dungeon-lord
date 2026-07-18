@@ -12151,7 +12151,9 @@ function _computePsychotype() {
     //   floor:   ~10 поверхів за ран — активний будівельник
     //   trap:    слоти, але не менше 4 (щоб 2 пастки не давали миттєве домінування)
     const floorSlots = Math.max((floors ? floors.length - 1 : 1), 4);
-    const caps = { syla: 9, lehion: rounds * 2, fortress: 10, trap: floorSlots };
+    // lehion: rounds×1.5 (стеля ×2 систематично занижувала скор армійських білдів
+    // проти syla/9 — симуляція: avenger впізнавався лише у 67%)
+    const caps = { syla: 9, lehion: Math.max(6, rounds * 1.5), fortress: 10, trap: floorSlots };
 
     // Вічні поверхи/пастки — постійне втілення стратегії: половинна вага щорану
     const _pf = (_permaData && _permaData.permaFloorLvl) || 0;
@@ -12181,9 +12183,16 @@ function _computePsychotype() {
     if (_ranked[0][1] > 0.12) { stratKey = _ranked[0][0]; maxScore = _ranked[0][1]; }
     // Скарбниця: скупість — сильніший сигнал, ніж те, куди пішли крихти
     if (buysPerRound < 0.8 && maxScore < 0.55) stratKey = 'skarb';
-    // Рівновага: всі чотири канали активні І топ-2 нероздільні
-    else if (_ranked[0][1] > 0.15 && _ranked[3][1] > 0.15
-             && (_ranked[0][1] - _ranked[1][1]) < 0.12) stratKey = 'rivnovaha';
+    // Рівновага — по ЧАСТКАХ покупок, не по нормованих скорах: капи різні
+    // (lord/9 vs monster/rounds×1.5), тож при рівних покупках скори завжди
+    // розходились і рівновага губилась. Частки капонезалежні: активний гравець,
+    // жодна категорія не тягне >42%, і всі чотири канали живі (≥8%).
+    else if (b.total >= rounds * 0.8) {
+        const _sh = ['lord','monster','floor','trap'].map(k => (b[k] || 0) / b.total);
+        // 0.40/0.09 — відкалібровано симуляціями v3/v4 (300+ ранів): ширше вікно
+        // засмоктує гравців зі слабкою домінантою, вужче — губить справжніх тактиків
+        if (Math.max(..._sh) < 0.40 && Math.min(..._sh) >= 0.09) stratKey = 'rivnovaha';
+    }
 
     // Φ — Філософія: рішення за ВСЮ кампанію (кампанійні тотали накопичуються
     // у _storyMem.philTotals; на пізніх ранах події рідкісні — ран сам по собі шумний),
@@ -12220,8 +12229,10 @@ function _computePsychotype() {
     if (smallSample) {
         temp = (c.lordAttacks / rounds) >= 25 ? 'cyn' : (axes.risk >= 0.7 ? 'cyn' : 'cold');
     } else {
-        temp = (lordRate >= 0.30 || (lordRate >= 0.2 && axes.risk >= 0.7)) ? 'hot'
-             : (lordRate < 0.08 && axes.risk < 0.55) ? 'cold' : 'cyn';
+        // Пороги відкалібровані симуляцією: cold до 10% (шум ±5% біля старої
+        // межі 8% зносив траперів у cyn), hot від 15% при дуже високому ризику
+        temp = (lordRate >= 0.30 || (lordRate >= 0.15 && axes.risk >= 0.75)) ? 'hot'
+             : (lordRate < 0.10 && axes.risk < 0.55) ? 'cold' : 'cyn';
     }
 
     // Впевненість вердикту: скільки поведінкових спостережень назбирано

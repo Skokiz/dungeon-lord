@@ -1,0 +1,38 @@
+Ранів: 100, помилок виконання: 0
+
+== Точність по персонах (strat / phil / temp) ==
+berserker  n=13  strat 92% [syla:12 rivnovaha:1]  phil 85%  temp 100% [hot:13]
+builder    n=13  strat 100% [fortress:13]  phil 62%  temp 100% [cold:13]
+swarmlord  n=13  strat 100% [lehion:13]  phil 69%  temp 69% [cyn:9 cold:4]
+trapper    n=13  strat 100% [trap:13]  phil 54%  temp 100% [cold:13]
+hoarder    n=12  strat 75% [trap:3 skarb:9]  phil 100%  temp 100% [cold:12]
+avenger    n=12  strat 92% [lehion:11 syla:1]  phil 92%  temp 83% [hot:10 cyn:2]
+tactician  n=12  strat 33% [syla:3 lehion:1 trap:4 rivnovaha:4]  phil 92%  temp 100% [cyn:12]
+daredevil  n=12  strat 67% [rivnovaha:2 syla:8 lehion:2]  phil 75%  temp 92% [hot:11 cyn:1]
+
+== Розподіл детектованих типів ==
+strat: lehion:27  syla:24  trap:20  fortress:13  skarb:9  rivnovaha:7
+phil: vyj:31  zna:20  pom:15  kha:13  dom:11  per:10
+temp: cold:42  hot:34  cyn:24
+
+== Впевненість == min 49  p25 73  медіана 87  p75 100  max 100
+
+== Середні осі по персонах (risk/pro/imp/agg, %) ==
+berserker  risk 80  pro 42  imp 78  agg 100
+builder    risk 22  pro 87  imp 27  agg 9
+swarmlord  risk 49  pro 62  imp 50  agg 28
+trapper    risk 23  pro 79  imp 53  agg 11
+hoarder    risk 20  pro 61  imp 53  agg 10
+avenger    risk 73  pro 48  imp 70  agg 79
+tactician  risk 46  pro 71  imp 26  agg 38
+daredevil  risk 89  pro 34  imp 79  agg 53
+
+== Промахи стратегії (persona → detected, скільки) ==
+  tactician: rivnovaha → trap ×4
+  hoarder: skarb → trap ×3
+  tactician: rivnovaha → syla ×3
+  daredevil: syla → rivnovaha ×2
+  daredevil: syla → lehion ×2
+  tactician: rivnovaha → lehion ×1
+  berserker: syla → rivnovaha ×1
+  avenger: lehion → syla ×1
