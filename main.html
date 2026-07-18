@@ -13735,20 +13735,42 @@ function _playAd(onDone, onFail) {
         // інакше фейл виглядає як "кнопка не працює"
         try {
             if (p !== 'stub') {
-                const d = reason && (reason.description || reason.error || reason.message);
+                let d = reason && (reason.description || reason.error || reason.message);
+                // Гравцю — коротко: без URL-простирадл і стектрейсів
+                if (typeof d === 'string') d = d.split(/https?:\/\//)[0].trim().slice(0, 60);
                 // _showLoreTip (z-index 9000) — видимий і над вікном кінця раунду
-                _showLoreTip((_lang === 'en' ? '📺 <b>Ad unavailable.</b> Try again in a moment.' : '📺 <b>Реклама недоступна.</b> Спробуй ще раз за хвилинку.')
-                    + (d && typeof d === 'string' ? '<br><span style="color:#8877aa;font-size:11px">' + d + '</span>' : ''));
+                _showLoreTip((_lang === 'en' ? '📺 <b>Ad unavailable.</b> Try again later.' : '📺 <b>Реклама поки недоступна.</b> Спробуй пізніше.')
+                    + (d ? '<br><span style="color:#8877aa;font-size:11px">' + d + '</span>' : ''));
             }
         } catch (e) {}
         if (typeof onFail === 'function') onFail();
     };
     try {
         if (p === 'telegram' && _ADS.adsgramBlockId && window.Adsgram) {
-            if (!_adsgramCtrl) _adsgramCtrl = window.Adsgram.init({ blockId: _ADS.adsgramBlockId });
+            // Блок мертвий (не активований/на модерації) — не мучимо SDK повторно,
+            // одразу наш компактний тост без сирих подробиць
+            let _dead = false;
+            try { _dead = sessionStorage.getItem('DL_ad_dead') === '1'; } catch (e) {}
+            if (_dead) { fail(); return; }
+            if (!_adsgramCtrl) _adsgramCtrl = window.Adsgram.init({ blockId: _ADS.adsgramBlockId, debug: false });
+            // Глушимо alert на час показу: SDK при конфіг-помилках малює власну
+            // модалку "AdsgramError" поверх гри — гравцю вона ні до чого
+            const _origAlert = window.alert;
+            window.alert = function (m) { try { console.warn('Adsgram:', m); } catch (e) {} };
+            const _restore = () => { window.alert = _origAlert; };
             // Adsgram: resolve = переглянуто (частина версій SDK резолвить БЕЗ
             // об'єкта результату — трактуємо resolve як успіх, reject як фейл)
-            _adsgramCtrl.show().then(r => (!r || r.done !== false) ? onDone() : fail(r)).catch(fail);
+            _adsgramCtrl.show()
+                .then(r => { _restore(); (!r || r.done !== false) ? onDone() : fail(r); })
+                .catch(err => {
+                    _restore();
+                    try {
+                        const m = String((err && (err.description || err.error || err.message)) || err);
+                        if (/not active|not found|banned|moderation/i.test(m))
+                            sessionStorage.setItem('DL_ad_dead', '1'); // до кінця сесії не смикаємо
+                    } catch (e) {}
+                    fail(err);
+                });
             return;
         }
         if (p === 'crazygames') {
