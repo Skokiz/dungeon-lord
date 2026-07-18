@@ -11315,7 +11315,7 @@ const _DECISION_EVENTS = [
       choices:[
         { text:'→ Допитати і відпустити', tags:['zna','vyj'], buff:{ heroThreatPct:-0.5 } },
         { text:'→ Кинути в клітку. Може стати в нагоді', tags:['dom'], buff:{ soulBonus:2 } },
-        { text:'→ Страчувати публічно. Хай знають', tags:['pom','per'], buff:{ eliteChance:2 } },
+        { text:'→ Страчувати публічно. Хай знають', tags:['pom','per'], buff:{ eliteChance:3, souls:40 } },
       ]},
     { id:'village_revolt', trigger:'wave_end', minRound:2, weight:2,
       badge:'📜 Донесення із сіл', title:'Народне заворушення',
@@ -11323,7 +11323,7 @@ const _DECISION_EVENTS = [
       choices:[
         { text:'→ Взяти під захист. Союзники корисні', tags:['vyj'], buff:{ soulBonus:3, eliteChance:-2 } },
         { text:'→ Ігнорувати. Не моя справа', tags:['kha'], buff:{} },
-        { text:'→ Залякати і підпорядкувати', tags:['dom'], buff:{ captainChance:2 } },
+        { text:'→ Залякати і підпорядкувати', tags:['dom'], buff:{ captainChance:2, soulBonus:2 } },
       ]},
     { id:'traitor', trigger:'wave_start', minRound:3, weight:2,
       badge:'⚠️ Попередження', title:'Зрадник у рядах',
@@ -11386,8 +11386,8 @@ const _DECISION_EVENTS = [
       text:'Посол короля пропонує: залиш верхні поверхи вільними — і місто не надсилатиме нових героїв.',
       choices:[
         { text:'→ Переговори. Деталі важливі', tags:['zna','vyj'], buff:{ heroThreatPct:-1 } },
-        { text:'→ Убити посла. Не ведемо переговорів', tags:['pom','dom'], buff:{ eliteChance:3, heroThreatPct:0.5 } },
-        { text:'→ Погодитися і порушити в потрібний момент', tags:['kha','dom'], buff:{ soulBonus:4 } },
+        { text:'→ Убити посла. Не ведемо переговорів', tags:['pom','dom'], buff:{ eliteChance:3, souls:60 } },
+        { text:'→ Погодитися і порушити в потрібний момент', tags:['kha','dom'], buff:{ soulBonus:4, heroThreatPct:0.5 } },
       ]},
     { id:'trophy', trigger:'wave_end', minRound:2, weight:3,
       badge:'⚔️ Трофей', title:'Зброя переможеного',
@@ -11395,7 +11395,7 @@ const _DECISION_EVENTS = [
       choices:[
         { text:'→ Розібрати і вивчити', tags:['zna'], buff:{ lordDmg:3 } },
         { text:'→ Прикрасити трон', tags:['per'], buff:{ soulBonus:2 } },
-        { text:'→ Відправити назад як виклик', tags:['pom'], buff:{ captainChance:3, eliteChance:2 } },
+        { text:'→ Відправити назад як виклик', tags:['pom'], buff:{ captainChance:3, eliteChance:2, soulBonus:2 } },
       ]},
     { id:'legend', trigger:'wave_end', minRound:7, weight:1,
       badge:'📜 Чутки', title:'Народна легенда',
@@ -11411,7 +11411,7 @@ const _DECISION_EVENTS = [
       choices:[
         { text:'→ Реконструювати лабіринт', tags:['per','vyj'], buff:{ heroThreatPct:-1 } },
         { text:'→ Поширити дезінформацію', tags:['zna','kha'], buff:{ captainChance:-3 } },
-        { text:'→ Сприйняти як виклик — все одно переможемо', tags:['dom','per'], buff:{ heroThreatPct:0.5 } },
+        { text:'→ Сприйняти як виклик — все одно переможемо', tags:['dom','per'], buff:{ heroThreatPct:0.5, lordDmg:2 } },
       ]},
     { id:'necro_offer', trigger:'wave_start', minRound:8, weight:1,
       badge:'💀 Пропозиція', title:'Слово Некроманта',
@@ -11427,7 +11427,7 @@ const _DECISION_EVENTS = [
       choices:[
         { text:'→ Гасити негайно. Збитки мінімальні', tags:['vyj'], buff:{} },
         { text:'→ Нехай горить — відволікає героїв', tags:['kha'], buff:{ soulBonus:3 } },
-        { text:'→ Перетворити на контрольований вогонь-пастку', tags:['zna','per'], buff:{ eliteChance:2 } },
+        { text:'→ Перетворити на контрольований вогонь-пастку', tags:['zna','per'], buff:{ eliteChance:2, lordDmg:2 } },
       ]},
 
     // ── CONTINUATION: prisoner_knight:0 → відпустили ──
@@ -11491,7 +11491,7 @@ const _DECISION_EVENTS = [
       badge:'⚠️ Наслідки', title:'Гільдія оголосила полювання',
       text:'Гільдія авантюристів офіційно оголосила відкрите полювання на твого лорда. Тепер кожна хвиля містить двох-трьох їхніх найманців. Репутація — жорстока річ.',
       choices:[
-        { text:'→ Виплатити компенсацію. Зупинити ескалацію поки не пізно', tags:['vyj'], buff:{ souls:-100 } },
+        { text:'→ Виплатити компенсацію. Зупинити ескалацію поки не пізно', tags:['vyj'], buff:{ souls:-100, heroThreatPct:-1 } },
         { text:'→ Відповісти полюванням на їхнього гільдмайстра', tags:['pom','dom'], buff:{ heroThreatPct:2, eliteChance:5 } },
         { text:'→ Найняти конкуруючу гільдію підкинути їм клопотів', tags:['kha'], buff:{ heroThreatPct:0.5, soulBonus:3 } },
       ]},
@@ -11515,7 +11515,7 @@ const _DECISION_EVENTS = [
       choices:[
         { text:'→ Задовольнити. Вони справді заслужили повагу', tags:['vyj'], buff:{ soulBonus:3 } },
         { text:'→ Компроміс: нові назви є, факели лишаються', tags:['kha','zna'], buff:{} },
-        { text:'→ Оголосити офіційну назву "Бойові Слизові Воїни"', tags:['per'], buff:{ eliteChance:2 } },
+        { text:'→ Оголосити офіційну назву "Бойові Слизові Воїни"', tags:['per'], buff:{ captainChance:-2 } },
       ]},
 
     { id:'bat_strike', trigger:'wave_start', maxLevel:25, minRound:3, weight:2,
@@ -11550,7 +11550,7 @@ const _DECISION_EVENTS = [
       text:'Зомбі надіслали скаргу. Анонімно, але почерк впізнаваний. Суть: нас годують тільки тими героями що "охолонули". Хочемо свіжого. Орфографічних помилок не рахувати — для нежиті написано непогано.',
       choices:[
         { text:'→ Пояснити логістику: "свіжі" — це ті що ще живі', tags:['zna'], buff:{} },
-        { text:'→ Ввести "преміальне меню" для відзначених у бою', tags:['kha','per'], buff:{ eliteChance:2 } },
+        { text:'→ Ввести "преміальне меню" для відзначених у бою', tags:['kha','per'], buff:{ eliteChance:2, soulBonus:1 } },
         { text:'→ Поставити на перші лінії — хай самі вирішують питання свіжості', tags:['dom'], buff:{ heroThreatPct:-0.5, soulBonus:3 } },
       ]},
 
@@ -11560,7 +11560,7 @@ const _DECISION_EVENTS = [
       choices:[
         { text:'→ Прибрати дзеркало. Сентиментальність — не для бійців', tags:['dom','per'], buff:{} },
         { text:'→ Залишити. Кожному потрібно своє', tags:['vyj'], buff:{ soulBonus:3 } },
-        { text:'→ Дати йому ще одне дзеркало. Нехай розбереться сам', tags:['kha'], buff:{ captainChance:3 } },
+        { text:'→ Дати йому ще одне дзеркало. Нехай розбереться сам', tags:['kha'], buff:{ captainChance:3, soulBonus:2 } },
       ]},
 
     // ── ЛОР МІСТА І ПІДЗЕМЕЛЛЯ ──
@@ -11646,7 +11646,7 @@ const _DECISION_EVENTS = [
       choices:[
         { text:'→ Відпустити. Вона нічого не зробила', tags:['vyj','zna'], buff:{ heroThreatPct:-0.5 } },
         { text:'→ Запропонувати обмін: вона розповідає про місто — ти мовчиш про неї', tags:['zna','kha'], buff:{ soulBonus:4 } },
-        { text:'→ Тримати під вартою. Занадто цікава щоб відпускати', tags:['dom'], buff:{ captainChance:2 } },
+        { text:'→ Тримати під вартою. Занадто цікава щоб відпускати', tags:['dom'], buff:{ captainChance:2, soulBonus:2 } },
       ]},
     { id:'marta_return', trigger:'wave_start', minLevel:26, maxLevel:31, minRound:3, weight:5, story:true,
       requires: { id:'marta_spy', choice:0 },
