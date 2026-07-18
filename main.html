@@ -13364,7 +13364,7 @@ function saveGame() {
             game: GAME,
             psy: _psyTrack ? { rounds:_psyTrack.rounds, buys:_psyTrack.buys, priority:_psyTrack.priority,
                                decisions:_psyTrack.decisions, shown:_psyTrack.shown, memory:_psyTrack.memory,
-                               axes:_psyTrack.axes } : null,
+                               axes:_psyTrack.axes, combat:_psyTrack.combat } : null,
             floors: floors.map(f => ({ depth:f.depth, hasTrap:f.hasTrap, trapType:f.trapType,
                                        maxMonsters:f.maxMonsters, floorUpgradeCost:f.floorUpgradeCost,
                                        spawnTimer:f.spawnTimer || 0 }))
