@@ -12171,15 +12171,19 @@ function _computePsychotype() {
     const buysPerRound = b.total / rounds;
     const hoardScore = buysPerRound < 1.0 ? (1.0 - buysPerRound) : 0;
 
-    // Домінує категорія з найвищою нормалізованою оцінкою
-    // Поріг 0.12: нижче — Рівновага (ніхто не домінує) або Скарбниця (мало витрачав)
+    // Домінує категорія з найвищою нормалізованою оцінкою.
+    // Симуляція 100 ранів показала: старі правила робили Скарбницю і Рівновагу
+    // НЕДОСЯЖНИМИ (крихти покупок скупія все одно комусь діставались і
+    // домінували; при рівних покупках завжди щось випадково перевищувало поріг).
+    const _ranked = Object.entries(scores).sort((a, b) => b[1] - a[1]);
     let stratKey = 'rivnovaha';
     let maxScore = 0.12;
-    for (const [k, v] of Object.entries(scores)) {
-        if (v > maxScore) { maxScore = v; stratKey = k; }
-    }
-    // Якщо нічого не домінує + мало витрачав → Скарбниця
-    if (stratKey === 'rivnovaha' && hoardScore > 0.4) stratKey = 'skarb';
+    if (_ranked[0][1] > 0.12) { stratKey = _ranked[0][0]; maxScore = _ranked[0][1]; }
+    // Скарбниця: скупість — сильніший сигнал, ніж те, куди пішли крихти
+    if (buysPerRound < 0.8 && maxScore < 0.55) stratKey = 'skarb';
+    // Рівновага: всі чотири канали активні І топ-2 нероздільні
+    else if (_ranked[0][1] > 0.15 && _ranked[3][1] > 0.15
+             && (_ranked[0][1] - _ranked[1][1]) < 0.12) stratKey = 'rivnovaha';
 
     // Φ — Філософія: рішення за ВСЮ кампанію (кампанійні тотали накопичуються
     // у _storyMem.philTotals; на пізніх ранах події рідкісні — ран сам по собі шумний),
