@@ -241,47 +241,52 @@ function drawSkeleton(ctx_,x,y,t,dir=1,sc=0.38,atk=0,branch='',runF=0,evo=0){
     }
   }
 
-  // ── Shield (Branch A) — прив'язаний до зап'ястя лівої руки ──
+  // ── Shield (Branch A) — хітер-щит на зап'ясті лівої руки ──
   if (branch === 'A') {
-    const _shW = 16, _shH = 22;
+    const _shW = 20, _shH = 27;
     const _shAng = _belbA * 0.35 - 0.10;
     ctx_.save(); ctx_.translate(_bwx, _bwy); ctx_.rotate(_shAng);
-    ctx_.fillStyle='#5a5a99'; ctx_.strokeStyle=_SK.outline; ctx_.lineWidth=2;
-    ctx_.beginPath();
-    ctx_.moveTo(0,          -_shH*0.40);
-    ctx_.lineTo( _shW/2,   -_shH*0.40 + 4);
-    ctx_.lineTo( _shW/2,    _shH*0.15);
-    ctx_.lineTo(0,           _shH*0.50);
-    ctx_.lineTo(-_shW/2,    _shH*0.15);
-    ctx_.lineTo(-_shW/2,   -_shH*0.40 + 4);
-    ctx_.closePath(); ctx_.fill(); ctx_.stroke();
-    // Підсвітка
-    ctx_.fillStyle='#8888cc';
-    ctx_.beginPath();
-    ctx_.moveTo(0,          -_shH*0.40 + 1);
-    ctx_.lineTo(_shW/2 - 2, -_shH*0.40 + 5);
-    ctx_.lineTo(_shW/2 - 2, -2);
-    ctx_.lineTo(0,          -4);
-    ctx_.closePath(); ctx_.fill();
-    // Хрест
-    ctx_.strokeStyle='#aaaadd'; ctx_.lineWidth=1.5;
-    ctx_.beginPath();
-    ctx_.moveTo(-_shW*0.35, -4); ctx_.lineTo(_shW*0.35, -4);
-    ctx_.moveTo(0, -_shH*0.40);  ctx_.lineTo(0, _shH*0.30);
-    ctx_.stroke();
-    // Умбон
-    ctx_.fillStyle='#ccccee'; ctx_.strokeStyle=_SK.outline; ctx_.lineWidth=1;
-    ctx_.beginPath(); ctx_.arc(0, -4, 3.5, 0, Math.PI*2); ctx_.fill(); ctx_.stroke();
-    // Синє сяйво
-    ctx_.strokeStyle='rgba(100,130,255,0.35)'; ctx_.lineWidth=3.5;
-    ctx_.beginPath();
-    ctx_.moveTo(0,         -_shH*0.40);
-    ctx_.lineTo( _shW/2,  -_shH*0.40 + 4);
-    ctx_.lineTo( _shW/2,   _shH*0.15);
-    ctx_.lineTo(0,          _shH*0.50);
-    ctx_.lineTo(-_shW/2,   _shH*0.15);
-    ctx_.lineTo(-_shW/2,  -_shH*0.40 + 4);
-    ctx_.closePath(); ctx_.stroke();
+    const _heater = (inset) => {
+      const w = _shW/2 - inset, top = -_shH*0.42 + inset*0.8, bot = _shH*0.52 - inset;
+      ctx_.beginPath();
+      ctx_.moveTo(-w, top);
+      ctx_.lineTo( w, top);
+      ctx_.quadraticCurveTo(w, _shH*0.10, 0, bot);
+      ctx_.quadraticCurveTo(-w, _shH*0.10, -w, top);
+      ctx_.closePath();
+    };
+    // Корпус: сталевий градієнт зліва-згори
+    const _sg = ctx_.createLinearGradient(-_shW/2, -_shH/2, _shW/2, _shH/2);
+    _sg.addColorStop(0, '#7b7bb8'); _sg.addColorStop(0.5, '#565694'); _sg.addColorStop(1, '#3c3c70');
+    _heater(0);
+    ctx_.lineWidth=3; ctx_.strokeStyle=_SK.outline; ctx_.stroke();
+    ctx_.fillStyle=_sg; ctx_.fill();
+    // Внутрішня окантовка
+    _heater(2.4);
+    ctx_.lineWidth=1.3; ctx_.strokeStyle='rgba(190,200,240,0.55)'; ctx_.stroke();
+    // Заклепки по верхній кромці
+    ctx_.fillStyle='#c9cfe8';
+    for (const rx of [-_shW*0.30, 0, _shW*0.30]) {
+      ctx_.beginPath(); ctx_.arc(rx, -_shH*0.34, 1.1, 0, Math.PI*2); ctx_.fill();
+    }
+    // Вертикальне ребро
+    ctx_.strokeStyle='rgba(30,30,60,0.55)'; ctx_.lineWidth=1.6;
+    ctx_.beginPath(); ctx_.moveTo(0, -_shH*0.40); ctx_.lineTo(0, _shH*0.44); ctx_.stroke();
+    // Умбон із самоцвітом (пульсує)
+    const _gp = 0.6 + 0.4 * Math.sin(t*2.4);
+    ctx_.fillStyle='#2a2a55'; ctx_.strokeStyle=_SK.outline; ctx_.lineWidth=1.4;
+    ctx_.beginPath(); ctx_.arc(0, -2, 4.6, 0, Math.PI*2); ctx_.fill(); ctx_.stroke();
+    ctx_.fillStyle=`rgba(110,170,255,${0.55 + 0.4*_gp})`;
+    ctx_.beginPath(); ctx_.arc(0, -2, 2.6, 0, Math.PI*2); ctx_.fill();
+    ctx_.fillStyle='rgba(230,245,255,0.9)';
+    ctx_.beginPath(); ctx_.arc(-0.9, -2.9, 0.9, 0, Math.PI*2); ctx_.fill();
+    // Ево 6+: рунні насічки світяться
+    if (evo >= 6) {
+      ctx_.strokeStyle=`rgba(120,180,255,${0.35 + 0.35*_gp})`; ctx_.lineWidth=1.2;
+      for (const [ry, rw] of [[-_shH*0.22, 4.5], [_shH*0.12, 3.5], [_shH*0.26, 2.5]]) {
+        ctx_.beginPath(); ctx_.moveTo(-rw, ry); ctx_.lineTo(rw, ry - 2); ctx_.stroke();
+      }
+    }
     ctx_.restore();
   }
 
@@ -295,10 +300,12 @@ function drawSkeleton(ctx_,x,y,t,dir=1,sc=0.38,atk=0,branch='',runF=0,evo=0){
     const swa=_felbA+(ap>0.22&&ap<0.55?0.28:0);
 
     if (branch === 'B') {
-      // 2H: pommel at back wrist, crossguard at front wrist
+      // 2H: важкий дворучник — навершя-череп на задньому зап'ясті, гарда з
+      // загнутими кінцями на передньому, широкий клинок з долом
       const _2hA = Math.atan2(_fwx - _bwx, _fwy - _bwy);
-      const _bladeLen=78, _bladeW=5;
+      const _bladeLen=86, _bladeW=6.5;
       const bEndX=_fwx+Math.sin(_2hA)*_bladeLen, bEndY=_fwy+Math.cos(_2hA)*_bladeLen;
+      const bpx=Math.cos(_2hA), bpy=-Math.sin(_2hA);
       // Grip
       ctx_.strokeStyle='#2e1c0c'; ctx_.lineWidth=8; ctx_.lineCap='round';
       ctx_.beginPath(); ctx_.moveTo(_bwx,_bwy); ctx_.lineTo(_fwx,_fwy); ctx_.stroke();
@@ -312,23 +319,46 @@ function drawSkeleton(ctx_,x,y,t,dir=1,sc=0.38,atk=0,branch='',runF=0,evo=0){
         ctx_.lineTo(gpx+Math.cos(_2hA)*3.5,gpy-Math.sin(_2hA)*3.5);
         ctx_.stroke();
       }
-      // Pommel at back wrist
-      ctx_.fillStyle='#6a5020'; ctx_.strokeStyle=_SK.outline; ctx_.lineWidth=1.5;
+      // Навершя-череп
+      ctx_.fillStyle='#d8cca8'; ctx_.strokeStyle=_SK.outline; ctx_.lineWidth=1.5;
       ctx_.beginPath(); ctx_.arc(_bwx,_bwy,5.5,0,Math.PI*2); ctx_.fill(); ctx_.stroke();
-      // Crossguard at front wrist
+      ctx_.fillStyle='#1a0a00';
+      ctx_.beginPath(); ctx_.arc(_bwx-1.8,_bwy-0.8,1.3,0,Math.PI*2); ctx_.fill();
+      ctx_.beginPath(); ctx_.arc(_bwx+1.8,_bwy-0.8,1.3,0,Math.PI*2); ctx_.fill();
+      // Гарда з загнутими до клинка кінцями
       ctx_.save(); ctx_.translate(_fwx,_fwy); ctx_.rotate(_2hA);
-      ctx_.fillStyle='#6a5820'; ctx_.strokeStyle=_SK.outline; ctx_.lineWidth=1.5;
-      ctx_.beginPath(); ctx_.rect(-17,-2.5,34,5); ctx_.fill(); ctx_.stroke();
+      ctx_.fillStyle='#7a5a20'; ctx_.strokeStyle=_SK.outline; ctx_.lineWidth=1.5;
+      ctx_.beginPath();
+      ctx_.moveTo(-19,-2.5); ctx_.lineTo(19,-2.5); ctx_.lineTo(19,2.5);
+      ctx_.quadraticCurveTo(12,5.5,10,2.5); ctx_.lineTo(-10,2.5);
+      ctx_.quadraticCurveTo(-12,5.5,-19,2.5); ctx_.closePath();
+      ctx_.fill(); ctx_.stroke();
+      ctx_.fillStyle='rgba(255,225,140,0.35)';
+      ctx_.fillRect(-19,-2.5,38,1.4);
       ctx_.restore();
-      // Blade
-      const bpx=Math.cos(_2hA), bpy=-Math.sin(_2hA);
-      ctx_.fillStyle='#9898bc'; ctx_.strokeStyle=_SK.outline; ctx_.lineWidth=1.2;
+      // Клинок: сталь з градієнтом поперек
+      const _blG = ctx_.createLinearGradient(_fwx-bpx*_bladeW,_fwy-bpy*_bladeW,_fwx+bpx*_bladeW,_fwy+bpy*_bladeW);
+      _blG.addColorStop(0,'#8484a8'); _blG.addColorStop(0.5,'#c8c8e2'); _blG.addColorStop(1,'#7a7a9e');
+      ctx_.fillStyle=_blG; ctx_.strokeStyle=_SK.outline; ctx_.lineWidth=1.4;
       ctx_.beginPath();
       ctx_.moveTo(_fwx-bpx*_bladeW,_fwy-bpy*_bladeW);
       ctx_.lineTo(_fwx+bpx*_bladeW,_fwy+bpy*_bladeW);
-      ctx_.lineTo(bEndX,bEndY); ctx_.closePath(); ctx_.fill(); ctx_.stroke();
-      ctx_.strokeStyle='rgba(200,200,230,0.42)'; ctx_.lineWidth=1.2;
-      ctx_.beginPath(); ctx_.moveTo(_fwx,_fwy); ctx_.lineTo(_fwx+Math.sin(_2hA)*_bladeLen*0.85,_fwy+Math.cos(_2hA)*_bladeLen*0.85); ctx_.stroke();
+      ctx_.lineTo(_fwx+bpx*1.8+Math.sin(_2hA)*_bladeLen, _fwy+bpy*1.8+Math.cos(_2hA)*_bladeLen);
+      ctx_.lineTo(bEndX,bEndY);
+      ctx_.closePath(); ctx_.fill(); ctx_.stroke();
+      // Діл (fuller): ево 6+ жевріє червоним, інакше темна лінія
+      if (evo >= 6) {
+        const _fg = 0.4 + 0.35 * Math.sin(t*3.0);
+        ctx_.strokeStyle=`rgba(255,90,40,${_fg})`; ctx_.lineWidth=2;
+      } else {
+        ctx_.strokeStyle='rgba(40,40,70,0.55)'; ctx_.lineWidth=1.6;
+      }
+      ctx_.beginPath(); ctx_.moveTo(_fwx,_fwy);
+      ctx_.lineTo(_fwx+Math.sin(_2hA)*_bladeLen*0.8,_fwy+Math.cos(_2hA)*_bladeLen*0.8); ctx_.stroke();
+      // Відблиск кромки
+      ctx_.strokeStyle='rgba(235,235,255,0.5)'; ctx_.lineWidth=1;
+      ctx_.beginPath(); ctx_.moveTo(_fwx-bpx*_bladeW*0.7,_fwy-bpy*_bladeW*0.7);
+      ctx_.lineTo(bEndX-bpx*1.2,bEndY-bpy*1.2); ctx_.stroke();
 
     } else {
       // 1H: grip extends from front wrist
