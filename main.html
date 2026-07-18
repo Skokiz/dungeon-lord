@@ -2425,7 +2425,8 @@
         </div>
         <div class="mon-dev-footer">
             <div class="mon-dev-spent">Витрачено: <b><span id="mon-dev-spent-num">0</span></b> <span id="mon-dev-spent-icon" class="soul-gem"></span></div>
-            <button class="mon-dev-exchange-btn" id="mon-dev-branch-reset-btn" onclick="resetMonBranch()" title="Скинути вибір гілки" style="display:none">🔄 Гілка</button>
+            <!-- Кнопку скидання гілки прибрано: вибір гілки — назавжди. Скидання
+                 лишало branch=null при наявному прогресі і ламало рендер дерева -->
         </div>
     </div>
 </div>
@@ -4912,7 +4913,7 @@ class Unit {
                     }
                     // ABYSS B8: контратака 15% при отриманні удару від героя
                     if (enemy.monsterKind === 'abyss' && enemy._evoCounterAtk
-                        && this.type === 'hero' && dmgDealt > 0 && Math.random() < 0.15) {
+                        && this.type === 'hero' && dmgDealt > 0 && Math.random() < _abChance(0.15)) {
                         let _cDmg = applyDef(enemy.dmg * 0.50, enemy, this, false);
                         this.hp = Math.max(0, this.hp - _cDmg);
                         spawnDmgText(this.x, this.y-this.size-10, '-'+Math.round(_cDmg)+'🐙', '#aa44ff');
@@ -5032,7 +5033,7 @@ class Unit {
                 }
 
                 // HOUNDS: 15% кровотеча — стакується до 5 одиниць на героя (1% maxHP/сек за стак)
-                if (this.ability === 'bleed' && Math.random() < 0.15 && enemy.type === 'hero') {
+                if (this.ability === 'bleed' && Math.random() < _abChance(0.15) && enemy.type === 'hero') {
                     let _bleedMax = enemy._bleedCap || 5;
                     enemy._bleedStacks = Math.min(_bleedMax, (enemy._bleedStacks||0) + 1);
                     enemy._bleedTicks  = 300; // 5 сек, оновлюється при кожному стаку
@@ -5044,7 +5045,7 @@ class Unit {
                 // ZOMBIE: 3% заразити героя (рейтинг: boss=0, elite=1%, normal=3%)
                 if (this.ability === 'infect' && enemy.type === 'hero' && enemy.hp > 0) {
                     let chance = enemy.heroRank==='boss'?0 : enemy.heroRank&&enemy.heroRank.startsWith('elite')?0.01:0.03;
-                    if (Math.random() < chance) {
+                    if (Math.random() < _abChance(chance)) {
                         let summonedOnFloor = units.filter(u=>u.type==='monster'&&u.floorIdx===this.floorIdx&&u._summoned).length;
                         if (summonedOnFloor < 5) {
                             enemy.type='monster'; enemy.monsterKind='zombie'; enemy.ability='infect';
@@ -5161,7 +5162,7 @@ class Unit {
                 }
 
                 // EARTH_ELE A9: 15% блок (-40% урону) при отриманні удару
-                if (enemy.monsterKind === 'earth_ele' && enemy._evoBlock15 && Math.random() < 0.15) {
+                if (enemy.monsterKind === 'earth_ele' && enemy._evoBlock15 && Math.random() < _abChance(0.15)) {
                     // Скасовуємо вже нанесений dmgDealt (він у hp, відмотуємо)
                     enemy.hp += dmgDealt * 0.40; // повертаємо 40%
                     spawnParticle(enemy.x, enemy.y-enemy.size, '#ccaa88');
@@ -6234,6 +6235,11 @@ function spawnEnemy() {
             hero.baseDmg = (hero.baseDmg || hero.dmg) * GAME.rageMult;
             hero.dmg = Math.round(hero.baseDmg * (hero._dmgVariance || 1));
             hero._rage = GAME.rageGold;
+        }
+        // Прокляття «Дару Безодні»: ХП героїв росте на +1% за кожну хвилю
+        if (GAME.runBuffs && GAME.runBuffs.waveHpRamp) {
+            const _rampM = 1 + GAME.waveCount * GAME.runBuffs.waveHpRamp;
+            hero.hp *= _rampM; hero.maxHp = hero.hp;
         }
         units.push(hero);
     }
@@ -10112,7 +10118,7 @@ function loop(ts) {
             }
             // ── AIR_ELE: шанс пережити смерть → ghost-фаза 5с (або 7с з A8) ──
             if (u.type === 'monster' && u.ability === 'no_die' && !u.noDieUsed) {
-                let _survChance = u._evoSurvive60 ? 0.60 : 0.40;
+                let _survChance = _abChance(u._evoSurvive60 ? 0.60 : 0.40);
                 if (Math.random() < _survChance) {
                     u.noDieUsed = true; u.hp = 1;
                     u._transparent = true;
@@ -10279,6 +10285,7 @@ function loop(ts) {
                     _SFX.bossDeath();
                     // Бос-золото росте з рівнем — вирівнює золото-за-хвилину на пізніх рівнях
                     let _ge = (6 + Math.floor((GAME.currentLevel || 1) / 5)) * _runEliteMult;
+                    _ge += (GAME.runBuffs && GAME.runBuffs.eliteBonusGold) || 0; // Пакт/Дар
                     if (GAME.lordEliteSoulBonus > 0) _ge = Math.round(_ge * (1 + GAME.lordEliteSoulBonus));
                     GAME.eliteSouls += _ge;
                     GAME._goldEarnedLevel = (GAME._goldEarnedLevel || 0) + _ge;
@@ -10291,6 +10298,7 @@ function loop(ts) {
                 } else if (u.heroRank && u.heroRank.startsWith('elite')) {
                     _SFX.death();
                     let _ge = 2 * _runEliteMult;
+                    _ge += (GAME.runBuffs && GAME.runBuffs.eliteBonusGold) || 0; // Пакт/Дар
                     if (GAME.lordEliteSoulBonus > 0) _ge = Math.round(_ge * (1 + GAME.lordEliteSoulBonus));
                     GAME.eliteSouls += _ge;
                     GAME._goldEarnedLevel = (GAME._goldEarnedLevel || 0) + _ge;
@@ -10805,6 +10813,7 @@ function _applyRunBuffsLord() {
     const b = GAME.runBuffs; if (!b) return;
     if (b.lordDmgPct) GAME.lordDmg = Math.round(GAME.lordDmg * (1 + b.lordDmgPct / 100));
     if (b.lordHp)     GAME.maxLordHP += b.lordHp;
+    if (b.lordHpPct)  GAME.maxLordHP = Math.round(GAME.maxLordHP * (1 + b.lordHpPct / 100));
     if (b.lordRegen)  GAME.lordRegen += b.lordRegen;
     if (b.lordArmor)  GAME.lordArmor += b.lordArmor;
     if (b.lordAspd)   GAME.lordAtkSpeedBonus += b.lordAspd;
@@ -10816,10 +10825,17 @@ function _applyRunBuffsRest() {
     if (b.monDmgPct)     GAME.monsterDmgPct += b.monDmgPct;
     if (b.monAspd)       GAME.monsterAtkSpeedBonus += b.monAspd;
     if (b.monFlatAtk)    GAME.monsterFlatAtk += b.monFlatAtk;
+    if (b.monArmor)      GAME.monsterArmorBonus += b.monArmor;
     if (b.soulBonus)     GAME.soulBonus += b.soulBonus;
     if (b.heroScale)     { GAME.heroScaleBase += b.heroScale; GAME.heroScalePercent += b.heroScale; }
     if (b.eliteMult)     _runEliteMult = b.eliteMult;
     if (b.eliteChance)   GAME.eliteChance = (GAME.eliteChance || 0) + b.eliteChance;
+    // eliteBonusGold / waveHpRamp / abilityPct читаються напряму в точках подій
+}
+// Шанс здібності монстра з урахуванням «Гострих пазурів» (+50% до шансів)
+function _abChance(p) {
+    const b = GAME.runBuffs;
+    return (b && b.abilityPct) ? Math.min(1, p * (1 + b.abilityPct)) : p;
 }
 
 // Чи діє бойова аура/прокляття лорда на поверсі fi (лорд на останньому поверсі)
@@ -10905,6 +10921,11 @@ const _RUN_MODS = [
       desc:()=> _lang==='en' ? '+1 soul per enemy killed' : '+1 душа за кожного вбитого ворога',
       apply:() => { _rb().soulBonus = 1; } },
 
+    { id:'frenzy', r:'rare', icon:'dl-spark',
+      name:()=> _lang==='en' ? 'Battle Frenzy' : 'Бойовий шал',
+      desc:()=> { const v = _rms(12, 22); return _lang==='en' ? `Monster attack speed +${v}%` : `Швидкість атаки монстрів +${v}%`; },
+      apply:() => { _rb().monAspd = _rms(12, 22) / 100; } },
+
     { id:'lord_fury', r:'rare', icon:'dl-flame',
       name:()=>_t('mod-fury'),
       desc:()=> { const v = _rms(10, 35); return _lang==='en' ? `Lord damage +${v}%` : `Урон Лорда +${v}%`; },
@@ -10912,55 +10933,50 @@ const _RUN_MODS = [
 
     { id:'iron_walls', r:'rare', icon:'dl-tower',
       name:()=>_t('mod-iron'),
-      desc:()=> { const v = _rms(35, 110); return _lang==='en' ? `All monsters +${v} HP` : `Всі монстри +${v} ХП`; },
-      apply:() => { _rb().monHpFlat = _rms(35, 110); } },
+      desc:()=> { const L = GAME.currentLevel || 1; return _lang==='en' ? `Monster HP +1% per campaign level (now +${L}%)` : `ХП монстрів +1% за рівень кампанії (зараз +${L}%)`; },
+      apply:() => { _rb().monHpPct = 0.01 * (GAME.currentLevel || 1); } },
 
     { id:'undying', r:'rare', icon:'dl-heart',
       name:()=>_t('mod-regen'),
-      desc:()=> { const hp = _rms(50, 200); return _lang==='en' ? `+${hp} Lord HP and +1 HP/s regen` : `+${hp} HP Лорда і +1 HP/с реген`; },
-      apply:() => { const b = _rb(); b.lordHp = _rms(50, 200); b.lordRegen = 1; } },
+      desc:()=> _lang==='en' ? 'Lord HP +10% and +1 HP/s regen' : 'ХП Лорда +10% і +1 HP/с реген',
+      apply:() => { const b = _rb(); b.lordHpPct = 10; b.lordRegen = 1; } },
 
     { id:'stone_skin', r:'rare', icon:'dl-crystal',
       name:()=> _lang==='en' ? 'Stone Skin' : 'Кам\'яна шкіра',
-      desc:()=> { const v = _rms(10, 20); return _lang==='en' ? `Monster HP +${v}%` : `ХП монстрів +${v}%`; },
-      apply:() => { _rb().monHpPct = _rms(10, 20) / 100; } },
-
-    { id:'sharp_claws', r:'rare', icon:'dl-trap',
-      name:()=> _lang==='en' ? 'Sharpened Claws' : 'Гострі пазурі',
-      desc:()=> { const v = _rms(8, 18); return _lang==='en' ? `Monster damage +${v}%` : `Урон монстрів +${v}%`; },
-      apply:() => { _rb().monDmgPct = _rms(8, 18) / 100; } },
+      desc:()=> { const v = _rms(2, 5); return _lang==='en' ? `Monster armor +${v}` : `Броня монстрів +${v}`; },
+      apply:() => { _rb().monArmor = _rms(2, 5); } },
 
     // ── Епічні ────────────────────────────────────────────────────────────
+    { id:'sharp_claws', r:'epic', icon:'dl-trap',
+      name:()=> _lang==='en' ? 'Sharpened Claws' : 'Гострі пазурі',
+      desc:()=> _lang==='en' ? 'Monster ability triggers are 50% more likely' : 'Здібності монстрів спрацьовують на 50% частіше',
+      apply:() => { _rb().abilityPct = 0.5; } },
+
     { id:'elite_surge', r:'epic', icon:'dl-bolt',
       name:()=>_t('mod-elite'),
       desc:()=> _lang==='en' ? '2× gold souls from elites and bosses' : 'Вдвічі більше золотих душ від еліт та босів',
       apply:() => { _rb().eliteMult = 2; } },
 
-    { id:'frenzy', r:'epic', icon:'dl-spark',
-      name:()=> _lang==='en' ? 'Battle Frenzy' : 'Бойовий шал',
-      desc:()=> { const v = _rms(12, 22); return _lang==='en' ? `Monster attack speed +${v}%` : `Швидкість атаки монстрів +${v}%`; },
-      apply:() => { _rb().monAspd = _rms(12, 22) / 100; } },
-
     { id:'dark_pact', r:'epic', icon:'dl-moon',
       name:()=>_t('mod-pact'),
-      desc:()=> { const e = _rms(2, 10), t = _rms(5, 20); return _lang==='en' ? `+${e} gold souls now, but heroes +${t}% stronger` : `+${e} золотих зараз, але герої +${t}% сильніші`; },
-      apply:() => { GAME.eliteSouls += _rms(2, 10); _rb().heroScale = _rms(5, 20); } },
+      desc:()=> { const t = _rms(5, 20); return _lang==='en' ? `+2 gold souls from every elite and boss, but heroes +${t}% stronger` : `+2 золоті з кожного еліта і боса, але герої +${t}% сильніші`; },
+      apply:() => { const b = _rb(); b.eliteBonusGold = 2; b.heroScale = _rms(5, 20); } },
 
     // ── Легендарні ────────────────────────────────────────────────────────
     { id:'abyss_gift', r:'legend', icon:'dl-crown',
       name:()=> _lang==='en' ? 'Gift of the Abyss' : 'Дар Безодні',
-      desc:()=> { const v = _rms(4, 12); return _lang==='en' ? `+${v} gold souls right away` : `+${v} золотих душ одразу`; },
-      apply:() => { GAME.eliteSouls += _rms(4, 12); } },
+      desc:()=> _lang==='en' ? '+4 gold souls from every elite and boss, but hero HP grows +1% each wave' : '+4 золоті з кожного еліта і боса, але ХП героїв росте на +1% щохвилі',
+      apply:() => { const b = _rb(); b.eliteBonusGold = 4; b.waveHpRamp = 0.01; } },
 
     { id:'colossus', r:'legend', icon:'dl-bone',
       name:()=> _lang==='en' ? 'Legion of Colossi' : 'Легіон колосів',
-      desc:()=> { const a = _rms(2, 8); return _lang==='en' ? `Monster HP +25% and +${a} attack` : `ХП монстрів +25% і +${a} до атаки`; },
-      apply:() => { const b = _rb(); b.monHpPct = 0.25; b.monFlatAtk = _rms(2, 8); } },
+      desc:()=> _lang==='en' ? 'All monsters +20% HP and +20% damage' : 'Всі монстри +20% ХП і +20% атаки',
+      apply:() => { const b = _rb(); b.monHpPct = 0.20; b.monDmgPct = 0.20; } },
 
     { id:'warpath', r:'legend', icon:'dl-flame',
       name:()=> _lang==='en' ? 'Warpath' : 'Стежка війни',
-      desc:()=> { return _lang==='en' ? `+2 souls per kill and Lord damage +25%` : `+2 душі за вбивство і урон Лорда +25%`; },
-      apply:() => { const b = _rb(); b.soulBonus = 2; b.lordDmgPct = 25; } },
+      desc:()=> _lang==='en' ? '+1 soul per any kill and Lord damage +100%' : '+1 душа за будь-який кіл і урон Лорда +100%',
+      apply:() => { const b = _rb(); b.soulBonus = 1; b.lordDmgPct = 100; } },
 ];
 
 // 3 слоти: кожен ролить рідкість за вагою, потім випадковий НЕвзятий мод цієї
@@ -16547,6 +16563,15 @@ function openMonsterDev(kindName) {
     requestAnimationFrame(() => {
         _drawMonsterPortrait(kindName);
         _renderMonsterDev();
+        // Самозцілення після прибраної кнопки скидання гілки: якщо прогрес уже
+        // за порогом розгалуження, а гілки нема — одразу пропонуємо вибір
+        try {
+            const dev = getMonDev(kindName), g = getMonDevGolden(kindName);
+            const lv3 = MON_TREE_THRESHOLDS[3];
+            if (MON_DEV_TREES[kindName] && !dev.branch && !g.branch
+                && ((dev.soulsSpent || 0) + (g.goldenSpent || 0)) >= lv3)
+                showBranchChoice(kindName, (g.goldenSpent || 0) >= lv3);
+        } catch (e) {}
     });
 }
 function closeMonsterDev() {
@@ -16964,10 +16989,6 @@ function _renderMonsterTree(kind) {
     let L = _evoLayout();
     let aLocked = (branch === 'B');
     let bLocked = (branch === 'A');
-    // Заливка вузлів гілки — ЛИШЕ якщо гілка явно вибрана: без цього обидві
-    // гілки малювались "прокачаними" від спільного прогресу (баг золотого табу)
-    let aActive = (branch === 'A');
-    let bActive = (branch === 'B');
 
     // Допоміжна — статус ноду по spent
     function nodeState(threshold) {
@@ -17072,11 +17093,11 @@ function _renderMonsterTree(kind) {
 
     // ── Внутрішні з'єднання гілок ──────────────────────────────────────
     for (let i = 0; i < L.branchA.length - 1; i++) {
-        let f = aActive && spent >= MON_TREE_THRESHOLDS[tree.branchA.nodes[i+1].lvl];
+        let f = spent >= MON_TREE_THRESHOLDS[tree.branchA.nodes[i+1].lvl];
         svg += LINE(L.branchA[i].cx+N2-2, AY, L.branchA[i+1].cx-N2+2, AY, lc(f,aLocked,'A'), lg(f,aLocked));
     }
     for (let i = 0; i < L.branchB.length - 1; i++) {
-        let f = bActive && spent >= MON_TREE_THRESHOLDS[tree.branchB.nodes[i+1].lvl];
+        let f = spent >= MON_TREE_THRESHOLDS[tree.branchB.nodes[i+1].lvl];
         svg += LINE(L.branchB[i].cx+N2-2, BY, L.branchB[i+1].cx-N2+2, BY, lc(f,bLocked,'B'), lg(f,bLocked));
     }
 
@@ -17086,8 +17107,8 @@ function _renderMonsterTree(kind) {
     const TP = p => ({ cx: PX(p.cx, p.cy), cy: PY(p.cx, p.cy) });
     let html = `<div class="evo-tree" style="width:${VB_W}px;height:${VB_H}px;${vert?'margin:0 auto;':''}">` + svg;
     tree.trunk.forEach((n, i) => { html += _evoNodeHtml(n, spent, false, TP(L.trunk[i]), ''); });
-    tree.branchA.nodes.forEach((n, i) => { html += _evoNodeHtml(n, aActive ? spent : 0, aLocked, TP(L.branchA[i]), 'branch-a'); });
-    tree.branchB.nodes.forEach((n, i) => { html += _evoNodeHtml(n, bActive ? spent : 0, bLocked, TP(L.branchB[i]), 'branch-b'); });
+    tree.branchA.nodes.forEach((n, i) => { html += _evoNodeHtml(n, spent, aLocked, TP(L.branchA[i]), 'branch-a'); });
+    tree.branchB.nodes.forEach((n, i) => { html += _evoNodeHtml(n, spent, bLocked, TP(L.branchB[i]), 'branch-b'); });
     html += '</div>';
     wrap.innerHTML = html;
 }
@@ -17228,9 +17249,6 @@ function _renderMonsterDev() {
     document.getElementById('mon-dev-spent-num').innerText = spentNum;
     let spentIcon = document.getElementById('mon-dev-spent-icon');
     if (spentIcon) { spentIcon.className = (tab === 'golden') ? 'esoul-gem' : 'soul-gem'; spentIcon.innerText = ''; }
-    // Кнопка скидання гілки: показується якщо гілку вибрано
-    let resetBtn = document.getElementById('mon-dev-branch-reset-btn');
-    if (resetBtn) resetBtn.style.display = (dev.branch || getMonDevGolden(kind).branch) ? '' : 'none';
 }
 
 // Базові цифри з MONSTER_KINDS (для відображення в меню без створення Unit-а)
@@ -17269,18 +17287,6 @@ function _monDevBaseInfoFor(level) {
 }
 
 // Phase 8 — перемикання вкладок (Душі / Золоті)
-function resetMonBranch() {
-    let kind = _monDevState.kindName;
-    if (!kind) return;
-    let dev = getMonDev(kind);
-    let g   = getMonDevGolden(kind);
-    dev.branch = null;
-    g.branch   = null;
-    saveGame();
-    _savePerma(_permaData);
-    _renderMonsterDev();
-}
-
 function switchMonDevTab(tab) {
     if (tab !== 'souls' && tab !== 'golden') return;
     _monDevState.tab = tab;
