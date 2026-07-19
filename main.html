@@ -2662,7 +2662,7 @@
 
 <script src="models/i18n.js?v=16"></script>
 <script src="models/draw_slime.js?v=7"></script>
-<script src="models/draw_skeleton.js?v=6"></script>
+<script src="models/draw_skeleton.js?v=7"></script>
 <script src="models/hero_flat.js?v=25"></script>
 <script src="models/draw_monsters.js?v=25"></script>
 <script src="models/draw_shadow.js?v=2"></script>
@@ -5040,6 +5040,25 @@ class Unit {
                     }
                 }
 
+                // SKELETON B: іскри важкого меча + клив (B7) + злам броні (B9)
+                if (this.monsterKind === 'skeleton' && this._branch === 'B' && enemy.type === 'hero' && dmgDealt > 0) {
+                    spawnHitBurst(enemy.x, enemy.y - enemy.size * 0.5, 'white', 4, 0.7);
+                    if (this._evoSkCleave && Math.random() < _abChance(0.10)) {
+                        const _cl = units.find(h => h.type === 'hero' && h !== enemy && h.hp > 0
+                            && h.floorIdx === this.floorIdx && Math.abs(h.x - enemy.x) < 70);
+                        if (_cl) {
+                            const _cd = applyDef(this.dmg * 0.60, this, _cl, false);
+                            _cl.hp = Math.max(0, _cl.hp - _cd); _cl._lastHitBy = 'monster';
+                            spawnDmgText(_cl.x, _cl.y - _cl.size - 8, '🌀' + Math.round(_cd), '#ffcc88');
+                        }
+                    }
+                    if (this._evoSkSunder && (enemy.armor || 0) > 0 && Math.random() < _abChance(0.05)) {
+                        enemy.armor = 0;
+                        spawnDmgText(enemy.x, enemy.y - enemy.size - 20, '💔 БРОНЮ ЗЛАМАНО', '#ff8866');
+                        spawnHitBurst(enemy.x, enemy.y - enemy.size * 0.5, 'orange', 8, 1.1);
+                    }
+                }
+
                 // HOUNDS: 15% кровотеча — стакується до 5 одиниць на героя (1% maxHP/сек за стак)
                 if (this.ability === 'bleed' && Math.random() < _abChance(0.15) && enemy.type === 'hero') {
                     let _bleedMax = enemy._bleedCap || 5;
@@ -5174,6 +5193,25 @@ class Unit {
                     // Скасовуємо вже нанесений dmgDealt (він у hp, відмотуємо)
                     enemy.hp += dmgDealt * 0.40; // повертаємо 40%
                     spawnParticle(enemy.x, enemy.y-enemy.size, '#ccaa88');
+                }
+
+                // SKELETON A6/A8: щит — 50% шанс заблокувати 20%/40% урону (+блиск щита)
+                if (enemy.monsterKind === 'skeleton' && enemy._evoSkBlock && dmgDealt > 0
+                    && Math.random() < _abChance(0.50)) {
+                    enemy.hp = Math.min(enemy.maxHp, enemy.hp + dmgDealt * enemy._evoSkBlock);
+                    enemy._shieldFlashT = 9; // блиск щита в рендері
+                    spawnDmgText(enemy.x, enemy.y - enemy.size - 6, 'БЛОК', '#88bbff');
+                    for (let _bi = 0; _bi < 3; _bi++)
+                        spawnParticle(enemy.x + (Math.random()-.5)*14, enemy.y - enemy.size*0.55, 'cyan',
+                            { size: 1 + Math.random()*1.2, vy: -(0.8+Math.random()), vx: (Math.random()-.5)*2 });
+                }
+                // SKELETON A9: контратака 15% при отриманні удару
+                if (enemy.monsterKind === 'skeleton' && enemy._evoSkCounter
+                    && this.type === 'hero' && dmgDealt > 0 && Math.random() < _abChance(0.15)) {
+                    const _cDmg = applyDef(enemy.dmg * 0.60, enemy, this, false);
+                    this.hp = Math.max(0, this.hp - _cDmg);
+                    this._lastHitBy = 'monster';
+                    spawnDmgText(this.x, this.y - this.size - 8, '↩' + Math.round(_cDmg), '#aaccff');
                 }
 
                 // LIGHTNING: ланцюгова блискавка
@@ -10259,6 +10297,14 @@ function loop(ts) {
                     let _b7Fire = (_fMByKF.get('fire_ele:' + u.floorIdx) || []).some(m => m._evoSpawnAccel);
                     if (_b7Fire && floors[u.floorIdx]) floors[u.floorIdx].spawnTimer += 2;
                 }
+                // SKELETON A7: смерть героя поряд лікує щитоносців на 1% maxHP
+                units.forEach(sk => {
+                    if (sk.monsterKind === 'skeleton' && sk._evoSkDeathHeal && sk.hp > 0
+                        && sk.floorIdx === u.floorIdx && Math.abs(sk.x - u.x) < 160) {
+                        sk.hp = Math.min(sk.maxHp, sk.hp + sk.maxHp * 0.01);
+                        spawnParticle(sk.x, sk.y - sk.size, 'green');
+                    }
+                });
                 let reward = (u.soulReward || (u.heroRank === 'boss' ? 80 : u.heroRank.startsWith('elite') ? 25 : 10)) + (GAME.soulBonus || 0);
                 GAME.souls += reward;
                 // Лють героїв: КОЖЕН герой (навіть звичайний) несе +N золотих
@@ -15648,12 +15694,23 @@ function _applySkeletonEvo(unit) {
     if (branch === 'A') {          // Щитоносець
         if (evoLvl >= 4) unit.armor = (unit.armor || 0) + Math.max(1, Math.round((unit.armor || 2) * 0.10));
         if (evoLvl >= 5) { const b = unit.maxHp * 0.10; unit.maxHp += b; unit.hp = unit.maxHp; }
+        if (evoLvl >= 6) unit._evoSkBlock = (evoLvl >= 8) ? 0.40 : 0.20; // 50% шанс блокувати частину урону
+        if (evoLvl >= 7) unit._evoSkDeathHeal = true;  // смерть героя поряд лікує 1% maxHP
+        if (evoLvl >= 9) unit._evoSkCounter = true;    // контратака 15%
     } else if (branch === 'B') {   // Двуручний
         if (evoLvl >= 4) unit.atkSpeedBonus = (unit.atkSpeedBonus || 0) + 0.10;
         if (evoLvl >= 5) {
             unit.baseDmg = (unit.baseDmg || unit.dmg) * 1.10;
             unit.dmg = Math.round(unit.baseDmg * (unit._dmgVariance || 1));
         }
+        if (evoLvl >= 6) {
+            // ДВУРУЧНИЙ МЕЧ: повільніше, але важче — DPS той самий
+            unit.baseDmg = (unit.baseDmg || unit.dmg) * 1.6;
+            unit.dmg = Math.round(unit.baseDmg * (unit._dmgVariance || 1));
+            unit.baseAtkSpeed = (unit.baseAtkSpeed || 0.83) * 0.625;
+        }
+        if (evoLvl >= 7) unit._evoSkCleave = true;   // 10% зачепити другого героя
+        if (evoLvl >= 9) unit._evoSkSunder = true;   // 5% повністю зламати броню
     }
 }
 

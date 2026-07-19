@@ -141,7 +141,7 @@ function _skArm(sx,sy,upperA,elbowBend,dim){
 
 const _skE = p => p*p*(3-2*p);
 
-function drawSkeleton(ctx_,x,y,t,dir=1,sc=0.38,atk=0,branch='',runF=0,evo=0){
+function drawSkeleton(ctx_,x,y,t,dir=1,sc=0.38,atk=0,branch='',runF=0,evo=0,shieldFlash=0){
   const _lp = (a,b,f) => a+(b-a)*f;
   const spd=2.2, wc=Math.sin(t*spd), wc_c=Math.cos(t*spd);
   const bob=(1-Math.abs(wc))*(3.5+runF*2.5), hipT=wc_c*0.035;
@@ -293,6 +293,20 @@ function drawSkeleton(ctx_,x,y,t,dir=1,sc=0.38,atk=0,branch='',runF=0,evo=0){
       for (const [ry, rw] of [[-_shH*0.22, 4.5], [_shH*0.12, 3.5], [_shH*0.26, 2.5]]) {
         ctx_.beginPath(); ctx_.moveTo(-rw, ry); ctx_.lineTo(rw, ry - 2); ctx_.stroke();
       }
+    }
+    // Блиск щита при спрацюванні блоку (таймер ставить бойовий код)
+    if (shieldFlash > 0) {
+      const _ff = shieldFlash / 9;
+      ctx_.globalAlpha = 0.55 * _ff;
+      const _fh = (inset) => {
+        const w = _shW/2 - inset, top = -_shH*0.42 + inset*0.8, bot = _shH*0.52 - inset;
+        ctx_.beginPath(); ctx_.moveTo(-w, top); ctx_.lineTo(w, top);
+        ctx_.quadraticCurveTo(w, _shH*0.10, 0, bot);
+        ctx_.quadraticCurveTo(-w, _shH*0.10, -w, top); ctx_.closePath();
+      };
+      _fh(-1.5);
+      ctx_.fillStyle = '#bfe0ff'; ctx_.fill();
+      ctx_.globalAlpha = 1;
     }
     ctx_.restore();
   }
@@ -504,7 +518,8 @@ function drawSkeletonMonster(unit, camY) {
     const _skRunTgt = Math.max(0, Math.min(1, (_skV - 55) / 160));
     unit._skRunF = (unit._skRunF || 0) + ((_skRunTgt - (unit._skRunF || 0)) * Math.min(1, _skDt * 6));
 
+    if (unit._shieldFlashT > 0) unit._shieldFlashT -= 1;
     const _skHipY = (unit.y - camY) - 50 * _skSc;
-    drawSkeleton(ctx, unit.x, _skHipY, unit._skT, unit._skDir, _skSc, unit._skAtkP || 0, unit._branch || '', unit._skRunF || 0, unit._evoLvl || 0);
+    drawSkeleton(ctx, unit.x, _skHipY, unit._skT, unit._skDir, _skSc, unit._skAtkP || 0, unit._branch || '', unit._skRunF || 0, unit._evoLvl || 0, unit._shieldFlashT || 0);
     unit._hpBarY = _skHipY - 80 * _skSc - 22;
 }
