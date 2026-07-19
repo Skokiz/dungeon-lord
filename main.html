@@ -2262,6 +2262,19 @@
     <button id="btn-reset-progress" onclick="confirmResetProgress()" data-i18n="btn-reset">↺ Скинути все</button>
     <div id="build-stamp" style="position:absolute;bottom:6px;right:10px;font-size:9px;color:#443366;letter-spacing:0.5px"></div>
 </div>
+<script>
+// Миттєве заповнення прогресу ДО парсингу важких скриптів гри: інакше на
+// повільних телефонах стартовий екран секундами показує дефолтний «Рівень 1»,
+// який потім «стрибає» на правильний. init() пізніше перезапише з i18n.
+try {
+    var _qLvl = parseInt(localStorage.getItem('DLSiege_lvl') || '1') || 1;
+    _qLvl = Math.max(1, Math.min(50, _qLvl));
+    document.getElementById('lvl-num').textContent = _qLvl;
+    if (_qLvl > 1) document.getElementById('btn-continue').textContent = '▶ Рівень ' + _qLvl;
+    var _qE = parseInt(localStorage.getItem('DLSiege_elite') || '0') || 0;
+    document.getElementById('start-elite-num').textContent = _qE;
+} catch (e) {}
+</script>
 
 <!-- ── РУН-МОДИФІКАТОРИ ── -->
 <div id="run-mod-overlay" style="display:none;">
