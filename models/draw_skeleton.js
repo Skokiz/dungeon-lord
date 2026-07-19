@@ -227,25 +227,32 @@ function drawSkeleton(ctx_,x,y,t,dir=1,sc=0.38,atk=0,branch='',runF=0,evo=0){
     ctx_.globalAlpha = 1;
   }
 
-  // ── Ево 8+: кістяні наплічники з окантовкою кольору гілки ──
+  // ── Ево 8+: латні наплічники в кольорі гілки (не зливаються з кісткою) ──
   if (evo >= 8) {
-    const _pCol = branch==='A' ? '#5a5a99' : '#7a3a22';
+    const _pFill = branch==='A' ? '#8b98cf' : '#b9865a';
+    const _pEdge = branch==='A' ? '#4a5aa0' : '#7a4020';
     for (const px of [-SHL_X, SHL_X]) {
       ctx_.beginPath();
       ctx_.ellipse(px, SHL_Y-3, 8.5, 6, px<0?-0.25:0.25, Math.PI*0.95, Math.PI*2.05);
       ctx_.lineWidth=3; ctx_.strokeStyle=_SK.outline; ctx_.stroke();
-      ctx_.fillStyle=_SK.bone; ctx_.fill();
+      ctx_.fillStyle=_pFill; ctx_.fill();
       ctx_.beginPath();
       ctx_.ellipse(px, SHL_Y-3, 8.5, 6, px<0?-0.25:0.25, Math.PI*0.95, Math.PI*2.05);
-      ctx_.lineWidth=1.4; ctx_.strokeStyle=_pCol; ctx_.stroke();
+      ctx_.lineWidth=1.4; ctx_.strokeStyle=_pEdge; ctx_.stroke();
+      ctx_.globalAlpha=0.4; ctx_.fillStyle='#ffffff';
+      ctx_.beginPath();
+      ctx_.ellipse(px-2, SHL_Y-6, 3, 1.6, px<0?-0.25:0.25, 0, Math.PI*2); ctx_.fill();
+      ctx_.globalAlpha=1;
     }
   }
 
-  // ── Shield (Branch A) — хітер-щит на зап'ясті лівої руки ──
+  // ── Shield (Branch A) — великий хітер-щит ПЕРЕД корпусом ──
+  // Якір не на зап'ясті (там він теліпався біля таза), а на передпліччі перед
+  // грудьми: щитоносець читається силуетом навіть на 25px
   if (branch === 'A') {
-    const _shW = 20, _shH = 27;
-    const _shAng = _belbA * 0.35 - 0.10;
-    ctx_.save(); ctx_.translate(_bwx, _bwy); ctx_.rotate(_shAng);
+    const _shW = 28, _shH = 38;
+    const _shAng = -0.06 + wc * 0.03;               // ледь дихає в такт крокам
+    ctx_.save(); ctx_.translate(-3, -24 + (1 - Math.abs(wc)) * 1.5); ctx_.rotate(_shAng);
     const _heater = (inset) => {
       const w = _shW/2 - inset, top = -_shH*0.42 + inset*0.8, bot = _shH*0.52 - inset;
       ctx_.beginPath();
@@ -300,20 +307,27 @@ function drawSkeleton(ctx_,x,y,t,dir=1,sc=0.38,atk=0,branch='',runF=0,evo=0){
     const swa=_felbA+(ap>0.22&&ap<0.55?0.28:0);
 
     if (branch === 'B') {
-      // 2H: важкий дворучник — навершя-череп на задньому зап'ясті, гарда з
-      // загнутими кінцями на передньому, широкий клинок з долом
-      const _2hA = Math.atan2(_fwx - _bwx, _fwy - _bwy);
+      // 2H: важкий дворучник. У СПОКОЇ/РУСІ — клинок на плечі (читабельний
+      // силует, меч не ріже тіло поперек); в АТАЦІ — двуручний замах між руками
+      const _onShoulder = !(ap > 0);
+      const _shoulderA = 3.85;                       // вгору-назад через плече
+      const _hiltX = _onShoulder ? 9 : _fwx;
+      const _hiltY = _onShoulder ? -16 : _fwy;
+      const _2hA = _onShoulder ? _shoulderA : Math.atan2(_fwx - _bwx, _fwy - _bwy);
+      const _gripBX = _onShoulder ? _hiltX - Math.sin(_2hA) * 13 : _bwx;
+      const _gripBY = _onShoulder ? _hiltY - Math.cos(_2hA) * 13 : _bwy;
+      const _fx2 = _hiltX, _fy2 = _hiltY;
       const _bladeLen=86, _bladeW=6.5;
-      const bEndX=_fwx+Math.sin(_2hA)*_bladeLen, bEndY=_fwy+Math.cos(_2hA)*_bladeLen;
+      const bEndX=_fx2+Math.sin(_2hA)*_bladeLen, bEndY=_fy2+Math.cos(_2hA)*_bladeLen;
       const bpx=Math.cos(_2hA), bpy=-Math.sin(_2hA);
       // Grip
       ctx_.strokeStyle='#2e1c0c'; ctx_.lineWidth=8; ctx_.lineCap='round';
-      ctx_.beginPath(); ctx_.moveTo(_bwx,_bwy); ctx_.lineTo(_fwx,_fwy); ctx_.stroke();
+      ctx_.beginPath(); ctx_.moveTo(_gripBX,_gripBY); ctx_.lineTo(_fx2,_fy2); ctx_.stroke();
       // Leather strips
       ctx_.strokeStyle='rgba(140,90,30,0.55)'; ctx_.lineWidth=1;
       for(let gi=1;gi<4;gi++){
         const gf=gi/4;
-        const gpx=_bwx+(_fwx-_bwx)*gf, gpy=_bwy+(_fwy-_bwy)*gf;
+        const gpx=_gripBX+(_fx2-_gripBX)*gf, gpy=_gripBY+(_fy2-_gripBY)*gf;
         ctx_.beginPath();
         ctx_.moveTo(gpx-Math.cos(_2hA)*3.5,gpy+Math.sin(_2hA)*3.5);
         ctx_.lineTo(gpx+Math.cos(_2hA)*3.5,gpy-Math.sin(_2hA)*3.5);
@@ -321,12 +335,12 @@ function drawSkeleton(ctx_,x,y,t,dir=1,sc=0.38,atk=0,branch='',runF=0,evo=0){
       }
       // Навершя-череп
       ctx_.fillStyle='#d8cca8'; ctx_.strokeStyle=_SK.outline; ctx_.lineWidth=1.5;
-      ctx_.beginPath(); ctx_.arc(_bwx,_bwy,5.5,0,Math.PI*2); ctx_.fill(); ctx_.stroke();
+      ctx_.beginPath(); ctx_.arc(_gripBX,_gripBY,5.5,0,Math.PI*2); ctx_.fill(); ctx_.stroke();
       ctx_.fillStyle='#1a0a00';
-      ctx_.beginPath(); ctx_.arc(_bwx-1.8,_bwy-0.8,1.3,0,Math.PI*2); ctx_.fill();
-      ctx_.beginPath(); ctx_.arc(_bwx+1.8,_bwy-0.8,1.3,0,Math.PI*2); ctx_.fill();
+      ctx_.beginPath(); ctx_.arc(_gripBX-1.8,_gripBY-0.8,1.3,0,Math.PI*2); ctx_.fill();
+      ctx_.beginPath(); ctx_.arc(_gripBX+1.8,_gripBY-0.8,1.3,0,Math.PI*2); ctx_.fill();
       // Гарда з загнутими до клинка кінцями
-      ctx_.save(); ctx_.translate(_fwx,_fwy); ctx_.rotate(_2hA);
+      ctx_.save(); ctx_.translate(_fx2,_fy2); ctx_.rotate(_2hA);
       ctx_.fillStyle='#7a5a20'; ctx_.strokeStyle=_SK.outline; ctx_.lineWidth=1.5;
       ctx_.beginPath();
       ctx_.moveTo(-19,-2.5); ctx_.lineTo(19,-2.5); ctx_.lineTo(19,2.5);
@@ -336,14 +350,14 @@ function drawSkeleton(ctx_,x,y,t,dir=1,sc=0.38,atk=0,branch='',runF=0,evo=0){
       ctx_.fillStyle='rgba(255,225,140,0.35)';
       ctx_.fillRect(-19,-2.5,38,1.4);
       ctx_.restore();
-      // Клинок: сталь з градієнтом поперек
-      const _blG = ctx_.createLinearGradient(_fwx-bpx*_bladeW,_fwy-bpy*_bladeW,_fwx+bpx*_bladeW,_fwy+bpy*_bladeW);
-      _blG.addColorStop(0,'#8484a8'); _blG.addColorStop(0.5,'#c8c8e2'); _blG.addColorStop(1,'#7a7a9e');
+      // Клинок: темний обух → світле лезо (контраст з кісткою)
+      const _blG = ctx_.createLinearGradient(_fx2-bpx*_bladeW,_fy2-bpy*_bladeW,_fx2+bpx*_bladeW,_fy2+bpy*_bladeW);
+      _blG.addColorStop(0,'#3f3f5e'); _blG.addColorStop(0.45,'#9090b4'); _blG.addColorStop(1,'#d6d6ee');
       ctx_.fillStyle=_blG; ctx_.strokeStyle=_SK.outline; ctx_.lineWidth=1.4;
       ctx_.beginPath();
-      ctx_.moveTo(_fwx-bpx*_bladeW,_fwy-bpy*_bladeW);
-      ctx_.lineTo(_fwx+bpx*_bladeW,_fwy+bpy*_bladeW);
-      ctx_.lineTo(_fwx+bpx*1.8+Math.sin(_2hA)*_bladeLen, _fwy+bpy*1.8+Math.cos(_2hA)*_bladeLen);
+      ctx_.moveTo(_fx2-bpx*_bladeW,_fy2-bpy*_bladeW);
+      ctx_.lineTo(_fx2+bpx*_bladeW,_fy2+bpy*_bladeW);
+      ctx_.lineTo(_fx2+bpx*1.8+Math.sin(_2hA)*_bladeLen, _fy2+bpy*1.8+Math.cos(_2hA)*_bladeLen);
       ctx_.lineTo(bEndX,bEndY);
       ctx_.closePath(); ctx_.fill(); ctx_.stroke();
       // Діл (fuller): ево 6+ жевріє червоним, інакше темна лінія
@@ -353,12 +367,12 @@ function drawSkeleton(ctx_,x,y,t,dir=1,sc=0.38,atk=0,branch='',runF=0,evo=0){
       } else {
         ctx_.strokeStyle='rgba(40,40,70,0.55)'; ctx_.lineWidth=1.6;
       }
-      ctx_.beginPath(); ctx_.moveTo(_fwx,_fwy);
-      ctx_.lineTo(_fwx+Math.sin(_2hA)*_bladeLen*0.8,_fwy+Math.cos(_2hA)*_bladeLen*0.8); ctx_.stroke();
+      ctx_.beginPath(); ctx_.moveTo(_fx2,_fy2);
+      ctx_.lineTo(_fx2+Math.sin(_2hA)*_bladeLen*0.8,_fy2+Math.cos(_2hA)*_bladeLen*0.8); ctx_.stroke();
       // Відблиск кромки
       ctx_.strokeStyle='rgba(235,235,255,0.5)'; ctx_.lineWidth=1;
-      ctx_.beginPath(); ctx_.moveTo(_fwx-bpx*_bladeW*0.7,_fwy-bpy*_bladeW*0.7);
-      ctx_.lineTo(bEndX-bpx*1.2,bEndY-bpy*1.2); ctx_.stroke();
+      ctx_.beginPath(); ctx_.moveTo(_fx2+bpx*_bladeW*0.7,_fy2+bpy*_bladeW*0.7);
+      ctx_.lineTo(bEndX+bpx*1.2,bEndY+bpy*1.2); ctx_.stroke();
 
     } else {
       // 1H: grip extends from front wrist
