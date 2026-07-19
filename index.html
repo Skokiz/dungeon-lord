@@ -7,7 +7,7 @@
 try { if (/tgWebApp/.test(location.hash)) sessionStorage.setItem('DL_tma', '1'); } catch (e) {}
 // b=BUILD — кеш-бастинг main.html: вебв'ю Telegram інакше може тижнями
 // грати в стару збірку. Тримати синхронним із DL_BUILD у main.html.
-var DL_BUILD = '2026-07-16.2';
+var DL_BUILD = '2026-07-19.1';
 location.replace('main.html' + (location.search ? location.search + '&b=' : '?b=') + DL_BUILD + location.hash);
 </script>
 <meta http-equiv="refresh" content="1; url=main.html">
