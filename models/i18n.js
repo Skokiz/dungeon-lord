@@ -415,6 +415,12 @@ function _applyLang() {
     });
     var btn = document.getElementById('btn-lang');
     if (btn) btn.textContent = _t('lang-btn');
+    // lord-title ставиться через _getTitleByElite (не data-i18n) — при зміні
+    // мови його треба перерахувати вручну, інакше лишається старою мовою
+    var _lt = document.getElementById('lord-title');
+    if (_lt && typeof _getTitleByElite === 'function' && typeof getStoredEliteSouls === 'function') {
+        _lt.textContent = _getTitleByElite(getStoredEliteSouls());
+    }
     // Update html lang attribute
     document.documentElement.lang = _lang;
 }
