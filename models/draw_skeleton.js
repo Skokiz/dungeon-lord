@@ -179,8 +179,11 @@ function drawSkeleton(ctx_,x,y,t,dir=1,sc=0.38,atk=0,branch='',runF=0,evo=0,shie
 
   // Branch-specific back arm pose (must follow armA_F/elbow_F assignment)
   if (branch === 'A') {
-    armA_B = wc * 0.08 - 0.50;   // arm extends outward-left, then wrist bends forward
-    elbow_B = 1.20;               // sharp elbow bend → wrist lands left of body, shield faces forward
+    // Хват щита: плече ледь назад (лікоть ≈ (-16,-20)), передпліччя йде
+    // ВПЕРЕД-ВГОРУ до зап'ястя біля центру грудей (≈ (0,-27)) — щит сидить
+    // на передпліччі і виступає вперед за силует, рука видимо його тримає
+    armA_B = -0.15 + wc * 0.04;
+    elbow_B = 2.15;
   } else if (branch === 'B') {
     armA_B = armA_F - 0.22;
     elbow_B = Math.max(0.05, elbow_F * 0.75 + 0.08);
@@ -246,13 +249,15 @@ function drawSkeleton(ctx_,x,y,t,dir=1,sc=0.38,atk=0,branch='',runF=0,evo=0,shie
     }
   }
 
-  // ── Shield (Branch A) — великий хітер-щит ПЕРЕД корпусом ──
-  // Якір не на зап'ясті (там він теліпався біля таза), а на передпліччі перед
-  // грудьми: щитоносець читається силуетом навіть на 25px
+  // ── Shield (Branch A) — хітер-щит НА ПЕРЕДПЛІЧЧІ задньої руки ──
+  // Центр = середина передпліччя (лікоть→зап'ястя) + виступ уперед: рука
+  // читається до ліктя, передпліччя ховається за щитом = природний хват
   if (branch === 'A') {
     const _shW = 28, _shH = 38;
+    const _shCX = (_bex + _bwx) / 2 + 8;
+    const _shCY = (_bey + _bwy) / 2 - 2;
     const _shAng = -0.06 + wc * 0.03;               // ледь дихає в такт крокам
-    ctx_.save(); ctx_.translate(-3, -24 + (1 - Math.abs(wc)) * 1.5); ctx_.rotate(_shAng);
+    ctx_.save(); ctx_.translate(_shCX, _shCY); ctx_.rotate(_shAng);
     const _heater = (inset) => {
       const w = _shW/2 - inset, top = -_shH*0.42 + inset*0.8, bot = _shH*0.52 - inset;
       ctx_.beginPath();
