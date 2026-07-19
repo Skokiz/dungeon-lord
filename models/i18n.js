@@ -139,7 +139,7 @@ uk: {
   'tut-step3':      '🪤 <b>Пастки</b> добивають тих хто прорвався. Шипи — шкода, Телепорт — відкидає назад, Виклик — спавн монстра. Натисни поверх після покупки.',
   'tut-step4':      '👑 <b>Лорд</b> б\'ється особисто на поверхні. Натисни на нього щоб відкрити апгрейди. Вдалого полювання!',
   // Share
-  'share-text':     '👑 Я — {arch} у Dungeon Lord!\nОбороняв {r} хвиль, знищив {k} ворогів.\n🔗 github.com/Skokiz/dungeon-lord',
+  'share-text':     '👑 Я — {arch} у Dungeon Lord!\nОбороняв {r} хвиль, знищив {k} ворогів.\nА яким лордом підземелля будеш ти? 👇',
   // Psy-whisper
   'psy-lord':       'Лорд',
   'psy-army':       'Армія',
@@ -326,7 +326,7 @@ en: {
   'tut-step3':      '🪤 <b>Traps</b> finish off those who broke through. Spikes — damage, Teleport — pushes back, Summon — spawns a monster. Tap a floor after buying.',
   'tut-step4':      '👑 The <b>Lord</b> fights personally on the surface. Tap him to open upgrades. Good hunting!',
   // Share
-  'share-text':     '👑 I am the {arch} in Dungeon Lord!\nDefended {r} waves, destroyed {k} enemies.\n🔗 github.com/Skokiz/dungeon-lord',
+  'share-text':     '👑 I am the {arch} in Dungeon Lord!\nDefended {r} waves, destroyed {k} enemies.\nWhat kind of dungeon lord are you? 👇',
   // Psy-whisper
   'psy-lord':       'Lord',
   'psy-army':       'Army',

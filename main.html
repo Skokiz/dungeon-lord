@@ -2378,7 +2378,7 @@ try {
         </button>
     </div>
     <div id="psy-result-panel"></div>
-    <button id="btn-share" onclick="_shareResult()" data-i18n="btn-share" data-i18n-html>📤 Поділитись результатом</button>
+    <button id="btn-share" onclick="_shareResult()" data-i18n="btn-share" data-i18n-html style="display:none">📤 Поділитись результатом</button>
     <button id="btn-try-again" onclick="hardReset()" data-i18n="go-retry" data-i18n-html>🔄 Спробувати знову</button>
 </div>
 
@@ -12437,6 +12437,9 @@ function _showPsychotypeResult() {
         ${_psyAxesHtml(pt)}
         ${_psyTrajectoryHtml(pt)}`;
     el.style.display = 'block';
+    // Шер доступний лише коли є повний архетип-результат (кінець кампанії/мир)
+    const _shBtn = document.getElementById('btn-share');
+    if (_shBtn) _shBtn.style.display = '';
 }
 
 // Осі поведінки — компактні бари в панелі результату
@@ -13701,6 +13704,8 @@ function gameOver() {
     _renderLevelEarnings();
     const _psyEl = document.getElementById('psy-result-panel');
     if (_psyEl) _psyEl.innerHTML = '';
+    const _shBtn = document.getElementById('btn-share');
+    if (_shBtn) _shBtn.style.display = 'none'; // поразка — архетипу нема, шер ховаємо
     const _tryBtn = document.getElementById('btn-try-again');
     if (_tryBtn) { _tryBtn.innerHTML = _t('go-retry'); _tryBtn.onclick = () => retryLevel(); }
     document.getElementById('game-over').style.display = 'flex';
@@ -15246,6 +15251,10 @@ function _dailyKillCheck() {
 }
 
 // ── SHARE ────────────────────────────────────────────────────────────────
+// Канонічне ІГРАБЕЛЬНЕ посилання для шеру. НЕ репозиторій — по лінку
+// людина має одразу грати (і потрапляти у монетизований Telegram-контекст).
+const _PLAY_URL = 'https://t.me/DungeonLordGameBot/play';
+
 function _shareResult() {
     const pt = (_psyTrack && _psyTrack.rounds > 0) ? _computePsychotype() : null;
     const descKey = pt ? (pt.philKey + '_' + pt.stratKey) : '';
@@ -15255,7 +15264,21 @@ function _shareResult() {
     const kills = pt ? pt.totalKills : 0;
     const text = _t('share-text', {arch: archetype, r: round, k: kills});
 
-    // Try to generate PNG first
+    // Telegram Mini App: нативний форвард у чати — найсильніша вірусна дія.
+    // Завантаження файлу і navigator.share у TG-вебв'ю не працюють, тож одразу
+    // відкриваємо share-діплінк з ІГРАБЕЛЬНИМ посиланням на бота.
+    if (_isTMA && window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.openTelegramLink) {
+        try {
+            window.Telegram.WebApp.openTelegramLink(
+                'https://t.me/share/url?url=' + encodeURIComponent(_PLAY_URL) + '&text=' + encodeURIComponent(text));
+            return;
+        } catch (e) {}
+    }
+
+    // Поза Telegram: спершу СИНХРОННО викликаємо шер/копію (щоб не втратити
+    // user-gesture, інакше navigator.share падає з NotAllowedError), а PNG-картку
+    // генеруємо паралельно — гравець може зберегти і докласти вручну.
+    _shareFallback(text);
     try {
         const _cv = document.createElement('canvas');
         _cv.width = 480; _cv.height = 260;
@@ -15306,37 +15329,33 @@ function _shareResult() {
                 _cx.fillRect(120 + bar * 14, y - 12, (14 - bar) * 14, 14);
             });
         }
-        // Footer
+        // Footer — сам ігровий лінк, щоб картинка несла адресу навіть без тексту
         _cx.font = '10px monospace';
-        _cx.fillStyle = '#3a2060';
-        _cx.fillText('dungeon-lord · 2025', 20, 246);
+        _cx.fillStyle = '#5a3a8a';
+        _cx.fillText('t.me/DungeonLordGameBot', 20, 246);
 
         _cv.toBlob(function(blob) {
-            if (!blob) { _shareFallback(text); return; }
+            if (!blob) return;
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url; a.download = 'dungeon-lord-result.png'; a.click();
             setTimeout(function() { URL.revokeObjectURL(url); }, 5000);
-            if (navigator.share) {
-                navigator.share({ title: 'Dungeon Lord', text: text }).catch(function() {});
-            }
         }, 'image/png');
-        return;
     } catch(e) {}
-    _shareFallback(text);
 }
 
 function _shareFallback(text) {
+    const _tgShare = 'https://t.me/share/url?url=' + encodeURIComponent(_PLAY_URL) + '&text=' + encodeURIComponent(text);
     if (navigator.share) {
-        navigator.share({ title: 'Dungeon Lord', text: text }).catch(function() {});
+        navigator.share({ title: 'Dungeon Lord', text: text, url: _PLAY_URL }).catch(function() {});
     } else if (navigator.clipboard) {
-        navigator.clipboard.writeText(text).then(function() {
+        navigator.clipboard.writeText(text + '\n' + _PLAY_URL).then(function() {
             _showToast(_t('toast-copied'));
         }).catch(function() {
-            window.open('https://t.me/share/url?url=https%3A%2F%2Fgithub.com%2FSkokiz%2Fdungeon-lord&text=' + encodeURIComponent(text));
+            window.open(_tgShare);
         });
     } else {
-        window.open('https://t.me/share/url?url=https%3A%2F%2Fgithub.com%2FSkokiz%2Fdungeon-lord&text=' + encodeURIComponent(text));
+        window.open(_tgShare);
     }
 }
 
