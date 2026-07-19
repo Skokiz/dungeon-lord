@@ -6541,6 +6541,10 @@ const ABILITY_ICONS = {
 };
 function loop(ts) {
     if (GAME_PAUSED || GAME.gameOver) return;
+    // beginGame викликає loop() без ts: при повторному старті в одній сесії
+    // (м'який перехід рівнів) undefined-ts давав NaN у _dt і труїв камеру
+    if (!Number.isFinite(ts)) ts = performance.now();
+    if (!Number.isFinite(GAME.cameraY)) GAME.cameraY = 0; // самозцілення від отруєння
     _frameNow = Date.now();
     _loopBeat = _frameNow; // живість циклу для аварійної сітки (_frameNow перезаписує бестіарій)
     // ── Delta-time: нормалізуємо швидкість гри до 60fps ──────────────────
@@ -13533,11 +13537,41 @@ function _applyRunResume(s) {
 
 function hardReset() { _store.del('DLSiege_v3'); location.reload(); }
 
+// ── М'який перехід між рівнями (БЕЗ location.reload) ────────────────────────
+// Перезавантаження на телефоні = секунди парсингу 17k-рядкового скрипта.
+// Натомість чистимо стан рану в пам'яті і запускаємо наступний рівень одразу.
+// Гварди від подвійних таймерів уже стоять: _enemyChain-токен інвалідовує
+// старий ланцюг хвиль, beginGame робить clearInterval спавну монстрів.
+function _softNextLevel(lvl) {
+    try {
+        _clearRunSave();
+        const _go = document.getElementById('game-over');
+        if (_go) _go.style.display = 'none';
+        const _lb = document.getElementById('level-beat');
+        if (_lb) _lb.style.display = 'none';
+        _closeOpenDecision();
+        try { _hideLoreTip(); } catch (e) {}
+        units.length = 0; floors.length = 0;
+        particles.length = 0; axeProjectiles.length = 0; dmgTexts.length = 0;
+        try { _soulFlies.length = 0; } catch (e) {}
+        try { _dyingFx.length = 0; } catch (e) {}
+        GAME.gameOver = false; GAME_PAUSED = false; _decisionPausedGame = false;
+        GAME.gameStarted = false;
+        GAME.cameraY = 0; manualCameraY = null;
+        _dt_lastTs = 0; // свіжий дельта-час для нового циклу
+        screenShake = 0;
+        _soulSalvageDone = false;
+        // Вибір благословення нового рану → startGame(lvl) → beginGame
+        _showRunModPicker(lvl);
+    } catch (e) {
+        console.warn('soft transition failed, falling back to reload', e);
+        hardReset();
+    }
+}
+
 function retryLevel() {
-    _store.set('DLSiege_retry', '1');
-    if (_hellMode) _store.set('DLSiege_retry_hell', '1');
-    else           _store.del('DLSiege_retry_hell');
-    hardReset();
+    // Ретрай теж м'який — той самий рівень заново без перезавантаження
+    _softNextLevel(GAME.currentLevel || 1);
 }
 function _getActLabel(act) {
     const L = (_lang === 'en')
@@ -13636,7 +13670,9 @@ function _doGameWinOverlay(lvl, nextLvl, isLast) {
     _renderLevelEarnings();
     const _tryBtn = document.getElementById('btn-try-again');
     _tryBtn.innerHTML = isLast ? _t('go-retry-all') : _t('go-next-btn', {n:nextLvl});
-    _tryBtn.onclick = () => hardReset();
+    // Наступний рівень — м'яко, без секунд перезавантаження; фінал кампанії —
+    // повний reload (скидання всієї кампанії)
+    _tryBtn.onclick = isLast ? () => hardReset() : () => _softNextLevel(nextLvl);
     if (isLast) _showPsychotypeResult();
     document.getElementById('game-over').style.display = 'flex';
     _showSoulSalvage(false);
