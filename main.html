@@ -15451,6 +15451,28 @@ function _dailyKillCheck() {
 // людина має одразу грати (і потрапляти у монетизований Telegram-контекст).
 const _PLAY_URL = 'https://t.me/DungeonLordGameBot/play';
 
+// Canvas-хелпери для шер-картки
+function _roundRect(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+}
+function _wrapText(ctx, text, cx, y, maxW, lh) {
+    const words = String(text).split(' ');
+    let line = '', yy = y;
+    for (let i = 0; i < words.length; i++) {
+        const test = line ? line + ' ' + words[i] : words[i];
+        if (ctx.measureText(test).width > maxW && line) { ctx.fillText(line, cx, yy); line = words[i]; yy += lh; }
+        else line = test;
+    }
+    if (line) ctx.fillText(line, cx, yy);
+    return yy;
+}
+
 function _shareResult() {
     const pt = (_psyTrack && _psyTrack.rounds > 0) ? _computePsychotype() : null;
     const descKey = pt ? (pt.philKey + '_' + pt.stratKey) : '';
@@ -15476,59 +15498,95 @@ function _shareResult() {
     // генеруємо паралельно — гравець може зберегти і докласти вручну.
     _shareFallback(text);
     try {
+        const en = _lang === 'en';
+        const W = 640, H = 860;
         const _cv = document.createElement('canvas');
-        _cv.width = 480; _cv.height = 260;
+        _cv.width = W; _cv.height = H;
         const _cx = _cv.getContext('2d');
-        // Background
-        _cx.fillStyle = '#0a0318';
-        _cx.fillRect(0, 0, 480, 260);
-        _cx.strokeStyle = '#4a2080';
-        _cx.lineWidth = 2;
-        _cx.strokeRect(1, 1, 478, 258);
-        // Title
-        _cx.font = 'bold 13px monospace';
-        _cx.fillStyle = '#cc88ff';
-        _cx.fillText('⚔ DUNGEON LORD', 20, 32);
-        // Archetype
-        _cx.font = 'bold 22px monospace';
+        // Фон — радіальний фіолетовий у стилі гри
+        const bg = _cx.createRadialGradient(W / 2, H * 0.16, 40, W / 2, H * 0.45, H * 0.85);
+        bg.addColorStop(0, '#1e0d50'); bg.addColorStop(0.5, '#0a0320'); bg.addColorStop(1, '#050110');
+        _cx.fillStyle = bg; _cx.fillRect(0, 0, W, H);
+        _cx.strokeStyle = 'rgba(154,106,224,0.55)'; _cx.lineWidth = 3;
+        _cx.strokeRect(6, 6, W - 12, H - 12);
+        _cx.textAlign = 'center';
+
+        // Шапка
+        _cx.fillStyle = '#f5c542'; _cx.font = '32px Georgia';
+        _cx.fillText('♛', W / 2, 68);
+        _cx.fillStyle = '#b79adc'; _cx.font = 'bold 20px "Trebuchet MS", sans-serif';
+        _cx.fillText('D U N G E O N   L O R D', W / 2, 102);
+
+        const NAT_ICO = { dom: '👑', pom: '⚔️', zna: '🔮', vyj: '🛡️', kha: '🔥', per: '🏛️' };
+        const TMP = en
+            ? { hot: '🔥 Hot', cold: '❄️ Cold', cyn: '🎭 Cynical' }
+            : { hot: '🔥 Гарячий', cold: '❄️ Холодний', cyn: '🎭 Цинічний' };
+
+        // Іконка натури
+        _cx.font = '72px sans-serif';
+        _cx.fillText(pt ? (NAT_ICO[pt.philKey] || '👑') : '👑', W / 2, 196);
+
+        // "ТИ ЗІГРАВ ЯК"
+        _cx.fillStyle = '#8a76b8'; _cx.font = 'bold 17px "Trebuchet MS", sans-serif';
+        _cx.fillText(en ? 'YOU PLAYED AS' : 'ТИ ЗІГРАВ ЯК', W / 2, 240);
+
+        // Назва архетипу — зірка картки, з автопідгонкою під ширину
+        let _ns = 54; _cx.font = 'bold ' + _ns + 'px Georgia';
+        while (_cx.measureText(archetype).width > W - 80 && _ns > 26) { _ns -= 3; _cx.font = 'bold ' + _ns + 'px Georgia'; }
         _cx.fillStyle = '#ffffff';
-        _cx.fillText(archetype, 20, 70);
-        // Desc tag
+        _cx.shadowColor = 'rgba(204,136,255,0.85)'; _cx.shadowBlur = 26;
+        _cx.fillText(archetype, W / 2, 300);
+        _cx.shadowBlur = 0;
+
+        // Тег-цитата з переносом
         const _desc = pt ? (_pDesc[descKey] || null) : null;
         if (_desc && _desc.tag) {
-            _cx.font = '12px monospace';
-            _cx.fillStyle = '#886699';
-            _cx.fillText('"' + _desc.tag + '"', 20, 96);
+            _cx.fillStyle = '#b7a8d6'; _cx.font = 'italic 18px Georgia';
+            _wrapText(_cx, '“' + _desc.tag + '”', W / 2, 342, W - 90, 26);
         }
-        // Stats line
-        _cx.font = '12px monospace';
-        _cx.fillStyle = '#d0b8f0';
-        const _killsLbl = _lang === 'en' ? 'kills: ' + kills : 'вбивств: ' + kills;
-        _cx.fillText(_t('psy-rounds', {n: round}) + '  ·  ' + _killsLbl, 20, 130);
-        // Score bars
+
+        // Чипи: натура · стратегія · темперамент
+        // philName/stratName у _computePsychotype захардкоджені UA — на EN-картці
+        // підміняємо англійськими, щоб мова не змішувалась
+        const NAT_EN = { dom: 'Overlord', pom: 'Avenger', zna: 'Knower', vyj: 'Pragmatist', kha: 'Chaotic', per: 'Architect' };
+        const STR_EN = { syla: 'Strength', lehion: 'Legion', fortress: 'Fortress', trap: 'Cunning', skarb: 'Treasury', rivnovaha: 'Balance' };
+        if (pt) {
+            const _natN = en ? (NAT_EN[pt.philKey] || pt.philName) : pt.philName;
+            const _strN = en ? (STR_EN[pt.stratKey] || pt.stratName) : pt.stratName;
+            _cx.fillStyle = '#c9a6ff'; _cx.font = 'bold 18px "Trebuchet MS", sans-serif';
+            _cx.fillText(_natN + '  ·  ' + _strN + '  ·  ' + (TMP[pt.temp] || ''), W / 2, 468);
+        }
+        // 1 з 108 — рамка ексклюзивності
+        _cx.fillStyle = '#f5c542'; _cx.font = 'bold 23px "Trebuchet MS", sans-serif';
+        _cx.fillText(en ? '1 of 108 lord archetypes' : '1 зі 108 архетипів володаря', W / 2, 510);
+
+        // Бари стратегії (скруглені)
         if (pt) {
             const rows = [
-                {ico:'💜', lbl: _t('psy-lbl-lord'),  sc: pt.scores.syla,     dom: pt.stratKey === 'syla'},
-                {ico:'👾', lbl: _t('psy-lbl-army'),  sc: pt.scores.lehion,   dom: pt.stratKey === 'lehion'},
-                {ico:'🏰', lbl: _t('psy-lbl-floor'), sc: pt.scores.fortress, dom: pt.stratKey === 'fortress'},
-                {ico:'🪤', lbl: _t('psy-lbl-trap'),  sc: pt.scores.trap,     dom: pt.stratKey === 'trap'},
-            ].filter(r => r.sc > 0).sort((a,b) => b.sc - a.sc);
+                { lbl: _t('psy-lbl-lord'),  sc: pt.scores.syla,     dom: pt.stratKey === 'syla' },
+                { lbl: _t('psy-lbl-army'),  sc: pt.scores.lehion,   dom: pt.stratKey === 'lehion' },
+                { lbl: _t('psy-lbl-floor'), sc: pt.scores.fortress, dom: pt.stratKey === 'fortress' },
+                { lbl: _t('psy-lbl-trap'),  sc: pt.scores.trap,     dom: pt.stratKey === 'trap' },
+            ].filter(r => r.sc > 0).sort((a, b) => b.sc - a.sc);
+            const bx = 210, bw = 300;
             rows.forEach((r, i) => {
-                const y = 162 + i * 22;
-                const bar = Math.round(Math.min(r.sc, 1) * 14);
-                _cx.font = '11px monospace';
-                _cx.fillStyle = r.dom ? '#cc88ff' : '#5a3a7a';
-                _cx.fillText(r.lbl, 20, y);
-                _cx.fillStyle = r.dom ? '#9955cc' : '#3a2060';
-                _cx.fillRect(120, y - 12, bar * 14, 14);
-                _cx.fillStyle = '#1a0840';
-                _cx.fillRect(120 + bar * 14, y - 12, (14 - bar) * 14, 14);
+                const y = 558 + i * 42;
+                _cx.font = '16px "Trebuchet MS", sans-serif';
+                _cx.fillStyle = r.dom ? '#e6ccff' : '#7a68a0';
+                _cx.textAlign = 'right'; _cx.fillText(r.lbl, bx - 16, y + 5);
+                _cx.textAlign = 'left';
+                _cx.fillStyle = '#241640'; _roundRect(_cx, bx, y - 12, bw, 18, 9); _cx.fill();
+                _cx.fillStyle = r.dom ? '#9a6ae0' : '#4a3070';
+                _roundRect(_cx, bx, y - 12, Math.max(12, bw * Math.min(r.sc, 1)), 18, 9); _cx.fill();
             });
+            _cx.textAlign = 'center';
         }
-        // Footer — сам ігровий лінк, щоб картинка несла адресу навіть без тексту
-        _cx.font = '10px monospace';
-        _cx.fillStyle = '#5a3a8a';
-        _cx.fillText('t.me/DungeonLordGameBot', 20, 246);
+
+        // Футер — гачок + ігровий лінк на самій картинці
+        _cx.fillStyle = '#c9a6ff'; _cx.font = 'bold 23px "Trebuchet MS", sans-serif';
+        _cx.fillText(en ? 'Which dungeon lord are YOU?' : 'Яким лордом підземелля будеш ти?', W / 2, H - 66);
+        _cx.fillStyle = '#7a68a0'; _cx.font = '18px "Trebuchet MS", sans-serif';
+        _cx.fillText('▶  t.me/DungeonLordGameBot', W / 2, H - 34);
 
         _cv.toBlob(function(blob) {
             if (!blob) return;
