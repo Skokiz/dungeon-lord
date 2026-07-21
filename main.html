@@ -2253,6 +2253,7 @@
     <button id="btn-continue" onclick="continueGame()" data-i18n="btn-start">▶ Почати гру</button>
     <button id="btn-hell" onclick="continueHell()" style="display:none;background:rgba(120,0,0,0.7);border-color:#cc2200;color:#ff6644;" data-i18n="btn-hell">🔥 Режим Пекла</button>
     <button id="btn-instructions" onclick="showHelp()" data-i18n="btn-instr">📖 Інструкція</button>
+    <button id="btn-invite" onclick="_shareInvite()" data-i18n="btn-invite" data-i18n-html>🎁 Запросити друга</button>
     <div class="pause-vol-row" style="justify-content:center;">
         <span>🎵</span>
         <input type="range" id="start-vol-slider" min="0" max="100" value="38"
@@ -6054,6 +6055,8 @@ function init() {
     if (_contBtn) _contBtn.textContent = _savedLvl === 1 ? _t('btn-start') : _t('btn-level', {n:_savedLvl});
     const _resetBtn = document.getElementById('btn-reset-progress');
     if (_resetBtn) _resetBtn.style.display = '';
+    // Реферальний вітальний бонус (URL-вхід / вже-готовий Telegram-контекст)
+    try { _checkReferralWelcome(); } catch (e) {}
     // Показуємо баланс елітних душ
     const _eNum = document.getElementById('start-elite-num');
     if (_eNum) _eNum.innerText = getStoredEliteSouls();
@@ -6067,6 +6070,12 @@ function init() {
     // Анімований старт-екран
     _applyLang();
     _initStartScreen();
+    // Вітання новачка, що прийшов за реферальним лінком
+    if (window.__refWelcome) {
+        const _rb = window.__refWelcome; window.__refWelcome = 0;
+        if (_eNum) _eNum.innerText = getStoredEliteSouls();
+        setTimeout(function () { try { _showToast(_t('invite-welcome', { n: _rb })); } catch (e) {} }, 700);
+    }
 }
 
 function startGame(level) {
@@ -13699,7 +13708,7 @@ function gameOver() {
     commitEliteSouls();
     document.getElementById('go-title').innerText = _t('go-defeat');
     document.getElementById('go-title').style.color = '';
-    const _q = PAUSE_QUOTES[Math.floor(Math.random() * PAUSE_QUOTES.length)];
+    const _pq = _getPauseQuotes(); const _q = _pq[Math.floor(Math.random() * _pq.length)];
     document.getElementById('go-desc').innerText = '«' + _q + '»';
     _renderLevelEarnings();
     const _psyEl = document.getElementById('psy-result-panel');
@@ -13850,6 +13859,16 @@ function _adPlatform() {
                 try {
                     const wa = window.Telegram.WebApp;
                     wa.ready(); wa.expand();
+                    // start_param доступний лише після ready() — перевіряємо реф-бонус
+                    try {
+                        _checkReferralWelcome();
+                        if (window.__refWelcome) {
+                            const _rb = window.__refWelcome; window.__refWelcome = 0;
+                            const _en = document.getElementById('start-elite-num');
+                            if (_en) _en.innerText = getStoredEliteSouls();
+                            setTimeout(function () { try { _showToast(_t('invite-welcome', { n: _rb })); } catch (e) {} }, 800);
+                        }
+                    } catch (e) {}
                     // Планшети відкривають Mini App невеликим модальним вікном —
                     // просимо справжній фулскрін (Bot API 8.0+); де не підтримано,
                     // метод просто кидає і ми лишаємось у expand-режимі
@@ -13975,6 +13994,80 @@ function loadPermaUpgrades() { try { return JSON.parse(_store.get('DLSiege_perma
 function savePermaUpgrades(data) { _store.set('DLSiege_perma', JSON.stringify(data)); }
 
 // ── Елітні душі (зберігаються тільки при перемозі/поразці) ────────────────
+// ── Реферали ─────────────────────────────────────────────────────────────────
+// Чесне обмеження: золоті душі живуть у localStorage кожного клієнта, бекенду
+// нема. Тому робоча модель — ПОДАРУНОК НОВАЧКУ: хто заходить за реферальним
+// лінком уперше, отримує _REF_BONUS золотих душ (грантимо клієнтськи, працює
+// одразу). Нагорода ЗАПРОШУВАЧУ потребує бота-бекенду (лише він бачить, що
+// новачок підтвердився) — ознаку "хто запросив" зберігаємо в DL_ref_by на потім.
+const _REF_BONUS = 1000;
+
+function _referralParam() {
+    try {
+        const wa = window.Telegram && window.Telegram.WebApp;
+        const sp = wa && wa.initDataUnsafe && wa.initDataUnsafe.start_param;
+        if (sp) return sp;
+    } catch (e) {}
+    try {
+        const u = new URLSearchParams(location.search);
+        return u.get('startapp') || u.get('tgWebAppStartParam') || u.get('ref') || '';
+    } catch (e) { return ''; }
+}
+
+function _myReferralId() {
+    try {
+        const wa = window.Telegram && window.Telegram.WebApp;
+        const uid = wa && wa.initDataUnsafe && wa.initDataUnsafe.user && wa.initDataUnsafe.user.id;
+        if (uid) return 'tg' + uid;
+    } catch (e) {}
+    let id = _store.get('DL_refid');
+    if (!id) { id = 'g' + Math.random().toString(36).slice(2, 9); _store.set('DL_refid', id); }
+    return id;
+}
+
+function _myInviteLink() {
+    return 'https://t.me/DungeonLordGameBot/play?startapp=ref_' + _myReferralId();
+}
+
+// Разовий вітальний бонус новому гравцю, що прийшов за реферальним лінком.
+// Ідемпотентно: викликається і на URL-вході, і після Telegram wa.ready().
+function _checkReferralWelcome() {
+    try {
+        if (_store.get('DL_ref_claimed')) return;
+        const p = _referralParam();
+        if (!p || p.indexOf('ref_') !== 0) return;
+        const inviter = p.slice(4);
+        if (!inviter || inviter === _myReferralId()) return;          // не сам себе
+        const fresh = (parseInt(_store.get('DLSiege_lvl') || '1') <= 1) &&
+                      (getStoredEliteSouls() === 0);
+        _store.set('DL_ref_claimed', '1');
+        _store.set('DL_ref_by', inviter);                             // для майбутнього бота
+        if (!fresh) return;                                           // не свіжий гравець — без бонусу
+        _store.set('DLSiege_elite', String(getStoredEliteSouls() + _REF_BONUS));
+        window.__refWelcome = _REF_BONUS;                             // старт-екран покаже тост
+    } catch (e) {}
+}
+
+// Поділитися своїм реферальним лінком (кнопка «Запросити друга»)
+function _shareInvite() {
+    const link = _myInviteLink();
+    const text = _t('invite-text', { n: _REF_BONUS });
+    try {
+        if (_isTMA && window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.openTelegramLink) {
+            window.Telegram.WebApp.openTelegramLink(
+                'https://t.me/share/url?url=' + encodeURIComponent(link) + '&text=' + encodeURIComponent(text));
+            return;
+        }
+    } catch (e) {}
+    if (navigator.share) {
+        navigator.share({ title: 'Dungeon Lord', text: text, url: link }).catch(function () {});
+    } else if (navigator.clipboard) {
+        navigator.clipboard.writeText(text + '\n' + link).then(function () { _showToast(_t('toast-copied')); }).catch(function () {});
+    } else {
+        window.open('https://t.me/share/url?url=' + encodeURIComponent(link) + '&text=' + encodeURIComponent(text));
+    }
+}
+
 function getStoredEliteSouls() { return parseInt(_store.get('DLSiege_elite') || '0'); }
 function commitEliteSouls() {
     _store.set('DLSiege_elite', String(Math.max(0, GAME.eliteSouls || 0)));
@@ -14771,6 +14864,109 @@ const PAUSE_QUOTES = [
     "Успіх — результат правильних рішень у правильний момент.",
     "Підземелля Лорда не здається. Ніколи.",
 ];
+const PAUSE_QUOTES_EN = [
+    "A winner is the one who never gives up.",
+    "Every battle is won before it is fought. — Sun Tzu",
+    "Courage is not the absence of fear, but deciding something matters more than fear.",
+    "I have not failed. I've just found 10,000 ways that won't work. — Edison",
+    "One who stands for something can endure anything.",
+    "Strength is not never falling, but rising every time you fall.",
+    "Don't fear moving slowly — fear standing still.",
+    "The darkest night comes just before the dawn.",
+    "To retreat is not to surrender. To surrender is to never return.",
+    "Discipline is the bridge between goals and achievement.",
+    "Whether you think you can, or think you can't — you're right.",
+    "A true warrior fights not because he hates what's before him, but because he loves what's behind him.",
+    "The best defense is a good offense.",
+    "Hard in training, easy in battle. — Suvorov",
+    "Master yourself, and you master everything.",
+    "Great victories are born of small decisions.",
+    "A battle is won by the one firmly resolved to win it. — Napoleon",
+    "One is no army in the field — yet it always begins with one.",
+    "Fear cuts deeper than any blade.",
+    "Don't wait for the moment. Create it.",
+    "The mind is the sharpest weapon.",
+    "If the enemy will not yield, he is destroyed.",
+    "A goal without a plan is only a dream.",
+    "Every warrior began with a single step.",
+    "The strongest warriors are these two — Time and Patience. — Tolstoy",
+    "Preparation for battle is half the victory.",
+    "Strategy without tactics is the slowest road to victory; tactics without strategy is the noise before defeat. — Sun Tzu",
+    "Those who want to, find a way. Those who don't, find an excuse.",
+    "In battle it is not the strongest who survive, but the wisest.",
+    "Hardship is the price of victory.",
+    "The enemy is beaten not by weapons, but by the mind.",
+    "The supreme victory is to subdue the enemy without fighting. — Sun Tzu",
+    "The will to win is worthless without the will to prepare for it.",
+    "If you want peace, prepare for war.",
+    "Keep your enemies close, and your allies closer.",
+    "Never interrupt your enemy while he is making a mistake. — Napoleon",
+    "Victory favors the prepared.",
+    "An army of sheep led by a lion beats an army of lions led by a sheep.",
+    "Know your enemy and know yourself, and in a hundred battles you'll never be defeated. — Sun Tzu",
+    "Hard training, easy battle. Easy training, hard battle.",
+    "Ask a question, be a fool for a minute. Never ask, be a fool for life.",
+    "It's not the size of the dog in the fight, it's the size of the fight in the dog.",
+    "Honor is the finest armor.",
+    "Better to die on your feet than live on your knees.",
+    "One warrior with faith will beat a thousand without it.",
+    "First they ignore you, then they laugh, then they fight — then you win.",
+    "Genius is one percent inspiration and ninety-nine percent perspiration. — Edison",
+    "Before every victory stands a hard choice.",
+    "Courage isn't something you have. It's something you do.",
+    "Every wall seems impassable — until the first breach.",
+    "The impossible is just what no one has done yet.",
+    "Iron sharpens iron. — proverb",
+    "True strength is knowing when to stop and regroup.",
+    "The best defense is constant readiness.",
+    "There is no exhaustion — only a lack of motivation.",
+    "Your worst enemy is your own weakness.",
+    "Victory is a habit. Sadly, so is defeat.",
+    "The battle isn't over while fighters remain.",
+    "Whoever controls the information controls the battle.",
+    "Never leave the wounded behind.",
+    "A commander thinks of the army, not of himself.",
+    "Small details decide battles.",
+    "Speed is the sister of victory.",
+    "Never underestimate your enemy — but never fear him.",
+    "Surprise strikes harder than numbers.",
+    "Patience is a weapon.",
+    "Where there's a will, there's a way.",
+    "Strength lies in knowing your limits and breaking them.",
+    "Don't let the fire die.",
+    "A true leader is first into the fight.",
+    "Blood, sweat, and tears — the price of greatness.",
+    "When you're tired, remember why you started.",
+    "The dungeon won't conquer for itself — lead your army.",
+    "Every monster is your soldier. Every floor, your redoubt.",
+    "Defend what you've built — or lose it all.",
+    "Tactics without losses are the mark of a true master.",
+    "Enemies are the finest teachers.",
+    "Today's defeat is tomorrow's wisdom.",
+    "The strong one is not who never falls, but who always rises.",
+    "The dungeon's walls stand on strength of will.",
+    "Every wave is a chance to prove your strength.",
+    "Monsters are only as strong as their master.",
+    "A dungeon is the reflection of its lord.",
+    "The deeper you go, the deadlier — and the more glorious.",
+    "Heroes come. Heroes go. The dungeon stands forever.",
+    "The city still breathes — so there's work to do.",
+    "Every enemy soul is fuel for the next level.",
+    "Don't fear the number of enemies — fear your own unpreparedness.",
+    "A trap set in time is worth a whole squad of monsters.",
+    "A Lord does not retreat — a Lord regroups.",
+    "Who builds deeper, lives longer.",
+    "The first wave is only a warm-up.",
+    "Haste in battle is the enemy's ally.",
+    "Cold calculation beats a hot head.",
+    "Know every corridor of your dungeon — it is your weapon.",
+    "As enemies grow stronger, grow wiser.",
+    "Success is the result of right decisions at the right moment.",
+    "The Lord's dungeon does not surrender. Ever.",
+];
+function _getPauseQuotes() {
+    return (typeof _lang !== 'undefined' && _lang === 'en') ? PAUSE_QUOTES_EN : PAUSE_QUOTES;
+}
 function _onMusicVolSlider(val) {
     const pct = parseInt(val);
     ['music-vol-label', 'start-vol-label'].forEach(id => { const el = document.getElementById(id); if (el) el.textContent = pct + '%'; });
@@ -14791,7 +14987,7 @@ function togglePause() {
     GAME_PAUSED = !GAME_PAUSED;
     document.getElementById('pause-overlay').style.display = GAME_PAUSED ? 'flex' : 'none';
     if (GAME_PAUSED) {
-        const q = PAUSE_QUOTES[Math.floor(Math.random() * PAUSE_QUOTES.length)];
+        const _pq = _getPauseQuotes(); const q = _pq[Math.floor(Math.random() * _pq.length)];
         document.getElementById('pause-quote').textContent = '«' + q + '»';
         _initMusicVolSlider();
         try { _Music.pause(); } catch(e) {}

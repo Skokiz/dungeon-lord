@@ -68,6 +68,9 @@ uk: {
   'go-retry-all':   '<span class="dl-ico dl-regen"></span> Грати заново',
   'go-next-btn':    '→ Рівень {n}',
   'btn-share':      '<span class="dl-ico dl-share"></span> Поділитись результатом',
+  'btn-invite':     '🎁 Запросити друга',
+  'invite-text':    '👑 Стань володарем власного підземелля в Dungeon Lord — я дарую тобі {n} золотих душ на старт!',
+  'invite-welcome': '🎁 Друг подарував тобі {n} золотих душ на старт!',
   // Branch choice
   'branch-subtitle': 'Обери шлях розвитку — рішення невідворотне',
   'branch-warn':    'Після вибору інша гілка стане недоступною для цього монстра',
@@ -255,6 +258,9 @@ en: {
   'go-retry-all':   '<span class="dl-ico dl-regen"></span> Play Again',
   'go-next-btn':    '→ Level {n}',
   'btn-share':      '<span class="dl-ico dl-share"></span> Share Result',
+  'btn-invite':     '🎁 Invite a friend',
+  'invite-text':    '👑 Come rule your own dungeon in Dungeon Lord — I\'m gifting you {n} golden souls to start!',
+  'invite-welcome': '🎁 A friend gifted you {n} golden souls to start!',
   // Branch choice
   'branch-subtitle': 'Choose an evolution path — this decision is final',
   'branch-warn':    'After choosing, the other branch will be locked for this monster',
