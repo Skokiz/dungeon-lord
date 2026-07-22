@@ -1079,7 +1079,7 @@ pom_lehion: {
     body: 'You didn\'t take revenge personally — you built a system. Each monster carried a piece of your unexpressed, but organized, in formation, with its role. In life you channel anger into structure: complaints, arguments, coalitions, pressure. Anger becomes architecture — more effective than any outburst, and you\'ve known this for a long time.<br><br>But systematized grievance takes up more space than ordinary anger — because it\'s well-organized and goes nowhere on its own. You have an internal archive: dates, words, situations, carefully maintained even when you\'re not consciously opening it. The strongest version of you is the one who learns to close the archive and start fresh, keeping everything the old page taught.',
 },
 pom_fortress: {
-    name: 'Endurer',
+    name: 'Bulwark',
     tag: 'The best revenge — outliving.',
     body: 'You built walls not to attack, but so that enemies would break themselves against you. In life: when hurt, you don\'t scream — you harden. Silently. Wait. This form of revenge is the most patient and most exhausting for those trying to break you. Your resilience is real, not performed.<br><br>But a wall built against an enemy sometimes stays even after the enemy has long gone. You maintain defense reflexively, and don\'t always notice there\'s no longer anyone to defend against — the wall stands simply because it\'s used to standing. "Surviving" and "winning" are different things. You stopped at the first, and that\'s already much — but beyond the walls, something is waiting. The person who survived what would have broken others knows something deep that no book can teach.',
 },
@@ -1094,7 +1094,7 @@ pom_skarb: {
     body: 'You saved and didn\'t spend. Perhaps waiting for the moment. Perhaps not yet decided how to make it precise and final. In life you have unfinished accounts — and you remember them with accuracy down to the date, word, and tone. The fact that you haven\'t acted means you know how to wait.<br><br>But accumulated grievance waiting — the heaviest form — gives neither the relief of action nor the relief of forgiveness. You\'re suspended between two exits, both requiring effort you\'re not yet ready for. The person who finally closes the open tabs frees space for something new, and that space is worth more than it seems right now.',
 },
 pom_rivnovaha: {
-    name: 'Suppressor',
+    name: 'Unshaken',
     tag: 'Anger spread across everything is no longer anger — it\'s background noise.',
     body: 'You distributed resources evenly, not letting any direction — including anger — take everything. In life you have sharp feelings, but don\'t let them govern decisions. You hold balance where others break. This is noticed — the person who doesn\'t explode in hard moments, who keeps their voice even and their thinking clear, is rare.<br><br>But sometimes this is genuine control, and sometimes you simply don\'t let yourself feel to the end. Anger that can\'t break out takes strange forms. You hold yourself where most collapse — a rare and valuable quality worth knowing and protecting.',
 },
@@ -1105,12 +1105,12 @@ zna_syla: {
     body: 'You upgraded the lord through understanding: what each upgrade gives, where the synergies are, where the efficiency lies. Not intuition — analysis, precise and methodical. In life: before action, research; before decision, preparation. You enter any situation more prepared than most, and this is a real advantage that can\'t be improvised.<br><br>But knowledge gives understanding, not always authority. You may know exactly that someone will make a mistake — and still have no right to stop it. Preparation that stretches becomes self-sufficient. But those who combine analysis with respect for others\' experience and know when to step — become genuine authority, not just people who are always right.',
 },
 zna_lehion: {
-    name: 'Systematist',
+    name: 'Overseer',
     tag: 'You understood your monsters better than they understood themselves.',
     body: 'You invested in the legion with knowledge: this type is strong here, this one holds the line, this one creates synergy. Not mass — a system built on understanding each element\'s nature. In life you see people structurally: who for what, where is the friction, where is unused potential.<br><br>But systematic understanding of people can invisibly turn them into functions in your head. The person you analyze also analyzes you. If they sense they\'re being broken into components — they close off, begin playing a role. The strongest teams form where the leader can switch between the structural and the human view — and is sometimes simply a present person, without analysis.',
 },
 zna_fortress: {
-    name: 'Planner',
+    name: 'Mastermind',
     tag: 'The dungeon architecture was finished in your head before the first brick.',
     body: 'Every floor was a pre-considered decision. You thought about enemy flows, optimal positions, risk minimization — all as a clear plan before the first block was placed. In life you live in structures thought through in advance: schedule, plan, backup plan, backup to the backup.<br><br>But the ideally planned system has a hidden cost: it can start protecting you from new data, not just danger. The best plans sometimes lose to those who improvise — not because the plan was bad, but because reality is unpredictable. Architecture that anticipated everything and still left room for the living — that\'s your next level.',
 },
@@ -1136,7 +1136,7 @@ vyj_syla: {
     body: 'You invested in the lord methodically: not because it\'s beautiful, but because it\'s reliable. If the lord is strong — there\'s a chance. In life you don\'t risk more than necessary, choose proven solutions, build reserves for when things go wrong. That you\'re still here already means you\'re doing something very right.<br><br>But there\'s a difference between "not losing" and "winning" — and it matters. "Not losing" as a goal is always achievable if you\'re careful enough. But sufficient caution rarely looks like play. There are things you can only get by betting — and you know them, because you specifically don\'t bet on them. The moment you finally dare — you do it with quality those who never paused and thought couldn\'t match.',
 },
 vyj_lehion: {
-    name: 'Pragmatist',
+    name: 'Operator',
     tag: 'The most pragmatic army — the one that simply works.',
     body: 'You didn\'t look for elegant solutions — monsters exist, they need to hold the line, they did. You invested where the effect was tangible, where each unit justified its place. In life: team, tools, processes — all evaluated by one criterion, and it\'s honest. Functional systems don\'t need justification.<br><br>But loyalty isn\'t measured by productivity, and the most important relationships are often worst-measured. People who prioritize function over relationship sometimes miss when someone nearby is signaling something completely different. From you they get results and respect you — but rarely share their real selves. Only you can open that door.',
 },
@@ -1162,7 +1162,7 @@ vyj_rivnovaha: {
 },
 
 kha_syla: {
-    name: 'Impulse',
+    name: 'Firebrand',
     tag: 'You didn\'t upgrade by plan — by feeling.',
     body: 'You pressed what felt right in the moment. No guides, no optimization — just intuition. In life you act. While others analyze, you\'re already in the fight, already have a first result. This gives lived experience no preparation can replace.<br><br>But there\'s a difference between genuine intuition and reactivity. Intuition that accumulated experience reads patterns faster than conscious thought. But this skill doesn\'t always distinguish "right feeling" from "habitual feeling" — sometimes you repeat what\'s habitual instead of right. The person who acts always has more data for the next decision than the one who waited. And a second to ask "why do I feel exactly this?" won\'t slow you — it will make you more precise.',
 },
@@ -1187,7 +1187,7 @@ kha_skarb: {
     body: 'You gathered — maybe planned something grand, maybe just didn\'t get around to spending, maybe the moment wasn\'t right. In life you know this state: heap of ideas, energy exists, but something doesn\'t fire and everything stagnates. You generate more than you realize.<br><br>The chaotic person who stopped — this isn\'t rest, it\'s a pause that can last longer than planned. Any action specifies and limits, and you\'re not yet ready to be limited. But everyone who finally begins feels exactly what you feel right now — and it passes immediately after the first step. A volcano that hasn\'t erupted — and when it does, it will be noticed.',
 },
 kha_rivnovaha: {
-    name: 'Jazzist',
+    name: 'Maverick',
     tag: 'Chaos that holds balance — that\'s not chaos anymore. That\'s jazz.',
     body: 'You distributed resources evenly but without a system — it just came out that way. And it worked. In life you\'re unpredictable even to yourself, but somehow always end up in balance — not through planning, but through a sense of equilibrium that\'s in you and you can\'t explain.<br><br>Jazz looks like chaos — but it has tonality, a moment, a sense of where to move, all without a score. People around you sometimes need certainty you can\'t offer in words, because you yourself don\'t know how it works — only that it does. But the person who found their voice in chaos, who plays and doesn\'t break the instrument — lives more fully than those who never deviated from the score.',
 },
@@ -1198,12 +1198,12 @@ per_syla: {
     body: 'You upgraded the lord not from fear and not from greed, but because you saw what it could become. Like a sculptor who sees the statue in stone before beginning. In life you treat yourself as an unfinished project: there\'s a better version than the current one, and you know which direction to move.<br><br>The project approach to oneself is very productive, but carries a hidden trap: a person always "in process" is never "enough." The next version is always better — and the current one always looks incomplete. You rarely stop to feel you\'ve already achieved something. Growth that never completes is sometimes escape from the present, not movement toward the future. But the current version of you is already worth far more than you give yourself credit for.',
 },
 per_lehion: {
-    name: 'Synergist',
+    name: 'Catalyst',
     tag: 'You didn\'t build an army — you built an ecosystem.',
     body: 'Each monster occupied a place not just as a combat unit, but as a system element — synergy, interaction, structure of the living. In life you think systemically: how these people interact, where the friction is, where one plus one becomes three.<br><br>But systematic thinking in relationships has its shadow. The person you analyze also analyzes you. If they sense they\'re being broken into components — they close off, begin playing a role. The most alive teams have both systemic vision and the ability to be unpredictable, simply a present person who sometimes steps beyond their own system. The architect who can also be an element — builds something truly alive.',
 },
 per_fortress: {
-    name: 'Conditioner',
+    name: 'Shaper',
     tag: 'You didn\'t build walls — you built conditions.',
     body: 'Your floors weren\'t just defense — they were an environment: where the enemy slows, where monsters have advantage, where every meter leads to a specific result. In life you know how to shape an environment: arranging conditions so the needed result arises naturally, without obvious force.<br><br>But there\'s a difference between "I created conditions where people flourish" and "I created conditions where people do what I need" — these differ in intent but look very similar from outside, sometimes from inside. The master of environment with clean intent is one of the rarest and most needed people — and when the intent is clean, it\'s visible and felt.',
 },
