@@ -10419,6 +10419,19 @@ function loop(ts) {
                 } else if (u.heroRank.startsWith('elite')) {
                     triggerScreenShake(5);
                     _killFlash.alpha = 0.10; _killFlash.col = '#ff8800';
+                } else {
+                    // Juice для ЗВИЧАЙНИХ вбивств — раніше вони не мали ні шейку, ні
+                    // спалаху, тож рання гра (де їх ~95%) відчувалась плоскою
+                    triggerScreenShake(2);
+                    _killFlash.alpha = Math.max(_killFlash.alpha, 0.06); _killFlash.col = '#ffcc55';
+                }
+                // Перше вбивство сесії — окремий сплеск-«вітання», щоб найперші
+                // секунди гри одразу відчувались соковито (утримання новачка)
+                if (!GAME._firstKill && (u.type === 'hero')) {
+                    GAME._firstKill = true;
+                    triggerScreenShake(6);
+                    spawnHitBurst(u.x, u.y - u.size * 0.4, 'gold', 16, 1.7);
+                    _killFlash.alpha = Math.max(_killFlash.alpha, 0.14); _killFlash.col = '#ffdd66';
                 }
                 spawnSoulFly(u.x, u.y - u.size * 0.5,
                     u.heroRank === 'boss' ? 5 : u.heroRank.startsWith('elite') ? 4 : 3, false);
