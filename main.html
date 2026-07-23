@@ -889,6 +889,7 @@
             #btn-reset-progress { font-size: 14px; padding: 8px 20px; }
             #btn-soul-dungeon { font-size: 19px; padding: 14px 42px; }
             #btn-instructions { font-size: 16px; padding: 11px 32px; }
+            #btn-invite { font-size: 16px; padding: 11px 32px; }
             #start-elite-display { font-size: 18px; padding: 6px 18px; }
 
             #pause-overlay h2 { font-size: 38px; }
@@ -980,6 +981,7 @@
             #btn-reset-progress { font-size: 15px; padding: 9px 24px; }
             #btn-soul-dungeon { font-size: 22px; padding: 16px 50px; border-radius: 16px; }
             #btn-instructions { font-size: 18px; padding: 12px 36px; }
+            #btn-invite { font-size: 18px; padding: 12px 36px; }
             #start-elite-display { font-size: 20px; padding: 8px 22px; }
 
             #pause-overlay h2 { font-size: 44px; }
@@ -1154,6 +1156,14 @@
             padding:9px 28px; cursor:pointer;
             -webkit-appearance:none; touch-action:manipulation; }
         #btn-instructions:active { opacity:0.7; }
+        #btn-invite {
+            background:rgba(245,197,66,0.08); border:2px solid #b8963a;
+            border-radius:12px; color:#f5c542; font-size:14px; font-weight:600;
+            padding:9px 28px; cursor:pointer; margin-top:2px;
+            -webkit-appearance:none; touch-action:manipulation;
+            transition:background 0.15s; }
+        #btn-invite:hover { background:rgba(245,197,66,0.16); }
+        #btn-invite:active { opacity:0.7; }
 
         /* ── Душа Підземелля ── */
         #soul-dungeon-screen {
@@ -16449,6 +16459,16 @@ const MON_DEV_LABELS = {
     lightning:'Блискавка', dark_knight:'Темний лицар', banshee:'Банші', lich:'Ліч',
     abyss:'Безодня', dragon:'Дракон'
 };
+const MON_DEV_LABELS_EN = {
+    slime:'Slime', skeleton:'Skeleton', hounds:'Hounds', zombie:'Zombie', spirit:'Spirit',
+    bat:'Bat', arachne:'Spider', minotaur:'Minotaur', shadow:'Shadow', necromancer:'Necromancer',
+    water_ele:'Water Elemental', earth_ele:'Earth Elemental', air_ele:'Air Elemental', fire_ele:'Fire Elemental',
+    lightning:'Lightning', dark_knight:'Dark Knight', banshee:'Banshee', lich:'Lich',
+    abyss:'Abyss', dragon:'Dragon'
+};
+function _monName(kind) {
+    return ((typeof _lang !== 'undefined' && _lang === 'en') ? MON_DEV_LABELS_EN[kind] : MON_DEV_LABELS[kind]) || kind;
+}
 const MON_DEV_EMOJI = {
     slime:'🟢', skeleton:'💀', hounds:'🐺', zombie:'🧟', spirit:'👻',
     bat:'🦇', arachne:'🕷', minotaur:'🐂', shadow:'🌑', necromancer:'🧙',
@@ -17194,13 +17214,23 @@ function closeBestiary() {
 function _renderBestiary() {
     let grid = document.getElementById('bestiary-grid');
     if (!grid) return;
+    const _en = (typeof _lang !== 'undefined' && _lang === 'en');
+    const _L = _en
+        ? { atk:'Attack', hp:'HP', arm:'Armor', armMag:'Armor / Mag', magArm:'Mag armor', reg:'Regen',
+            spd:'Atk spd', mag:'MAG', phys:'PHYS', evo:'Evolution', branch:'Branch ', skills:' / 10 skills',
+            lvl:'Lvl ', floor:'Floor ', unlocked:'Unlocked', title:'DUNGEON BESTIARY' }
+        : { atk:'Атака', hp:'ХП', arm:'Броня', armMag:'Броня / Маг', magArm:'Маг.броня', reg:'Реген',
+            spd:'ША', mag:'МАГ', phys:'ФІЗ', evo:'Еволюція', branch:'Гілка ', skills:' / 10 навиків',
+            lvl:'Рів. ', floor:'Поверх ', unlocked:'Відкрито', title:'БЕСТІАРІЙ ПІДЗЕМЕЛЛЯ' };
     let unlockedCount = Math.max(0, floors.length - 1);
     let total = MONSTER_KIND_NAMES.length;
+    const _titleEl = document.querySelector('#bestiary-header .bh-title');
+    if (_titleEl) _titleEl.innerHTML = '<span class="dl-ico dl-beast"></span> ' + _L.title;
 
     // Оновлюємо прогрес у хедері
     let progLbl = document.getElementById('bestiary-progress-lbl');
     if (progLbl) {
-        progLbl.innerHTML = 'Відкрито <span>' + unlockedCount + '</span> / ' + total;
+        progLbl.innerHTML = _L.unlocked + ' <span>' + unlockedCount + '</span> / ' + total;
     }
 
     let html = '';
@@ -17208,7 +17238,7 @@ function _renderBestiary() {
         let unlocked = i < unlockedCount;
         let info     = MON_INFO[kindName] || {};
         let emoji    = MON_DEV_EMOJI[kindName] || '?';
-        let label    = MON_DEV_LABELS[kindName] || kindName;
+        let label    = _monName(kindName);
         let color    = info.color || '#aa88cc';
         let floorNeeded = i + 2; // поверх необхідний для розблокування
 
@@ -17234,8 +17264,8 @@ function _renderBestiary() {
 
             // Тип пошкодження
             let dmgBadge = isMag
-                ? '<span class="bc-dmg-badge bc-dmg-mag">МАГ</span>'
-                : '<span class="bc-dmg-badge bc-dmg-phys">ФІЗ</span>';
+                ? '<span class="bc-dmg-badge bc-dmg-mag">' + _L.mag + '</span>'
+                : '<span class="bc-dmg-badge bc-dmg-phys">' + _L.phys + '</span>';
 
             // Третя клітинка: броня (фіз + маг через "/", або одна)
             let armorStr = '';
@@ -17252,7 +17282,7 @@ function _renderBestiary() {
             } else {
                 armorStr = '—'; armorClass = '';
             }
-            let armorLbl = (armor > 0 && magArmor > 0) ? 'Броня / Маг' : (magArmor > 0 ? 'Маг.броня' : 'Броня');
+            let armorLbl = (armor > 0 && magArmor > 0) ? _L.armMag : (magArmor > 0 ? _L.magArm : _L.arm);
             let cell3 = '<div class="bc-stat-cell">'
                 + '<span class="bc-sc-icon dl-ico ' + armorIcon + '"></span>'
                 + '<span class="bc-sc-lbl">' + armorLbl + '</span>'
@@ -17263,12 +17293,12 @@ function _renderBestiary() {
             let cell4 = regen > 0
                 ? '<div class="bc-stat-cell">'
                     + '<span class="bc-sc-icon dl-ico dl-regen"></span>'
-                    + '<span class="bc-sc-lbl">Реген</span>'
+                    + '<span class="bc-sc-lbl">' + _L.reg + '</span>'
                     + '<span class="bc-sc-val cv-reg">' + regen.toFixed(1) + '/с</span>'
                     + '</div>'
                 : '<div class="bc-stat-cell">'
                     + '<span class="bc-sc-icon dl-ico dl-bolt"></span>'
-                    + '<span class="bc-sc-lbl">ША</span>'
+                    + '<span class="bc-sc-lbl">' + _L.spd + '</span>'
                     + '<span class="bc-sc-val cv-spd">' + atkSpd.toFixed(2) + '/с</span>'
                     + '</div>';
 
@@ -17276,12 +17306,12 @@ function _renderBestiary() {
             let statsGrid = '<div class="bc-stats-grid">'
                 + '<div class="bc-stat-cell">'
                     + '<span class="bc-sc-icon dl-ico dl-sword"></span>'
-                    + '<span class="bc-sc-lbl">Атака</span>'
+                    + '<span class="bc-sc-lbl">' + _L.atk + '</span>'
                     + '<span class="bc-sc-val cv-atk">' + atkVal + '</span>' + atkUpg
                 + '</div>'
                 + '<div class="bc-stat-cell">'
                     + '<span class="bc-sc-icon dl-ico dl-heart"></span>'
-                    + '<span class="bc-sc-lbl">ХП</span>'
+                    + '<span class="bc-sc-lbl">' + _L.hp + '</span>'
                     + '<span class="bc-sc-val cv-hp">' + hpVal + '</span>' + hpUpg
                 + '</div>'
                 + cell3
@@ -17291,16 +17321,16 @@ function _renderBestiary() {
             // Еволюція
             let evoRow = '';
             if (evoLvl > 0) {
-                let evoLabel = branch ? 'Гілка ' + branch + ' · ' + evoLvl + '/10' : evoLvl + ' / 10 навиків';
+                let evoLabel = branch ? _L.branch + branch + ' · ' + evoLvl + '/10' : evoLvl + _L.skills;
                 evoRow = '<div class="bc-evo-row">'
                     + '<span class="bc-sc-icon dl-ico dl-star"></span>'
-                    + '<span class="bc-sc-lbl">Еволюція</span>'
+                    + '<span class="bc-sc-lbl">' + _L.evo + '</span>'
                     + '<span class="bc-sc-val">' + evoLabel + '</span>'
                     + '</div>';
             }
 
             // Бейдж рівня у аватарі
-            let floorBadge = '<div class="bc-floor-badge">Рів. ' + floorNeeded + '</div>';
+            let floorBadge = '<div class="bc-floor-badge">' + _L.lvl + floorNeeded + '</div>';
 
             html += '<div class="bc-card bc-unlocked"'
                   + ' style="--bc-accent:' + color + ';--bc-glow:' + color + '44;'
@@ -17317,7 +17347,7 @@ function _renderBestiary() {
                   + '</div>'
                   + statsGrid
                   + evoRow
-                  + '<div class="bc-dev-hint">→ Розвиток</div>'
+                  + '<div class="bc-dev-hint">' + (_en ? '→ Evolve' : '→ Розвиток') + '</div>'
                   + '</div>'
                   + '</div>';
         } else {
@@ -17326,14 +17356,14 @@ function _renderBestiary() {
                   + ' style="background:rgba(12,7,22,0.8)">'
                   + '<div class="bc-avatar" style="background:rgba(30,15,55,0.4);position:relative">'
                   + '<span class="bc-locked-silhouette">' + emoji + '</span>'
-                  + '<div class="bc-locked-floor">Поверх ' + floorNeeded + '</div>'
+                  + '<div class="bc-locked-floor">' + _L.floor + floorNeeded + '</div>'
                   + '</div>'
                   + '<div class="bc-stats">'
                   + '<div class="bc-locked-stats">'
                   + '<div class="bc-locked-label">???</div>'
-                  + '<div class="bc-locked-line"><span><span class="dl-ico dl-sword"></span> Атака</span><span>— — —</span></div>'
-                  + '<div class="bc-locked-line"><span><span class="dl-ico dl-heart"></span> ХП</span><span>— — —</span></div>'
-                  + '<div class="bc-locked-line"><span><span class="dl-ico dl-shield"></span> Броня</span><span>— — —</span></div>'
+                  + '<div class="bc-locked-line"><span><span class="dl-ico dl-sword"></span> ' + _L.atk + '</span><span>— — —</span></div>'
+                  + '<div class="bc-locked-line"><span><span class="dl-ico dl-heart"></span> ' + _L.hp + '</span><span>— — —</span></div>'
+                  + '<div class="bc-locked-line"><span><span class="dl-ico dl-shield"></span> ' + _L.arm + '</span><span>— — —</span></div>'
                   + '</div>'
                   + '</div>'
                   + '</div>';
