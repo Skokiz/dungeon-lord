@@ -13,20 +13,33 @@ const _SK = {
 function _skBone(x1,y1,x2,y2,r,dim=false){
   const fill=dim?_SK.dim:_SK.bone, hl=dim?_SK.dimHL:_SK.boneHL;
   const a=Math.atan2(y2-y1,x2-x1), px=-Math.sin(a), py=Math.cos(a);
-  ctx.beginPath(); ctx.arc(x1,y1,r,a+Math.PI/2,a-Math.PI/2); ctx.arc(x2,y2,r,a-Math.PI/2,a+Math.PI/2); ctx.closePath();
+  const mx=(x1+x2)/2, my=(y1+y2)/2, rm=r*0.60;   // narrow shaft, bulged ends (real bone)
+  ctx.beginPath();
+  ctx.arc(x1,y1,r,a+Math.PI/2,a-Math.PI/2);
+  ctx.quadraticCurveTo(mx-px*rm,my-py*rm, x2-px*r,y2-py*r);
+  ctx.arc(x2,y2,r,a-Math.PI/2,a+Math.PI/2);
+  ctx.quadraticCurveTo(mx+px*rm,my+py*rm, x1+px*r,y1+py*r);
+  ctx.closePath();
   ctx.strokeStyle=_SK.outline; ctx.lineWidth=2.8; ctx.stroke(); ctx.fillStyle=fill; ctx.fill();
-  const hr=r*0.28, ox=px*r*0.40-1, oy=py*r*0.40-1;
-  ctx.globalAlpha=0.50;
+  // occlusion along the shaded (back) edge → cylindrical form
+  ctx.globalAlpha=0.32; ctx.strokeStyle=dim?'#4c4832':'#a2965f'; ctx.lineWidth=r*0.55; ctx.lineCap='round';
+  ctx.beginPath(); ctx.moveTo(x1-px*r*0.42,y1-py*r*0.42); ctx.quadraticCurveTo(mx-px*rm*0.75,my-py*rm*0.75, x2-px*r*0.42,y2-py*r*0.42); ctx.stroke();
+  ctx.globalAlpha=1;
+  // highlight ridge on the lit edge
+  const hr=r*0.26, ox=px*r*0.42, oy=py*r*0.42;
+  ctx.globalAlpha=0.55;
   ctx.beginPath(); ctx.arc(x1+ox,y1+oy,hr,a+Math.PI/2,a-Math.PI/2); ctx.arc(x2+ox,y2+oy,hr,a-Math.PI/2,a+Math.PI/2); ctx.closePath();
   ctx.fillStyle=hl; ctx.fill();
   ctx.globalAlpha=1;
 }
 
 function _skJnt(x,y,r,dim=false){
-  ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2);
-  ctx.strokeStyle=_SK.outline; ctx.lineWidth=1.8; ctx.stroke(); ctx.fillStyle=dim?_SK.dim:_SK.joint; ctx.fill();
-  ctx.globalAlpha=0.5;
-  ctx.beginPath(); ctx.arc(x-r*0.3,y-r*0.35,r*0.32,0,Math.PI*2);
+  // subtle bone knuckle — smaller & less shiny than before (kills the
+  // ball-jointed marionette read; the bulged bone ends carry the joint)
+  ctx.beginPath(); ctx.arc(x,y,r*0.82,0,Math.PI*2);
+  ctx.strokeStyle=_SK.outline; ctx.lineWidth=1.5; ctx.stroke(); ctx.fillStyle=dim?_SK.dim:_SK.joint; ctx.fill();
+  ctx.globalAlpha=0.32;
+  ctx.beginPath(); ctx.arc(x-r*0.28,y-r*0.32,r*0.26,0,Math.PI*2);
   ctx.fillStyle=dim?_SK.dimHL:_SK.boneHL; ctx.fill();
   ctx.globalAlpha=1;
 }
@@ -74,19 +87,28 @@ function _skSkull(x,y,tilt,jawOpen,eyeColor='#30ff60'){
   }
   ctx.restore();
 
-  // Eye sockets with pulsing glow
-  const _ep = 0.78 + Math.sin(_frameNow * 0.0025) * 0.22;
+  // Eye sockets — deep pits with a pulsing hellfire glow
+  const _ep = 0.70 + Math.sin(_frameNow * 0.0025) * 0.30;
   for(const sx of[-6,6]){
-    ctx.beginPath(); ctx.ellipse(sx,-8,5.5,4.5,sx<0?-0.15:0.15,0,Math.PI*2);
+    // deep bony socket
+    ctx.beginPath(); ctx.ellipse(sx,-8,6.2,5.2,sx<0?-0.15:0.15,0,Math.PI*2);
     ctx.fillStyle=_SK.eye; ctx.fill();
-    ctx.globalAlpha=0.28 * _ep;
-    ctx.beginPath(); ctx.ellipse(sx,-8.2,4.2,3.5,sx<0?-0.15:0.15,0,Math.PI*2);
+    ctx.strokeStyle=_SK.outline; ctx.lineWidth=1.3; ctx.stroke();
+    // soft outer halo filling the socket
+    ctx.globalAlpha=0.32 * _ep;
+    ctx.beginPath(); ctx.ellipse(sx,-8,5.2,4.3,sx<0?-0.15:0.15,0,Math.PI*2);
     ctx.fillStyle=eyeColor; ctx.fill();
-    ctx.globalAlpha=0.55 * _ep;
-    ctx.beginPath(); ctx.ellipse(sx,-8.3,2.6,2.2,sx<0?-0.15:0.15,0,Math.PI*2);
+    // mid glow
+    ctx.globalAlpha=0.7 * _ep;
+    ctx.beginPath(); ctx.ellipse(sx,-8.2,3.3,3.0,0,0,Math.PI*2);
     ctx.fillStyle=eyeColor; ctx.fill();
-    ctx.globalAlpha=0.90 * _ep;
-    ctx.beginPath(); ctx.arc(sx,-8.5,1.1,0,Math.PI*2);
+    // bright core
+    ctx.globalAlpha=0.95 * _ep;
+    ctx.beginPath(); ctx.arc(sx,-8.3,1.9,0,Math.PI*2);
+    ctx.fillStyle=eyeColor; ctx.fill();
+    // hot white pinpoint
+    ctx.globalAlpha=Math.min(1, _ep + 0.1);
+    ctx.beginPath(); ctx.arc(sx-0.4,-8.6,0.95,0,Math.PI*2);
     ctx.fillStyle='#ffffff'; ctx.fill();
     ctx.globalAlpha=1;
   }
@@ -105,6 +127,10 @@ function _skSkull(x,y,tilt,jawOpen,eyeColor='#30ff60'){
 }
 
 function _skRibcage(x,y){
+  // chest-cavity backing — reads as a barrel cage, not a flat xylophone
+  ctx.globalAlpha=0.4; ctx.fillStyle='#37331f';
+  ctx.beginPath(); ctx.ellipse(x, y+10, 14.5, 13, 0, 0, Math.PI*2); ctx.fill();
+  ctx.globalAlpha=1;
   // Sternum
   _skBone(x,y,x,y+22,2.2);
   // Clavicles
@@ -125,21 +151,62 @@ function _skLeg(hx,hy,thighA,kneeBend,dim){
   const kx=hx+Math.sin(thighA)*THIGH, ky=hy+Math.cos(thighA)*THIGH;
   const shinA=thighA-kneeBend, ax=kx+Math.sin(shinA)*SHIN, ay=ky+Math.cos(shinA)*SHIN;
   _skBone(hx,hy,kx,ky,5,dim); _skJnt(kx,ky,4,dim); _skBone(kx,ky,ax,ay,4,dim); _skJnt(ax,ay,3.2,dim);
-  const footA=shinA*0.4, fx=ax+Math.cos(footA)*12, fy=ay+Math.abs(Math.sin(footA))*2+2;
-  _skBone(ax,ay,fx,fy,3.2,dim); _skBone(fx,fy,fx+5,fy+1,1.8,dim);
+  // foot: forward toe plate (metatarsals) + a heel nub back → planted heel+toe
+  const toeX=ax+13, toeY=ay+3;
+  _skBone(ax,ay,toeX,toeY,3.0,dim);
+  _skBone(ax,ay,ax-6,ay+2.5,2.4,dim);
+  ctx.strokeStyle=_SK.outline; ctx.lineWidth=1; ctx.globalAlpha=0.55; ctx.lineCap='round';
+  ctx.beginPath(); ctx.moveTo(ax+4,ay+0.5); ctx.lineTo(toeX-1,toeY-1.5); ctx.stroke();
+  ctx.globalAlpha=1;
 }
 
-function _skArm(sx,sy,upperA,elbowBend,dim){
+function _skArm(sx,sy,upperA,elbowBend,dim,showHand=true){
   const UA=20,FA=17;
   const ex=sx+Math.sin(upperA)*UA, ey=sy+Math.cos(upperA)*UA;
   const elbA=upperA+elbowBend, wx=ex+Math.sin(elbA)*FA, wy=ey+Math.cos(elbA)*FA;
   _skBone(sx,sy,ex,ey,3.5,dim); _skJnt(ex,ey,2.8,dim); _skBone(ex,ey,wx,wy,2.8,dim);
-  for(const[da,len] of[[-0.32,6.5],[0,7.5],[0.32,6.5]]){
-    const fa=elbA+da; _skBone(wx,wy,wx+Math.sin(fa)*len,wy+Math.cos(fa)*len,1.4,dim);
+  if (showHand) {
+    for(const[da,len] of[[-0.32,6.5],[0,7.5],[0.32,6.5]]){
+      const fa=elbA+da; _skBone(wx,wy,wx+Math.sin(fa)*len,wy+Math.cos(fa)*len,1.4,dim);
+    }
   }
 }
 
+// Bony fist wrapped around a grip oriented along angle `ga` (grip/blade dir)
+function _skFist(wx,wy,ga,dim=false){
+  const fill=dim?_SK.dim:_SK.bone;
+  ctx.save(); ctx.translate(wx,wy); ctx.rotate(ga);
+  // knuckle mass (long axis perpendicular to the grip = the row of fingers)
+  ctx.beginPath(); ctx.ellipse(0,0,5.4,3.9,0,0,Math.PI*2);
+  ctx.strokeStyle=_SK.outline; ctx.lineWidth=2.4; ctx.stroke(); ctx.fillStyle=fill; ctx.fill();
+  // grooves between the wrapped fingers
+  ctx.strokeStyle=_SK.outline; ctx.lineWidth=1; ctx.globalAlpha=0.55;
+  for(const kx of[-2.7,0,2.7]){ ctx.beginPath(); ctx.moveTo(kx,-3.3); ctx.lineTo(kx,3.3); ctx.stroke(); }
+  ctx.globalAlpha=1;
+  // thumb nub on the near side
+  ctx.beginPath(); ctx.ellipse(1.6,3.4,2.0,1.4,0.4,0,Math.PI*2);
+  ctx.strokeStyle=_SK.outline; ctx.lineWidth=1.6; ctx.stroke(); ctx.fillStyle=fill; ctx.fill();
+  // highlight
+  ctx.globalAlpha=0.42; ctx.fillStyle=dim?_SK.dimHL:_SK.boneHL;
+  ctx.beginPath(); ctx.ellipse(-1.6,-1.4,2.1,1.3,0,0,Math.PI*2); ctx.fill(); ctx.globalAlpha=1;
+  ctx.restore();
+}
+
 const _skE = p => p*p*(3-2*p);
+
+// 2-bone IK: return [upperA, elbowBend] so the wrist reaches (tx,ty) from
+// shoulder (sx,sy). Angles use the skeleton convention x=sin, y=cos.
+function _skIK(sx,sy,tx,ty,L1,L2,bendSign){
+  let dx=tx-sx, dy=ty-sy;
+  let d=Math.hypot(dx,dy);
+  d=Math.max(Math.abs(L1-L2)+0.5, Math.min(L1+L2-0.5, d));
+  const base=Math.atan2(dx,dy);
+  const cosa=Math.min(1,Math.max(-1,(L1*L1+d*d-L2*L2)/(2*L1*d)));
+  const cosi=Math.min(1,Math.max(-1,(L1*L1+L2*L2-d*d)/(2*L1*L2)));
+  const upperA=base - bendSign*Math.acos(cosa);
+  const elbowBend=bendSign*(Math.PI-Math.acos(cosi));
+  return [upperA, elbowBend];
+}
 
 function drawSkeleton(ctx_,x,y,t,dir=1,sc=0.38,atk=0,branch='',runF=0,evo=0,shieldFlash=0){
   const _lp = (a,b,f) => a+(b-a)*f;
@@ -147,8 +214,8 @@ function drawSkeleton(ctx_,x,y,t,dir=1,sc=0.38,atk=0,branch='',runF=0,evo=0,shie
   const bob=(1-Math.abs(wc))*(3.5+runF*2.5), hipT=wc_c*0.035;
   // runF 0..1 — комедійний спринт: крок коротшає (дрібне перебирання),
   // сам темп ніг задає викликач через t (фаза від пройденої відстані)
-  const legA_F=wc*(0.52-runF*0.14), legA_B=-legA_F;
-  const knee_F=0.08+Math.max(0,wc_c)*(0.85+runF*0.35), knee_B=0.08+Math.max(0,-wc_c)*(0.85+runF*0.35);
+  let legA_F=wc*(0.52-runF*0.14), legA_B=-legA_F;
+  let knee_F=0.08+Math.max(0,wc_c)*(0.85+runF*0.35), knee_B=0.08+Math.max(0,-wc_c)*(0.85+runF*0.35);
   let armA_B=-wc*0.40, elbow_B=0.20+Math.max(0,wc_c)*0.40;
 
   let armA_F, elbow_F, jawOpen=Math.abs(Math.sin(t*1.1))*0.28 + runF*Math.abs(Math.sin(t*5.0))*0.65, atkTilt=0;
@@ -177,16 +244,35 @@ function drawSkeleton(ctx_,x,y,t,dir=1,sc=0.38,atk=0,branch='',runF=0,evo=0,shie
     }
   }
 
+  // ── Attack lunge stance: plant a bent lead leg + a straight drive leg
+  //    behind, separated (no tangle), weight driving forward ──
+  if (ap > 0) {
+    let lungeF;
+    if (ap < 0.22) lungeF = _skE(ap / 0.22);
+    else if (ap < 0.60) lungeF = 1;
+    else lungeF = 1 - _skE((ap - 0.60) / 0.40);
+    legA_F = _lp(legA_F,  0.60, lungeF);   // near leg = planted lead (foot forward)
+    knee_F = _lp(knee_F,  0.95, lungeF);   // deep bent knee over the foot
+    legA_B = _lp(legA_B, -0.64, lungeF);   // far leg = drive leg extended back
+    knee_B = _lp(knee_B,  0.10, lungeF);   // nearly straight
+  }
+
   // Branch-specific back arm pose (must follow armA_F/elbow_F assignment)
   if (branch === 'A') {
-    // Хват щита: плече ледь назад (лікоть ≈ (-16,-20)), передпліччя йде
-    // ВПЕРЕД-ВГОРУ до зап'ястя біля центру грудей (≈ (0,-27)) — щит сидить
-    // на передпліччі і виступає вперед за силует, рука видимо його тримає
-    armA_B = -0.15 + wc * 0.04;
-    elbow_B = 2.15;
+    // Shield arm via IK: forearm comes FORWARD holding the shield out in
+    // front, upper arm visibly angling shoulder→elbow (was folded behind the
+    // ribs → shield looked stuck to the chest)
+    [armA_B, elbow_B] = _skIK(-13, -40, 7, -16, 20, 17, 1);   // hand at the shield's inner-lower rim
   } else if (branch === 'B') {
-    armA_B = armA_F - 0.22;
-    elbow_B = Math.max(0.05, elbow_F * 0.75 + 0.08);
+    if (ap > 0) {
+      armA_B = armA_F - 0.22;
+      elbow_B = Math.max(0.05, elbow_F * 0.75 + 0.08);
+    } else {
+      // 2H shoulder carry — pose BOTH arms via IK so the hands actually reach
+      // the grip (was a fixed hilt with the arm hanging elsewhere = "glued")
+      [armA_F, elbow_F] = _skIK(13, -40, 8, -11, 20, 17, 1);    // front = lower hand (pommel)
+      [armA_B, elbow_B] = _skIK(-13, -40, 15, -26, 20, 17, 1);  // back = upper hand (blade root); blade rises up-forward, clearing the skull
+    }
   }
   // Back wrist anchor (for shield / 2H pommel)
   const _belbA = armA_B + elbow_B;
@@ -198,14 +284,15 @@ function drawSkeleton(ctx_,x,y,t,dir=1,sc=0.38,atk=0,branch='',runF=0,evo=0,shie
   ctx_.save(); ctx_.translate(x,y-bob*sc); ctx_.rotate((0.05+hipT+atkTilt)+runF*0.30*dir); ctx_.scale(dir*sc,sc);
 
   // Back leg + arm
-  _skLeg(4,HY,legA_B,knee_B,true); _skArm(-SHL_X,SHL_Y,armA_B,elbow_B,true);
+  _skLeg(4,HY,legA_B,knee_B,true); _skArm(-SHL_X,SHL_Y,armA_B,elbow_B,true,branch!=='B');
 
   // Pelvis bone
   _skBone(-10,HY-2,10,HY-2,5.5);
 
   // ── Cloth rags hanging from hip ─────────────────────────────
   const _rSway = Math.sin(_frameNow * 0.0015) * 3;
-  ctx_.fillStyle=_SK.rag; ctx_.strokeStyle='#120820'; ctx_.lineWidth=0.8;
+  ctx_.fillStyle=branch==='A' ? '#243d78' : branch==='B' ? '#672417' : _SK.rag;
+  ctx_.strokeStyle='#120820'; ctx_.lineWidth=0.8;
   for(const[rx,rlen,rs] of [[-9,16,-0.8],[0,21,0.5],[9,15,0.8]]){
     const rt=rx+_rSway*rs;
     ctx_.beginPath();
@@ -217,6 +304,37 @@ function drawSkeleton(ctx_,x,y,t,dir=1,sc=0.38,atk=0,branch='',runF=0,evo=0,shie
   // Spine
   const smid=SPINE_TOP*0.5; _skBone(HX,HY-3,HX+1,smid,3.2); _skBone(HX+1,smid,HX,SPINE_TOP,3.0);
   _skRibcage(HX,RIB_Y);
+
+  // Shoulder & hip socket caps — bridge limbs to the torso (no floating gap)
+  _skJnt(-SHL_X, SHL_Y, 3.6, true);
+  _skJnt( SHL_X, SHL_Y, 3.8, false);
+  _skJnt( 4, HY, 4.2, true);
+  _skJnt(-4, HY, 4.4, false);
+
+  // Branch silhouettes must survive before late evolution cosmetics unlock.
+  // A gets broad knight pauldrons; B gets an asymmetric spiked sword shoulder.
+  if (branch === 'A') {
+    for (const px of [-SHL_X, SHL_X]) {
+      const pg=ctx_.createLinearGradient(px-9,SHL_Y-9,px+8,SHL_Y+3);
+      pg.addColorStop(0,'#aabfe6'); pg.addColorStop(0.55,'#7189bd'); pg.addColorStop(1,'#40547f');
+      ctx_.fillStyle=pg; ctx_.strokeStyle=_SK.outline; ctx_.lineWidth=2.2;
+      ctx_.beginPath();
+      ctx_.moveTo(px-(px<0?1:-1)*2,SHL_Y-7);
+      ctx_.quadraticCurveTo(px+(px<0?-1:1)*9,SHL_Y-10,px+(px<0?-1:1)*11,SHL_Y-1);
+      ctx_.quadraticCurveTo(px+(px<0?-1:1)*5,SHL_Y+4,px,SHL_Y+2);
+      ctx_.closePath(); ctx_.fill(); ctx_.stroke();
+    }
+  } else if (branch === 'B') {
+    const px=-SHL_X;
+    ctx_.fillStyle='#6f3826'; ctx_.strokeStyle=_SK.outline; ctx_.lineWidth=2.2;
+    ctx_.beginPath();
+    ctx_.moveTo(px-9,SHL_Y+1); ctx_.lineTo(px-12,SHL_Y-8);
+    ctx_.lineTo(px-7,SHL_Y-6); ctx_.lineTo(px-4,SHL_Y-17);
+    ctx_.lineTo(px+1,SHL_Y-6); ctx_.lineTo(px+7,SHL_Y-4);
+    ctx_.lineTo(px+5,SHL_Y+3); ctx_.closePath(); ctx_.fill(); ctx_.stroke();
+    ctx_.strokeStyle='rgba(255,150,85,0.65)'; ctx_.lineWidth=1.2;
+    ctx_.beginPath(); ctx_.moveTo(px-8,SHL_Y-5); ctx_.lineTo(px+3,SHL_Y-3); ctx_.stroke();
+  }
 
   // ── Ево 3+: вогник відродження в грудній клітці (некро-іскра, без shadowBlur) ──
   if (evo >= 3) {
@@ -252,11 +370,11 @@ function drawSkeleton(ctx_,x,y,t,dir=1,sc=0.38,atk=0,branch='',runF=0,evo=0,shie
   // ── Shield (Branch A) — хітер-щит НА ПЕРЕДПЛІЧЧІ задньої руки ──
   // Центр = середина передпліччя (лікоть→зап'ястя) + виступ уперед: рука
   // читається до ліктя, передпліччя ховається за щитом = природний хват
-  if (branch === 'A') {
-    const _shW = 28, _shH = 38;
-    const _shCX = (_bex + _bwx) / 2 + 8;
-    const _shCY = (_bey + _bwy) / 2 - 2;
-    const _shAng = -0.06 + wc * 0.03;               // ледь дихає в такт крокам
+  const _drawShieldA = () => {
+    const _shW = 36, _shH = 48;
+    const _shCX = 20 + wc * 0.4;                    // held forward of the torso (chest guard) → daylight
+    const _shCY = -25;                              // covers chest-to-gut
+    const _shAng = -0.10 + wc * 0.03;               // presented near-vertical (forearm strap)
     ctx_.save(); ctx_.translate(_shCX, _shCY); ctx_.rotate(_shAng);
     const _heater = (inset) => {
       const w = _shW/2 - inset, top = -_shH*0.42 + inset*0.8, bot = _shH*0.52 - inset;
@@ -269,7 +387,7 @@ function drawSkeleton(ctx_,x,y,t,dir=1,sc=0.38,atk=0,branch='',runF=0,evo=0,shie
     };
     // Корпус: сталевий градієнт зліва-згори
     const _sg = ctx_.createLinearGradient(-_shW/2, -_shH/2, _shW/2, _shH/2);
-    _sg.addColorStop(0, '#7b7bb8'); _sg.addColorStop(0.5, '#565694'); _sg.addColorStop(1, '#3c3c70');
+      _sg.addColorStop(0, '#a9bce7'); _sg.addColorStop(0.5, '#667fb9'); _sg.addColorStop(1, '#354c7f');
     _heater(0);
     ctx_.lineWidth=3; ctx_.strokeStyle=_SK.outline; ctx_.stroke();
     ctx_.fillStyle=_sg; ctx_.fill();
@@ -314,9 +432,11 @@ function drawSkeleton(ctx_,x,y,t,dir=1,sc=0.38,atk=0,branch='',runF=0,evo=0,shie
       ctx_.globalAlpha = 1;
     }
     ctx_.restore();
-  }
+    // bony fist gripping the shield's inner-lower rim → clearly held
+    _skFist(_bwx, _bwy, -0.2, false);
+  };
 
-  _skArm(SHL_X,SHL_Y,armA_F,elbow_F,false); _skLeg(-4,HY,legA_F,knee_F,false);
+  _skArm(SHL_X,SHL_Y,armA_F,elbow_F,false,false); _skLeg(-4,HY,legA_F,knee_F,false);
 
   // ── Sword ──────────────────────────────────────────────────
   { const UA=20, FA=17;
@@ -329,14 +449,17 @@ function drawSkeleton(ctx_,x,y,t,dir=1,sc=0.38,atk=0,branch='',runF=0,evo=0,shie
       // 2H: важкий дворучник. У СПОКОЇ/РУСІ — клинок на плечі (читабельний
       // силует, меч не ріже тіло поперек); в АТАЦІ — двуручний замах між руками
       const _onShoulder = !(ap > 0);
-      const _shoulderA = 3.85;                       // вгору-назад через плече
-      const _hiltX = _onShoulder ? 9 : _fwx;
-      const _hiltY = _onShoulder ? -16 : _fwy;
-      const _2hA = _onShoulder ? _shoulderA : Math.atan2(_fwx - _bwx, _fwy - _bwy);
-      const _gripBX = _onShoulder ? _hiltX - Math.sin(_2hA) * 13 : _bwx;
-      const _gripBY = _onShoulder ? _hiltY - Math.cos(_2hA) * 13 : _bwy;
-      const _fx2 = _hiltX, _fy2 = _hiltY;
-      const _bladeLen=86, _bladeW=6.5;
+      // HAND-DRIVEN grip for both stances: the hilt sits at the actual wrists
+      // (carry: top=back/upper hand, pommel=front/lower hand) so the arms are
+      // visibly holding it — no fixed floating hilt.
+      const _topX = _onShoulder ? _bwx : _fwx;
+      const _topY = _onShoulder ? _bwy : _fwy;
+      const _botX = _onShoulder ? _fwx : _bwx;
+      const _botY = _onShoulder ? _fwy : _bwy;
+      const _2hA = Math.atan2(_topX - _botX, _topY - _botY);
+      const _gripBX = _botX, _gripBY = _botY;
+      const _fx2 = _topX, _fy2 = _topY;
+      const _bladeLen=98, _bladeW=8.2;
       const bEndX=_fx2+Math.sin(_2hA)*_bladeLen, bEndY=_fy2+Math.cos(_2hA)*_bladeLen;
       const bpx=Math.cos(_2hA), bpy=-Math.sin(_2hA);
       // Grip
@@ -369,6 +492,9 @@ function drawSkeleton(ctx_,x,y,t,dir=1,sc=0.38,atk=0,branch='',runF=0,evo=0,shie
       ctx_.fillStyle='rgba(255,225,140,0.35)';
       ctx_.fillRect(-19,-2.5,38,1.4);
       ctx_.restore();
+      // Two bony fists gripping the long hilt (dim = the far hand)
+      _skFist(_fx2 - Math.sin(_2hA)*7, _fy2 - Math.cos(_2hA)*7, _2hA, _onShoulder);
+      _skFist(_gripBX + Math.sin(_2hA)*7, _gripBY + Math.cos(_2hA)*7, _2hA, !_onShoulder);
       // Клинок: темний обух → світле лезо (контраст з кісткою)
       const _blG = ctx_.createLinearGradient(_fx2-bpx*_bladeW,_fy2-bpy*_bladeW,_fx2+bpx*_bladeW,_fy2+bpy*_bladeW);
       _blG.addColorStop(0,'#3f3f5e'); _blG.addColorStop(0.45,'#9090b4'); _blG.addColorStop(1,'#d6d6ee');
@@ -419,17 +545,35 @@ function drawSkeleton(ctx_,x,y,t,dir=1,sc=0.38,atk=0,branch='',runF=0,evo=0,shie
       ctx_.fillStyle='#8a7030'; ctx_.strokeStyle=_SK.outline; ctx_.lineWidth=1.5;
       ctx_.beginPath(); ctx_.rect(-11,-2,22,4); ctx_.fill(); ctx_.stroke();
       ctx_.restore();
-      // Blade
+      // Bony fist gripping the hilt (between pommel and guard)
+      _skFist((_fwx+gx)/2, (_fwy+gy)/2, swa, false);
+      // Blade — double-edged: parallel edges then a taper to the point,
+      // dark spine → bright edge gradient, fuller, edge glint
       const bpx=Math.cos(swa), bpy=-Math.sin(swa);
-      ctx_.fillStyle='#b8b8d0'; ctx_.strokeStyle=_SK.outline; ctx_.lineWidth=1.2;
+      const _dx=Math.sin(swa), _dy=Math.cos(swa);
+      const p8x=gx+_dx*_bladeLen*0.80, p8y=gy+_dy*_bladeLen*0.80;
+      const _blG=ctx_.createLinearGradient(gx-bpx*_bladeW,gy-bpy*_bladeW, gx+bpx*_bladeW,gy+bpy*_bladeW);
+      _blG.addColorStop(0,'#2e2e46'); _blG.addColorStop(0.5,'#6a6a92'); _blG.addColorStop(1,'#b6b6d8');
+      ctx_.fillStyle=_blG; ctx_.strokeStyle=_SK.outline; ctx_.lineWidth=1.2;
       ctx_.beginPath();
       ctx_.moveTo(gx-bpx*_bladeW,gy-bpy*_bladeW);
+      ctx_.lineTo(p8x-bpx*_bladeW,p8y-bpy*_bladeW);
+      ctx_.lineTo(bEndX,bEndY);
+      ctx_.lineTo(p8x+bpx*_bladeW,p8y+bpy*_bladeW);
       ctx_.lineTo(gx+bpx*_bladeW,gy+bpy*_bladeW);
-      ctx_.lineTo(bEndX,bEndY); ctx_.closePath(); ctx_.fill(); ctx_.stroke();
-      ctx_.strokeStyle='rgba(200,200,230,0.42)'; ctx_.lineWidth=1.2;
-      ctx_.beginPath(); ctx_.moveTo(gx,gy); ctx_.lineTo(gx+Math.sin(swa)*_bladeLen*0.85,gy+Math.cos(swa)*_bladeLen*0.85); ctx_.stroke();
+      ctx_.closePath(); ctx_.fill(); ctx_.stroke();
+      // fuller groove
+      ctx_.strokeStyle='rgba(40,40,70,0.5)'; ctx_.lineWidth=1.3;
+      ctx_.beginPath(); ctx_.moveTo(gx,gy); ctx_.lineTo(p8x,p8y); ctx_.stroke();
+      // bright edge glint
+      ctx_.strokeStyle='rgba(235,235,255,0.6)'; ctx_.lineWidth=1.1;
+      ctx_.beginPath(); ctx_.moveTo(gx+bpx*_bladeW*0.7,gy+bpy*_bladeW*0.7); ctx_.lineTo(bEndX+bpx*0.6,bEndY+bpy*0.6); ctx_.stroke();
     }
   }
+
+  // Shield (Branch A) — drawn AFTER the sword arm so it reads as a shield held
+  // OUT IN FRONT of the body, not tucked behind the arm
+  if (branch === 'A') _drawShieldA();
 
   // Neck + skull (eye colour reflects branch)
   const _eyeCol = branch==='A' ? '#4488ff' : branch==='B' ? '#ff3300' : '#30ff60';
@@ -492,8 +636,8 @@ function drawSkeletonMonster(unit, camY) {
     unit._skPrevX = unit.x;
 
     const _skAcd = unit.attackCooldown || 0;
-    if (_skAcd > (unit._skPrevAktCd || 0) + 3) { unit._skAtkP = 0.01; }
-    unit._skPrevAktCd = _skAcd;
+    if (_skAcd > (unit._skPrevAtkCd || 0) + 3) { unit._skAtkP = 0.01; }
+    unit._skPrevAtkCd = _skAcd;
 
     if (unit._skAtkP > 0) {
         unit._skAtkP += _skDt / 1.1;
@@ -525,6 +669,7 @@ function drawSkeletonMonster(unit, camY) {
 
     if (unit._shieldFlashT > 0) unit._shieldFlashT -= 1;
     const _skHipY = (unit.y - camY) - 50 * _skSc;
-    drawSkeleton(ctx, unit.x, _skHipY, unit._skT, unit._skDir, _skSc, unit._skAtkP || 0, unit._branch || '', unit._skRunF || 0, unit._evoLvl || 0, unit._shieldFlashT || 0);
+    const _skPose = unit._skAtkP > 0 ? unit._skAtkP : (unit.state === 'fight' ? 0.18 : 0);
+    drawSkeleton(ctx, unit.x, _skHipY, unit._skT, unit._skDir, _skSc, _skPose, unit._branch || '', unit._skRunF || 0, unit._evoLvl || 0, unit._shieldFlashT || 0);
     unit._hpBarY = _skHipY - 80 * _skSc - 22;
 }

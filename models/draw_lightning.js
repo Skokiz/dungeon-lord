@@ -44,6 +44,9 @@ function drawLightningMonster(unit, camY) {
   const atkActive = unit._lnAp > 0;
   const ap        = 1 - unit._lnAp;
   const inFight   = unit.state === 'fight' || atkActive;
+  const _lnBranch = unit._branch || '';
+  const isThunder = _lnBranch === 'A';
+  const isElectro = _lnBranch === 'B';
 
   // ap 0..0.22: CHARGE (arm retracts, core flashes)
   // ap 0.22..0.65: BOLT flies
@@ -51,26 +54,77 @@ function drawLightningMonster(unit, camY) {
   const chargeT = atkActive && ap < 0.22 ? ap / 0.22 : 0;
   const boltT   = atkActive && ap >= 0.22 && ap < 0.65 ? (ap - 0.22) / 0.43 : 0;
 
+  // Whole-body attack phrasing. Wind-up overlaps the first frames of the
+  // strike, so the mass travels through the pose instead of popping in place.
+  const ease = v => {
+    const n = Math.max(0, Math.min(1, v));
+    return n * n * (3 - 2 * n);
+  };
+  const windupT = !atkActive ? 0
+    : ap < 0.22 ? ease(ap / 0.22)
+    : ap < 0.34 ? 1 - ease((ap - 0.22) / 0.12)
+    : 0;
+  const thrustT = !atkActive || ap < 0.22 || ap >= 0.62 ? 0
+    : ap < 0.36 ? ease((ap - 0.22) / 0.14)
+    : 1 - ease((ap - 0.36) / 0.26) * 0.38;
+  const recoilT = atkActive && ap >= 0.54 && ap < 0.82
+    ? Math.sin(((ap - 0.54) / 0.28) * Math.PI)
+    : 0;
+  const settleT = atkActive && ap >= 0.72
+    ? Math.sin(((ap - 0.72) / 0.28) * Math.PI * 2) * (1 - (ap - 0.72) / 0.28)
+    : 0;
+
   // Skeleton points (humanoid silhouette)
-  const floatY  = Math.sin(unit._lnT * 2.05) * s * 0.018;
-  const coreCX  = cx;
-  const coreCY  = fY - s * 0.48 + floatY;
-  const headCX  = coreCX;
-  const headCY  = coreCY - s * 0.34;
-  const headR   = s * 0.088;
-  const coreR   = s * 0.155;
+  const isMoving = unit.state === 'move';
+  const gaitPhase = unit._lnT * 5.2;
+  const gait = isMoving ? Math.sin(gaitPhase) : 0;
+  const footStrike = isMoving ? Math.abs(Math.cos(gaitPhase)) : 0;
+  const stepLiftL = isMoving ? Math.max(0, gait) * s * 0.085 : 0;
+  const stepLiftR = isMoving ? Math.max(0, -gait) * s * 0.085 : 0;
+  const compression = isMoving ? footStrike * 0.055 : 0;
+  const stretch = isMoving ? Math.abs(gait) * 0.065 : 0;
+  const bodyScaleY = 1 + stretch - compression - windupT * 0.075 + thrustT * 0.055;
+  const moveLean = isMoving ? dir * s * (0.032 + Math.abs(gait) * 0.026) : 0;
+  const weightShift = isMoving ? -dir * gait * s * 0.050 : 0;
+  const attackShiftX = -dir * s * 0.115 * windupT
+                     + dir * s * 0.205 * thrustT
+                     - dir * s * 0.095 * recoilT
+                     + dir * s * 0.025 * settleT;
+  const attackShiftY = s * 0.090 * windupT
+                     - s * 0.052 * thrustT
+                     + s * 0.046 * recoilT
+                     + s * 0.014 * Math.abs(settleT);
+  const floatY  = Math.sin(unit._lnT * 2.05) * s * 0.018
+                + footStrike * s * 0.026 - Math.abs(gait) * s * 0.020;
+  const coreCX  = cx + moveLean + weightShift + attackShiftX;
+  const coreCY  = fY - s * 0.48 + floatY + attackShiftY;
+  const bodyLean = dir * s * (0.020 * (isMoving ? 1 : 0)
+                 - 0.070 * windupT + 0.095 * thrustT - 0.050 * recoilT);
+  const headCX  = coreCX + bodyLean;
+  const headCY  = coreCY - s * 0.34 * bodyScaleY;
+  const headR   = s * 0.110;
+  const coreR   = s * (isThunder ? 0.195 : 0.180);
 
   // Shoulders / hips
-  const shX = s * 0.145;
-  const shY = coreCY - s * 0.10;
+  const shX = s * (isThunder ? 0.175 : 0.145);
+  const shY = coreCY - s * 0.10 * bodyScaleY;
   const hpX = s * 0.110;
-  const hpY = coreCY + s * 0.09;
+  const hpY = coreCY + s * 0.09 * bodyScaleY;
   // Hand target positions (arms extended outward+down)
-  const handBaseX = s * 0.320;
+  const handBaseX = s * (isThunder ? 0.235 : 0.320);
   const handBaseY = coreCY + s * 0.03;
   // Foot positions (on floor)
-  const footX = s * 0.120;
+  const footX = s * (isThunder ? 0.112 : 0.145);
   const footY = fY - s * 0.006;
+  const attackStance = Math.max(windupT, thrustT, recoilT);
+  const frontStep = s * attackStance * (0.060 + thrustT * 0.055);
+  const backBrace = s * attackStance * (0.055 + windupT * 0.035);
+  const footLX = cx - footX + dir * gait * s * 0.110
+               + (dir === -1 ? dir * frontStep : -dir * backBrace);
+  const footRX = cx + footX - dir * gait * s * 0.110
+               + (dir === 1 ? dir * frontStep : -dir * backBrace);
+  const footLY = footY - stepLiftL;
+  const footRY = footY - stepLiftR;
 
   const globalFlash = 1 + chargeT * 0.6 + (inFight ? 0.15 : 0) + Math.sin(unit._lnT * 18) * 0.08;
 
@@ -111,6 +165,81 @@ function drawLightningMonster(unit, camY) {
     ctx.shadowBlur = 0;
   }
 
+  // Electro branch: substantial conductors grow from shoulder/back sockets.
+  // They are drawn behind the torso so their roots disappear into the body
+  // mass instead of reading as wires laid over the character.
+  const branchConductors = [];
+  if (isElectro) {
+    const drawConductor = (rootX, rootY, tipX, tipY, rootW, tipW, hotSide) => {
+      const dx = tipX - rootX, dy = tipY - rootY;
+      const len = Math.max(0.001, Math.sqrt(dx * dx + dy * dy));
+      const nx = -dy / len, ny = dx / len;
+      const shoulderX = rootX + dx * 0.22;
+      const shoulderY = rootY + dy * 0.22;
+      const g = ctx.createLinearGradient(rootX, rootY, tipX, tipY);
+      g.addColorStop(0, 'rgba(34,58,138,0.96)');
+      g.addColorStop(0.58, hotSide ? 'rgba(48,105,205,0.96)' : 'rgba(32,76,174,0.96)');
+      g.addColorStop(1, 'rgba(142,210,255,0.96)');
+      ctx.save();
+      ctx.shadowColor = '#559dff'; ctx.shadowBlur = s * 0.15;
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.moveTo(rootX + nx * rootW, rootY + ny * rootW);
+      ctx.quadraticCurveTo(shoulderX + nx * rootW * 1.15, shoulderY + ny * rootW * 1.15,
+                           tipX + nx * tipW, tipY + ny * tipW);
+      ctx.lineTo(tipX + dx / len * s * 0.045, tipY + dy / len * s * 0.045);
+      ctx.lineTo(tipX - nx * tipW, tipY - ny * tipW);
+      ctx.quadraticCurveTo(shoulderX - nx * rootW * 1.15, shoulderY - ny * rootW * 1.15,
+                           rootX - nx * rootW, rootY - ny * rootW);
+      ctx.closePath(); ctx.fill();
+      ctx.strokeStyle = 'rgba(184,225,255,0.78)';
+      ctx.lineWidth = s * 0.018; ctx.stroke();
+      ctx.shadowColor = '#b9e8ff'; ctx.shadowBlur = s * 0.12;
+      ctx.strokeStyle = hotSide ? 'rgba(235,250,255,0.90)' : 'rgba(130,208,255,0.82)';
+      ctx.lineWidth = s * 0.026;
+      ctx.beginPath(); ctx.moveTo(rootX, rootY); ctx.lineTo(tipX, tipY); ctx.stroke();
+      ctx.restore();
+      branchConductors.push({rootX, rootY, tipX, tipY});
+    };
+
+    drawConductor(coreCX - shX * 0.78, shY + s * 0.020,
+                  coreCX - s * 0.43, headCY - s * 0.015,
+                  s * 0.095, s * 0.047, false);
+    drawConductor(coreCX + shX * 0.82, shY + s * 0.035,
+                  coreCX + s * 0.58, coreCY - s * 0.20,
+                  s * 0.115, s * 0.058, true);
+    drawConductor(coreCX - shX * 0.58, coreCY + s * 0.055,
+                  coreCX - s * 0.45, coreCY + s * 0.30,
+                  s * 0.090, s * 0.052, false);
+  }
+
+  // ── Filled tapered plasma torso — the stable silhouette ──────────
+  {
+    const _topY = coreCY - s * 0.245 * bodyScaleY;
+    const _botY = coreCY + s * 0.260 * bodyScaleY;
+    const _shoulder = s * (isThunder ? 0.325 : 0.270) * (1 + compression * 0.6);
+    const _waist = s * (isThunder ? 0.190 : 0.155);
+    const _hip = s * (isThunder ? 0.215 : 0.190);
+    ctx.save();
+    ctx.shadowColor = '#66a0ff';
+    ctx.shadowBlur  = s * 0.20 * globalFlash;
+    const _tg = ctx.createLinearGradient(coreCX - _shoulder, _topY, coreCX + _shoulder, _botY);
+    _tg.addColorStop(0,   `rgba(72,112,210,${0.42 * globalFlash})`);
+    _tg.addColorStop(0.48,`rgba(172,208,255,${0.68 * globalFlash})`);
+    _tg.addColorStop(1,   `rgba(45,82,185,${0.38 * globalFlash})`);
+    ctx.fillStyle = _tg;
+    ctx.beginPath();
+    ctx.moveTo(coreCX, _topY);
+    ctx.bezierCurveTo(coreCX + _shoulder*0.82, _topY, coreCX + _shoulder, coreCY - s*0.06, coreCX + _waist, coreCY + s*0.08);
+    ctx.quadraticCurveTo(coreCX + _hip, _botY - s*0.05, coreCX, _botY);
+    ctx.quadraticCurveTo(coreCX - _hip, _botY - s*0.05, coreCX - _waist, coreCY + s*0.08);
+    ctx.bezierCurveTo(coreCX - _shoulder, coreCY - s*0.06, coreCX - _shoulder*0.82, _topY, coreCX, _topY);
+    ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = `rgba(160,205,255,${0.42 * globalFlash})`;
+    ctx.lineWidth = s * 0.018; ctx.stroke();
+    ctx.restore();
+  }
+
   // ── Body limbs (lightning zigzags — outer glow + bright core) ────
   // Helper: draw one limb as a thick blue glow then a thin white core
   const drawLimb = (x1, y1, x2, y2, baseW, jitter, seed, brightness) => {
@@ -134,36 +263,86 @@ function drawLightningMonster(unit, camY) {
   };
 
   // Legs (2)
-  drawLimb(coreCX - hpX * 0.7, hpY, coreCX - footX, footY,
-           s * 0.050, s * 0.030, unit._lnSeed + 5.1, globalFlash);
-  drawLimb(coreCX + hpX * 0.7, hpY, coreCX + footX, footY,
-           s * 0.050, s * 0.030, unit._lnSeed + 6.3, globalFlash);
+  drawLimb(coreCX - hpX * 0.7, hpY, footLX, footLY,
+           s * 0.070, s * 0.026, unit._lnSeed + 5.1, globalFlash);
+  drawLimb(coreCX + hpX * 0.7, hpY, footRX, footRY,
+           s * 0.070, s * 0.026, unit._lnSeed + 6.3, globalFlash);
+  [[footLX,footLY],[footRX,footRY]].forEach(([fx,fy]) => {
+    ctx.shadowColor = '#aaddff'; ctx.shadowBlur = s * 0.12;
+    ctx.fillStyle = 'rgba(215,240,255,0.88)';
+    ctx.beginPath(); ctx.ellipse(fx + dir*s*0.018, fy, s*0.052, s*0.026, 0, 0, Math.PI*2); ctx.fill();
+    ctx.shadowBlur = 0;
+  });
 
-  // Arms — attack arm animates during charge/bolt
-  // Resting arm angle
+  // Arms — articulated into upper/lower segments so gait counter-swing and
+  // the attack's wind-up/thrust remain legible through the plasma jitter.
+  let attackHandX = coreCX + dir * handBaseX;
+  let attackHandY = handBaseY;
+  const handBySide = {};
   [-1, 1].forEach(side => {
     const isAtk = side === dir;
-    let hX, hY;
-    if (isAtk && atkActive && chargeT > 0) {
-      // Pull back
-      hX = coreCX - side * s * (0.08 + chargeT * 0.12);
-      hY = coreCY - s * (0.10 + chargeT * 0.12);
-    } else if (isAtk && atkActive && boltT > 0) {
-      // Thrust forward
-      const th = Math.min(1, boltT * 1.6);
-      hX = coreCX + side * s * (0.22 + th * 0.18);
-      hY = coreCY + s * (0.00 - th * 0.04);
+    const shoulderX = coreCX + side * shX * 0.78
+                    - dir * side * gait * s * 0.030;
+    const shoulderY = shY + side * gait * s * 0.012;
+    let hX, hY, elbowX, elbowY;
+
+    if (isElectro && atkActive && ap >= 0.22 && ap < 0.76) {
+      // Chain discharge opens BOTH arms around the charged torso. The branch
+      // attacks as a conductor network, not as the base model's casting hand.
+      const openT = ap < 0.52
+        ? Math.min(1, (ap - 0.22) / 0.20)
+        : Math.max(0, 1 - (ap - 0.52) / 0.24);
+      hX = coreCX + side * s * (0.31 + openT * 0.17);
+      hY = coreCY - s * (0.015 + openT * 0.13);
+      elbowX = coreCX + side * s * (0.19 + openT * 0.10);
+      elbowY = coreCY + s * (0.025 - openT * 0.08);
+    } else if (atkActive && isAtk && ap < 0.22) {
+      // Cock the casting arm behind and below the compressed torso.
+      hX = coreCX - dir * s * (0.105 + windupT * 0.105);
+      hY = coreCY + s * (0.015 + windupT * 0.055);
+      elbowX = coreCX - dir * s * (0.215 + windupT * 0.045);
+      elbowY = coreCY - s * 0.105;
+    } else if (atkActive && isAtk && ap < 0.65) {
+      // The fist leads the torso; elbow follows through the same force line.
+      hX = coreCX + dir * s * (0.300 + thrustT * 0.165);
+      hY = coreCY - s * (0.025 + thrustT * 0.050);
+      elbowX = coreCX + dir * s * (0.120 + thrustT * 0.130);
+      elbowY = coreCY + s * (0.015 - thrustT * 0.045);
+    } else if (atkActive && isAtk) {
+      hX = coreCX + dir * s * (0.255 - recoilT * 0.070 + settleT * 0.020);
+      hY = coreCY + s * (0.005 + recoilT * 0.045);
+      elbowX = coreCX + dir * s * 0.105;
+      elbowY = coreCY + s * 0.030;
+    } else if (atkActive) {
+      // Support hand closes over the chest charge, then snaps backward as a
+      // counterweight to the casting-side thrust.
+      const supportClose = Math.max(windupT, chargeT);
+      hX = coreCX - dir * s * (0.020 + thrustT * 0.155)
+         + side * s * (0.090 - supportClose * 0.045);
+      hY = coreCY + s * (0.035 + thrustT * 0.105 - supportClose * 0.055);
+      elbowX = coreCX + side * s * 0.205 - dir * thrustT * s * 0.070;
+      elbowY = coreCY - s * 0.020 + thrustT * s * 0.085;
     } else {
-      hX = coreCX + side * handBaseX;
-      hY = handBaseY + Math.sin(unit._lnT * 2.2 + side) * s * 0.012;
+      // Same-side hand travels opposite its leg; shoulders and elbows carry
+      // a smaller counter-rotation to sell weight transfer.
+      hX = coreCX + side * handBaseX + dir * side * gait * s * 0.105;
+      hY = handBaseY - side * gait * s * 0.032
+         + Math.sin(unit._lnT * 2.2 + side) * s * 0.010;
+      elbowX = (shoulderX + hX) * 0.5 + side * s * 0.035
+             + dir * side * gait * s * 0.035;
+      elbowY = (shoulderY + hY) * 0.5 - side * gait * s * 0.018;
     }
-    drawLimb(coreCX + side * shX * 0.7, shY, hX, hY,
-             s * 0.044, s * 0.028, unit._lnSeed + (side > 0 ? 2.4 : 3.6), globalFlash);
+    drawLimb(shoulderX, shoulderY, elbowX, elbowY,
+             s * 0.066, s * 0.022, unit._lnSeed + (side > 0 ? 2.4 : 3.6), globalFlash);
+    drawLimb(elbowX, elbowY, hX, hY,
+             s * 0.058, s * 0.023, unit._lnSeed + (side > 0 ? 4.1 : 4.8), globalFlash);
     // Hand spark
     ctx.shadowColor = '#ffffff'; ctx.shadowBlur = s * 0.22 * globalFlash;
     ctx.fillStyle = `rgba(240,248,255,${0.88 * globalFlash})`;
     ctx.beginPath(); ctx.arc(hX, hY, s * 0.028, 0, Math.PI * 2); ctx.fill();
     ctx.shadowBlur = 0;
+    handBySide[side] = { x: hX, y: hY };
+    if (isAtk) { attackHandX = hX; attackHandY = hY; }
   });
 
   // ── Torso spine (vertical jagged bolt connecting neck→hips) ──────
@@ -192,6 +371,34 @@ function drawLightningMonster(unit, camY) {
       coreCX + Math.cos(iAng + Math.PI) * coreR * 0.4,
       coreCY + Math.sin(iAng + Math.PI) * coreR * 0.4,
       3, s * 0.020, unit._lnT, unit._lnSeed + 12 + ii);
+  }
+
+  // Charge visibly converges from torso and shoulder mass into the casting
+  // fist. Thunder carries a yellow payload; the base/Electro charge stays hot
+  // white-blue.
+  if (chargeT > 0) {
+    const chargeColor = isThunder ? '255,232,54' : '224,245,255';
+    const chargeAlpha = 0.30 + chargeT * 0.62;
+    const chargeRoots = [
+      [coreCX - dir * coreR * 0.55, coreCY + s * 0.020],
+      [coreCX + dir * coreR * 0.20, coreCY - coreR * 0.68],
+      [coreCX, coreCY + coreR * 0.62]
+    ];
+    ctx.shadowColor = isThunder ? '#ffe92f' : '#bdeaff';
+    ctx.shadowBlur = s * (0.14 + chargeT * 0.18);
+    ctx.strokeStyle = `rgba(${chargeColor},${chargeAlpha})`;
+    ctx.lineWidth = s * (0.012 + chargeT * 0.012);
+    chargeRoots.forEach((root, i) => {
+      const gatherX = attackHandX + (coreCX - attackHandX) * (0.18 + i * 0.12);
+      const gatherY = attackHandY + (coreCY - attackHandY) * (0.10 + i * 0.08);
+      _lnJaggedLine(ctx, root[0], root[1], gatherX, gatherY,
+                    4, s * 0.022, unit._lnT * 3.5, unit._lnSeed + 15 + i);
+    });
+    ctx.fillStyle = `rgba(${chargeColor},${0.58 + chargeT * 0.40})`;
+    ctx.beginPath();
+    ctx.arc(attackHandX, attackHandY, s * (0.040 + chargeT * 0.035), 0, Math.PI * 2);
+    ctx.fill();
+    ctx.shadowBlur = 0;
   }
 
   // ── Head (small plasma orb) ───────────────────────────────────────
@@ -238,12 +445,12 @@ function drawLightningMonster(unit, camY) {
   });
 
   // ── Lightning bolt (attack projectile) ────────────────────────────
-  const boltActive = atkActive && ap > 0.22 && ap < 0.86;
+  const boltActive = !isElectro && atkActive && ap > 0.22 && ap < 0.86;
   if (boltActive) {
     const progress = Math.min(1, (ap - 0.22) / 0.46);
     const boltMaxD = s * 1.90;
-    const originX  = coreCX + dir * s * 0.42;
-    const originY  = coreCY;
+    const originX  = attackHandX;
+    const originY  = attackHandY;
     const tipX     = originX + dir * progress * boltMaxD;
     const tipY     = originY + Math.sin(progress * Math.PI) * s * 0.08 * dir;
     const jAlpha   = boltT > 0 ? 1.0 : 1.0 - (ap - 0.65) / 0.21;
@@ -282,98 +489,137 @@ function drawLightningMonster(unit, camY) {
   }
 
   // ── Branch visuals ────────────────────────────────────────────────
-  const _lnBranch = unit._branch || '';
-  if (_lnBranch === 'A') {
-    // Thunder: dashed stun rings (idle) + shockwave ring on bolt fire + electric crown
+  if (isThunder) {
+    // Thunder: a dense armored coil clamps around the torso. Broad plates and
+    // a continuous outer yoke alter the silhouette; yellow seams carry stun
+    // charge without relying on concentric aura overlays.
     const _t = unit._lnT;
-    const _pu = 0.55 + Math.sin(_t * 2.2) * 0.25;
+    const _pu = 0.72 + Math.sin(_t * 4.4) * 0.16;
 
-    // Idle dashed stun rings
-    ctx.shadowColor = '#ffff44'; ctx.shadowBlur = s * 0.22;
-    ctx.setLineDash([s * 0.038, s * 0.038]);
-    ctx.strokeStyle = `rgba(255,255,80,${_pu * 0.45})`;
-    ctx.lineWidth = s * 0.020;
-    ctx.beginPath(); ctx.ellipse(coreCX, coreCY, s * 0.48, s * 0.75, 0, 0, Math.PI * 2); ctx.stroke();
-    ctx.strokeStyle = `rgba(255,240,60,${_pu * 0.28})`;
-    ctx.lineWidth = s * 0.012;
-    ctx.beginPath(); ctx.ellipse(coreCX, coreCY, s * 0.64, s * 1.00, 0, 0, Math.PI * 2); ctx.stroke();
-    ctx.setLineDash([]);
-    ctx.shadowBlur = 0;
+    // Heavy shoulder armor closes the upper silhouette around the head.
+    [-1, 1].forEach(side => {
+      const innerX = coreCX + side * s * 0.105;
+      const outerX = coreCX + side * s * 0.355;
+      const topY = shY - s * (side < 0 ? 0.105 : 0.075);
+      const botY = coreCY + s * 0.055;
+      const plateG = ctx.createLinearGradient(innerX, topY, outerX, botY);
+      plateG.addColorStop(0, 'rgba(92,126,210,0.96)');
+      plateG.addColorStop(1, 'rgba(24,43,118,0.98)');
+      ctx.shadowColor = '#617fff'; ctx.shadowBlur = s * 0.13;
+      ctx.fillStyle = plateG;
+      ctx.beginPath();
+      ctx.moveTo(innerX, topY);
+      ctx.lineTo(outerX, topY + s * 0.035);
+      ctx.lineTo(outerX + side * s * 0.035, coreCY - s * 0.015);
+      ctx.lineTo(coreCX + side * s * 0.225, botY);
+      ctx.lineTo(innerX, coreCY + s * 0.015);
+      ctx.closePath(); ctx.fill();
+      ctx.strokeStyle = `rgba(255,226,54,${0.68 + _pu * 0.22})`;
+      ctx.lineWidth = s * 0.018; ctx.stroke();
+    });
 
-    // Shockwave ring expanding from body when bolt fires (ap 0.22–0.55)
+    // Outer yoke: one continuous mass-hugging coil, not a floating oval.
+    ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    ctx.shadowColor = '#314cae'; ctx.shadowBlur = s * 0.14;
+    ctx.strokeStyle = 'rgba(25,42,110,0.98)';
+    ctx.lineWidth = s * 0.105;
+    ctx.beginPath();
+    ctx.moveTo(coreCX - s * 0.275, coreCY - s * 0.105);
+    ctx.bezierCurveTo(coreCX - s * 0.335, coreCY + s * 0.055,
+                      coreCX - s * 0.240, coreCY + s * 0.245,
+                      coreCX, coreCY + s * 0.285);
+    ctx.bezierCurveTo(coreCX + s * 0.240, coreCY + s * 0.245,
+                      coreCX + s * 0.335, coreCY + s * 0.055,
+                      coreCX + s * 0.275, coreCY - s * 0.105);
+    ctx.stroke();
+    ctx.shadowColor = '#ffe52d'; ctx.shadowBlur = s * 0.16;
+    ctx.strokeStyle = `rgba(255,228,48,${0.58 + _pu * 0.32})`;
+    ctx.lineWidth = s * 0.018; ctx.stroke();
+
+    // Two charged compression bands lock the chest into the coil.
+    [-0.050, 0.090].forEach((yOff, i) => {
+      const span = s * (0.245 - i * 0.025);
+      const y = coreCY + s * yOff;
+      ctx.shadowColor = '#1b2f88'; ctx.shadowBlur = s * 0.08;
+      ctx.strokeStyle = 'rgba(30,52,132,0.96)';
+      ctx.lineWidth = s * 0.070;
+      ctx.beginPath();
+      ctx.moveTo(coreCX - span, y - s * 0.018);
+      ctx.quadraticCurveTo(coreCX, y + s * 0.060, coreCX + span, y - s * 0.018);
+      ctx.stroke();
+      ctx.shadowColor = '#ffe92f'; ctx.shadowBlur = s * 0.12;
+      ctx.strokeStyle = `rgba(255,232,54,${0.55 + _pu * 0.30})`;
+      ctx.lineWidth = s * 0.012; ctx.stroke();
+    });
+
+    // Stun discharge is angular and body-rooted; no expanding ellipse overlay.
     if (atkActive && ap > 0.22 && ap < 0.60) {
-      const _sw = (ap - 0.22) / 0.38;
-      const _swR  = s * (0.30 + _sw * 0.65);
-      const _swAl = (1 - _sw) * 0.80;
-      const _swW  = s * (0.032 - _sw * 0.024);
-      ctx.shadowColor = '#ffff44'; ctx.shadowBlur = s * 0.25 * (1 - _sw);
-      ctx.strokeStyle = `rgba(255,255,70,${_swAl})`;
-      ctx.lineWidth = _swW;
-      ctx.beginPath(); ctx.ellipse(coreCX, coreCY, _swR, _swR * 1.55, 0, 0, Math.PI * 2); ctx.stroke();
-      // Second ring (slightly delayed)
-      if (_sw > 0.25) {
-        const _sw2 = (_sw - 0.25) / 0.75;
-        ctx.strokeStyle = `rgba(220,240,80,${(1 - _sw2) * 0.50})`;
-        ctx.lineWidth = s * (0.020 - _sw2 * 0.016);
-        ctx.beginPath(); ctx.ellipse(coreCX, coreCY, s * (0.25 + _sw2 * 0.55), s * (0.25 + _sw2 * 0.55) * 1.55, 0, 0, Math.PI * 2); ctx.stroke();
+      const burst = (ap - 0.22) / 0.38;
+      const burstAlpha = (1 - burst) * 0.82;
+      ctx.shadowColor = '#ffed3b'; ctx.shadowBlur = s * 0.20 * (1 - burst);
+      ctx.strokeStyle = `rgba(255,235,64,${burstAlpha})`;
+      ctx.lineWidth = s * (0.030 - burst * 0.016);
+      for (let bi = 0; bi < 6; bi++) {
+        const ang = -Math.PI * 0.88 + bi * Math.PI * 0.35;
+        const rootR = s * 0.26;
+        const reach = s * (0.17 + burst * 0.32);
+        const bx1 = coreCX + Math.cos(ang) * rootR;
+        const by1 = coreCY + Math.sin(ang) * rootR * 0.78;
+        _lnJaggedLine(ctx, bx1, by1,
+          bx1 + Math.cos(ang) * reach, by1 + Math.sin(ang) * reach,
+          3, s * 0.022, _t * 4, unit._lnSeed + 31 + bi);
       }
-      ctx.shadowBlur = 0;
-    }
-
-    // Electric crown above head (always)
-    ctx.shadowColor = '#ffffff'; ctx.shadowBlur = s * 0.16;
-    ctx.strokeStyle = 'rgba(255,255,160,0.88)';
-    ctx.lineWidth = s * 0.010;
-    for (let ci = 0; ci < 4; ci++) {
-      const ca = -Math.PI * 0.5 + (ci - 1.5) * (Math.PI * 0.28);
-      const cr1 = headR * 1.1;
-      const cr2 = headR * (1.65 + 0.28 * Math.sin(_t * 5 + ci));
-      _lnJaggedLine(ctx, headCX + Math.cos(ca) * cr1, headCY + Math.sin(ca) * cr1,
-                         headCX + Math.cos(ca) * cr2, headCY + Math.sin(ca) * cr2,
-                         3, s * 0.012, _t, unit._lnSeed + 30 + ci);
     }
     ctx.shadowBlur = 0;
 
-  } else if (_lnBranch === 'B') {
-    // Electro: idle chain arcs + TWO extra side bolts during attack phase
+  } else if (isElectro) {
+    // Electro: sockets and discharges remain visibly attached to the massive,
+    // asymmetric shoulder/back conductors drawn behind the torso.
     const _t = unit._lnT;
-
-    // Idle chain arcs from body (always visible)
-    ctx.shadowColor = '#55aaff'; ctx.shadowBlur = s * 0.18;
-    for (let ci = 0; ci < 3; ci++) {
-      const cSide = ci % 2 === 0 ? 1 : -1;
-      const cBaseX = coreCX + cSide * s * 0.18;
-      const cBaseY = coreCY + (ci - 1) * s * 0.10;
-      const cEndX = cBaseX + cSide * s * (0.42 + 0.14 * Math.sin(_t * 3 + ci));
-      const cEndY = cBaseY + (ci - 1) * s * 0.08;
-      ctx.strokeStyle = `rgba(160,220,255,${0.52 + 0.24 * Math.sin(_t * 4 + ci)})`;
-      ctx.lineWidth = s * 0.014;
-      _lnJaggedLine(ctx, cBaseX, cBaseY, cEndX, cEndY, 4, s * 0.028, _t, unit._lnSeed + 40 + ci);
-      ctx.fillStyle = `rgba(220,245,255,${0.65 + 0.20 * Math.sin(_t * 6 + ci)})`;
-      ctx.beginPath(); ctx.arc(cEndX, cEndY, s * 0.018, 0, Math.PI * 2); ctx.fill();
-    }
+    branchConductors.forEach((c, ci) => {
+      const socketPulse = 0.72 + Math.sin(_t * 5.5 + ci * 1.7) * 0.18;
+      ctx.shadowColor = '#8fd8ff'; ctx.shadowBlur = s * 0.16;
+      ctx.fillStyle = `rgba(116,194,255,${socketPulse})`;
+      ctx.beginPath(); ctx.arc(c.rootX, c.rootY, s * (0.048 + ci * 0.004), 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = `rgba(225,248,255,${0.76 + socketPulse * 0.20})`;
+      ctx.beginPath(); ctx.arc(c.tipX, c.tipY, s * (0.026 + ci * 0.004), 0, Math.PI * 2); ctx.fill();
+    });
     ctx.shadowBlur = 0;
 
-    // Two extra diagonal bolts during attack (bolt phase ap 0.22–0.86)
+    // Bilateral chain discharge: energy opens through both hands, crosses the
+    // chest core, then forks from the rooted conductors into opposite ground
+    // contacts. There is deliberately no forward copy of the base beam.
     if (atkActive && ap > 0.22 && ap < 0.86) {
       const _bProg = Math.min(1, (ap - 0.22) / 0.46);
-      const _originX = coreCX + dir * s * 0.42;
-      const _originY = coreCY;
-      const _bMaxD = s * 1.20;
-      for (let bi = 0; bi < 2; bi++) {
-        const _bOff = (bi === 0 ? -1 : 1) * s * 0.24;
-        const _tipX = _originX + dir * _bProg * _bMaxD;
-        const _tipY = _originY + _bOff + Math.sin(_bProg * Math.PI) * s * 0.04;
-        const _bAl = Math.min(1, _bProg * 2.5) * (1 - Math.max(0, (_bProg - 0.72) / 0.28)) * 0.70;
-        if (_bAl > 0) {
-          ctx.shadowColor = '#88ccff'; ctx.shadowBlur = s * 0.22 * _bAl;
-          ctx.strokeStyle = `rgba(180,228,255,${_bAl})`;
-          ctx.lineWidth = s * 0.026; ctx.lineCap = 'round';
-          _lnJaggedLine(ctx, _originX, _originY + _bOff * 0.4, _tipX, _tipY, 5, s * 0.038, _t, unit._lnSeed + 50 + bi);
-          ctx.fillStyle = `rgba(220,245,255,${_bAl * 0.88})`;
-          ctx.beginPath(); ctx.arc(_tipX, _tipY, s * 0.022, 0, Math.PI * 2); ctx.fill();
-          ctx.shadowBlur = 0;
-        }
+      const _bAl = Math.min(1, _bProg * 2.8)
+        * (1 - Math.max(0, (_bProg - 0.72) / 0.28));
+      if (_bAl > 0) {
+        const leftHand = handBySide[-1];
+        const rightHand = handBySide[1];
+        ctx.shadowColor = '#8fd8ff'; ctx.shadowBlur = s * 0.24 * _bAl;
+        ctx.strokeStyle = `rgba(195,235,255,${0.78 * _bAl})`;
+        ctx.lineWidth = s * 0.042; ctx.lineCap = 'round';
+        _lnJaggedLine(ctx, leftHand.x, leftHand.y, coreCX, coreCY,
+          4, s * 0.030, _t * 2.1, unit._lnSeed + 50);
+        _lnJaggedLine(ctx, coreCX, coreCY, rightHand.x, rightHand.y,
+          4, s * 0.030, _t * 2.1, unit._lnSeed + 51);
+
+        branchConductors.forEach((c, bi) => {
+          const side = c.tipX < coreCX ? -1 : 1;
+          const groundX = coreCX + side * s * (0.55 + _bProg * (0.62 + bi * 0.10));
+          const groundY = fY - s * (0.005 + bi * 0.012);
+          ctx.strokeStyle = `rgba(82,150,248,${0.72 * _bAl})`;
+          ctx.lineWidth = s * 0.052;
+          _lnJaggedLine(ctx, c.tipX, c.tipY, groundX, groundY,
+            6, s * 0.048, _t * 2.8, unit._lnSeed + 54 + bi);
+          ctx.strokeStyle = `rgba(225,247,255,${0.92 * _bAl})`;
+          ctx.lineWidth = s * 0.018;
+          _lnJaggedLine(ctx, c.tipX, c.tipY, groundX, groundY,
+            6, s * 0.025, _t * 3.4, unit._lnSeed + 58 + bi);
+          ctx.fillStyle = `rgba(220,245,255,${0.82 * _bAl})`;
+          ctx.beginPath(); ctx.ellipse(groundX, groundY, s * 0.060, s * 0.020, 0, 0, Math.PI * 2); ctx.fill();
+        });
+        ctx.shadowBlur = 0;
       }
     }
   }

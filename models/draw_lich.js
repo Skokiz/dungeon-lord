@@ -407,8 +407,14 @@ function drawLichMonster(unit, camY) {
     ctx.save(); ctx.shadowColor = '#ff88ff'; ctx.shadowBlur = s * 0.20;
     // Extra penetrating aura around crown
     const _pu = 0.55 + Math.sin(unit._lcT * 2.2) * 0.22;
-    ctx.strokeStyle = `rgba(255,100,255,${_pu * 0.55})`; ctx.lineWidth = 2.5;
-    ctx.beginPath(); ctx.ellipse(bX, crownBot + s*0.06, s*0.24, s*0.06, 0, 0, Math.PI*2); ctx.stroke();
+    ctx.strokeStyle = `rgba(255,120,255,${_pu * 0.68})`; ctx.lineWidth = 3.5;
+    ctx.beginPath(); ctx.ellipse(bX, crownBot + s*0.05, s*0.34, s*0.105, 0, 0, Math.PI*2); ctx.stroke();
+    // Two crown-flames enlarge the head/shoulder read at gameplay scale.
+    ctx.fillStyle=`rgba(245,130,255,${(_pu*0.72).toFixed(3)})`;
+    for(const side of [-1,1]){
+      const x=bX+side*s*0.22, y=crownBot+s*0.02;
+      ctx.beginPath(); ctx.moveTo(x-s*0.035,y); ctx.quadraticCurveTo(x+side*s*0.03,y-s*0.20,x+s*0.035,y); ctx.closePath(); ctx.fill();
+    }
     // Armor-pierce indicator: thin white line through body center (vertical)
     ctx.strokeStyle = `rgba(255,220,255,${_pu * 0.40})`; ctx.lineWidth = 1.5;
     ctx.setLineDash([4, 6]);
@@ -427,8 +433,15 @@ function drawLichMonster(unit, camY) {
     ctx.save(); ctx.shadowColor = '#550000'; ctx.shadowBlur = s * 0.15;
     // Dark life-drain ring
     const _da = 0.30 + Math.sin(_t * 1.3) * 0.10;
-    ctx.strokeStyle = `rgba(100,0,0,${_da})`; ctx.lineWidth = 5;
-    ctx.beginPath(); ctx.ellipse(bX, headCY, s * 0.32, s * 0.32, 0, 0, Math.PI*2); ctx.stroke();
+    ctx.strokeStyle = `rgba(145,15,35,${(_da+0.12).toFixed(3)})`; ctx.lineWidth = 7;
+    ctx.beginPath(); ctx.ellipse(bX, headCY, s * 0.40, s * 0.38, 0, 0, Math.PI*2); ctx.stroke();
+    // Shoulder soul-knots broaden the Necros silhouette without floaty orbit clutter.
+    for(const side of [-1,1]){
+      const sx=bX+side*robeW*0.48, sy=robTop+s*0.10;
+      const sg=ctx.createRadialGradient(sx,sy,0,sx,sy,s*0.09);
+      sg.addColorStop(0,'rgba(230,75,95,0.72)'); sg.addColorStop(1,'rgba(80,0,18,0)');
+      ctx.fillStyle=sg; ctx.beginPath(); ctx.arc(sx,sy,s*0.09,0,Math.PI*2); ctx.fill();
+    }
     // Death wisps from robe bottom
     ctx.strokeStyle = 'rgba(80,0,20,0.45)'; ctx.lineWidth = 1.5; ctx.lineCap = 'round';
     for (let i = 0; i < 3; i++) {

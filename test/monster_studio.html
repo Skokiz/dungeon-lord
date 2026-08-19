@@ -40,6 +40,19 @@
   select:hover, button:hover { background: #3d2a66; }
   button.active { background: #5a3a8a; border-color: #8a6aaa; }
   .controls { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+  html.detail-only .grid { display: none; }
+  html.detail-only .detail { margin-top: 4px; }
+  html.audit-matrix body { display: block; padding: 18px; }
+  html.audit-matrix .studio { max-width: none; }
+  html.audit-matrix .controls,
+  html.audit-matrix .grid,
+  html.audit-matrix .detail { display: none; }
+  .audit-matrix-grid { display: flex; flex-direction: column; gap: 10px; width: max-content; }
+  .audit-row { display: grid; grid-template-columns: 190px repeat(9, 128px); gap: 7px; align-items: center; }
+  .audit-name { color: #d8c8ef; font-size: 13px; font-weight: 700; text-align: right; padding-right: 8px; }
+  .audit-cell { display: flex; flex-direction: column; align-items: center; gap: 3px; }
+  .audit-cell canvas { background: #0d0820; border-radius: 5px; }
+  .audit-cell span { color: #8f7cae; font-size: 10px; }
 </style>
 </head>
 <body>
@@ -94,24 +107,24 @@ function ctxRoundRect(c, x, y, w, h, r) {
 }
 </script>
 <script src="../models/hero_flat.js?v=14"></script>
-<script src="../models/draw_slime.js?v=1"></script>
-<script src="../models/draw_skeleton.js?v=1"></script>
-<script src="../models/draw_monsters.js?v=24"></script>
-<script src="../models/draw_shadow.js?v=2"></script>
-<script src="../models/draw_minotaur.js?v=6"></script>
-<script src="../models/draw_necromancer.js?v=2"></script>
-<script src="../models/draw_water_ele.js?v=7"></script>
-<script src="../models/draw_earth_ele.js?v=2"></script>
-<script src="../models/draw_arachne.js?v=5"></script>
+<script src="../models/draw_slime.js?v=9"></script>
+<script src="../models/draw_skeleton.js?v=12"></script>
+<script src="../models/draw_monsters.js?v=39"></script>
+<script src="../models/draw_shadow.js?v=7"></script>
+<script src="../models/draw_minotaur.js?v=10"></script>
+<script src="../models/draw_necromancer.js?v=4"></script>
+<script src="../models/draw_water_ele.js?v=11"></script>
+<script src="../models/draw_earth_ele.js?v=14"></script>
+<script src="../models/draw_arachne.js?v=1786978318"></script>
 <script src="../models/draw_web.js?v=1"></script>
-<script src="../models/draw_air_ele.js?v=2"></script>
-<script src="../models/draw_fire_ele.js?v=2"></script>
-<script src="../models/draw_lightning.js?v=2"></script>
-<script src="../models/draw_dark_knight.js?v=7"></script>
-<script src="../models/draw_banshee.js?v=3"></script>
-<script src="../models/draw_lich.js?v=2"></script>
-<script src="../models/draw_abyss.js?v=3"></script>
-<script src="../models/draw_dragon.js?v=3"></script>
+<script src="../models/draw_air_ele.js?v=8"></script>
+<script src="../models/draw_fire_ele.js?v=7"></script>
+<script src="../models/draw_lightning.js?v=6"></script>
+<script src="../models/draw_dark_knight.js?v=12"></script>
+<script src="../models/draw_banshee.js?v=5"></script>
+<script src="../models/draw_lich.js?v=3"></script>
+<script src="../models/draw_abyss.js?v=7"></script>
+<script src="../models/draw_dragon.js?v=12"></script>
 <script>
 
 // ═══════════════════════════════════════════════════════════════
@@ -240,9 +253,16 @@ const MONSTERS = [
   },
 ];
 
-let currentState = 'idle';
-let currentBranch = '';
-let selectedIdx = 0;
+const studioParams = new URLSearchParams(location.search);
+if (studioParams.get('detailOnly') === '1') document.documentElement.classList.add('detail-only');
+if (studioParams.get('auditMatrix') === '1') document.documentElement.classList.add('audit-matrix');
+const requestedState = studioParams.get('state');
+const requestedBranch = studioParams.get('branch');
+const requestedMonster = Number(studioParams.get('monster'));
+let currentState = ['idle', 'move', 'fight'].includes(requestedState) ? requestedState : 'idle';
+let currentBranch = ['A', 'B'].includes(requestedBranch) ? requestedBranch : '';
+let selectedIdx = Number.isInteger(requestedMonster) && requestedMonster >= 0 && requestedMonster < MONSTERS.length
+  ? requestedMonster : 0;
 
 // ═══════════════════════════════════════════════════════════════
 //  Create fake unit for rendering
@@ -268,6 +288,49 @@ function makeUnit(def, x, floorY, state, size, branch) {
   };
 }
 
+// Full production-audit matrix: every monster in base/A/B × idle/move/fight.
+const auditEntries = [];
+if (studioParams.get('auditMatrix') === '1') {
+  const matrix = document.createElement('div');
+  matrix.className = 'audit-matrix-grid';
+  const variants = [
+    ['', 'idle'], ['', 'move'], ['', 'fight'],
+    ['A', 'idle'], ['A', 'move'], ['A', 'fight'],
+    ['B', 'idle'], ['B', 'move'], ['B', 'fight']
+  ];
+
+  MONSTERS.forEach(def => {
+    const row = document.createElement('div');
+    row.className = 'audit-row';
+    const name = document.createElement('div');
+    name.className = 'audit-name';
+    name.textContent = `${def.level}. ${def.name}`;
+    row.appendChild(name);
+
+    variants.forEach(([branch, state]) => {
+      const cell = document.createElement('div');
+      cell.className = 'audit-cell';
+      const canvas = document.createElement('canvas');
+      canvas.width = 128;
+      canvas.height = 128;
+      const label = document.createElement('span');
+      label.textContent = `${branch || 'base'} · ${state}`;
+      cell.append(canvas, label);
+      row.appendChild(cell);
+      auditEntries.push({
+        canvas,
+        ctx: canvas.getContext('2d'),
+        def,
+        unit: makeUnit(def, 64, 105, state, 34, branch)
+      });
+    });
+
+    matrix.appendChild(row);
+  });
+
+  document.querySelector('.studio').appendChild(matrix);
+}
+
 // ═══════════════════════════════════════════════════════════════
 //  Build grid thumbnails
 // ═══════════════════════════════════════════════════════════════
@@ -276,7 +339,7 @@ const cards = [];
 
 MONSTERS.forEach((def, i) => {
   const card = document.createElement('div');
-  card.className = 'card' + (i === 0 ? ' selected' : '');
+  card.className = 'card' + (i === selectedIdx ? ' selected' : '');
   card.innerHTML = `
     <canvas width="120" height="120"></canvas>
     <div class="name">${def.level}. ${def.name}</div>
@@ -340,9 +403,16 @@ const midCtx = midCanvas.getContext('2d');
 const smallCtx = smallCanvas.getContext('2d');
 const detailInfo = document.getElementById('detailInfo');
 
-let bigUnit = makeUnit(MONSTERS[0], 160, 265, currentState, 70, currentBranch);
-let midUnit = makeUnit(MONSTERS[0], 64, 105, currentState, 34, currentBranch);
-let smallUnit = makeUnit(MONSTERS[0], 32, 52, currentState, 18, currentBranch);
+document.querySelectorAll('[data-state]').forEach(btn => {
+  btn.classList.toggle('active', btn.dataset.state === currentState);
+});
+document.querySelectorAll('[data-branch]').forEach(btn => {
+  btn.classList.toggle('active', btn.dataset.branch === currentBranch);
+});
+
+let bigUnit = makeUnit(MONSTERS[selectedIdx], 160, 265, currentState, 70, currentBranch);
+let midUnit = makeUnit(MONSTERS[selectedIdx], 64, 105, currentState, 34, currentBranch);
+let smallUnit = makeUnit(MONSTERS[selectedIdx], 32, 52, currentState, 18, currentBranch);
 units = [bigUnit, midUnit, smallUnit, ...cards.map(c => c.unit)];
 
 function updateDetailInfo() {
@@ -371,6 +441,26 @@ let prevSelected = -1;
 
 function drawMonster(targetCtx, unit, def, w, h, camY) {
   ctx = targetCtx;
+
+  // Seed per-unit animation state off-screen so the static audit matrix captures
+  // an actual moving/attacking key pose instead of every model's initialization pose.
+  if (auditEntries.length && !unit._auditPrimed) {
+    unit._auditPrimed = true;
+    const realX = unit.x;
+    const realNow = _frameNow;
+    unit.x = -9999;
+    _frameNow = realNow - 450;
+    def.draw(unit, camY);
+    for (let i = 1; i <= 7; i++) {
+      _frameNow = realNow - 450 + i * 50;
+      if (unit.state === 'move') unit.x = -9999 + Math.sin(i * 0.9) * 12;
+      if (unit.state === 'fight' && i === 1) unit.attackCooldown = 60;
+      def.draw(unit, camY);
+    }
+    unit.x = realX;
+    _frameNow = realNow;
+  }
+
   targetCtx.clearRect(0, 0, w, h);
 
   // Floor line
@@ -397,6 +487,13 @@ function drawMonster(targetCtx, unit, def, w, h, camY) {
 
 function frame(t) {
   _frameNow = t;
+
+  if (auditEntries.length) {
+    auditEntries.forEach(entry => {
+      drawMonster(entry.ctx, entry.unit, entry.def, 128, 128, 0);
+    });
+    return;
+  }
 
   // If selection changed, reset detail units
   if (prevSelected !== selectedIdx) {

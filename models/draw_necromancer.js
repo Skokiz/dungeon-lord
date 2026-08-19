@@ -85,10 +85,12 @@ function drawNecromancerMonster(unit, camY) {
   // ── Robe ──────────────────────────────────────────────────────────
   const hemL = Math.sin(unit._ncT * 1.0) * s * 0.030;
   const hemR = Math.sin(unit._ncT * 1.0 + 1.5) * s * 0.028;
-  if (inFight) {
-    ctx.shadowColor = '#44aa66'; ctx.shadowBlur = s * 0.24;
-  }
-  ctx.fillStyle = '#0d0518';
+  // Зелений rim — ПОСТІЙНИЙ (слабкий), у бою підсилюється. Без нього силует роби
+  // зливався з темним тлом підземелля.
+  ctx.shadowColor = '#44aa66'; ctx.shadowBlur = s * (inFight ? 0.24 : 0.10);
+  // Палітра роби піднята над фоном (#0d0820): раніше зовнішній шар #0d0518 був
+  // ТЕМНІШИЙ за тло → силует зникав. Ієрархія збережена: середній найсвітліший.
+  ctx.fillStyle = '#2e1c4e';
   ctx.beginPath();
   ctx.moveTo(bX - robeW * 0.48 + tilt, robTop + s * 0.010);
   ctx.lineTo(bX + robeW * 0.48 + tilt, robTop + s * 0.010);
@@ -99,14 +101,14 @@ function drawNecromancerMonster(unit, camY) {
   ctx.lineTo(bX - robeW * 0.55,         robBot + s * 0.012 + hemL * 0.6);
   ctx.lineTo(bX - robeW * 0.94,         robBot + s * 0.005 + hemL);
   ctx.closePath(); ctx.fill();
-  ctx.fillStyle = '#221040';
+  ctx.fillStyle = '#432c72';
   ctx.beginPath();
   ctx.moveTo(bX - robeW * 0.38 + tilt, robTop + robeH * 0.05);
   ctx.lineTo(bX + robeW * 0.38 + tilt, robTop + robeH * 0.05);
   ctx.lineTo(bX + robeW * 0.78,         robBot - s * 0.025);
   ctx.lineTo(bX - robeW * 0.78,         robBot - s * 0.025);
   ctx.closePath(); ctx.fill();
-  ctx.fillStyle = '#080418';
+  ctx.fillStyle = '#1a0e30';
   ctx.beginPath();
   ctx.moveTo(bX - robeW * 0.16 + tilt, robTop + robeH * 0.10);
   ctx.lineTo(bX + robeW * 0.16 + tilt, robTop + robeH * 0.10);
@@ -363,7 +365,7 @@ function drawNecromancerMonster(unit, camY) {
     const _r4 = s * 0.42;
     const _sx = cx + Math.cos(_t4) * _r4;
     const _sy = headCY + s * 0.25 + Math.sin(_t4) * _r4 * 0.38;
-    const _sr = s * 0.080;
+    const _sr = s * 0.098;
     ctx.save(); ctx.shadowColor = '#00ff44'; ctx.shadowBlur = s * 0.20;
     ctx.fillStyle = '#d8c898'; ctx.strokeStyle = '#0a0800'; ctx.lineWidth = 1.2;
     ctx.beginPath(); ctx.ellipse(_sx, _sy, _sr, _sr*0.88, 0, 0, Math.PI*2); ctx.fill(); ctx.stroke();
@@ -402,8 +404,8 @@ function drawNecromancerMonster(unit, camY) {
 
     // Wider aura ring
     ctx.save(); ctx.shadowColor = '#33ff55'; ctx.shadowBlur = s * 0.18;
-    ctx.strokeStyle = 'rgba(50,230,80,0.20)'; ctx.lineWidth = 3;
-    ctx.beginPath(); ctx.ellipse(cx, fY + s*0.014, s*0.60, s*0.088, 0, 0, Math.PI*2); ctx.stroke();
+    ctx.strokeStyle = 'rgba(70,245,105,0.30)'; ctx.lineWidth = 4;
+    ctx.beginPath(); ctx.ellipse(cx, fY + s*0.014, s*0.72, s*0.105, 0, 0, Math.PI*2); ctx.stroke();
     ctx.restore();
 
   } else if (_ncBranch === 'B') {
@@ -434,9 +436,9 @@ function drawNecromancerMonster(unit, camY) {
     const _t = unit._ncT;
     const _sgX = cx + dir * s * 0.46;
     const _sgY = headCY - s * 0.10 + Math.sin(_t * 0.85) * s * 0.06;
-    const _sgR = s * 0.09;
-    ctx.save(); ctx.shadowColor = '#aa22ff'; ctx.shadowBlur = s * 0.15;
-    ctx.strokeStyle = 'rgba(170,40,255,0.72)'; ctx.lineWidth = 1.4; ctx.lineCap = 'round';
+    const _sgR = s * 0.14;
+    ctx.save(); ctx.shadowColor = '#aa22ff'; ctx.shadowBlur = s * 0.22;
+    ctx.strokeStyle = 'rgba(190,70,255,0.84)'; ctx.lineWidth = 2.1; ctx.lineCap = 'round';
     for (const rot of [0, Math.PI / 3]) {
       ctx.beginPath();
       for (let k = 0; k < 4; k++) {

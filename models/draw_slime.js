@@ -5,6 +5,7 @@ function drawSlimeMonster(unit, camY) {
     const _R      = unit.size / 2;
     const _cx     = unit.x;
     const _floorY = unit.y - camY;
+    ctx.save();
     // Реальний delta-time з _frameNow (мс). Раніше було 1/60 —
     // при просіданні FPS нижче 60 анімація виглядала як slow-mo.
     // Cap 0.05s щоб після паузи/фонової вкладки не було гігантського стрибка.
@@ -54,24 +55,51 @@ function drawSlimeMonster(unit, camY) {
     if (unit._sAtkT > 0) unit._sAtkT  = Math.max(0, unit._sAtkT  - _DT / _atkDur);
     if (unit._sRingT > 0) unit._sRingT = Math.max(0, unit._sRingT - _DT / 0.45);
 
+    // Один спільний таймлайн для маси тіла й ударного виступу. Раніше тіло
+    // стискалось за _sAtkT, а окрема "рука" жила за _sRingT — через різні
+    // тривалості вони візуально розклеювались у два незалежні шари.
+    const _strikeT = unit._sRingT > 0 ? 1 - unit._sRingT : 1;
+    let _strikeReach = 0;
+    if (unit._sRingT > 0) {
+        if (_strikeT < 0.16) {
+            _strikeReach = 0;
+        } else if (_strikeT < 0.40) {
+            const f = (_strikeT - 0.16) / 0.24;
+            _strikeReach = 1 - Math.pow(1 - f, 3);
+        } else if (_strikeT < 0.58) {
+            _strikeReach = 1;
+        } else if (_strikeT < 0.94) {
+            const f = (_strikeT - 0.58) / 0.36;
+            const r = 1 - f;
+            _strikeReach = r * r * (3 - 2 * r);
+        }
+    }
+
     // ── Deformation ────────────────────────────────────────────
     let _sx = 1, _sy = 1, _yOff = 0, _xOff = 0, _blink = 0, _angry = 0;
 
-    if (unit._sAtkT > 0) {
-        // Impact animation
-        const t = 1 - unit._sAtkT;
-        if (t < 0.10) {
-            const f = t / 0.10;
-            _sx = 1 + 0.70 * f;  _sy = 1 - 0.45 * f;
-            _xOff = unit._sDir * _R * 1.0 * f;
-        } else if (t < 0.25) {
-            const f = (t - 0.10) / 0.15;
-            _sx = 1.70 - 0.85 * f;  _sy = 0.55 + 0.55 * f;
-            _xOff = unit._sDir * _R * 1.0 * (1 - f);
+    if (unit._sRingT > 0) {
+        // Coil → release → short impact hold → damped recovery. The body now
+        // loads opposite the strike instead of pancaking forward before the hit.
+        const t = _strikeT;
+        if (t < 0.16) {
+            const f = t / 0.16;
+            const e = f * f * (3 - 2 * f);
+            _sx = 1 + 0.24 * e;  _sy = 1 - 0.18 * e;
+            _xOff = -unit._sDir * _R * 0.16 * e;
+        } else if (t < 0.40) {
+            const f = (t - 0.16) / 0.24;
+            const e = 1 - Math.pow(1 - f, 3);
+            _sx = 1.24 - 0.18 * e;  _sy = 0.82 + 0.12 * e;
+            _xOff = unit._sDir * _R * (-0.16 + 0.38 * e);
+        } else if (t < 0.58) {
+            _sx = 1.06; _sy = 0.94;
+            _xOff = unit._sDir * _R * 0.22;
         } else {
-            const f = (t - 0.25) / 0.75;
-            const sp = Math.exp(-f * 6) * Math.cos(f * 20) * 0.13;
-            _sx = 1 + sp;  _sy = 1 - sp;
+            const f = Math.min(1, (t - 0.58) / 0.42);
+            const settle = Math.sin(f * Math.PI * 3) * (1 - f) * 0.07;
+            _sx = 1 + settle; _sy = 1 - settle;
+            _xOff = unit._sDir * _R * 0.22 * (1 - f);
         }
         _angry = 1;
     } else if (_windup > 0.05 && unit.state === 'fight') {
@@ -114,7 +142,59 @@ function drawSlimeMonster(unit, camY) {
     if (_bc > 3.5) _blink = Math.max(0, Math.sin((_bc - 3.5) / 0.14 * Math.PI));
 
     const _cy = _floorY - _yOff - _R * _sy;
-    unit._hpBarY = _cy - _R * _sy - 12;
+    let _visualTop = _cy - _R * _sy;
+    unit._hpBarY = _visualTop - 12;
+
+    const _bodyCX = _cx + _xOff;
+    const _bodyRX = _R * _sx;
+    const _bodyRY = _R * _sy;
+    const _attackDir = unit._sAtkDir || unit._sDir;
+    const _attackReach = _R * 2.10 * _strikeReach;
+
+    // Єдиний зовнішній контур. На ударі не домальовуємо руку чи кулак:
+    // передня половина самого слизня витягується в широкий пружний таран.
+    // При _strikeReach=0 контрольні точки точно відтворюють звичайний еліпс.
+    function _traceSlimeBody() {
+        const p = _strikeReach;
+        const k = 0.5522847498;
+        const X = x => _bodyCX + _attackDir * x;
+        const mix = (a, b) => a + (b - a) * p;
+        const frontX = _bodyRX + _attackReach;
+        const tipY = -_bodyRY * 0.07 * p;
+        // Широкий тупий край читається як важкий желейний таран, а не як
+        // промінь/конус. Він округлюється тим самим контуром, без окремої кульки.
+        const tipHalf = _bodyRY * (0.38 * p + 0.04 * p * p);
+        const tipBulge = _R * 0.20 * p;
+
+        ctx.beginPath();
+        ctx.moveTo(X(-_bodyRX), _cy);
+        ctx.bezierCurveTo(
+            X(-_bodyRX), _cy - k * _bodyRY,
+            X(-k * _bodyRX), _cy - _bodyRY,
+            X(0), _cy - _bodyRY
+        );
+        ctx.bezierCurveTo(
+            X(mix(k * _bodyRX, _bodyRX * 0.50)), _cy + mix(-_bodyRY, -_bodyRY * 0.92),
+            X(mix(_bodyRX, _bodyRX + _attackReach * 0.48)), _cy + mix(-k * _bodyRY, tipY - tipHalf * 1.18),
+            X(frontX), _cy + tipY - tipHalf
+        );
+        ctx.bezierCurveTo(
+            X(frontX + tipBulge), _cy + tipY - tipHalf * 0.55,
+            X(frontX + tipBulge), _cy + tipY + tipHalf * 0.55,
+            X(frontX), _cy + tipY + tipHalf
+        );
+        ctx.bezierCurveTo(
+            X(mix(_bodyRX, _bodyRX + _attackReach * 0.48)), _cy + mix(k * _bodyRY, tipY + tipHalf * 1.18),
+            X(mix(k * _bodyRX, _bodyRX * 0.50)), _cy + mix(_bodyRY, _bodyRY * 0.92),
+            X(0), _cy + _bodyRY
+        );
+        ctx.bezierCurveTo(
+            X(-k * _bodyRX), _cy + _bodyRY,
+            X(-_bodyRX), _cy + k * _bodyRY,
+            X(-_bodyRX), _cy
+        );
+        ctx.closePath();
+    }
 
     // ── Dust on landing ─────────────────────────────────────────
     if (unit.state === 'move' && unit._sHopPh > 0.78 && unit._sHopPh < 0.96) {
@@ -122,6 +202,42 @@ function drawSlimeMonster(unit, camY) {
         const da = Math.sin((unit._sHopPh - 0.78) / 0.18 * Math.PI) * 0.32;
         ctx.fillStyle = `rgba(80,50,110,${da})`;
         ctx.beginPath(); ctx.ellipse(_cx + _xOff, _floorY, _R*_sx*1.15, _R*0.19, 0, 0, Math.PI*2); ctx.fill();
+    }
+
+    // ── Branch silhouette behind the body ──────────────────────
+    // These roots use the same squash/stretch basis as the body, so they never
+    // float above it during a hop or split away during an impact.
+    if (unit._branch === 'A') {
+        const ridge = [
+            { x: -0.55, h: 0.28, lean: -0.05 },
+            { x: -0.25, h: 0.42, lean: -0.08 },
+            { x:  0.06, h: 0.48, lean: -0.10 },
+            { x:  0.36, h: 0.32, lean: -0.07 },
+        ];
+        ctx.lineJoin = 'round';
+        ridge.forEach((spike, i) => {
+            const rootX = _cx + _xOff + spike.x * _R * _sx;
+            const shell = Math.sqrt(Math.max(0, 1 - spike.x * spike.x));
+            const rootY = _cy - shell * _R * _sy * 0.91;
+            const halfW = _R * (0.12 + i * 0.008) * _sx;
+            const tipX = rootX + unit._sDir * spike.lean * _R * _sx;
+            const tipY = rootY - spike.h * _R * _sy;
+            _visualTop = Math.min(_visualTop, tipY);
+            ctx.fillStyle = '#4f7f17';
+            ctx.strokeStyle = '#23370b';
+            ctx.lineWidth = Math.max(1, _R * 0.075);
+            ctx.beginPath();
+            ctx.moveTo(rootX - halfW, rootY + _R * 0.07 * _sy);
+            ctx.quadraticCurveTo(rootX - halfW * 0.22, rootY - _R * 0.12 * _sy, tipX, tipY);
+            ctx.quadraticCurveTo(rootX + halfW * 0.30, rootY - _R * 0.08 * _sy, rootX + halfW, rootY + _R * 0.07 * _sy);
+            ctx.closePath(); ctx.fill(); ctx.stroke();
+            ctx.strokeStyle = 'rgba(211,255,92,0.72)';
+            ctx.lineWidth = Math.max(0.7, _R * 0.028);
+            ctx.beginPath();
+            ctx.moveTo(rootX - halfW * 0.28, rootY - _R * 0.01 * _sy);
+            ctx.quadraticCurveTo(rootX, rootY - _R * 0.13 * _sy, tipX, tipY + _R * 0.05 * _sy);
+            ctx.stroke();
+        });
     }
 
     // ── Body ────────────────────────────────────────────────────
@@ -142,13 +258,57 @@ function drawSlimeMonster(unit, camY) {
     let _bR = _angry > 0 ? Math.min(255, Math.round(_baseR + _angry30)) : _baseR;
     let _bG = _angry > 0 ? Math.max(0,   Math.round(_baseG - _angry*40)) : _baseG;
     let _bB = _angry > 0 ? Math.max(0,   Math.round(_baseB - _angry30)) : _baseB;
-    ctx.fillStyle = `rgba(${_bR},${_bG},${_bB},0.92)`;
-    ctx.beginPath(); ctx.ellipse(_cx+_xOff, _cy, _R*_sx, _R*_sy, 0, 0, Math.PI*2); ctx.fill();
+    const _darkR = Math.max(0, Math.round(_bR * 0.63));
+    const _darkG = Math.max(0, Math.round(_bG * 0.63));
+    const _darkB = Math.max(0, Math.round(_bB * 0.63));
+    const _lightR = Math.min(255, _bR + 48);
+    const _lightG = Math.min(255, _bG + 58);
+    const _lightB = Math.min(255, _bB + 42);
+    const _bodyGrad = ctx.createLinearGradient(
+        _bodyCX - _attackDir * _bodyRX, _cy + _bodyRY * 0.68,
+        _bodyCX + _attackDir * (_bodyRX + _attackReach), _cy - _bodyRY * 0.32
+    );
+    _bodyGrad.addColorStop(0, `rgba(${_darkR},${_darkG},${_darkB},0.96)`);
+    _bodyGrad.addColorStop(0.35, `rgba(${_bR},${_bG},${_bB},0.96)`);
+    _bodyGrad.addColorStop(0.82, `rgba(${_lightR},${_lightG},${_lightB},0.94)`);
+    _bodyGrad.addColorStop(1, `rgba(${_bR},${_bG},${_bB},0.94)`);
+    ctx.fillStyle = _bodyGrad;
+    _traceSlimeBody(); ctx.fill();
     ctx.shadowBlur = 0;
-    // Світлий блік — освітлений варіант основного кольору
+
+    // Спільна верхня світлова плівка теж обрізається тим самим контуром, тому
+    // матеріал без шва тягнеться від корпуса аж до ударної кромки.
+    ctx.save();
+    _traceSlimeBody(); ctx.clip();
+    const _glaze = ctx.createLinearGradient(0, _cy - _bodyRY, 0, _cy + _bodyRY * 0.45);
+    _glaze.addColorStop(0, 'rgba(255,255,255,0.30)');
+    _glaze.addColorStop(0.42, 'rgba(255,255,255,0.08)');
+    _glaze.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = _glaze;
+    ctx.fillRect(
+        _bodyCX - _bodyRX - _attackReach - _R,
+        _cy - _bodyRY - _R,
+        (_bodyRX + _attackReach + _R) * 2,
+        _bodyRY * 2 + _R * 2
+    );
+    if (_strikeReach > 0.03) {
+        ctx.strokeStyle = `rgba(${Math.min(255,_baseR+120)},${Math.min(255,_baseG+90)},${Math.min(255,_baseB+120)},${0.12 + _strikeReach * 0.18})`;
+        ctx.lineWidth = Math.max(1, _R * 0.10);
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(_bodyCX + _attackDir * _bodyRX * 0.05, _cy - _bodyRY * 0.47);
+        ctx.quadraticCurveTo(
+            _bodyCX + _attackDir * (_bodyRX + _attackReach * 0.48), _cy - _bodyRY * 0.34,
+            _bodyCX + _attackDir * (_bodyRX + _attackReach * 0.88), _cy - _bodyRY * 0.18
+        );
+        ctx.stroke();
+    }
+    ctx.restore();
+
+    // Локальний вологий блік на основній масі
     let _hR = Math.min(255, _baseR + 100), _hG = Math.min(255, _baseG + 65), _hB = Math.min(255, _baseB + 100);
     ctx.fillStyle = _angry > 0 ? `rgba(${_hR},${_hG},${_hB},0.42)` : `rgba(${Math.min(255,_baseR+80)},${Math.min(255,_baseG+45)},${Math.min(255,_baseB+80)},0.42)`;
-    ctx.beginPath(); ctx.ellipse(_cx+_xOff-_R*0.22*_sx, _cy-_R*0.20*_sy, _R*0.56*_sx, _R*0.56*_sy, 0, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(_bodyCX-_R*0.22*_sx, _cy-_R*0.20*_sy, _R*0.56*_sx, _R*0.56*_sy, 0, 0, Math.PI*2); ctx.fill();
 
     // ── Eyes ────────────────────────────────────────────────────
     const _er       = _R * 0.21;
@@ -248,7 +408,11 @@ function drawSlimeMonster(unit, camY) {
         // М'яка кислотна аура з пульсом (замість статичного кільця)
         ctx.strokeStyle = _acidCol(0.10 + 0.06 * Math.sin(_nowT * 2.2 + unit._sDripSeed));
         ctx.lineWidth = 2;
-        ctx.beginPath(); ctx.ellipse(_cx + _xOff, _cy, _R * _sx * 1.18, _R * _sy * 1.18, 0, 0, Math.PI * 2); ctx.stroke();
+        ctx.save();
+        ctx.translate(-_attackDir * _R * 0.025, 0);
+        ctx.lineWidth = Math.max(1.2, _R * 0.055);
+        _traceSlimeBody(); ctx.stroke();
+        ctx.restore();
     } else if (unit._branch === 'B') {
         // Крижані кристали: мерехтять по черзі, «дихають» довжиною; ореол обертається
         ctx.shadowBlur = 0;
@@ -256,17 +420,25 @@ function drawSlimeMonster(unit, camY) {
         _cAngles.forEach((_ang, _ci) => {
             const _tw = 0.5 + 0.5 * Math.sin(_nowT * 2.4 + _ci * 1.7);   // мерехтіння, у кожного своя фаза
             const _grow = 0.44 + 0.10 * Math.sin(_nowT * 1.1 + _ci * 2.3); // легке «дихання» довжини
-            const _bx = _cx + _xOff + Math.cos(_ang) * _R * _sx * 0.92;
-            const _by = _cy + Math.sin(_ang) * _R * _sy * 0.92;
-            const _tx = _bx + Math.cos(_ang) * _R * _grow;
-            const _ty = _by + Math.sin(_ang) * _R * _grow;
+            const _ca = Math.cos(_ang), _sa = Math.sin(_ang);
+            const _bx = _cx + _xOff + _ca * _R * _sx * 0.92;
+            const _by = _cy + _sa * _R * _sy * 0.92;
+            // Normal of the current squash/stretch ellipse. Crystal roots,
+            // tips and widths now share one deformed surface basis.
+            let _nx = _ca / Math.max(0.01, _sx);
+            let _ny = _sa / Math.max(0.01, _sy);
+            const _nl = Math.hypot(_nx, _ny) || 1;
+            _nx /= _nl; _ny /= _nl;
+            const _tanX = -_ny, _tanY = _nx;
+            const _tx = _bx + _nx * _R * _grow;
+            const _ty = _by + _ny * _R * _grow;
             const _pw = _R * 0.12;
             ctx.fillStyle = `rgba(195,235,255,${0.70 + _tw * 0.25})`;
             ctx.strokeStyle = `rgba(130,200,255,${0.45 + _tw * 0.30})`; ctx.lineWidth = 0.9;
             ctx.beginPath();
             ctx.moveTo(_tx, _ty);
-            ctx.lineTo(_bx - Math.sin(_ang)*_pw, _by + Math.cos(_ang)*_pw);
-            ctx.lineTo(_bx + Math.sin(_ang)*_pw, _by - Math.cos(_ang)*_pw);
+            ctx.lineTo(_bx + _tanX * _pw, _by + _tanY * _pw);
+            ctx.lineTo(_bx - _tanX * _pw, _by - _tanY * _pw);
             ctx.closePath(); ctx.fill(); ctx.stroke();
             // Іскринка на вістрі найяскравішого кристала
             if (_tw > 0.88) {
@@ -278,56 +450,10 @@ function drawSlimeMonster(unit, camY) {
         ctx.strokeStyle = 'rgba(160,220,255,0.26)'; ctx.lineWidth = 1.8;
         ctx.setLineDash([3, 5]);
         ctx.lineDashOffset = -_nowT * 6;
-        ctx.beginPath(); ctx.ellipse(_cx+_xOff, _cy, _R*_sx*1.25, _R*_sy*1.25, 0, 0, Math.PI*2); ctx.stroke();
+        _traceSlimeBody(); ctx.stroke();
         ctx.setLineDash([]); ctx.lineDashOffset = 0;
     }
 
-    // ── Кулак-псевдопод виростає з боку слизня ──────────────────
-    if (unit._sRingT > 0) {
-        const _ad  = unit._sAtkDir || unit._sDir;
-        const rp   = 1 - unit._sRingT;
-        const alp  = unit._sRingT * 0.95;
-
-        const fistP = rp < 0.50 ? rp / 0.50 : (1 - rp) / 0.50;
-        const ease  = fistP * fistP * (3 - 2 * fistP);
-
-        const ext   = _R * 2.0 * ease;
-        const fR    = _R * 0.48 * ease;
-        const armW  = _R * 0.30 * (0.4 + 0.6 * ease);
-
-        const baseX = _cx + _xOff + _ad * _R * _sx * 0.88;
-        const fistX = baseX + _ad * ext;
-        const baseY = _cy;
-
-        // Кулак — той самий колір тіла
-        const _fR = _angry > 0 ? Math.min(255, Math.round(_baseR + _angry*30)) : _baseR;
-        const _fG = _angry > 0 ? Math.max(0,   Math.round(_baseG - _angry*40)) : _baseG;
-        const _fB = _angry > 0 ? Math.max(0,   Math.round(_baseB - _angry*30)) : _baseB;
-        const bodyCol = `rgba(${_fR},${_fG},${_fB},${alp})`;
-
-        ctx.shadowBlur = 0;
-
-        if (ext > 0.5) {
-            ctx.fillStyle = bodyCol;
-            ctx.beginPath();
-            ctx.moveTo(baseX,              baseY - armW);
-            ctx.lineTo(fistX - _ad * fR * 0.6, baseY - armW * 0.65);
-            ctx.lineTo(fistX - _ad * fR * 0.6, baseY + armW * 0.65);
-            ctx.lineTo(baseX,              baseY + armW);
-            ctx.closePath();
-            ctx.fill();
-
-            ctx.fillStyle = bodyCol;
-            ctx.beginPath(); ctx.arc(fistX, baseY, fR, 0, Math.PI * 2); ctx.fill();
-
-            ctx.strokeStyle = `rgba(20,120,10,${alp * 0.6})`;
-            ctx.lineWidth = 1.4;
-            ctx.beginPath(); ctx.arc(fistX, baseY, fR, 0, Math.PI * 2); ctx.stroke();
-
-            ctx.fillStyle = `rgba(180,255,140,${alp * 0.42})`;
-            ctx.beginPath();
-            ctx.arc(fistX - _ad * fR * 0.28, baseY - fR * 0.32, fR * 0.36, 0, Math.PI * 2);
-            ctx.fill();
-        }
-    }
+    unit._hpBarY = Math.min(unit._hpBarY, _visualTop - 12);
+    ctx.restore();
 }

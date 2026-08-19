@@ -12,6 +12,16 @@ Dark fantasy tower defense — UK/EN. Граєш за Dungeon Lord, захища
 
 Cache-bust через `?v=NN` у всіх `<script src>` у `main.html` — бампай число коли правиш JS-модель і хочеш щоб студія/гра перечитала.
 
+## Онбординг / перший запуск (learn-by-doing)
+
+**Принцип:** новачок іде прямо в бій, механіку показує вбудований gated-пролог у геймплеї — БЕЗ передігрової стіни тексту/виборів. НЕ повертати квіз/благословення/7-бульбашковий дамп на перший запуск.
+
+- **Детект першого разу:** `continueGame()` → `_firstEver = (level===1) && !localStorage['DL_tut_done']`. Тоді пропускаємо `_showRunModPicker` (благословення) і `StoryManager.showIntro` (квіз+API+бульбашки), ставимо `DL_StoryDone=1` і йдемо прямо в `startGame(1)`. Благословення/наратив повертаються з наступного рівня/рану.
+- **Навчання в бою:** `_PRO_STEPS` («ПРОЛОГ Пробудження Володаря», голос Безодні), стартує з `beginGame()`→`_liveTutInit()` (рівень 1). Кроки з `gate` (kill/wave/floor/lord) не зникають, доки гравець не зробить дію; `target` підсвічується класом `.tut-highlight` (пульс+glow). Skippable («Пропустити навчання» → `_prologueEnd`). Гейти смикаються `_proEvent(ev)` з хуків: kill (death-цикл), wave (`triggerWave`), floor (`buyFloor`), lord (`openLordUpgrade`).
+- **Прапорці:** `DL_tut_done` (пролог пройдено), `DL_StoryDone` (наратив-інтро), `DL_intro_*` (perma-інтро пізніх механік), `DL_help_seen`. **Усі скидаються** в `confirmResetProgress` → туторіал перепроходиться після «Скинути все».
+- Легасі-бабли `_LT`/`_liveTut*` — для рівнів 2+ (не рівень 1).
+- Наратив-квіз + `_generatePersonalizedStory` лишились у `_introSteps` (тепер БЕЗ 7 механік-бульбашок), але поза критичним шляхом першого запуску.
+
 ## Структура
 
 ```
@@ -41,7 +51,11 @@ test/
 
 **Герої (20):** Рекрут I/II, Солдат I/II, Розвідник I/II, Лучник I/II, Маг I/II, Лицар I/II, Берсерк I/II, Паладін I/II, Некромант I/II, Чемпіон I/II. Всі параметризовані через один `drawHeroEgg` + конфіг `STUDIO_HEROES` у `hero_flat.js`. Rank-тонування (elite_hp зелений, elite_atk помаранчевий, boss фіолетовий) — через `drawHeroStudio(rank)`.
 
-**Монстри (20, по рівнях):** Slime, Skeleton, Hounds, Zombie, Spirit, Bat, Golem, Minotaur, Shadow, Necromancer, Water Ele, Earth Ele, Air Ele, Fire Ele, Lightning, Dark Knight, Banshee, Dragon, Arachne, Abyss.
+**Монстри (20, по рівнях):** Slime, Skeleton, Hounds, Zombie, Spirit, Bat, **Arachne**, Minotaur, Shadow, Necromancer, Water Ele, Earth Ele, Air Ele, Fire Ele, Lightning, Dark Knight, Banshee, **Lich, Abyss, Dragon**.
+
+Джерело правди — `MONSTER_KIND_NAMES` у `main.html` (рівень = індекс+1). **Голем видалений** (замінений Арахною на рівні 7); `drawGolemMonster` у `draw_monsters.js` — легасі-код, у грі не використовується.
+
+**Три художні школи (свідомо, не баг):** (а) chibi-egg — slime, spirit, fire/water/air ele, shadow; (б) реалістичні гуманоїди 6–7 head — skeleton, zombie, lightning, dark knight, banshee; (в) повноцінні ілюстрації — dragon, arachne, earth ele. Критерій приймання — «гарно і читабельно», а не однаковість пропорцій. Чорний 1px-контур із секції «Стиль» де-факто не використовується — моделі тримаються на value-контрасті.
 
 ## Стиль
 

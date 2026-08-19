@@ -1,9 +1,13 @@
 // ═══════════════════════════════════════════════════════════════════════════
 //  DRAGON — рівень 20 (бос), здібність: breath (вогняне дихання)
-//  Класичний квадрупед: арковане тіло, довга S-шия, масивна голова з рогами,
-//  сегментований хвіст із шипами та стрілкою, крилата мембрана з кістками.
-//  Хода — діагональний хід на 4 лапах. Атака: інхейл (шия дугою назад) →
+//  Західний квадрупед. Дизайн-стандарт: читабельний силует, анатомічно зігнуті
+//  лапи з пазурами, структура значень (occlusion → mid → lit) + ТЕПЛЕ КОНТРОВЕ
+//  світло по верхньому контуру для відділення від темного фону, крила зі
+//  структурою пальців і напівпрозорою підсвіченою мембраною.
+//  Анімація: діагональний хід на 4 лапах; атака: вдих (шия дугою назад) →
 //  ривок голови вперед → конус полум'я з іскрами → відновлення.
+//  Гілки: A — пекло (іскри зі спини, гаряче серце); B — лід (крижані шипи +
+//  крижане дихання поверх вогняного).
 // ═══════════════════════════════════════════════════════════════════════════
 function drawDragonMonster(unit, camY) {
   const s  = unit.size;
@@ -42,13 +46,9 @@ function drawDragonMonster(unit, camY) {
   const bTime = unit._drT;
 
   // ── Attack phases with easing ────────────────────────────────────
-  // Inhale (slow wind-up: neck arches back, throat fills with glow) →
-  // Thrust (fast: head snaps forward) →
-  // Breathe (sustained flame cone) →
-  // Recover (slow return).
   const AP_INHALE = 0.28;
-  const AP_THRUST = 0.38;   // quick forward snap
-  const AP_BREATHE = 0.76;  // sustained exhale
+  const AP_THRUST = 0.38;
+  const AP_BREATHE = 0.76;
   let inhaleE = 0, thrustE = 0, breatheE = 0, recoverE = 0;
   if (atkActive) {
     if (ap < AP_INHALE) {
@@ -57,12 +57,10 @@ function drawDragonMonster(unit, camY) {
     } else if (ap < AP_THRUST) {
       const t = (ap - AP_INHALE) / (AP_THRUST - AP_INHALE);
       thrustE = Math.pow(t, 1.8);
-      inhaleE = 1;                   // keep inhale posture briefly
+      inhaleE = 1;
     } else if (ap < AP_BREATHE) {
-      const t = (ap - AP_THRUST) / (AP_BREATHE - AP_THRUST);
       breatheE = 1;
       thrustE = 1;
-      // Slight oscillation for sustained breath
     } else {
       const t = (ap - AP_BREATHE) / (1 - AP_BREATHE);
       recoverE = 1 - Math.pow(1 - t, 2);
@@ -78,28 +76,26 @@ function drawDragonMonster(unit, camY) {
   const isWalking = unit.state === 'move';
   const walkFreq  = 1.30;
   const walkPhase = isWalking ? ((bTime * walkFreq) % 1) : 0;
-  // Body Y bob: subtle (heavy dragon doesn't bounce much)
   const walkBob = isWalking
     ? (1 - Math.abs(Math.sin(walkPhase * Math.PI * 2))) * s * 0.020
     : 0;
   const walkSway = isWalking
     ? Math.sin(walkPhase * Math.PI * 2) * s * 0.008
     : 0;
-  // Shoulder/hip roll with walk
-  const walkShoulderTilt = isWalking ? Math.sin(walkPhase * Math.PI * 2) * 0.032 : 0;
 
-  // Idle breathing
   const breatheY = Math.sin(bTime * 0.85) * s * 0.008;
   const idleHeadBob = Math.sin(bTime * 0.60) * s * 0.014;
 
-  // ── Proportions (quadrupedal) ────────────────────────────────────
-  const bodyH   = s * 0.32;
-  const bodyLen = s * 0.92;                // total body length (shoulder-to-hip)
-  const neckLen = s * 0.56;
-  const tailLen = s * 1.05;
-  const legH    = s * 0.30;
-  const headW   = s * 0.25;
-  const headH   = s * 0.26;
+  // ── Proportions (powerful quadruped boss) ────────────────────────
+  // Smaller head on a longer, graceful S-neck; heavier body; the whole
+  // creature reads muscular rather than spiky.
+  const bodyH   = s * 0.36;
+  const bodyLen = s * 0.98;
+  const neckLen = s * 0.74;
+  const tailLen = s * 1.20;
+  const legH    = s * 0.37;
+  const headW   = s * 0.215;
+  const headH   = s * 0.200;
 
   // ── Positions ────────────────────────────────────────────────────
   const bX = cx + walkSway;
@@ -107,14 +103,12 @@ function drawDragonMonster(unit, camY) {
   const bodyTopY    = bodyCenterY - bodyH * 0.50;
   const bodyBotY    = bodyCenterY + bodyH * 0.50;
 
-  const frontHipX = bX + dir * bodyLen * 0.38;    // shoulder socket
-  const backHipX  = bX - dir * bodyLen * 0.38;    // hip socket
+  const frontHipX = bX + dir * bodyLen * 0.36;   // shoulder socket
+  const backHipX  = bX - dir * bodyLen * 0.36;   // hip socket
 
-  // Neck base (top-front of body, slightly forward of shoulder socket)
-  const neckBaseX = bX + dir * bodyLen * 0.44;
-  const neckBaseY = bodyTopY + s * 0.02;
+  const neckBaseX = bX + dir * bodyLen * 0.46;
+  const neckBaseY = bodyTopY + s * 0.015;
 
-  // Neck end = head base. Attack moves head: inhale pulls UP-BACK, thrust pushes DOWN-FORWARD
   const neckEndDX = dir * neckLen * (0.55 - inhaleE * 0.25 + thrustE * 0.30);
   const neckEndDY = -neckLen * (0.80 + inhaleE * 0.12 - thrustE * 0.20);
   const headBaseX = neckBaseX + neckEndDX;
@@ -122,699 +116,766 @@ function drawDragonMonster(unit, camY) {
 
   const headCX = headBaseX + dir * headW * 0.30 + (idleHeadBob * 0.8) * (1 - inhaleE - thrustE - recoverE);
   const headCY = headBaseY + idleHeadBob * 0.2;
-  // Head rotation: snout up on inhale, forward-down on thrust
   const headRot = -inhaleE * 0.40 + thrustE * 0.28 - recoverE * 0.05;
-  // Jaw open amount
   const jawOpen = inhaleE * s * 0.012 + thrustE * s * 0.045 + breatheE * s * 0.055;
-  // Throat glow amount (builds during inhale, peaks during breathe)
   const throatGlow = inhaleE * 0.50 + thrustE * 0.80 + breatheE * (0.80 + Math.sin(bTime * 18) * 0.12);
 
-  // Tail base
-  const tailBaseX = bX - dir * bodyLen * 0.50;
-  const tailBaseY = bodyBotY - s * 0.02;
+  // Tail root sits high & inside the rump so it flows off the spine,
+  // not pinned to the belly. Body (drawn on top) covers the actual seam.
+  const tailBaseX = bX - dir * bodyLen * 0.42;
+  const tailBaseY = bodyCenterY + bodyH * 0.02;
+
+  // ── Palette: warm fire scales by default; a full ICE remap for the Frost branch
+  //    ("Синя модель") so the whole dragon reads as an ice dragon, not a red one. ──
+  const _isFrost = (unit._branch === 'B');
+  const _isInferno = (unit._branch === 'A');
+  const C = _isFrost ? {
+    edge:   '#05111d',   // near-black cold
+    occ:    '#0a2138',   // deep blue occlusion
+    cool:   '#122a4e',   // indigo deepest shadow
+    shadow: '#17456e',
+    mid:    '#2f6f9e',
+    midHi:  '#4a92c4',
+    lit:    '#6fb4de',
+    litHi:  '#a6d9f2',
+    rim:    '#c8f0ff',   // cold cyan-white rim light
+    rimHot: '#ecfbff',
+    belly:  '#aacfe6',   // pale frosted belly
+    bellyHi:'#d8eef8',
+    bone:   '#e6f2fb',   // ice-white horns/claws
+    boneSh: '#a8c1d3',
+    ember:  '#daf6ff',   // frost sparkle
+  } : _isInferno ? {
+    edge:   '#170203', occ:'#360305', cool:'#280718', shadow:'#650808',
+    mid:    '#a91c09', midHi:'#dc3a0d', lit:'#f56a18', litHi:'#ffad38',
+    rim:    '#ffc044', rimHot:'#fff08a', belly:'#d06e1b', bellyHi:'#ffb84a',
+    bone:   '#f4dfb2', boneSh:'#c69b55', ember:'#fff2a0',
+  } : {
+    edge:   '#150409',
+    occ:    '#2c0810',
+    cool:   '#241033',   // desaturated plum for deepest occlusion (kills the mud)
+    shadow: '#4a0d12',
+    mid:    '#7c1712',
+    midHi:  '#a5301b',
+    lit:    '#cf5326',
+    litHi:  '#eb7c39',
+    rim:    '#ff9a4a',   // warm back/rim light
+    rimHot: '#ffc673',
+    belly:  '#b8642f',
+    bellyHi:'#dd9256',
+    bone:   '#ece0c4',
+    boneSh: '#b6a480',
+    ember:  '#ffdd88',
+  };
+  // Frost-aware accents for warm bits that the C palette doesn't cover
+  // (wing membranes, horns, inner furnace/throat glow).
+  const _wingMem  = _isFrost ? '#173a5c' : _isInferno ? '#66120d' : '#4a1016';
+  const _wingFar  = _isFrost ? '#0d2038' : _isInferno ? '#350707' : '#26090f';
+  const _hornCol  = _isFrost ? '#5f93b8' : '#5a2410';         // horn body
+  const _hornBoss = _isFrost ? 'rgba(38,74,104,0.85)' : 'rgba(74,34,18,0.85)';
+  const _gloShad  = _isFrost ? '#8ad6ff' : '#ff8a1e';         // inner-glow bloom colour
+  const _gloCore  = _isFrost ? '215,248,255' : '255,238,150'; // glow hot core rgb
+  const _gloMid   = _isFrost ? '95,190,255'  : '255,110,10';  // glow mid rgb
+  const _gloEdge  = _isFrost ? '30,110,220'  : '200,20,0';    // glow fade rgb
+  const _rimRGB   = _isFrost ? '190,235,255' : '255,150,74';  // rim/edge light rgb
+  const _warmRGB  = _isFrost ? '90,160,210'  : '207,83,38';   // muscle/scale warm sheen rgb
+
+  // Tapered ribbon through a centerline of {x,y,w} points (for neck/tail/legs)
+  const ribbon = (pts, fill) => {
+    const n = pts.length;
+    for (let i = 0; i < n; i++) {
+      const a = pts[Math.max(0, i - 1)], b = pts[Math.min(n - 1, i + 1)];
+      let dx = b.x - a.x, dy = b.y - a.y; const dl = Math.hypot(dx, dy) || 1;
+      pts[i]._px = -dy / dl; pts[i]._py = dx / dl;
+    }
+    ctx.fillStyle = fill; ctx.beginPath();
+    for (let i = 0; i < n; i++) { const p = pts[i]; const X = p.x + p._px * p.w, Y = p.y + p._py * p.w; i ? ctx.lineTo(X, Y) : ctx.moveTo(X, Y); }
+    for (let i = n - 1; i >= 0; i--) { const p = pts[i]; ctx.lineTo(p.x - p._px * p.w, p.y - p._py * p.w); }
+    ctx.closePath(); ctx.fill();
+  };
+  // Stroke one edge of a ribbon (top = +normal side) — for rim light on limbs
+  const ribbonEdge = (pts, off, col, w) => {
+    ctx.strokeStyle = col; ctx.lineWidth = w; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    ctx.beginPath();
+    for (let i = 0; i < pts.length; i++) { const p = pts[i]; const X = p.x + p._px * (p.w * off), Y = p.y + p._py * (p.w * off); i ? ctx.lineTo(X, Y) : ctx.moveTo(X, Y); }
+    ctx.stroke();
+  };
 
   ctx.save();
 
   // ═══════════════════════════════════════════════════════════════
-  // RENDER PIPELINE (back to front): shadow → far wing → tail →
-  // far legs → body → near legs → belly highlight → neck → head →
-  // near wing → fire breath
+  // RENDER (back→front): shadow → far wing → far legs → tail → body
+  //   → near legs → neck → head → near wing → breath → branch fx
   // ═══════════════════════════════════════════════════════════════
 
-  // ── 1. Ground shadow (stretched) ─────────────────────────────────
-  ctx.fillStyle = 'rgba(30,0,0,0.55)';
+  // ── 1. Ground shadow (soft, darker contact core) ─────────────────
+  const shg = ctx.createRadialGradient(cx, fY + s * 0.02, s * 0.05, cx, fY + s * 0.02, bodyLen * 0.95);
+  shg.addColorStop(0, 'rgba(10,0,4,0.55)');
+  shg.addColorStop(0.6, 'rgba(10,0,4,0.32)');
+  shg.addColorStop(1, 'rgba(10,0,4,0)');
+  ctx.fillStyle = shg;
   ctx.beginPath();
-  ctx.ellipse(cx, fY + s * 0.015, bodyLen * 0.90, s * 0.078, 0, 0, Math.PI * 2);
+  ctx.ellipse(cx, fY + s * 0.02, bodyLen * 0.95, s * 0.085, 0, 0, Math.PI * 2);
   ctx.fill();
 
-  // ── 2. FAR WING (behind body, smaller/darker for depth) ──────────
-  const wingBeat = isWalking
-    ? Math.sin(walkPhase * Math.PI * 2) * 0.10
-    : Math.sin(bTime * 0.70) * 0.06;
-  // Far wing shoulder attaches at back-top of body
-  const fwShX = bX - dir * s * 0.02;
-  const fwShY = bodyTopY + s * 0.01;
-  // Humerus → elbow (up-back)
-  const fwElbX = fwShX - dir * s * 0.32;
-  const fwElbY = fwShY - s * (0.48 + wingBeat * 0.06);
-  // Finger tips (leading, middle, trailing)
-  const fwTip1X = fwShX - dir * s * 0.68;                    // leading (highest)
-  const fwTip1Y = fwShY - s * (0.62 + wingBeat * 0.12);
-  const fwTip2X = fwShX - dir * s * 0.52;
-  const fwTip2Y = fwShY - s * (0.28 + wingBeat * 0.05);
-  const fwTip3X = fwShX - dir * s * 0.30;
-  const fwTip3Y = fwShY + s * 0.06;
-  // Membrane
-  ctx.fillStyle = 'rgba(42,5,0,0.82)';
-  ctx.beginPath();
-  ctx.moveTo(fwShX, fwShY);
-  ctx.quadraticCurveTo(fwElbX - s * 0.05, fwElbY - s * 0.04, fwTip1X, fwTip1Y);
-  ctx.quadraticCurveTo(fwTip1X + dir * s * 0.06, fwElbY, fwTip2X, fwTip2Y);
-  ctx.quadraticCurveTo(fwTip2X + dir * s * 0.05, (fwTip2Y + fwTip3Y) / 2, fwTip3X, fwTip3Y);
-  ctx.quadraticCurveTo(fwShX - dir * s * 0.10, fwShY + s * 0.08, fwShX, fwShY);
-  ctx.closePath();
-  ctx.fill();
-  // Wing bones (thin)
-  ctx.strokeStyle = '#1a0200'; ctx.lineWidth = s * 0.014; ctx.lineCap = 'round';
-  ctx.beginPath(); ctx.moveTo(fwShX, fwShY); ctx.quadraticCurveTo(fwElbX - s * 0.03, fwElbY - s * 0.03, fwTip1X, fwTip1Y); ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(fwElbX, fwElbY); ctx.lineTo(fwTip2X, fwTip2Y); ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(fwElbX, fwElbY); ctx.lineTo(fwTip3X, fwTip3Y); ctx.stroke();
+  // ── 2. FAR WING (folded behind, dark & desaturated for depth) ────
+  const wingBeat = isWalking ? Math.sin(walkPhase * Math.PI * 2) * 0.10 : Math.sin(bTime * 0.70) * 0.05;
+  {
+    // far wing: kept lower & tucked so it stays behind the near wing and
+    // doesn't tangle with the elbow + back spikes at the shoulder
+    const shX = bX - dir * bodyLen * 0.04, shY = bodyTopY + s * 0.01;
+    const elbX = shX - dir * s * 0.24, elbY = shY - s * (0.25 + wingBeat * 0.05);
+    const tips = [
+      { x: shX - dir * s * 0.44, y: shY - s * (0.34 + wingBeat * 0.07) },
+      { x: shX - dir * s * 0.33, y: shY - s * (0.12 + wingBeat * 0.03) },
+      { x: shX - dir * s * 0.18, y: shY + s * 0.11 },
+    ];
+    // far wing: darker & desaturated so the pair reads as depth, not two stickers
+    ctx.fillStyle = _wingFar;
+    ctx.beginPath();
+    ctx.moveTo(shX, shY);
+    ctx.quadraticCurveTo(elbX - dir * s * 0.02, elbY - s * 0.04, tips[0].x, tips[0].y);
+    for (let i = 0; i < tips.length - 1; i++) {
+      const a = tips[i], b = tips[i + 1], mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
+      ctx.quadraticCurveTo(mx + (elbX - mx) * 0.50, my + (elbY - my) * 0.50, b.x, b.y);   // concave scallop
+    }
+    ctx.quadraticCurveTo(shX - dir * s * 0.06, shY + s * 0.08, shX, shY);
+    ctx.closePath(); ctx.fill();
+    // thin near-black struts
+    ctx.strokeStyle = '#180509'; ctx.lineWidth = s * 0.013; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    ctx.beginPath(); ctx.moveTo(shX, shY); ctx.quadraticCurveTo(elbX, elbY, tips[0].x, tips[0].y); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(elbX, elbY); ctx.lineTo(tips[1].x, tips[1].y); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(elbX, elbY); ctx.lineTo(tips[2].x, tips[2].y); ctx.stroke();
+  }
 
-  // ── 3. TAIL (long curving segmented, spiked, with arrowhead) ─────
-  const tailSegs = 12;
+  // ── Leg builder: anatomically bent, tapered, clawed ──────────────
+  const legState = (phaseOffset) => {
+    if (!isWalking) return { liftY: 0, fwdX: 0, kneeX: 0 };
+    const p = (walkPhase + phaseOffset) % 1;
+    if (p < 0.5) { const t = p / 0.5; return { liftY: 0, fwdX: (0.5 - t) * 0.14 * s * dir, kneeX: 0 }; }
+    const t = (p - 0.5) / 0.5;
+    return { liftY: Math.sin(t * Math.PI) * s * 0.055, fwdX: (-0.5 + t) * 0.14 * s * dir, kneeX: dir * Math.sin(t * Math.PI) * s * 0.02 };
+  };
+  const drawLeg = (hipX, hipY, opt) => {
+    const { hind, far, scale } = opt;
+    const ls = legState(opt.phase);
+    const sc = scale;
+    const g = fY - s * 0.004 - ls.liftY;                       // foot contact Y
+    // joint chain (digitigrade: thigh down-fwd, shin down-back, foot fwd to toes)
+    const kx = hipX + dir * legH * (hind ? 0.34 : 0.20) * sc + ls.kneeX;
+    const ky = hipY + legH * 0.44 * sc;
+    const ax = hipX + dir * legH * (hind ? 0.06 : 0.24) * sc + ls.fwdX * 0.35;   // ankle/hock
+    const ay = g - legH * (hind ? 0.30 : 0.22) * sc;
+    const tx = ax + dir * legH * (hind ? 0.40 : 0.30) * sc + ls.fwdX;            // toe base
+    const ty = g;
+    const w0 = legH * (hind ? 0.34 : 0.26) * sc;               // thigh width (beefier)
+    // ── haunch / shoulder muscle mass — the limb grows OUT of this ──
+    const mR = w0 * (hind ? 1.55 : 1.30);
+    ctx.fillStyle = far ? C.occ : C.shadow;
+    ctx.beginPath();
+    ctx.ellipse(hipX - dir * w0 * 0.15, hipY - legH * 0.12 * sc, mR * 0.92, mR * 1.18, dir * (hind ? 0.20 : -0.16), 0, Math.PI * 2);
+    ctx.fill();
+    if (!far) {
+      ctx.fillStyle = C.mid;
+      ctx.beginPath();
+      ctx.ellipse(hipX + dir * w0 * 0.06, hipY - legH * 0.16 * sc, mR * 0.56, mR * 0.82, dir * (hind ? 0.20 : -0.16), 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = `rgba(${_warmRGB},0.45)`;
+      ctx.beginPath();
+      ctx.ellipse(hipX + dir * w0 * 0.18, hipY - legH * 0.22 * sc, mR * 0.30, mR * 0.50, dir * (hind ? 0.20 : -0.16), 0, Math.PI * 2);
+      ctx.fill();
+    }
+    // joint chain (digitigrade)
+    const chain = [
+      { x: hipX, y: hipY, w: w0 },
+      { x: kx,   y: ky,   w: w0 * 0.68 },
+      { x: ax,   y: ay,   w: w0 * 0.42 },
+      { x: tx,   y: ty,   w: w0 * 0.32 },
+    ];
+    const baseCol = far ? C.occ : C.shadow;
+    ribbon(chain, baseCol);
+    // lit front plane
+    if (!far) {
+      ctx.save(); ctx.globalAlpha = 0.9;
+      const lit = chain.map(p => ({ x: p.x + dir * p.w * 0.28, y: p.y, w: p.w * 0.42 }));
+      ribbon(lit, C.mid);
+      ctx.restore();
+      ribbonEdge(chain, 0.98, `rgba(${_rimRGB},0.30)`, s * 0.010);
+    }
+    // knee joint (small & mid-toned so it doesn't read as a segment divider)
+    ctx.fillStyle = far ? '#2a0810' : C.shadow;
+    ctx.beginPath(); ctx.arc(kx, ky, w0 * 0.38, 0, Math.PI * 2); ctx.fill();
+    // ── foot: metatarsal wedge + splayed toes with warm claws ──
+    ctx.fillStyle = far ? C.edge : C.occ;
+    // ankle → toe mass so the foot has bulk, not a pinned pad
+    ctx.beginPath();
+    ctx.moveTo(ax + dir * w0 * 0.2, ay);
+    ctx.lineTo(tx + dir * legH * 0.16 * sc, ty + s * 0.004);
+    ctx.lineTo(tx - dir * legH * 0.08 * sc, ty + s * 0.006);
+    ctx.closePath(); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(tx + dir * legH * 0.06 * sc, ty - s * 0.004, w0 * 1.02, w0 * 0.46, 0, 0, Math.PI * 2); ctx.fill();
+    for (let ci = -1; ci <= 1; ci++) {
+      const toeX = tx + dir * legH * 0.11 * sc + ci * w0 * 0.56;
+      ctx.strokeStyle = far ? '#3a0a10' : C.occ; ctx.lineWidth = w0 * 0.42; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(tx, ty - s * 0.008); ctx.lineTo(toeX, ty + s * 0.006); ctx.stroke();
+      // warm claw (not pure white)
+      ctx.strokeStyle = far ? '#4a3018' : C.boneSh; ctx.lineWidth = s * 0.012 * sc;
+      ctx.beginPath();
+      ctx.moveTo(toeX, ty + s * 0.006);
+      ctx.quadraticCurveTo(toeX + dir * s * 0.013 * sc, ty + s * 0.024 * sc, toeX + dir * s * 0.026 * sc, ty + s * 0.036 * sc);
+      ctx.stroke();
+    }
+  };
+
+  // ── 3. FAR LEGS (behind body) ────────────────────────────────────
+  drawLeg(backHipX  - dir * s * 0.03, bodyBotY - s * 0.02, { hind: true,  far: true, scale: 0.90, phase: 0.00 });
+  drawLeg(frontHipX - dir * s * 0.03, bodyBotY - s * 0.02, { hind: false, far: true, scale: 0.90, phase: 0.50 });
+
+  // ── 4. TAIL (thick base → bladed tip, dorsal ridge, top rim) ─────
+  const tailSegs = 14;
   const tailPts = [];
   for (let ti = 0; ti <= tailSegs; ti++) {
     const t = ti / tailSegs;
-    // X: from tail base extending -dir direction
-    const x = tailBaseX - dir * tailLen * t;
-    // Y: starts at tail base, curves down (gravity) + sin wave
-    const arc = Math.sin(t * Math.PI * 0.65) * s * 0.10;                // sag downward
-    const wave = Math.sin(t * Math.PI * 2.2 + bTime * 1.3 + (isWalking ? walkPhase * Math.PI * 2 : 0))
-               * s * 0.07 * t;
-    const y = tailBaseY + arc * 0.6 + wave - t * s * 0.02;              // slight lift at tip
-    const w = s * (0.18 * (1 - t * 0.92));                              // tapers
+    const x = tailBaseX - dir * tailLen * (t * 0.80 + Math.sin(t * Math.PI * 0.5) * 0.20);
+    const droop = Math.sin(t * Math.PI * 0.62) * s * 0.115;
+    const lift  = Math.pow(t, 1.7) * s * 0.34;                        // tip sweeps up like the ref
+    const wave  = Math.sin(t * Math.PI * 2.0 + bTime * 1.3 + (isWalking ? walkPhase * Math.PI * 2 : 0)) * s * 0.05 * t;
+    const y = tailBaseY + droop - lift + wave;
+    // very thick muscular root (carries the haunch mass), long taper to a blade
+    const w = s * 0.250 * Math.pow(1 - t, 0.92) + s * 0.014;
     tailPts.push({ x, y, w });
   }
-  // Tail main body — fill
-  ctx.fillStyle = '#4a0e00';
-  ctx.beginPath();
-  ctx.moveTo(tailPts[0].x, tailPts[0].y - tailPts[0].w);
-  for (let ti = 1; ti <= tailSegs; ti++) ctx.lineTo(tailPts[ti].x, tailPts[ti].y - tailPts[ti].w);
-  const tip = tailPts[tailSegs];
-  // Arrowhead extensions at tail tip
-  ctx.lineTo(tip.x - dir * s * 0.04, tip.y - s * 0.06);
-  ctx.lineTo(tip.x - dir * s * 0.13, tip.y);
-  ctx.lineTo(tip.x - dir * s * 0.04, tip.y + s * 0.06);
-  for (let ti = tailSegs; ti >= 0; ti--) ctx.lineTo(tailPts[ti].x, tailPts[ti].y + tailPts[ti].w);
-  ctx.closePath();
-  ctx.fill();
-  // Tail mid tone (belly side)
-  ctx.fillStyle = '#7a1800';
-  ctx.beginPath();
-  for (let ti = 0; ti <= tailSegs; ti++) {
-    const p = tailPts[ti];
-    if (ti === 0) ctx.moveTo(p.x, p.y - p.w * 0.35);
-    else ctx.lineTo(p.x, p.y - p.w * 0.35);
-  }
-  for (let ti = tailSegs; ti >= 0; ti--) ctx.lineTo(tailPts[ti].x, tailPts[ti].y + tailPts[ti].w * 0.15);
-  ctx.closePath();
-  ctx.fill();
-  // Belly highlight stripe
-  ctx.fillStyle = '#a83a18';
-  ctx.beginPath();
-  for (let ti = 0; ti <= tailSegs; ti++) {
-    const p = tailPts[ti];
-    if (ti === 0) ctx.moveTo(p.x, p.y + p.w * 0.40);
-    else ctx.lineTo(p.x, p.y + p.w * 0.40);
-  }
-  for (let ti = tailSegs; ti >= 0; ti--) ctx.lineTo(tailPts[ti].x, tailPts[ti].y + tailPts[ti].w * 0.85);
-  ctx.closePath();
-  ctx.fill();
-  // Top spikes along tail
-  ctx.fillStyle = '#1a0400';
-  for (let ti = 0; ti < tailSegs; ti += 1) {
-    const p = tailPts[ti];
-    const spikeH = s * (0.045 + (ti % 2) * 0.015) * (1 - ti / tailSegs * 0.5);
+  ribbon(tailPts, C.occ);
+  // lit dorsal band
+  const tailLit = tailPts.map(p => ({ x: p.x, y: p.y - p.w * 0.42, w: p.w * 0.5 }));
+  ribbon(tailLit, C.shadow);
+  // belly band (warmer underside)
+  const tailBelly = tailPts.map(p => ({ x: p.x, y: p.y + p.w * 0.5, w: p.w * 0.34 }));
+  ribbon(tailBelly, C.mid);
+  // dorsal spikes along tail — run unbroken from the very root so the ridge
+  // is continuous with the back spikes (no gap at the hip)
+  ctx.fillStyle = C.edge;
+  for (let ti = 1; ti < tailSegs; ti += 1) {
+    const p = tailPts[ti]; const spikeH = (p.w * 0.8 + s * 0.016);
     ctx.beginPath();
-    ctx.moveTo(p.x - s * 0.015, p.y - p.w);
-    ctx.lineTo(p.x + (ti % 2 === 0 ? s * 0.005 : -s * 0.005), p.y - p.w - spikeH);
-    ctx.lineTo(p.x + s * 0.015, p.y - p.w);
+    ctx.moveTo(p.x - s * 0.014, p.y - p.w * 0.9);
+    ctx.lineTo(p.x + (ti % 2 ? -1 : 1) * dir * s * 0.006, p.y - p.w * 0.9 - spikeH);
+    ctx.lineTo(p.x + s * 0.014, p.y - p.w * 0.9);
+    ctx.closePath(); ctx.fill();
+  }
+  // bladed arrowhead at tip
+  {
+    const p = tailPts[tailSegs], q = tailPts[tailSegs - 1];
+    let dx = p.x - q.x, dy = p.y - q.y; const dl = Math.hypot(dx, dy) || 1; dx /= dl; dy /= dl;
+    const px = -dy, py = dx;
+    ctx.fillStyle = C.occ;
+    ctx.beginPath();
+    ctx.moveTo(p.x + px * s * 0.075, p.y + py * s * 0.075);
+    ctx.lineTo(p.x + dx * s * 0.16, p.y + dy * s * 0.16);
+    ctx.lineTo(p.x - px * s * 0.075, p.y - py * s * 0.075);
+    ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = `rgba(${_rimRGB},0.35)`; ctx.lineWidth = s * 0.01;
+    ctx.beginPath(); ctx.moveTo(p.x + px * s * 0.075, p.y + py * s * 0.075); ctx.lineTo(p.x + dx * s * 0.16, p.y + dy * s * 0.16); ctx.stroke();
+  }
+  // top rim light on tail
+  ribbonEdge(tailPts, 1.0, `rgba(${_rimRGB},0.5)`, s * 0.012);
+
+  // ═══ 5. BODY ═════════════════════════════════════════════════════
+  // Silhouette contour points
+  const P = {
+    neck:   { x: neckBaseX,                      y: neckBaseY },
+    shldr:  { x: bX + dir * bodyLen * 0.28,      y: bodyTopY - s * 0.05 },
+    back:   { x: bX - dir * bodyLen * 0.04,      y: bodyTopY - s * 0.015 },
+    haunch: { x: backHipX + dir * bodyLen * 0.08, y: bodyTopY - s * 0.075 },
+    rump:   { x: tailBaseX - dir * s * 0.01,     y: bodyCenterY - s * 0.13 },
+    tailj:  { x: tailBaseX - dir * s * 0.04,     y: tailBaseY + s * 0.03 },
+    bBack:  { x: bX - dir * bodyLen * 0.16,      y: bodyBotY + s * 0.02 },
+    bLow:   { x: bX + dir * bodyLen * 0.08,      y: bodyBotY + s * 0.04 },
+    chest:  { x: neckBaseX - dir * s * 0.04,     y: bodyBotY - bodyH * 0.05 },
+  };
+  const bodyPath = () => {
+    ctx.beginPath();
+    ctx.moveTo(P.neck.x, P.neck.y);
+    ctx.bezierCurveTo(P.neck.x - dir * s * 0.02, P.shldr.y - s * 0.02, P.shldr.x + dir * s * 0.05, P.shldr.y, P.shldr.x, P.shldr.y);
+    ctx.bezierCurveTo(P.shldr.x - dir * bodyLen * 0.12, P.back.y - s * 0.02, P.back.x + dir * bodyLen * 0.06, P.back.y, P.back.x, P.back.y);
+    ctx.bezierCurveTo(P.back.x - dir * bodyLen * 0.12, P.haunch.y - s * 0.02, P.haunch.x + dir * bodyLen * 0.04, P.haunch.y, P.haunch.x, P.haunch.y);
+    ctx.quadraticCurveTo(P.rump.x + dir * s * 0.05, P.rump.y - s * 0.01, P.rump.x, P.rump.y);
+    ctx.quadraticCurveTo(P.tailj.x + dir * s * 0.05, (P.rump.y + P.tailj.y) / 2, P.tailj.x, P.tailj.y);
+    ctx.quadraticCurveTo(P.bBack.x + dir * s * 0.02, P.bBack.y + s * 0.02, P.bBack.x, P.bBack.y);
+    ctx.bezierCurveTo(P.bBack.x + dir * bodyLen * 0.14, P.bLow.y + s * 0.02, P.bLow.x - dir * bodyLen * 0.06, P.bLow.y + s * 0.02, P.bLow.x, P.bLow.y);
+    ctx.quadraticCurveTo(P.chest.x + dir * bodyLen * 0.06, P.bLow.y, P.chest.x, P.chest.y);
+    ctx.quadraticCurveTo(P.neck.x + dir * s * 0.04, P.chest.y - bodyH * 0.5, P.neck.x, P.neck.y);
     ctx.closePath();
-    ctx.fill();
-  }
-  // Scale pattern on tail side
-  ctx.strokeStyle = '#2a0600'; ctx.lineWidth = s * 0.005;
-  for (let ti = 1; ti < tailSegs; ti += 2) {
-    const p = tailPts[ti];
-    ctx.beginPath();
-    ctx.arc(p.x, p.y, p.w * 0.45, 0, Math.PI);
-    ctx.stroke();
-  }
-
-  // ── 4. FAR LEGS (behind body, slightly offset) ───────────────────
-  // Walk phase per leg (diagonal gait):
-  //   near-front: 0, far-back: 0 (diagonal pair)
-  //   near-back: 0.5, far-front: 0.5 (diagonal pair)
-  const legState = (phaseOffset) => {
-    if (!isWalking) return { liftY: 0, fwdX: 0, kneeX: 0, kneeY: 0 };
-    const p = (walkPhase + phaseOffset) % 1;
-    if (p < 0.5) {
-      // Stance
-      const t = p / 0.5;
-      return {
-        liftY: 0,
-        fwdX: (0.5 - t) * 0.16 * s * dir,
-        kneeX: 0,
-        kneeY: Math.sin(t * Math.PI) * s * 0.006
-      };
-    }
-    // Swing
-    const t = (p - 0.5) / 0.5;
-    return {
-      liftY: Math.sin(t * Math.PI) * s * 0.050,
-      fwdX: (-0.5 + t) * 0.16 * s * dir,
-      kneeX: dir * Math.sin(t * Math.PI) * s * 0.018,
-      kneeY: Math.sin(t * Math.PI) * s * 0.015
-    };
-  };
-  const drawLeg = (hipX, hipY, zOffset, legPhase, scale) => {
-    const ls = legState(legPhase);
-    const kx = hipX + ls.kneeX + dir * s * 0.008 + zOffset.x;
-    const ky = hipY + legH * 0.50 - ls.kneeY + zOffset.y;
-    const fx = hipX + ls.fwdX + dir * s * 0.020 + zOffset.x;
-    const fy = fY - s * 0.008 - ls.liftY + zOffset.y;
-
-    ctx.lineCap = 'round';
-    // Thigh (dark)
-    ctx.strokeStyle = zOffset.far ? '#300700' : '#4a0e00';
-    ctx.lineWidth = s * 0.200 * scale;
-    ctx.beginPath(); ctx.moveTo(hipX, hipY); ctx.lineTo(kx, ky); ctx.stroke();
-    // Shin
-    ctx.strokeStyle = zOffset.far ? '#1a0400' : '#3d0a00';
-    ctx.lineWidth = s * 0.145 * scale;
-    ctx.beginPath(); ctx.moveTo(kx, ky); ctx.lineTo(fx, fy); ctx.stroke();
-    // Thigh highlight
-    ctx.strokeStyle = zOffset.far ? '#5a1000' : '#7a2800';
-    ctx.lineWidth = s * 0.080 * scale;
-    ctx.beginPath(); ctx.moveTo(hipX + dir*s*0.020, hipY); ctx.lineTo(kx + dir*s*0.014, ky); ctx.stroke();
-    // Knee scale (plate)
-    ctx.fillStyle = zOffset.far ? '#2a0500' : '#4a1200';
-    ctx.beginPath(); ctx.arc(kx, ky, s * 0.028 * scale, 0, Math.PI * 2); ctx.fill();
-    // Foot (3 claws, stepped position)
-    ctx.fillStyle = zOffset.far ? '#1a0400' : '#2a0600';
-    ctx.beginPath();
-    ctx.ellipse(fx, fy + s * 0.015, s * 0.080 * scale, s * 0.030 * scale, 0, 0, Math.PI * 2);
-    ctx.fill();
-    // Claws
-    ctx.strokeStyle = zOffset.far ? '#4a1000' : '#6a1800'; ctx.lineWidth = s * 0.022 * scale;
-    for (let ci = 0; ci < 3; ci++) {
-      const cOff = (ci - 1) * s * 0.032;
-      ctx.beginPath();
-      ctx.moveTo(fx + cOff, fy + s * 0.020);
-      ctx.lineTo(fx + cOff + dir * s * 0.010, fy + s * 0.045);
-      ctx.stroke();
-    }
   };
 
-  // Far legs (smaller, darker)
-  drawLeg(backHipX - dir * s * 0.02, bodyBotY - s * 0.005, { x: dir * s * 0.010, y: -s * 0.008, far: true }, 0.00, 0.88);   // far back
-  drawLeg(frontHipX - dir * s * 0.02, bodyBotY - s * 0.005, { x: dir * s * 0.010, y: -s * 0.008, far: true }, 0.50, 0.88); // far front
-
-  // ── 5. BODY (arched back, tapered belly, scaled) ─────────────────
-  const shoulderHumpY = bodyTopY - s * 0.03;
-  // Chest glow during attack
+  // chest furnace glow behind body
   if (inhaleE > 0 || breatheE > 0 || breathReady) {
-    const cg = Math.max(inhaleE * 0.5, breatheE, breathReady ? 0.35 : 0);
-    ctx.shadowColor = '#ff6600'; ctx.shadowBlur = s * cg * 0.30;
+    const cg = Math.max(inhaleE * 0.5, breatheE, breathReady ? 0.32 : 0);
+    ctx.shadowColor = _gloShad; ctx.shadowBlur = s * cg * 0.35;
   }
-  // Dark base
-  ctx.fillStyle = '#3d0a00';
+  // occlusion base (whole silhouette)
+  ctx.fillStyle = C.occ; bodyPath(); ctx.fill();
+  ctx.shadowBlur = 0;
+  // cool-plum deep shadow at belly (kills monochrome mud)
+  ctx.save(); bodyPath(); ctx.clip();
+  const coolG = ctx.createLinearGradient(0, bodyTopY, 0, bodyBotY + s * 0.05);
+  coolG.addColorStop(0,   _isFrost ? 'rgba(14,26,50,0)'    : 'rgba(32,14,40,0)');
+  coolG.addColorStop(0.7, _isFrost ? 'rgba(14,26,50,0.12)' : 'rgba(32,14,40,0.12)');
+  coolG.addColorStop(1,   _isFrost ? 'rgba(12,24,46,0.40)' : 'rgba(30,13,34,0.40)');
+  ctx.fillStyle = coolG; bodyPath(); ctx.fill();
+  ctx.restore();
+  // mid crimson (inset from top so occ reads as underside shadow)
+  ctx.save(); bodyPath(); ctx.clip();
+  ctx.fillStyle = C.mid;
   ctx.beginPath();
-  // Top line: neck base → shoulder hump → mid-back → hip
-  ctx.moveTo(neckBaseX, neckBaseY);
-  ctx.bezierCurveTo(
-    neckBaseX - dir * s * 0.03, shoulderHumpY - s * 0.02,
-    bX + dir * bodyLen * 0.10, shoulderHumpY - s * 0.01,
-    tailBaseX + dir * s * 0.03, bodyTopY + s * 0.04
-  );
-  // Back-hip curve down
-  ctx.quadraticCurveTo(tailBaseX - dir * s * 0.02, bodyCenterY, tailBaseX + dir * s * 0.04, bodyBotY - s * 0.02);
-  // Belly curve (sag downward)
-  ctx.bezierCurveTo(
-    bX - dir * bodyLen * 0.10, bodyBotY + s * 0.04,
-    bX + dir * bodyLen * 0.15, bodyBotY + s * 0.05,
-    neckBaseX - dir * s * 0.02, bodyBotY - s * 0.02
-  );
-  // Front curve up to neck base
-  ctx.quadraticCurveTo(neckBaseX + dir * s * 0.02, bodyBotY - bodyH * 0.4, neckBaseX, neckBaseY);
+  ctx.moveTo(P.neck.x, P.neck.y + s * 0.02);
+  ctx.bezierCurveTo(P.shldr.x, P.shldr.y + s * 0.02, P.back.x, P.back.y + s * 0.02, P.haunch.x, P.haunch.y + s * 0.03);
+  ctx.quadraticCurveTo(P.rump.x, P.rump.y + s * 0.03, P.tailj.x, P.tailj.y);
+  ctx.lineTo(bX, bodyCenterY + bodyH * 0.18);
+  ctx.lineTo(P.neck.x, bodyCenterY);
   ctx.closePath(); ctx.fill();
-  // Mid crimson layer (smaller inset)
-  ctx.fillStyle = '#7a1800';
+  // lit upper plane (top-front lit)
+  const litG = ctx.createLinearGradient(0, bodyTopY - s * 0.06, 0, bodyCenterY + s * 0.02);
+  litG.addColorStop(0, C.litHi);
+  litG.addColorStop(0.55, C.lit);
+  litG.addColorStop(1, 'rgba(207,83,38,0)');
+  ctx.fillStyle = litG;
   ctx.beginPath();
-  ctx.moveTo(neckBaseX - dir * s * 0.04, neckBaseY + s * 0.04);
-  ctx.bezierCurveTo(
-    neckBaseX - dir * s * 0.10, bodyTopY + s * 0.04,
-    bX, bodyTopY + s * 0.04,
-    tailBaseX + dir * s * 0.04, bodyTopY + s * 0.08
-  );
-  ctx.quadraticCurveTo(tailBaseX, bodyCenterY - s * 0.02, tailBaseX + dir * s * 0.02, bodyBotY - s * 0.05);
-  ctx.bezierCurveTo(
-    bX, bodyBotY - s * 0.01,
-    bX + dir * s * 0.1, bodyBotY,
-    neckBaseX - dir * s * 0.05, bodyBotY - s * 0.05
-  );
+  ctx.moveTo(P.shldr.x + dir * s * 0.04, P.shldr.y + s * 0.015);
+  ctx.bezierCurveTo(P.shldr.x - dir * bodyLen * 0.12, P.back.y, P.back.x + dir * bodyLen * 0.06, P.back.y + s * 0.01, P.haunch.x, P.haunch.y + s * 0.02);
+  ctx.quadraticCurveTo(bX - dir * bodyLen * 0.1, bodyCenterY - s * 0.02, bX + dir * bodyLen * 0.1, bodyCenterY - s * 0.01);
+  ctx.quadraticCurveTo(P.shldr.x, bodyCenterY - s * 0.02, P.shldr.x + dir * s * 0.04, P.shldr.y + s * 0.015);
   ctx.closePath(); ctx.fill();
-  // Belly lighter (paler front-bottom, glows during breath)
-  ctx.fillStyle = breatheE > 0 ? `rgba(${200 + breatheE * 55},${60 + breatheE * 60},${20 + breatheE * 30},1)` : '#a83a18';
-  ctx.beginPath();
-  ctx.moveTo(neckBaseX - dir * s * 0.06, bodyBotY - bodyH * 0.18);
-  ctx.bezierCurveTo(
-    bX - dir * bodyLen * 0.05, bodyBotY - s * 0.015,
-    bX + dir * bodyLen * 0.10, bodyBotY - s * 0.020,
-    tailBaseX + dir * s * 0.05, bodyBotY - bodyH * 0.15
-  );
-  ctx.lineTo(tailBaseX + dir * s * 0.06, bodyBotY - bodyH * 0.05);
-  ctx.bezierCurveTo(
-    bX + dir * bodyLen * 0.12, bodyBotY + s * 0.02,
-    bX - dir * bodyLen * 0.06, bodyBotY + s * 0.02,
-    neckBaseX - dir * s * 0.05, bodyBotY - bodyH * 0.08
-  );
-  ctx.closePath(); ctx.fill();
-  // Belly scales (arcs across belly)
-  ctx.strokeStyle = '#7a2800'; ctx.lineWidth = s * 0.009; ctx.lineCap = 'round';
-  for (let bi = 0; bi < 5; bi++) {
-    const bx = bX + (bi - 2) * bodyLen * 0.17;
+  // belly scutes — warm plated underside (ties with the throat plates)
+  const bellyGlow = breatheE > 0 || inhaleE > 0;
+  const bTop = bodyBotY - bodyH * 0.30;
+  const bellyShape = () => {
     ctx.beginPath();
-    ctx.arc(bx, bodyBotY - bodyH * 0.10, s * 0.075, 0, Math.PI);
+    ctx.moveTo(P.chest.x - dir * s * 0.01, bTop);
+    ctx.quadraticCurveTo(bX, bodyBotY - bodyH * 0.06, P.bBack.x + dir * s * 0.05, bTop + bodyH * 0.05);
+    ctx.lineTo(P.bBack.x + dir * s * 0.05, bodyBotY - bodyH * 0.02);
+    ctx.quadraticCurveTo(bX, bodyBotY + s * 0.03, P.chest.x - dir * s * 0.01, bodyBotY - bodyH * 0.06);
+    ctx.closePath();
+  };
+  ctx.fillStyle = bellyGlow
+    ? (_isFrost ? `rgba(${150 + breatheE * 45},${214 + breatheE * 30},255,0.95)` : `rgba(${228 + breatheE * 27},${132 + breatheE * 60},${66},0.95)`)
+    : C.belly;
+  bellyShape(); ctx.fill();
+  // soft upper edge so the plates melt into the flank (no hard bar)
+  const belEdge = ctx.createLinearGradient(0, bTop - s * 0.03, 0, bTop + bodyH * 0.20);
+  belEdge.addColorStop(0, C.mid); belEdge.addColorStop(1, 'rgba(124,23,18,0)');
+  ctx.save(); bellyShape(); ctx.clip();
+  ctx.fillStyle = belEdge; ctx.fillRect(P.bBack.x - s * 0.1, bTop - s * 0.05, bodyLen * 1.4, bodyH * 0.5);
+  ctx.restore();
+  // highlight ridge along the top of the belly plates
+  ctx.strokeStyle = `rgba(${_rimRGB},0.5)`; ctx.lineWidth = s * 0.007; ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(P.chest.x - dir * s * 0.01, bTop);
+  ctx.quadraticCurveTo(bX, bodyBotY - bodyH * 0.06, P.bBack.x + dir * s * 0.05, bTop + bodyH * 0.05);
+  ctx.stroke();
+  // plate divisions — uneven spacing + a bow that wraps the barrel of the belly
+  ctx.strokeStyle = 'rgba(90,42,22,0.55)'; ctx.lineWidth = s * 0.008; ctx.lineCap = 'round';
+  const bandT = [0.10, 0.27, 0.45, 0.62, 0.78, 0.91];
+  for (let bi = 0; bi < bandT.length; bi++) {
+    const t = bandT[bi];
+    const bx = P.bBack.x + dir * (0.10 + t * 0.86) * (P.chest.x - P.bBack.x);
+    const bow = (0.5 + Math.sin(t * Math.PI) * 0.9) * s * 0.03;   // fullest at the belly's middle
+    ctx.beginPath();
+    ctx.moveTo(bx - dir * bow * 0.4, bTop + bodyH * 0.02);
+    ctx.quadraticCurveTo(bx + dir * bow, bodyBotY - bodyH * 0.05, bx - dir * bow * 0.3, bodyBotY + bodyH * 0.02);
     ctx.stroke();
   }
-  // Scale pattern on side of body (rows of small arcs)
-  ctx.strokeStyle = '#2a0600'; ctx.lineWidth = s * 0.007;
-  for (let rowI = 0; rowI < 3; rowI++) {
-    const ry = bodyTopY + bodyH * (0.18 + rowI * 0.22);
-    for (let ci = 0; ci < 8; ci++) {
-      const rx = tailBaseX + dir * (ci + 0.5) * bodyLen * 0.12 + (rowI % 2) * bodyLen * 0.06;
-      if (Math.abs(rx - bX) > bodyLen * 0.44) continue;
-      ctx.beginPath(); ctx.arc(rx, ry, s * 0.032, Math.PI, Math.PI * 2);
-      ctx.stroke();
+  // scale texture on flank (2 sparse rows of small arcs)
+  ctx.strokeStyle = 'rgba(40,10,8,0.55)'; ctx.lineWidth = s * 0.006;
+  for (let rowI = 0; rowI < 2; rowI++) {
+    const ry = bodyTopY + bodyH * (0.30 + rowI * 0.26);
+    for (let ci = 0; ci < 7; ci++) {
+      const rx = tailBaseX + dir * (ci + 0.6 + (rowI % 2) * 0.5) * bodyLen * 0.14;
+      if (Math.abs(rx - bX) > bodyLen * 0.42) continue;
+      ctx.beginPath(); ctx.arc(rx, ry, s * 0.03, Math.PI * 1.05, Math.PI * 1.95); ctx.stroke();
     }
   }
-  // Spine ridge of spikes along back
-  ctx.fillStyle = '#1a0200';
-  const spineSegs = 8;
+  ctx.restore(); // unclip body
+
+  // dorsal spine ridge (spikes along back, tallest at shoulders)
+  ctx.fillStyle = C.edge;
+  const spineSegs = 9;
+  const spinePts = [];
   for (let si = 0; si < spineSegs; si++) {
     const t = si / (spineSegs - 1);
-    // Interpolate along back top
-    const sx = tailBaseX + dir * t * (neckBaseX - tailBaseX);
-    // Back arch at shoulders
-    const arc = 1 - Math.abs(t - 0.45) * 2.2;   // peaks near shoulder
-    const sy = bodyTopY - s * 0.008 + (arc > 0 ? -arc * s * 0.030 : 0);
-    const sh = s * (0.055 + (si % 2) * 0.014) * (0.7 + arc * 0.6);
+    const sx = P.tailj.x + dir * t * (P.neck.x - P.tailj.x);
+    // sample body top height by lerping contour points
+    let sy;
+    if (t < 0.33) sy = P.haunch.y + (P.rump.y - P.haunch.y) * 0; // near haunch/back region
+    sy = bodyTopY - s * 0.02 - Math.max(0, 1 - Math.abs(t - 0.62) * 2.4) * s * 0.05;
+    const sh = s * (0.05 + (si % 2) * 0.016) * (0.7 + Math.max(0, 1 - Math.abs(t - 0.62) * 2) * 0.6);
+    spinePts.push({ x: sx, y: sy, h: sh });
     ctx.beginPath();
-    ctx.moveTo(sx - s * 0.020, sy + s * 0.010);
-    ctx.lineTo(sx + (si % 2 === 0 ? s * 0.004 : -s * 0.004), sy - sh);
-    ctx.lineTo(sx + s * 0.020, sy + s * 0.010);
+    ctx.moveTo(sx - s * 0.018, sy + s * 0.008);
+    ctx.lineTo(sx + (si % 2 ? -1 : 1) * dir * s * 0.005, sy - sh);
+    ctx.lineTo(sx + s * 0.018, sy + s * 0.008);
     ctx.closePath(); ctx.fill();
   }
-  // Chest heart glow (central glowing spot — location of fire furnace inside)
-  const heartX = bX + dir * bodyLen * 0.12;
-  const heartY = bodyCenterY + bodyH * 0.10;
-  const heartGlow = 0.55 + Math.sin(bTime * 2.0) * 0.20 + inhaleE * 0.60 + breatheE * 0.45;
-  ctx.shadowColor = '#ff8800'; ctx.shadowBlur = s * heartGlow * 0.55;
-  const hg = ctx.createRadialGradient(heartX, heartY, 0, heartX, heartY, s * 0.13);
-  hg.addColorStop(0, `rgba(255,240,140,${heartGlow * 0.90})`);
-  hg.addColorStop(0.5, `rgba(255,110,0,${heartGlow * 0.80})`);
-  hg.addColorStop(1, 'rgba(200,20,0,0)');
-  ctx.fillStyle = hg;
-  ctx.beginPath(); ctx.arc(heartX, heartY, s * 0.13, 0, Math.PI * 2); ctx.fill();
+  // rim light on back contour (the key "lit against darkness" cue)
+  ctx.strokeStyle = C.rim; ctx.lineWidth = s * 0.014; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  ctx.shadowColor = `rgba(${_rimRGB},0.5)`; ctx.shadowBlur = s * 0.06;
+  ctx.beginPath();
+  ctx.moveTo(P.haunch.x, P.haunch.y);
+  ctx.bezierCurveTo(P.back.x - dir * bodyLen * 0.06, P.back.y - s * 0.005, P.shldr.x - dir * bodyLen * 0.1, P.back.y, P.shldr.x, P.shldr.y);
+  ctx.stroke();
   ctx.shadowBlur = 0;
 
-  // ── 6. NEAR LEGS (full size, in front of body) ───────────────────
-  drawLeg(backHipX, bodyBotY, { x: 0, y: 0, far: false }, 0.50, 1.00);   // near back
-  drawLeg(frontHipX, bodyBotY, { x: 0, y: 0, far: false }, 0.00, 1.00);  // near front
+  // chest furnace (heart glow — inner fire)
+  const heartX = bX + dir * bodyLen * 0.20;
+  const heartY = bodyCenterY + bodyH * 0.12;
+  // faint ember at idle; only the attack really lights the furnace
+  const heartGlow = 0.14 + Math.sin(bTime * 2.0) * 0.06 + inhaleE * 0.7 + breatheE * 0.6;
+  ctx.shadowColor = _gloShad; ctx.shadowBlur = s * heartGlow * 0.5;
+  const hg = ctx.createRadialGradient(heartX, heartY, 0, heartX, heartY, s * 0.12);
+  hg.addColorStop(0, `rgba(${_gloCore},${heartGlow * 0.85})`);
+  hg.addColorStop(0.5, `rgba(${_gloMid},${heartGlow * 0.7})`);
+  hg.addColorStop(1, `rgba(${_gloEdge},0)`);
+  ctx.fillStyle = hg;
+  ctx.beginPath(); ctx.arc(heartX, heartY, s * 0.12, 0, Math.PI * 2); ctx.fill();
+  ctx.shadowBlur = 0;
 
-  // ── 7. NECK (S-curve from shoulders to head) ─────────────────────
-  // Neck has a main S-curve. Mid control point curves backward during inhale, forward during thrust
-  const neckMidX = neckBaseX + dir * neckLen * (0.30 + thrustE * 0.08 - inhaleE * 0.08);
-  const neckMidY = neckBaseY - neckLen * (0.35 + inhaleE * 0.12 - thrustE * 0.05);
-  // Draw neck with thickness that tapers
-  const neckSegs = 8;
+  // ── 6. NEAR LEGS (full, bent, planted) ───────────────────────────
+  drawLeg(backHipX,  bodyBotY - s * 0.005, { hind: true,  far: false, scale: 1.0, phase: 0.50 });
+  drawLeg(frontHipX, bodyBotY - s * 0.005, { hind: false, far: false, scale: 1.0, phase: 0.00 });
+
+  // ── 7. NECK (S-curve, throat scutes, dorsal spikes, rim) ─────────
+  // Gentle S: the nape rises back before the head reaches forward.
+  const neckMidX = neckBaseX + dir * neckLen * (0.16 + thrustE * 0.10 - inhaleE * 0.10);
+  const neckMidY = neckBaseY - neckLen * (0.46 + inhaleE * 0.14 - thrustE * 0.06);
+  const neckSegs = 10;
   const neckPts = [];
   for (let ni = 0; ni <= neckSegs; ni++) {
-    const t = ni / neckSegs;
-    // Quadratic bezier
-    const omt = 1 - t;
+    const t = ni / neckSegs, omt = 1 - t;
     const nx = omt * omt * neckBaseX + 2 * omt * t * neckMidX + t * t * headBaseX;
     const ny = omt * omt * neckBaseY + 2 * omt * t * neckMidY + t * t * headBaseY;
-    // Thickness tapers from 0.17 at base to 0.095 at head
-    const nw = s * (0.17 - t * 0.07);
-    // Perpendicular normal (for offsetting top/bottom)
-    const dx = 2 * omt * (neckMidX - neckBaseX) + 2 * t * (headBaseX - neckMidX);
-    const dy = 2 * omt * (neckMidY - neckBaseY) + 2 * t * (headBaseY - neckMidY);
-    const dl = Math.sqrt(dx * dx + dy * dy) || 1;
-    const px = -dy / dl, py = dx / dl;
-    neckPts.push({ x: nx, y: ny, w: nw, px, py });
+    // strong taper: thick brisket base → narrow behind the skull (kills the
+    // uniform "extruded pipe" read). Slight bulge near the base for muscle.
+    const nw = s * (0.185 - t * 0.135) * (1 + Math.max(0, 0.18 - t) * 0.6);
+    neckPts.push({ x: nx, y: ny, w: nw });
   }
-  // Fill neck (top edge → bottom edge)
-  ctx.fillStyle = '#3d0a00';
-  ctx.beginPath();
-  ctx.moveTo(neckPts[0].x + neckPts[0].px * neckPts[0].w, neckPts[0].y + neckPts[0].py * neckPts[0].w);
-  for (let ni = 1; ni <= neckSegs; ni++) {
-    const p = neckPts[ni];
-    ctx.lineTo(p.x + p.px * p.w, p.y + p.py * p.w);
-  }
-  for (let ni = neckSegs; ni >= 0; ni--) {
-    const p = neckPts[ni];
-    ctx.lineTo(p.x - p.px * p.w, p.y - p.py * p.w);
-  }
-  ctx.closePath(); ctx.fill();
-  // Neck mid tone (upper)
-  ctx.fillStyle = '#7a1800';
-  ctx.beginPath();
-  ctx.moveTo(neckPts[0].x + neckPts[0].px * neckPts[0].w * 0.35, neckPts[0].y + neckPts[0].py * neckPts[0].w * 0.35);
-  for (let ni = 1; ni <= neckSegs; ni++) {
-    const p = neckPts[ni];
-    ctx.lineTo(p.x + p.px * p.w * 0.35, p.y + p.py * p.w * 0.35);
-  }
-  for (let ni = neckSegs; ni >= 0; ni--) {
-    const p = neckPts[ni];
-    ctx.lineTo(p.x - p.px * p.w * 0.80, p.y - p.py * p.w * 0.80);
-  }
-  ctx.closePath(); ctx.fill();
-  // Belly stripe on neck (underside, lighter)
-  ctx.fillStyle = '#a83a18';
-  ctx.beginPath();
-  ctx.moveTo(neckPts[0].x - neckPts[0].px * neckPts[0].w * 0.55, neckPts[0].y - neckPts[0].py * neckPts[0].w * 0.55);
-  for (let ni = 1; ni <= neckSegs; ni++) {
-    const p = neckPts[ni];
-    ctx.lineTo(p.x - p.px * p.w * 0.55, p.y - p.py * p.w * 0.55);
-  }
-  for (let ni = neckSegs; ni >= 0; ni--) {
-    const p = neckPts[ni];
-    ctx.lineTo(p.x - p.px * p.w * 0.92, p.y - p.py * p.w * 0.92);
-  }
-  ctx.closePath(); ctx.fill();
-  // Neck spikes (running along top)
-  ctx.fillStyle = '#1a0200';
-  for (let ni = 0; ni < neckSegs; ni++) {
-    const p = neckPts[ni];
-    const sH = s * 0.038 * (1 - ni / neckSegs * 0.4);
+  // Brisket / trapezius: a muscle mass that flares the neck root into the
+  // chest and shoulder so the neck grows out of the body (kills the seam).
+  ctx.save();
+  ctx.translate(neckBaseX - dir * s * 0.015, neckBaseY + bodyH * 0.30);
+  ctx.rotate(dir * 0.62);
+  ctx.fillStyle = C.shadow;
+  ctx.beginPath(); ctx.ellipse(0, 0, s * 0.175, bodyH * 0.66, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = C.mid;
+  ctx.beginPath(); ctx.ellipse(dir * s * 0.03, -s * 0.015, s * 0.115, bodyH * 0.46, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.restore();
+  ribbon(neckPts, C.occ);                                              // dark far side
+  // rounded muscle: mid core offset toward the dorsal (lit) side → volume
+  ribbon(neckPts.map(p => ({ x: p.x + p._px * p.w * 0.26, y: p.y + p._py * p.w * 0.26, w: p.w * 0.62 })), C.mid);
+  ribbonEdge(neckPts, 0.60, C.lit, s * 0.016);                         // lit crest muscle
+  ribbonEdge(neckPts, 0.14, C.litHi, s * 0.007);                       // core sheen
+  // throat scutes: warm belly plates down the underside
+  const throat = neckPts.map(p => ({ x: p.x - p._px * p.w * 0.48, y: p.y - p._py * p.w * 0.48, w: p.w * 0.40 }));
+  ribbon(throat, C.belly);
+  ctx.strokeStyle = 'rgba(90,42,22,0.5)'; ctx.lineWidth = s * 0.006; ctx.lineCap = 'round';
+  for (let ni = 1; ni < neckSegs; ni++) {
+    const p = throat[ni];
     ctx.beginPath();
-    ctx.moveTo(p.x + p.px * p.w - p.px * s * 0.001, p.y + p.py * p.w - p.py * s * 0.001);
-    ctx.lineTo(p.x + p.px * (p.w + sH) + (ni % 2 === 0 ? 1 : -1) * dir * s * 0.005,
-               p.y + p.py * (p.w + sH));
-    ctx.lineTo(p.x + p.px * p.w + p.px * s * 0.001, p.y + p.py * p.w + p.py * s * 0.001);
-    ctx.closePath(); ctx.fill();
-  }
-  // Underside belly scales
-  ctx.strokeStyle = '#7a2800'; ctx.lineWidth = s * 0.006;
-  for (let ni = 1; ni < neckSegs; ni += 2) {
-    const p = neckPts[ni];
-    ctx.beginPath();
-    ctx.moveTo(p.x - p.px * p.w * 0.70 - p.py * s * 0.025, p.y - p.py * p.w * 0.70 + p.px * s * 0.025);
-    ctx.lineTo(p.x - p.px * p.w * 0.70 + p.py * s * 0.025, p.y - p.py * p.w * 0.70 - p.px * s * 0.025);
+    ctx.moveTo(p.x - p._px * p.w, p.y - p._py * p.w);
+    ctx.lineTo(p.x + p._px * p.w, p.y + p._py * p.w);
     ctx.stroke();
   }
+  // underside tendon/fold overlaps — break the smooth extruded curve so the
+  // neck reads as stacked muscle, not a bent pipe.
+  ctx.fillStyle = 'rgba(20,6,10,0.32)';
+  [4, 7].forEach(ni => {
+    const p = neckPts[ni];
+    ctx.save();
+    ctx.translate(p.x - p._px * p.w * 0.42, p.y - p._py * p.w * 0.42);
+    ctx.rotate(Math.atan2(p._py, p._px));
+    ctx.beginPath(); ctx.ellipse(0, 0, p.w * 0.75, p.w * 0.26, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+  });
+  // dorsal spikes along neck (shrink toward the head)
+  ctx.fillStyle = C.edge;
+  for (let ni = 1; ni < neckSegs; ni++) {
+    const p = neckPts[ni]; const sH = s * 0.036 * (1 - ni / neckSegs * 0.55);
+    ctx.beginPath();
+    ctx.moveTo(p.x + p._px * p.w, p.y + p._py * p.w);
+    ctx.lineTo(p.x + p._px * (p.w + sH) + (ni % 2 ? 1 : -1) * dir * s * 0.004, p.y + p._py * (p.w + sH));
+    ctx.lineTo(p.x + p._px * p.w * 0.5 + (p.x - neckPts[ni - 1].x) * 0.5, p.y + p._py * p.w * 0.5);
+    ctx.closePath(); ctx.fill();
+  }
+  // rim light on neck top edge
+  ribbonEdge(neckPts, 1.0, `rgba(${_rimRGB},0.5)`, s * 0.011);
 
-  // ── 8. HEAD (rotated by headRot, detailed) ───────────────────────
+  // ── 8. HEAD (rotated; brow, snout, jaw, horns, eye) ──────────────
   ctx.save();
   ctx.translate(headCX, headCY);
   ctx.rotate(headRot * dir);
-  const lx = 0, ly = 0;   // local coords (since we translated)
-  // Upper skull (elongated oval)
-  if (inFight) {
-    ctx.shadowColor = breatheE > 0 ? '#ffaa00' : '#cc2200';
-    ctx.shadowBlur = s * (breatheE > 0 ? 0.55 : 0.22);
-  }
-  // Dark base head
-  ctx.fillStyle = '#4a0e00';
+  const D = dir; const hw = headW, hh = headH;
+  if (inFight) { ctx.shadowColor = _isFrost ? (breatheE > 0 ? '#8ad6ff' : '#2a6aa8') : (breatheE > 0 ? '#ffaa00' : '#cc2200'); ctx.shadowBlur = s * (breatheE > 0 ? 0.5 : 0.2); }
+
+  // Horns first (behind skull) — 2 thick backswept horns, tapered & ridged
+  const drawHorn = (bx0, by0, len, spread, wBase) => {
+    const bx = D * hw * bx0, by = hh * by0;
+    const mx = bx - D * s * len * 0.42, my = by - s * len * 0.10;
+    const ex = bx - D * s * len * 0.92, ey = by - s * len * (0.42 + spread);
+    // bony base boss where the horn erupts from the skull
+    ctx.fillStyle = _hornBoss;
+    ctx.beginPath(); ctx.ellipse(bx, by, s * wBase * 1.25, s * wBase * 0.95, dir * -0.3, 0, Math.PI * 2); ctx.fill();
+    ribbon([
+      { x: bx, y: by, w: s * wBase },
+      { x: mx, y: my, w: s * wBase * 0.6 },
+      { x: ex, y: ey, w: s * wBase * 0.16 },
+    ], C.edge);
+    ctx.strokeStyle = _hornCol; ctx.lineWidth = s * wBase * 0.55; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(bx, by); ctx.quadraticCurveTo(mx, my, ex, ey); ctx.stroke();
+    ctx.strokeStyle = `rgba(${_rimRGB},0.4)`; ctx.lineWidth = s * wBase * 0.2;
+    ctx.beginPath(); ctx.moveTo(bx, by - s * wBase * 0.3); ctx.quadraticCurveTo(mx, my - s * wBase * 0.3, ex, ey); ctx.stroke();
+  };
+  // (horns drawn after the skull below, so their thick bases read as attached)
+  // cheek frill — swept-back scalloped fin ROOTED at the jaw/skull (the skull
+  // is painted next and overlaps its front edge, so it reads attached).
+  ctx.fillStyle = '#3a1008';
   ctx.beginPath();
-  ctx.moveTo(lx - dir * headW * 0.60, ly + headH * 0.20);
-  ctx.quadraticCurveTo(lx - dir * headW * 0.78, ly - headH * 0.50, lx - dir * headW * 0.20, ly - headH * 0.85);
-  ctx.quadraticCurveTo(lx + dir * headW * 0.50, ly - headH * 0.92, lx + dir * headW * 1.00, ly - headH * 0.30);
-  ctx.quadraticCurveTo(lx + dir * headW * 1.22, ly + headH * 0.10, lx + dir * headW * 1.05, ly + headH * 0.22);
-  ctx.lineTo(lx - dir * headW * 0.25, ly + headH * 0.22);
+  ctx.moveTo(-D * hw * 0.08, -hh * 0.36);
+  ctx.quadraticCurveTo(-D * hw * 0.64, -hh * 0.36, -D * hw * 0.72, hh * 0.04);
+  ctx.quadraticCurveTo(-D * hw * 0.54, hh * 0.00, -D * hw * 0.44, hh * 0.26);
+  ctx.quadraticCurveTo(-D * hw * 0.30, hh * 0.06, -D * hw * 0.04, hh * 0.14);
   ctx.closePath(); ctx.fill();
-  // Lower jaw (hinged at back, opens with jawOpen)
-  ctx.fillStyle = '#3d0a00';
+
+  ctx.shadowBlur = inFight ? ctx.shadowBlur : 0;
+  // Lower jaw (opens with jawOpen)
+  ctx.fillStyle = C.occ;
   ctx.beginPath();
-  ctx.moveTo(lx - dir * headW * 0.20, ly + headH * 0.20);
-  ctx.quadraticCurveTo(lx + dir * headW * 0.30, ly + headH * 0.48 + jawOpen, lx + dir * headW * 0.98, ly + headH * 0.30 + jawOpen);
-  ctx.lineTo(lx + dir * headW * 1.22, ly + headH * 0.28 + jawOpen);
-  ctx.lineTo(lx + dir * headW * 1.22, ly + headH * 0.18);
-  ctx.quadraticCurveTo(lx + dir * headW * 0.55, ly + headH * 0.30, lx - dir * headW * 0.20, ly + headH * 0.22);
+  ctx.moveTo(-D * hw * 0.30, hh * 0.10);
+  ctx.quadraticCurveTo(D * hw * 0.30, hh * 0.42 + jawOpen, D * hw * 1.02, hh * 0.30 + jawOpen);
+  ctx.lineTo(D * hw * 1.18, hh * 0.26 + jawOpen);
+  ctx.lineTo(D * hw * 1.14, hh * 0.14 + jawOpen * 0.4);
+  ctx.quadraticCurveTo(D * hw * 0.45, hh * 0.24, -D * hw * 0.30, hh * 0.02);
   ctx.closePath(); ctx.fill();
-  // Lower jaw belly
-  ctx.fillStyle = '#7a2800';
+  ctx.fillStyle = C.belly;
+  ctx.beginPath(); ctx.ellipse(D * hw * 0.42, hh * 0.34 + jawOpen * 0.7, hw * 0.46, hh * 0.10, 0, 0, Math.PI * 2); ctx.fill();
+
+  // Upper skull — dark base
+  ctx.fillStyle = C.occ;
   ctx.beginPath();
-  ctx.ellipse(lx + dir * headW * 0.45, ly + headH * 0.38 + jawOpen * 0.6,
-              headW * 0.50, headH * 0.10, 0, 0, Math.PI * 2); ctx.fill();
-  // Mid tone upper head
-  ctx.fillStyle = '#7a2800';
-  ctx.beginPath();
-  ctx.moveTo(lx - dir * headW * 0.40, ly + headH * 0.10);
-  ctx.quadraticCurveTo(lx - dir * headW * 0.55, ly - headH * 0.40, lx - dir * headW * 0.10, ly - headH * 0.70);
-  ctx.quadraticCurveTo(lx + dir * headW * 0.40, ly - headH * 0.75, lx + dir * headW * 0.90, ly - headH * 0.20);
-  ctx.quadraticCurveTo(lx + dir * headW * 1.00, ly + headH * 0.05, lx + dir * headW * 0.85, ly + headH * 0.12);
-  ctx.lineTo(lx - dir * headW * 0.10, ly + headH * 0.10);
+  ctx.moveTo(-D * hw * 0.55, hh * 0.16);
+  ctx.quadraticCurveTo(-D * hw * 0.72, -hh * 0.55, -D * hw * 0.05, -hh * 0.82);   // back of skull
+  ctx.quadraticCurveTo(D * hw * 0.45, -hh * 0.86, D * hw * 0.72, -hh * 0.42);      // brow → snout ridge
+  ctx.quadraticCurveTo(D * hw * 1.05, -hh * 0.16, D * hw * 1.24, hh * 0.14);       // snout top → nose
+  ctx.lineTo(D * hw * 1.18, hh * 0.26);                                            // nostril front
+  ctx.quadraticCurveTo(D * hw * 0.55, hh * 0.30, -D * hw * 0.28, hh * 0.18);       // upper lip
   ctx.closePath(); ctx.fill();
-  // Teeth (upper row)
-  ctx.fillStyle = '#e8dcb4';
-  for (let ti = 0; ti < 5; ti++) {
-    const tx = lx + dir * headW * (-0.05 + ti * 0.22);
+  // Upper skull — lit top plane
+  const headLit = ctx.createLinearGradient(0, -hh * 0.85, 0, hh * 0.1);
+  headLit.addColorStop(0, C.litHi); headLit.addColorStop(0.7, C.mid); headLit.addColorStop(1, 'rgba(124,23,18,0)');
+  ctx.fillStyle = headLit;
+  ctx.beginPath();
+  ctx.moveTo(-D * hw * 0.40, -hh * 0.05);
+  ctx.quadraticCurveTo(-D * hw * 0.55, -hh * 0.50, -D * hw * 0.02, -hh * 0.72);
+  ctx.quadraticCurveTo(D * hw * 0.42, -hh * 0.74, D * hw * 0.66, -hh * 0.36);
+  ctx.quadraticCurveTo(D * hw * 0.95, -hh * 0.12, D * hw * 1.12, hh * 0.10);
+  ctx.lineTo(D * hw * 0.6, hh * 0.02);
+  ctx.lineTo(-D * hw * 0.30, -hh * 0.02);
+  ctx.closePath(); ctx.fill();
+  // snout rim light
+  ctx.strokeStyle = C.rim; ctx.lineWidth = s * 0.011; ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(-D * hw * 0.05, -hh * 0.80);
+  ctx.quadraticCurveTo(D * hw * 0.45, -hh * 0.84, D * hw * 0.72, -hh * 0.42);
+  ctx.quadraticCurveTo(D * hw * 1.03, -hh * 0.16, D * hw * 1.22, hh * 0.13);
+  ctx.stroke();
+
+  // Horns — thick, backswept, attached at the back-top of the skull
+  drawHorn(-0.12, -0.56, 0.64, 0.16, 0.10);
+  drawHorn(-0.32, -0.38, 0.48, 0.06, 0.075);
+
+  // Teeth — upper row, varied sizes with prominent canines
+  ctx.fillStyle = C.bone;
+  const upperT = [0.02, 0.22, 0.44, 0.66, 0.90];
+  const upperH = [0.030, 0.052, 0.032, 0.046, 0.064];
+  const upperW = [0.012, 0.016, 0.011, 0.014, 0.018];
+  for (let ti = 0; ti < upperT.length; ti++) {
+    const tx = D * hw * upperT[ti];
     ctx.beginPath();
-    ctx.moveTo(tx - s * 0.012, ly + headH * 0.20);
-    ctx.lineTo(tx, ly + headH * 0.20 + s * 0.035);
-    ctx.lineTo(tx + s * 0.012, ly + headH * 0.20);
+    ctx.moveTo(tx - s * upperW[ti], hh * 0.20);
+    ctx.lineTo(tx + D * s * 0.004, hh * 0.20 + s * upperH[ti]);
+    ctx.lineTo(tx + s * upperW[ti], hh * 0.20);
     ctx.closePath(); ctx.fill();
   }
-  // Front fangs
-  ctx.beginPath();
-  ctx.moveTo(lx + dir * headW * 0.98, ly + headH * 0.20);
-  ctx.lineTo(lx + dir * headW * 1.02, ly + headH * 0.20 + s * 0.060);
-  ctx.lineTo(lx + dir * headW * 1.06, ly + headH * 0.20);
-  ctx.closePath(); ctx.fill();
-  // Lower teeth (visible when mouth open)
-  if (jawOpen > s * 0.010) {
-    ctx.fillStyle = '#d8cba0';
+  // Lower teeth (when open)
+  if (jawOpen > s * 0.01) {
+    ctx.fillStyle = C.boneSh;
     for (let ti = 0; ti < 5; ti++) {
-      const tx = lx + dir * headW * (-0.02 + ti * 0.22);
-      ctx.beginPath();
-      ctx.moveTo(tx - s * 0.010, ly + headH * 0.30 + jawOpen);
-      ctx.lineTo(tx, ly + headH * 0.30 + jawOpen - s * 0.028);
-      ctx.lineTo(tx + s * 0.010, ly + headH * 0.30 + jawOpen);
-      ctx.closePath(); ctx.fill();
+      const tx = D * hw * (0.05 + ti * 0.24);
+      ctx.beginPath(); ctx.moveTo(tx - s * 0.01, hh * 0.30 + jawOpen); ctx.lineTo(tx, hh * 0.30 + jawOpen - s * 0.03); ctx.lineTo(tx + s * 0.01, hh * 0.30 + jawOpen); ctx.closePath(); ctx.fill();
     }
   }
-  // Throat glow inside open mouth (when charging/breathing)
+  // Throat glow inside mouth
   if (throatGlow > 0.05) {
-    const tgX = lx + dir * headW * 0.55;
-    const tgY = ly + headH * 0.28 + jawOpen * 0.4;
-    ctx.shadowColor = '#ff8800'; ctx.shadowBlur = s * throatGlow * 0.55;
-    const tg = ctx.createRadialGradient(tgX, tgY, 0, tgX, tgY, s * 0.080);
-    tg.addColorStop(0, `rgba(255,240,140,${throatGlow * 0.95})`);
-    tg.addColorStop(0.5, `rgba(255,100,0,${throatGlow * 0.85})`);
-    tg.addColorStop(1, 'rgba(180,20,0,0)');
+    const tgX = D * hw * 0.55, tgY = hh * 0.26 + jawOpen * 0.4;
+    ctx.shadowColor = _gloShad; ctx.shadowBlur = s * throatGlow * 0.5;
+    const tg = ctx.createRadialGradient(tgX, tgY, 0, tgX, tgY, s * 0.08);
+    tg.addColorStop(0, `rgba(${_gloCore},${throatGlow * 0.95})`);
+    tg.addColorStop(0.5, `rgba(${_gloMid},${throatGlow * 0.85})`);
+    tg.addColorStop(1, `rgba(${_gloEdge},0)`);
     ctx.fillStyle = tg;
-    ctx.beginPath();
-    ctx.ellipse(tgX, tgY, s * 0.080, s * 0.036 + jawOpen * 0.5, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(tgX, tgY, s * 0.08, s * 0.036 + jawOpen * 0.5, 0, 0, Math.PI * 2); ctx.fill();
     ctx.shadowBlur = 0;
   }
-  // Horns (4, varying sizes, swept back)
-  const hornConfigs = [
-    { bx: -0.10, by: -0.72, len: 0.40, ang: -Math.PI * 0.25 },
-    { bx:  0.10, by: -0.80, len: 0.45, ang: -Math.PI * 0.32 },
-    { bx:  0.30, by: -0.72, len: 0.34, ang: -Math.PI * 0.20 },
-    { bx:  0.48, by: -0.60, len: 0.26, ang: -Math.PI * 0.14 }
-  ];
-  hornConfigs.forEach(h => {
-    const hbx = lx + dir * headW * h.bx;
-    const hby = ly + headH * h.by;
-    // Horn sweeps -dir (backward)
-    const hMx = hbx - dir * s * (0.05 + h.len * 0.3);
-    const hMy = hby + Math.cos(h.ang) * s * h.len * 0.4 - s * h.len * 0.25;
-    const hTx = hbx - dir * s * h.len * 0.85;
-    const hTy = hby - s * h.len * 0.5;
-    // Dark base
-    ctx.strokeStyle = '#1a0200'; ctx.lineWidth = s * (0.055 - h.len * 0.02); ctx.lineCap = 'round';
-    ctx.beginPath(); ctx.moveTo(hbx, hby); ctx.quadraticCurveTo(hMx, hMy, hTx, hTy); ctx.stroke();
-    // Mid tone
-    ctx.strokeStyle = '#3a1400'; ctx.lineWidth = s * (0.030 - h.len * 0.01);
-    ctx.beginPath(); ctx.moveTo(hbx + dir * s * 0.004, hby); ctx.quadraticCurveTo(hMx + dir * s * 0.004, hMy, hTx + dir * s * 0.004, hTy); ctx.stroke();
-  });
-  // Eye socket + eye (yellow, angry)
-  const eyeCX = lx + dir * headW * 0.30;
-  const eyeCY = ly - headH * 0.26;
-  const eyeRr = headH * 0.11;
-  ctx.shadowColor = breatheE > 0 ? '#ffcc00' : '#ff4400';
-  ctx.shadowBlur = s * (breatheE > 0 ? 0.42 : inFight ? 0.28 : 0.14);
-  // Black socket
-  ctx.fillStyle = '#100200';
-  ctx.beginPath(); ctx.arc(eyeCX, eyeCY, eyeRr * 1.35, 0, Math.PI * 2); ctx.fill();
-  // Yellow iris
-  ctx.fillStyle = breatheE > 0 ? '#ffdd55' : (inFight ? '#ff8800' : '#dd4400');
-  ctx.beginPath(); ctx.arc(eyeCX, eyeCY, eyeRr, 0, Math.PI * 2); ctx.fill();
-  // Vertical slit pupil
-  ctx.fillStyle = '#0a0000';
+  // Brow ridge (furious overhang)
+  ctx.fillStyle = '#3a0c08';
   ctx.beginPath();
-  ctx.ellipse(eyeCX + dir * eyeRr * 0.10, eyeCY, eyeRr * 0.20, eyeRr * 0.88, 0, 0, Math.PI * 2); ctx.fill();
-  ctx.fillStyle = 'rgba(255,240,180,0.60)';
-  ctx.beginPath(); ctx.arc(eyeCX - eyeRr * 0.30, eyeCY - eyeRr * 0.30, eyeRr * 0.22, 0, Math.PI * 2); ctx.fill();
-  ctx.shadowBlur = 0;
-  // Brow ridge (furious)
-  ctx.strokeStyle = '#1a0200'; ctx.lineWidth = s * 0.014; ctx.lineCap = 'round';
-  ctx.beginPath();
-  ctx.moveTo(eyeCX - dir * eyeRr * 1.35, eyeCY - eyeRr * 0.85);
-  ctx.lineTo(eyeCX + dir * eyeRr * 1.15, eyeCY - eyeRr * 1.30);
-  ctx.stroke();
-  // Nostril
-  ctx.fillStyle = '#0a0200';
-  ctx.beginPath();
-  ctx.ellipse(lx + dir * headW * 0.88, ly - headH * 0.05, headW * 0.05, headH * 0.04, 0, 0, Math.PI * 2); ctx.fill();
-  // Small ear-fin above eye
-  ctx.fillStyle = '#3a1400';
-  ctx.beginPath();
-  ctx.moveTo(lx + dir * headW * 0.05, ly - headH * 0.50);
-  ctx.lineTo(lx - dir * headW * 0.08, ly - headH * 0.92);
-  ctx.lineTo(lx + dir * headW * 0.18, ly - headH * 0.75);
+  ctx.moveTo(-D * hw * 0.10, -hh * 0.30);
+  ctx.quadraticCurveTo(D * hw * 0.30, -hh * 0.50, D * hw * 0.58, -hh * 0.34);
+  ctx.quadraticCurveTo(D * hw * 0.34, -hh * 0.22, -D * hw * 0.02, -hh * 0.18);
   ctx.closePath(); ctx.fill();
-  // Smoke puffs from nostril when idle/charging
+  // Eye (glowing, slit pupil, under brow)
+  const eyeCX = D * hw * 0.26, eyeCY = -hh * 0.20, eyeR = hh * 0.13;
+  ctx.shadowColor = _isFrost ? (breatheE > 0 ? '#aef0ff' : '#66c8ff') : (breatheE > 0 ? '#ffcc00' : '#ff4400'); ctx.shadowBlur = s * (breatheE > 0 ? 0.42 : inFight ? 0.26 : 0.14);
+  ctx.fillStyle = _isFrost ? '#02080e' : '#0a0200'; ctx.beginPath(); ctx.ellipse(eyeCX, eyeCY, eyeR * 1.3, eyeR * 1.05, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = _isFrost ? (breatheE > 0 ? '#e0f7ff' : (inFight ? '#79d4f6' : '#9cc9e0')) : (breatheE > 0 ? '#ffe066' : (inFight ? '#ff9922' : '#e6b23a'));
+  ctx.beginPath(); ctx.ellipse(eyeCX, eyeCY, eyeR, eyeR * 0.82, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#00060a';
+  ctx.beginPath(); ctx.ellipse(eyeCX + D * eyeR * 0.15, eyeCY, eyeR * 0.22, eyeR * 0.78, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = _isFrost ? 'rgba(232,250,255,0.75)' : 'rgba(255,245,200,0.7)';
+  ctx.beginPath(); ctx.arc(eyeCX - D * eyeR * 0.3, eyeCY - eyeR * 0.3, eyeR * 0.2, 0, Math.PI * 2); ctx.fill();
+  ctx.shadowBlur = 0;
+  // Nostril + smoke
+  ctx.fillStyle = '#120200';
+  ctx.beginPath(); ctx.ellipse(D * hw * 1.06, hh * 0.02, hw * 0.05, hh * 0.045, -0.4 * D, 0, Math.PI * 2); ctx.fill();
   if (breathReady || inhaleE > 0.2) {
     const puff = inhaleE > 0 ? inhaleE : 0.3;
-    ctx.fillStyle = `rgba(200,150,120,${puff * 0.40})`;
+    ctx.fillStyle = _isFrost ? `rgba(190,225,245,${puff * 0.4})` : `rgba(200,150,120,${puff * 0.4})`;
     ctx.beginPath();
-    ctx.arc(lx + dir * headW * (1.10 + (1 - (bTime % 1)) * 0.30),
-            ly - headH * 0.10 - (1 - (bTime % 1)) * s * 0.05,
-            s * 0.024, 0, Math.PI * 2); ctx.fill();
+    ctx.arc(D * hw * (1.15 + (1 - (bTime % 1)) * 0.3), hh * 0.0 - (1 - (bTime % 1)) * s * 0.05, s * 0.024, 0, Math.PI * 2); ctx.fill();
   }
-  ctx.restore();   // head rotation
+  ctx.restore(); // head
 
-  // ── 9. NEAR WING (over body, large with full bone detail) ────────
-  const nwShX = neckBaseX - dir * s * 0.04;
-  const nwShY = bodyTopY - s * 0.010;
-  const nwBeat = isWalking
-    ? Math.sin(walkPhase * Math.PI * 2) * 0.15
-    : Math.sin(bTime * 0.70 + 0.4) * 0.08;
-  // Bones
-  const nwElbX = nwShX - dir * s * 0.40;
-  const nwElbY = nwShY - s * (0.58 + nwBeat * 0.08);
-  const nwTip1X = nwShX - dir * s * 0.82;                     // leading edge
-  const nwTip1Y = nwShY - s * (0.78 + nwBeat * 0.18);
-  const nwTip2X = nwShX - dir * s * 0.68;
-  const nwTip2Y = nwShY - s * (0.38 + nwBeat * 0.05);
-  const nwTip3X = nwShX - dir * s * 0.42;
-  const nwTip3Y = nwShY + s * 0.02;
-  const nwBodyAttachX = nwShX + dir * s * 0.02;
-  const nwBodyAttachY = nwShY + s * 0.12;
-  // Membrane (dark red)
-  ctx.fillStyle = '#3d0a00';
-  ctx.beginPath();
-  ctx.moveTo(nwShX, nwShY);
-  ctx.quadraticCurveTo(nwElbX - s * 0.04, nwElbY - s * 0.04, nwTip1X, nwTip1Y);
-  ctx.quadraticCurveTo(nwTip1X + dir * s * 0.06, (nwTip1Y + nwTip2Y) / 2, nwTip2X, nwTip2Y);
-  ctx.quadraticCurveTo(nwTip2X + dir * s * 0.06, (nwTip2Y + nwTip3Y) / 2, nwTip3X, nwTip3Y);
-  ctx.quadraticCurveTo(nwBodyAttachX - dir * s * 0.06, nwBodyAttachY, nwBodyAttachX, nwBodyAttachY);
-  ctx.closePath();
-  ctx.fill();
-  // Membrane mid tone (subtle)
-  ctx.fillStyle = 'rgba(122,24,0,0.60)';
-  ctx.beginPath();
-  ctx.moveTo(nwShX, nwShY + s * 0.03);
-  ctx.quadraticCurveTo(nwElbX, nwElbY, (nwElbX + nwTip2X) / 2, (nwElbY + nwTip2Y) / 2);
-  ctx.lineTo(nwTip3X, nwTip3Y);
-  ctx.quadraticCurveTo(nwBodyAttachX, nwBodyAttachY, nwShX, nwShY + s * 0.03);
-  ctx.closePath();
-  ctx.fill();
-  // Bones
-  ctx.strokeStyle = '#1a0200'; ctx.lineWidth = s * 0.024; ctx.lineCap = 'round';
-  // Humerus
-  ctx.beginPath();
-  ctx.moveTo(nwShX, nwShY);
-  ctx.quadraticCurveTo(nwElbX - s * 0.02, nwElbY - s * 0.02, nwElbX, nwElbY);
-  ctx.stroke();
-  // Fingers from elbow
-  [{ x: nwTip1X, y: nwTip1Y }, { x: nwTip2X, y: nwTip2Y }, { x: nwTip3X, y: nwTip3Y }].forEach(tip => {
-    ctx.beginPath(); ctx.moveTo(nwElbX, nwElbY); ctx.lineTo(tip.x, tip.y); ctx.stroke();
-  });
-  // Bone highlight
-  ctx.strokeStyle = '#4a1200'; ctx.lineWidth = s * 0.010;
-  ctx.beginPath();
-  ctx.moveTo(nwShX + s * 0.004, nwShY - s * 0.006);
-  ctx.quadraticCurveTo(nwElbX, nwElbY - s * 0.010, nwTip1X + dir * s * 0.008, nwTip1Y + s * 0.008);
-  ctx.stroke();
-  // Finger claws
-  ctx.fillStyle = '#1a0200';
-  [{ x: nwTip1X, y: nwTip1Y }, { x: nwTip2X, y: nwTip2Y }].forEach(tip => {
-    ctx.beginPath(); ctx.arc(tip.x, tip.y, s * 0.020, 0, Math.PI * 2); ctx.fill();
-  });
-  // Elbow claw (thumb)
-  ctx.beginPath();
-  ctx.moveTo(nwElbX, nwElbY);
-  ctx.lineTo(nwElbX - dir * s * 0.035, nwElbY - s * 0.012);
-  ctx.lineTo(nwElbX, nwElbY + s * 0.018);
-  ctx.closePath(); ctx.fill();
+  // ── 9. NEAR WING (large raised, finger struts, backlit membrane) ─
+  {
+    const shX = neckBaseX - dir * bodyLen * 0.10, shY = bodyTopY - s * 0.02;
+    const beat = isWalking ? Math.sin(walkPhase * Math.PI * 2) * 0.12 : Math.sin(bTime * 0.7 + 0.4) * 0.06;
+    const elbX = shX - dir * s * 0.34, elbY = shY - s * (0.48 + beat * 0.07);
+    const tips = [
+      { x: shX - dir * s * 0.70, y: shY - s * (0.60 + beat * 0.13) },   // leading finger
+      { x: shX - dir * s * 0.60, y: shY - s * (0.30 + beat * 0.05) },
+      { x: shX - dir * s * 0.40, y: shY + s * 0.02 },
+    ];
+    const atX = shX + dir * s * 0.08, atY = shY + s * 0.18;             // body attach (low on flank)
+    // Leathery membrane: leading edge sh→elb→tip0, then CONCAVE scallops
+    // between the fingers, curving in toward the elbow.
+    const wingPath = () => {
+      ctx.beginPath();
+      ctx.moveTo(shX, shY);
+      ctx.quadraticCurveTo(elbX - dir * s * 0.02, elbY - s * 0.05, tips[0].x, tips[0].y);
+      for (let i = 0; i < tips.length - 1; i++) {
+        const a = tips[i], b = tips[i + 1], mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
+        ctx.quadraticCurveTo(mx + (elbX - mx) * 0.54, my + (elbY - my) * 0.54, b.x, b.y);  // deep sag
+      }
+      const a = tips[tips.length - 1], mx = (a.x + atX) / 2, my = (a.y + atY) / 2;
+      ctx.quadraticCurveTo(mx + (elbX - mx) * 0.36, my + (elbY - my) * 0.36, atX, atY);
+      ctx.quadraticCurveTo(shX + dir * s * 0.02, atY - s * 0.06, shX, shY);
+      ctx.closePath();
+    };
+    // wing shoulder knuckle (deltoid) — the wing arm grows from a muscle
+    ctx.fillStyle = C.shadow;
+    ctx.beginPath(); ctx.ellipse(shX, shY + s * 0.02, s * 0.080, s * 0.095, dir * 0.35, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = C.mid;
+    ctx.beginPath(); ctx.ellipse(shX + dir * s * 0.012, shY - s * 0.004, s * 0.048, s * 0.062, dir * 0.35, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = _wingMem; wingPath(); ctx.fill();
+    // backlit translucency near the upper membrane
+    ctx.save(); wingPath(); ctx.clip();
+    const memG = ctx.createLinearGradient(elbX, elbY, tips[2].x, tips[2].y + s * 0.1);
+    memG.addColorStop(0,   _isFrost ? 'rgba(95,175,235,0.34)'  : 'rgba(190,70,26,0.5)');
+    memG.addColorStop(0.6, _isFrost ? 'rgba(55,120,205,0.16)'  : 'rgba(120,34,16,0.22)');
+    memG.addColorStop(1,   _isFrost ? 'rgba(30,80,160,0)'      : 'rgba(60,15,10,0)');
+    ctx.fillStyle = memG; ctx.fillRect(tips[0].x - s * 0.2, tips[0].y - s * 0.2, s * 1.6, s * 1.6);
+    ctx.restore();
+    // internal value variation so the membrane isn't one flat plane
+    ctx.save(); wingPath(); ctx.clip();
+    // trailing/lower edge recedes into shadow
+    const memShade = ctx.createLinearGradient(elbX, elbY, (tips[1].x + atX) / 2, atY + s * 0.06);
+    memShade.addColorStop(0, 'rgba(18,5,10,0)');
+    memShade.addColorStop(0.55, 'rgba(20,6,11,0.14)');
+    memShade.addColorStop(1, 'rgba(14,4,9,0.58)');
+    ctx.fillStyle = memShade; ctx.fillRect(tips[2].x - s * 0.2, elbY - s * 0.1, s * 1.7, s * 1.7);
+    // veins radiating from the elbow toward the scallop valleys between fingers
+    ctx.strokeStyle = 'rgba(28,8,12,0.5)'; ctx.lineWidth = s * 0.008; ctx.lineCap = 'round';
+    const valleys = [
+      { x: (tips[0].x + tips[1].x) / 2, y: (tips[0].y + tips[1].y) / 2 },
+      { x: (tips[1].x + tips[2].x) / 2, y: (tips[1].y + tips[2].y) / 2 },
+      { x: (tips[2].x + atX) / 2,       y: (tips[2].y + atY) / 2 },
+    ];
+    valleys.forEach(v => {
+      const mx2 = (elbX + v.x) / 2, my2 = (elbY + v.y) / 2;
+      ctx.beginPath(); ctx.moveTo(elbX, elbY);
+      ctx.quadraticCurveTo(mx2 + (elbX - mx2) * 0.30, my2 + (elbY - my2) * 0.30, v.x + (elbX - v.x) * 0.14, v.y + (elbY - v.y) * 0.14);
+      ctx.stroke();
+    });
+    ctx.restore();
+    // thick humerus (wing arm), then thinner finger struts
+    ctx.strokeStyle = '#2a0a10'; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    ctx.lineWidth = s * 0.030;
+    ctx.beginPath(); ctx.moveTo(shX, shY); ctx.quadraticCurveTo(elbX - s * 0.02, elbY, elbX, elbY); ctx.stroke();
+    ctx.lineWidth = s * 0.017;
+    tips.forEach(tp => { ctx.beginPath(); ctx.moveTo(elbX, elbY); ctx.quadraticCurveTo((elbX + tp.x) / 2, (elbY + tp.y) / 2 - s * 0.022, tp.x, tp.y); ctx.stroke(); });
+    // leading-edge rim light
+    ctx.strokeStyle = `rgba(${_rimRGB},0.45)`; ctx.lineWidth = s * 0.010;
+    ctx.beginPath(); ctx.moveTo(shX, shY - s * 0.006); ctx.quadraticCurveTo(elbX, elbY - s * 0.01, tips[0].x + dir * s * 0.006, tips[0].y + s * 0.006); ctx.stroke();
+    // little curved claws at the two leading finger tips
+    ctx.strokeStyle = C.boneSh; ctx.lineWidth = s * 0.013; ctx.lineCap = 'round';
+    [tips[0], tips[1]].forEach(tp => { ctx.beginPath(); ctx.moveTo(tp.x, tp.y); ctx.quadraticCurveTo(tp.x - dir * s * 0.018, tp.y - s * 0.004, tp.x - dir * s * 0.028, tp.y + s * 0.012); ctx.stroke(); });
+  }
 
-  // ── 10. FIRE BREATH (cone from mouth during breatheE phase) ──────
-  if (thrustE > 0 || breatheE > 0) {
+  // ── 10. FIRE BREATH (cone from mouth during thrust/breathe) ──────
+  const mouthLocalX = dir * headW * 1.22;
+  const mouthLocalY = headH * 0.26 + jawOpen * 0.5;
+  const mouthAngle = headRot * dir;
+  const mcos = Math.cos(mouthAngle), msin = Math.sin(mouthAngle);
+  const mouthX = headCX + mouthLocalX * mcos - mouthLocalY * msin;
+  const mouthY = headCY + mouthLocalX * msin + mouthLocalY * mcos;
+  const fwdX = mcos * dir, fwdY = msin * dir;
+  const perpX = -fwdY, perpY = fwdX;
+
+  if ((thrustE > 0 || breatheE > 0) && unit._branch !== 'B') {
     const bAlpha = breatheE > 0 ? 1 : thrustE * 0.6;
     if (bAlpha > 0) {
-      // Mouth position in world space (head is rotated, but mouth is roughly here)
-      const mouthLocalX = dir * headW * 1.20;
-      const mouthLocalY = headH * 0.25 + jawOpen * 0.5;
-      // Rotate local mouth point back to world
-      const mouthAngle = headRot * dir;
-      const mcos = Math.cos(mouthAngle), msin = Math.sin(mouthAngle);
-      const mouthX = headCX + mouthLocalX * mcos - mouthLocalY * msin;
-      const mouthY = headCY + mouthLocalX * msin + mouthLocalY * mcos;
-      // Breath direction aligned with head forward
-      const fwdX = Math.cos(mouthAngle) * dir;
-      const fwdY = Math.sin(mouthAngle) * dir;
       const breathLen = s * (1.2 + breatheE * 1.6);
       const breathWide = s * (0.2 + breatheE * 0.35);
-
-      // Outer dark red cone
-      ctx.fillStyle = `rgba(180,50,0,${bAlpha * 0.50})`;
-      ctx.beginPath();
-      ctx.moveTo(mouthX, mouthY);
-      const e1x = mouthX + fwdX * breathLen;
-      const e1y = mouthY + fwdY * breathLen;
-      // Perpendicular for cone width
-      const perpX = -fwdY, perpY = fwdX;
-      ctx.quadraticCurveTo(
-        mouthX + fwdX * breathLen * 0.5 + perpX * breathWide * 0.9,
-        mouthY + fwdY * breathLen * 0.5 + perpY * breathWide * 0.9,
-        e1x + perpX * breathWide * 0.3, e1y + perpY * breathWide * 0.3
-      );
+      const e1x = mouthX + fwdX * breathLen, e1y = mouthY + fwdY * breathLen;
+      // outer
+      ctx.fillStyle = `rgba(180,50,0,${bAlpha * 0.5})`;
+      ctx.beginPath(); ctx.moveTo(mouthX, mouthY);
+      ctx.quadraticCurveTo(mouthX + fwdX * breathLen * 0.5 + perpX * breathWide * 0.9, mouthY + fwdY * breathLen * 0.5 + perpY * breathWide * 0.9, e1x + perpX * breathWide * 0.3, e1y + perpY * breathWide * 0.3);
       ctx.lineTo(e1x - perpX * breathWide * 0.3, e1y - perpY * breathWide * 0.3);
-      ctx.quadraticCurveTo(
-        mouthX + fwdX * breathLen * 0.5 - perpX * breathWide * 0.9,
-        mouthY + fwdY * breathLen * 0.5 - perpY * breathWide * 0.9,
-        mouthX, mouthY
-      );
+      ctx.quadraticCurveTo(mouthX + fwdX * breathLen * 0.5 - perpX * breathWide * 0.9, mouthY + fwdY * breathLen * 0.5 - perpY * breathWide * 0.9, mouthX, mouthY);
       ctx.closePath(); ctx.fill();
-      // Mid orange cone
+      // mid
       ctx.fillStyle = `rgba(255,100,0,${bAlpha * 0.76})`;
-      ctx.beginPath();
-      ctx.moveTo(mouthX, mouthY);
-      ctx.quadraticCurveTo(
-        mouthX + fwdX * breathLen * 0.5 + perpX * breathWide * 0.55,
-        mouthY + fwdY * breathLen * 0.5 + perpY * breathWide * 0.55,
-        e1x + perpX * breathWide * 0.15, e1y + perpY * breathWide * 0.15
-      );
+      ctx.beginPath(); ctx.moveTo(mouthX, mouthY);
+      ctx.quadraticCurveTo(mouthX + fwdX * breathLen * 0.5 + perpX * breathWide * 0.55, mouthY + fwdY * breathLen * 0.5 + perpY * breathWide * 0.55, e1x + perpX * breathWide * 0.15, e1y + perpY * breathWide * 0.15);
       ctx.lineTo(e1x - perpX * breathWide * 0.15, e1y - perpY * breathWide * 0.15);
-      ctx.quadraticCurveTo(
-        mouthX + fwdX * breathLen * 0.5 - perpX * breathWide * 0.55,
-        mouthY + fwdY * breathLen * 0.5 - perpY * breathWide * 0.55,
-        mouthX, mouthY
-      );
+      ctx.quadraticCurveTo(mouthX + fwdX * breathLen * 0.5 - perpX * breathWide * 0.55, mouthY + fwdY * breathLen * 0.5 - perpY * breathWide * 0.55, mouthX, mouthY);
       ctx.closePath(); ctx.fill();
-      // Inner bright yellow core jet
+      // core jet
       ctx.shadowColor = '#ffcc44'; ctx.shadowBlur = s * 0.42 * bAlpha;
       const jg = ctx.createLinearGradient(mouthX, mouthY, e1x, e1y);
       jg.addColorStop(0, `rgba(255,240,120,${bAlpha * 0.96})`);
       jg.addColorStop(0.5, `rgba(255,140,0,${bAlpha * 0.82})`);
       jg.addColorStop(1, 'rgba(200,60,0,0)');
       ctx.strokeStyle = jg; ctx.lineWidth = s * 0.068; ctx.lineCap = 'round';
-      ctx.beginPath();
-      ctx.moveTo(mouthX, mouthY);
-      ctx.lineTo(e1x, e1y);
-      ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(mouthX, mouthY); ctx.lineTo(e1x, e1y); ctx.stroke();
       ctx.shadowBlur = 0;
-
-      // Ember particles inside cone
+      // embers
       unit._drEmbers.forEach((em, ei) => {
-        em.life = ((unit._drT * 3 + ei * 0.17) % 1);
-        const eT = em.life;
-        const ePos = eT;
-        const eX = mouthX + fwdX * ePos * breathLen;
-        const eY = mouthY + fwdY * ePos * breathLen;
-        const eSpread = (Math.sin(ei + bTime * 5) * breathWide * ePos * 0.7);
-        const eXp = eX + perpX * eSpread;
-        const eYp = eY + perpY * eSpread;
-        const eSize = s * 0.018 * (1 - eT * 0.7);
-        const eAlpha = (1 - eT) * bAlpha * 0.90;
+        const eT = ((unit._drT * 3 + ei * 0.17) % 1);
+        const eX = mouthX + fwdX * eT * breathLen, eY = mouthY + fwdY * eT * breathLen;
+        const eSpread = Math.sin(ei + bTime * 5) * breathWide * eT * 0.7;
+        const eSize = s * 0.018 * (1 - eT * 0.7), eAlpha = (1 - eT) * bAlpha * 0.9;
         ctx.fillStyle = `rgba(255,${Math.floor(200 + eT * 55)},${Math.floor(40 + eT * 120)},${eAlpha})`;
-        ctx.beginPath(); ctx.arc(eXp, eYp, eSize, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(eX + perpX * eSpread, eY + perpY * eSpread, eSize, 0, Math.PI * 2); ctx.fill();
       });
     }
   }
@@ -822,135 +883,106 @@ function drawDragonMonster(unit, camY) {
   // ── Branch visuals ──────────────────────────────────────────
   const _drBranch = unit._branch || '';
   if (_drBranch === 'A') {
-    // Inferno: embers rising from spine + heart-glow intensification + fire shimmer
+    // Inferno: a single continuous living fire-crest changes the silhouette;
+    // hotter body values and the crest keep A from reading as base+particles.
     ctx.save();
+    const crestBackX = bX - dir * bodyLen * 0.38;
+    const crestFrontX = bX + dir * bodyLen * 0.34;
+    const crestG = ctx.createLinearGradient(0, bodyTopY-s*0.34, 0, bodyTopY+s*0.04);
+    crestG.addColorStop(0,'rgba(255,246,150,0.95)');
+    crestG.addColorStop(0.42,'rgba(255,130,18,0.94)');
+    crestG.addColorStop(1,'rgba(170,20,0,0.55)');
+    ctx.fillStyle=crestG; ctx.shadowColor='#ff6a00'; ctx.shadowBlur=s*0.22;
+    ctx.beginPath(); ctx.moveTo(crestBackX, bodyTopY+s*0.035);
+    for(let i=0;i<=7;i++){
+      const tt=i/7, x=crestBackX+(crestFrontX-crestBackX)*tt;
+      const baseY=bodyTopY+s*(0.025-Math.sin(tt*Math.PI)*0.055);
+      const h=s*(0.13+Math.sin(tt*Math.PI)*0.13+(i%2)*0.035);
+      ctx.lineTo(x,baseY); ctx.lineTo(x+dir*s*0.026,baseY-h);
+    }
+    ctx.lineTo(crestFrontX+dir*s*0.045,bodyTopY+s*0.045);
+    ctx.closePath(); ctx.fill();
+    ctx.strokeStyle='rgba(255,238,120,0.72)'; ctx.lineWidth=s*0.012;
+    ctx.stroke(); ctx.shadowBlur=0;
+
     ctx.shadowColor = '#ff6600'; ctx.shadowBlur = s * 0.18;
     for (let i = 0; i < 6; i++) {
       const _ep = ((_frameNow * 0.0007 + i * 0.17) % 1.0);
-      const _ex = bX - dir * bodyLen * (0.30 - i * 0.10) + Math.sin(_frameNow*0.0012 + i*1.2)*s*0.04;
+      const _ex = bX - dir * bodyLen * (0.30 - i * 0.10) + Math.sin(_frameNow * 0.0012 + i * 1.2) * s * 0.04;
       const _ey = bodyTopY - _ep * s * 0.55;
-      const _ea = (1 - _ep) * 0.55;
-      const _er = s * (0.022 - _ep * 0.016);
-      if (_er > 0) {
-        ctx.fillStyle = `rgba(255,${Math.floor(100 + _ep * 120)},0,${_ea})`;
-        ctx.beginPath(); ctx.arc(_ex, _ey, _er, 0, Math.PI*2); ctx.fill();
-      }
+      const _ea = (1 - _ep) * 0.55, _er = s * (0.022 - _ep * 0.016);
+      if (_er > 0) { ctx.fillStyle = `rgba(255,${Math.floor(100 + _ep * 120)},0,${_ea})`; ctx.beginPath(); ctx.arc(_ex, _ey, _er, 0, Math.PI * 2); ctx.fill(); }
     }
-    // Intensified heart glow pulse
     ctx.shadowColor = '#ff4400'; ctx.shadowBlur = s * 0.45;
     const _hg2 = ctx.createRadialGradient(heartX, heartY, 0, heartX, heartY, s * 0.22);
-    _hg2.addColorStop(0,   'rgba(255,255,140,0.55)');
-    _hg2.addColorStop(0.5, 'rgba(255,80,0,0.32)');
-    _hg2.addColorStop(1,   'rgba(200,20,0,0)');
-    ctx.fillStyle = _hg2;
-    ctx.beginPath(); ctx.arc(heartX, heartY, s * 0.22, 0, Math.PI*2); ctx.fill();
-    // Scale shimmer stripe (orange diagonal)
+    _hg2.addColorStop(0, 'rgba(255,255,140,0.55)'); _hg2.addColorStop(0.5, 'rgba(255,80,0,0.32)'); _hg2.addColorStop(1, 'rgba(200,20,0,0)');
+    ctx.fillStyle = _hg2; ctx.beginPath(); ctx.arc(heartX, heartY, s * 0.22, 0, Math.PI * 2); ctx.fill();
     ctx.shadowBlur = 0;
-    ctx.strokeStyle = 'rgba(255,120,0,0.20)'; ctx.lineWidth = s * 0.12; ctx.lineCap = 'round';
-    ctx.beginPath();
-    ctx.moveTo(bX - dir*bodyLen*0.38, bodyCenterY - bodyH*0.15);
-    ctx.lineTo(bX + dir*bodyLen*0.28, bodyTopY + s*0.04);
-    ctx.stroke();
+    ctx.strokeStyle = 'rgba(255,120,0,0.2)'; ctx.lineWidth = s * 0.12; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(bX - dir * bodyLen * 0.38, bodyCenterY - bodyH * 0.15); ctx.lineTo(bX + dir * bodyLen * 0.28, bodyTopY + s * 0.04); ctx.stroke();
     ctx.restore();
 
   } else if (_drBranch === 'B') {
-    // Frost: ice crystal spines + idle cloud + ICE BREATH replaces fire during attack
+    // Frost: ice crystal spines + idle cloud + ICE BREATH over the fire cone
     ctx.save();
     ctx.shadowColor = '#88ddff'; ctx.shadowBlur = s * 0.15;
-    // Ice crystal spines along back (larger than base, alternating sizes)
     for (let i = 0; i < 6; i++) {
-      const _ix = bX - dir*bodyLen*(0.35 - i*0.12);
-      const _iy = bodyTopY - s * 0.005;
+      const _ix = bX - dir * bodyLen * (0.35 - i * 0.12);
+      const _iy = bodyTopY - s * 0.02;
       const _ih = s * (0.095 + Math.abs(Math.sin(i * 1.4 + 0.3)) * 0.065);
-      ctx.fillStyle = i%2===0 ? 'rgba(200,238,255,0.78)' : 'rgba(140,210,255,0.60)';
+      ctx.fillStyle = i % 2 === 0 ? 'rgba(200,238,255,0.78)' : 'rgba(140,210,255,0.6)';
       ctx.strokeStyle = 'rgba(100,180,255,0.55)'; ctx.lineWidth = 0.9;
-      ctx.beginPath();
-      ctx.moveTo(_ix, _iy - _ih);
-      ctx.lineTo(_ix - s*0.018, _iy + s*0.010);
-      ctx.lineTo(_ix + s*0.018, _iy + s*0.010);
-      ctx.closePath(); ctx.fill(); ctx.stroke();
-      // Secondary small crystal beside main
+      ctx.beginPath(); ctx.moveTo(_ix, _iy - _ih); ctx.lineTo(_ix - s * 0.018, _iy + s * 0.01); ctx.lineTo(_ix + s * 0.018, _iy + s * 0.01); ctx.closePath(); ctx.fill(); ctx.stroke();
       if (i % 2 === 0) {
-        ctx.fillStyle = 'rgba(180,230,255,0.40)';
-        ctx.beginPath();
-        ctx.moveTo(_ix + dir*s*0.025, _iy - _ih*0.60);
-        ctx.lineTo(_ix + dir*s*0.013, _iy + s*0.006);
-        ctx.lineTo(_ix + dir*s*0.037, _iy + s*0.006);
-        ctx.closePath(); ctx.fill();
+        ctx.fillStyle = 'rgba(180,230,255,0.4)';
+        ctx.beginPath(); ctx.moveTo(_ix + dir * s * 0.025, _iy - _ih * 0.6); ctx.lineTo(_ix + dir * s * 0.013, _iy + s * 0.006); ctx.lineTo(_ix + dir * s * 0.037, _iy + s * 0.006); ctx.closePath(); ctx.fill();
       }
     }
-    // Idle frost breath cloud at mouth
-    const _fc = 0.28 + Math.sin(_frameNow * 0.0018) * 0.09;
-    ctx.fillStyle = `rgba(190,235,255,${_fc})`;
-    ctx.beginPath(); ctx.ellipse(headCX + dir*s*0.30, headBaseY + s*0.04, s*0.16, s*0.065, 0, 0, Math.PI*2); ctx.fill();
+    // cold breath-mist curling from the maw — soft puffs drift out, rise & melt
+    if (breatheE < 0.15) {
+      const _mt = _frameNow * 0.001;
+      for (let i = 0; i < 5; i++) {
+        const _pp = ((_mt * 0.45 + i * 0.2) % 1);                       // 0→1 life
+        const _drift = _pp * s * 0.42;
+        const _px = mouthX + fwdX * _drift + Math.sin(_mt * 1.6 + i * 2.1) * s * 0.028;
+        const _py = mouthY + fwdY * _drift - _pp * s * 0.14;            // rises as it drifts
+        const _pr = s * (0.028 + _pp * 0.075);                          // grows
+        const _pa = Math.sin(_pp * Math.PI) * 0.4;                      // fade in → out
+        if (_pa > 0.01) { ctx.fillStyle = `rgba(202,236,255,${_pa.toFixed(3)})`; ctx.beginPath(); ctx.arc(_px, _py, _pr, 0, Math.PI * 2); ctx.fill(); }
+      }
+    }
     ctx.shadowBlur = 0;
 
-    // ── ICE BREATH cone drawn over fire breath during attack ──────────
     if (thrustE > 0 || breatheE > 0) {
       const _bAlpha = breatheE > 0 ? 1 : thrustE * 0.6;
       if (_bAlpha > 0) {
-        // Mouth position (same formula as base breath section)
-        const _mLA  = dir * headW * 1.20;
-        const _mLB  = headH * 0.25 + jawOpen * 0.5;
-        const _mAng = headRot * dir;
-        const _mc   = Math.cos(_mAng), _ms = Math.sin(_mAng);
-        const _mX   = headCX + _mLA * _mc - _mLB * _ms;
-        const _mY   = headCY + _mLA * _ms + _mLB * _mc;
-        const _bLen  = s * (1.2 + breatheE * 1.6);
-        const _bWide = s * (0.2 + breatheE * 0.35);
-        const _fwdX  = _mc * dir, _fwdY = _ms * dir;
-        const _e1x   = _mX + _fwdX * _bLen, _e1y = _mY + _fwdY * _bLen;
-        const _pX    = -_fwdY, _pY = _fwdX;
-
-        // Outer deep-blue cone (fully covers fire cone)
-        ctx.fillStyle = `rgba(20,80,200,${_bAlpha * 0.70})`;
-        ctx.beginPath(); ctx.moveTo(_mX, _mY);
-        ctx.quadraticCurveTo(
-          _mX + _fwdX*_bLen*0.5 + _pX*_bWide*0.9, _mY + _fwdY*_bLen*0.5 + _pY*_bWide*0.9,
-          _e1x + _pX*_bWide*0.3, _e1y + _pY*_bWide*0.3
-        );
-        ctx.lineTo(_e1x - _pX*_bWide*0.3, _e1y - _pY*_bWide*0.3);
-        ctx.quadraticCurveTo(
-          _mX + _fwdX*_bLen*0.5 - _pX*_bWide*0.9, _mY + _fwdY*_bLen*0.5 - _pY*_bWide*0.9,
-          _mX, _mY
-        );
+        const _bLen = s * (1.2 + breatheE * 1.6), _bWide = s * (0.2 + breatheE * 0.35);
+        const _e1x = mouthX + fwdX * _bLen, _e1y = mouthY + fwdY * _bLen;
+        ctx.fillStyle = `rgba(20,80,200,${_bAlpha * 0.7})`;
+        ctx.beginPath(); ctx.moveTo(mouthX, mouthY);
+        ctx.quadraticCurveTo(mouthX + fwdX * _bLen * 0.5 + perpX * _bWide * 0.9, mouthY + fwdY * _bLen * 0.5 + perpY * _bWide * 0.9, _e1x + perpX * _bWide * 0.3, _e1y + perpY * _bWide * 0.3);
+        ctx.lineTo(_e1x - perpX * _bWide * 0.3, _e1y - perpY * _bWide * 0.3);
+        ctx.quadraticCurveTo(mouthX + fwdX * _bLen * 0.5 - perpX * _bWide * 0.9, mouthY + fwdY * _bLen * 0.5 - perpY * _bWide * 0.9, mouthX, mouthY);
         ctx.closePath(); ctx.fill();
-
-        // Mid pale-blue cone
         ctx.fillStyle = `rgba(140,215,255,${_bAlpha * 0.82})`;
-        ctx.beginPath(); ctx.moveTo(_mX, _mY);
-        ctx.quadraticCurveTo(
-          _mX + _fwdX*_bLen*0.5 + _pX*_bWide*0.55, _mY + _fwdY*_bLen*0.5 + _pY*_bWide*0.55,
-          _e1x + _pX*_bWide*0.15, _e1y + _pY*_bWide*0.15
-        );
-        ctx.lineTo(_e1x - _pX*_bWide*0.15, _e1y - _pY*_bWide*0.15);
-        ctx.quadraticCurveTo(
-          _mX + _fwdX*_bLen*0.5 - _pX*_bWide*0.55, _mY + _fwdY*_bLen*0.5 - _pY*_bWide*0.55,
-          _mX, _mY
-        );
+        ctx.beginPath(); ctx.moveTo(mouthX, mouthY);
+        ctx.quadraticCurveTo(mouthX + fwdX * _bLen * 0.5 + perpX * _bWide * 0.55, mouthY + fwdY * _bLen * 0.5 + perpY * _bWide * 0.55, _e1x + perpX * _bWide * 0.15, _e1y + perpY * _bWide * 0.15);
+        ctx.lineTo(_e1x - perpX * _bWide * 0.15, _e1y - perpY * _bWide * 0.15);
+        ctx.quadraticCurveTo(mouthX + fwdX * _bLen * 0.5 - perpX * _bWide * 0.55, mouthY + fwdY * _bLen * 0.5 - perpY * _bWide * 0.55, mouthX, mouthY);
         ctx.closePath(); ctx.fill();
-
-        // Inner bright ice-white core jet
         ctx.shadowColor = '#ccf0ff'; ctx.shadowBlur = s * 0.42 * _bAlpha;
-        const _ijg = ctx.createLinearGradient(_mX, _mY, _e1x, _e1y);
-        _ijg.addColorStop(0,   `rgba(245,252,255,${_bAlpha * 0.96})`);
-        _ijg.addColorStop(0.5, `rgba(180,235,255,${_bAlpha * 0.84})`);
-        _ijg.addColorStop(1,   'rgba(80,160,255,0)');
+        const _ijg = ctx.createLinearGradient(mouthX, mouthY, _e1x, _e1y);
+        _ijg.addColorStop(0, `rgba(245,252,255,${_bAlpha * 0.96})`); _ijg.addColorStop(0.5, `rgba(180,235,255,${_bAlpha * 0.84})`); _ijg.addColorStop(1, 'rgba(80,160,255,0)');
         ctx.strokeStyle = _ijg; ctx.lineWidth = s * 0.068; ctx.lineCap = 'round';
-        ctx.beginPath(); ctx.moveTo(_mX, _mY); ctx.lineTo(_e1x, _e1y); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(mouthX, mouthY); ctx.lineTo(_e1x, _e1y); ctx.stroke();
         ctx.shadowBlur = 0;
-
-        // Ice crystal shards (replace embers)
         for (let ii = 0; ii < 10; ii++) {
-          const _iT   = ((_frameNow * 0.003 + ii * 0.10) % 1.0);
-          const _iX   = _mX + _fwdX * _iT * _bLen;
-          const _iY   = _mY + _fwdY * _iT * _bLen;
+          const _iT = ((_frameNow * 0.003 + ii * 0.10) % 1.0);
+          const _iX = mouthX + fwdX * _iT * _bLen, _iY = mouthY + fwdY * _iT * _bLen;
           const _iSpr = Math.sin(ii * 1.7 + bTime * 3) * _bWide * _iT * 0.65;
-          const _iXp  = _iX + _pX * _iSpr, _iYp = _iY + _pY * _iSpr;
-          const _iSz  = s * 0.015 * (1 - _iT * 0.65);
-          const _iAlp = (1 - _iT) * _bAlpha * 0.90;
-          ctx.fillStyle = `rgba(${Math.floor(200 + _iT*55)},${Math.floor(228 + _iT*27)},255,${_iAlp})`;
-          ctx.beginPath(); ctx.arc(_iXp, _iYp, _iSz, 0, Math.PI*2); ctx.fill();
+          const _iSz = s * 0.015 * (1 - _iT * 0.65), _iAlp = (1 - _iT) * _bAlpha * 0.9;
+          ctx.fillStyle = `rgba(${Math.floor(200 + _iT * 55)},${Math.floor(228 + _iT * 27)},255,${_iAlp})`;
+          ctx.beginPath(); ctx.arc(_iX + perpX * _iSpr, _iY + perpY * _iSpr, _iSz, 0, Math.PI * 2); ctx.fill();
         }
       }
     }
@@ -958,5 +990,5 @@ function drawDragonMonster(unit, camY) {
   }
 
   ctx.restore();
-  unit._hpBarY = headBaseY - s * 0.35;
+  unit._hpBarY = headBaseY - s * 0.30;
 }

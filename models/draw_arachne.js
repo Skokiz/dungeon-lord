@@ -91,7 +91,9 @@ function drawArachneMonster(unit, camY) {
   // Body tilts forward into the strike (whole silhouette rotates slightly)
   const atkBodyTilt = -windUpE * 0.08 * dir + strikeE * 0.14 * dir;
   // Fangs SPREAD wide during wind-up, SNAP closed on strike, brief open at impact
-  const atkFangOpen = windUpE * 1.25                        // wide spread on wind-up
+  const fightReady = unit.state === 'fight' && !atkActive ? 0.42 : 0;
+  const atkFangOpen = fightReady                            // persistent threat pose between bites
+                    + windUpE * 1.25                        // wide spread on wind-up
                     - strikeE * 0.45                         // snap closed
                     + impactE * 0.15;                        // slight reopen
   // Shake vibration during impact (the spider struck!)
@@ -101,17 +103,25 @@ function drawArachneMonster(unit, camY) {
   const isWalking = unit.state === 'move';
   const walkFreq  = 2.10;
   const walkPhase = isWalking ? ((bTime * walkFreq) % 1) : 0;
-  const walkBob   = isWalking ? (1 - Math.abs(Math.sin(walkPhase * Math.PI * 2))) * s * 0.010 : 0;
-  const walkSway  = isWalking ? Math.sin(walkPhase * Math.PI * 2) * s * 0.005 : 0;
+  // Амплітуди підняті ~×4: попередні значення (0.006-0.010s) при ігровому s=34 давали
+  // 0.2-1.5px — тобто idle був візуально мертвий, а move не відрізнявся від idle.
+  const walkBob   = isWalking ? (1 - Math.abs(Math.sin(walkPhase * Math.PI * 2))) * s * 0.032 : 0;
+  const walkSway  = isWalking ? Math.sin(walkPhase * Math.PI * 2) * s * 0.020 : 0;
 
-  const breatheY = Math.sin(bTime * 0.9) * s * 0.006;
-  const idleSway = Math.sin(bTime * 0.55) * s * 0.005;
+  const breatheY = Math.sin(bTime * 0.9) * s * 0.022;
+  const idleSway = Math.sin(bTime * 0.55) * s * 0.016;
 
   // ── Proportions — classic tarantula silhouette ───────────────────
   // Abdomen sits clearly HIGHER than cephalothorax (bulbous hump in rear)
-  const absR     = s * 0.335;         // big round abdomen
-  const cephR    = s * 0.175;         // smaller cephalothorax (flatter profile)
-  const bodyLineY = fY - s * 0.220 + breatheY + walkBob;
+  // Габарит павука тримають НОГИ, а не тіло. Роздуте черевце (0.47s) ковтало ноги —
+  // силует читався як гарбуз із паличками. Тіло компактне, тулуб піднятий над підлогою,
+  // ноги широко розкинуті (див. footSpread) з високими колінами = впізнаваний павук.
+  const _arVisualBranch = unit._branch || '';
+  const absR     = s * (_arVisualBranch === 'B' ? 0.365 : 0.325);
+  const cephR    = s * (_arVisualBranch === 'A' ? 0.200 : (_arVisualBranch === 'B' ? 0.205 : 0.185));
+  // Тулуб піднято вище (0.400 → 0.560): павук стоїть НА ногах, а не лежить між ними.
+  // Дає вертикальну масу — раніше при s=52 висота була 42px проти 51-98 в решти моделей.
+  const bodyLineY = fY - s * 0.560 + breatheY + walkBob;
 
   const bX = cx + walkSway + idleSway + atkBodyShiftX + impactShake;
   const bY = bodyLineY + atkBodyShiftY;
@@ -119,20 +129,82 @@ function drawArachneMonster(unit, camY) {
   const absCX  = bX - dir * s * 0.15;
   const absCY  = bY - s * 0.045;          // raised above body line
   // Cephalothorax: lower and forward, flatter
-  const cephCX = bX + dir * s * 0.20;
+  // The head must lead the bite rather than ride passively with the abdomen.
+  // A small permanent threat lean keeps fight readable between cooldown pulses;
+  // the strike adds a sharp head-only jab on top of the whole-body lunge.
+  const fightHeadLean = inFight ? dir * s * 0.025 : 0;
+  const attackHeadReach = dir * s * (-windUpE * 0.035 + strikeE * 0.075 + impactE * 0.025);
+  const cephCX = bX + dir * s * 0.20 + fightHeadLean + attackHeadReach;
   const cephCY = bY + s * 0.020;
 
   // ── TARANTULA COLOR PALETTE (dark brown + orange accents) ────────
-  const DARK_BROWN    = '#1a0e06';
-  const MID_BROWN     = '#3a1d0c';
-  const WARM_BROWN    = '#5a2e14';
-  const LIGHT_BROWN   = '#7a4220';
-  const ORANGE_ACCENT = '#b85420';   // red-knee orange
-  const BRIGHT_ORANGE = '#d86820';
-  const YELLOW_ORANGE = '#e88a30';
-  const HAIR_DARK     = 'rgba(8,4,2,0.85)';
-  const HAIR_MID      = 'rgba(30,16,6,0.75)';
-  const HAIR_LIGHT    = 'rgba(100,50,20,0.65)';
+  // Тони підняті: на темній підлозі павучиха читалась як бура грудка, а ноги зникали.
+  // Зберігаємо «мексиканську червоноколінку», але з робочим контрастом до фону.
+  let DARK_BROWN    = '#2e1a0e';
+  let MID_BROWN     = '#5c2f16';
+  let WARM_BROWN    = '#834526';
+  let LIGHT_BROWN   = '#a86034';
+  let ORANGE_ACCENT = '#d2661f';   // red-knee orange
+  let BRIGHT_ORANGE = '#ef7f22';
+  let YELLOW_ORANGE = '#ffa23c';
+  let HAIR_DARK     = 'rgba(20,10,4,0.85)';
+  let HAIR_MID      = 'rgba(58,32,14,0.75)';
+  let HAIR_LIGHT    = 'rgba(140,76,34,0.65)';
+
+  // ── ГІЛКОВІ ПАЛІТРИ ──────────────────────────────────────────────
+  // Раніше гілки додавали лише свічення поверх однакового тіла, тож у бою були
+  // нерозрізнимі. Тепер гілка перефарбовує САМЕ ТІЛО (як каже дерево еволюцій):
+  // A «Отруйна» — трупно-зелений хітин; B «Велетенська» — темний вугільний панцир.
+  if (unit._branch === 'A') {
+    DARK_BROWN    = '#15250c';
+    MID_BROWN     = '#2f5417';
+    WARM_BROWN    = '#498020';
+    LIGHT_BROWN   = '#66a62c';
+    ORANGE_ACCENT = '#8fd12a';       // отруйно-салатовий замість помаранчевого
+    BRIGHT_ORANGE = '#aee63a';
+    YELLOW_ORANGE = '#d6ff5e';
+    HAIR_DARK     = 'rgba(8,20,4,0.85)';
+    HAIR_MID      = 'rgba(30,58,14,0.75)';
+    HAIR_LIGHT    = 'rgba(96,150,40,0.65)';
+  } else if (unit._branch === 'B') {
+    DARK_BROWN    = '#14131c';
+    MID_BROWN     = '#2b2a3a';
+    WARM_BROWN    = '#454458';
+    LIGHT_BROWN   = '#5f5e76';
+    ORANGE_ACCENT = '#8c6bd8';       // холодний аметистовий акцент на «колінах»
+    BRIGHT_ORANGE = '#a684ef';
+    YELLOW_ORANGE = '#c7aaff';
+    HAIR_DARK     = 'rgba(6,6,12,0.85)';
+    HAIR_MID      = 'rgba(30,28,44,0.75)';
+    HAIR_LIGHT    = 'rgba(96,92,126,0.65)';
+  }
+
+  // Карапакс (головогруди) — СВІТЛІШИЙ за черевце. Раніше обидві маси малювались одним
+  // градієнтом, тож павук читався як одна бура грудка без голови. У тарантулів карапакс
+  // і справді світліший — це і анатомічно, і композиційно правильно.
+  const CARA_LIT = unit._branch === 'A' ? '#9fdc4a'
+                 : unit._branch === 'B' ? '#8a88a6'
+                 : '#d18a4e';
+  const CARA_MID = unit._branch === 'A' ? '#6aa82c'
+                 : unit._branch === 'B' ? '#5c5a74'
+                 : '#a25b2c';
+  // Ці відтінки раніше були захардкоджені теплими й ПЕРЕЖИВАЛИ перефарбування гілки —
+  // на зеленому й сірому тілі лишались помаранчеві шпичаки та бурі плями.
+  const TINT_SOFT = unit._branch === 'A' ? 'rgba(96,150,40,0.35)'
+                  : unit._branch === 'B' ? 'rgba(92,90,124,0.35)'
+                  : 'rgba(140,80,40,0.35)';
+  const TINT_LINE = unit._branch === 'A' ? 'rgba(120,190,45,0.70)'
+                  : unit._branch === 'B' ? 'rgba(120,112,160,0.70)'
+                  : 'rgba(150,65,25,0.70)';
+  const TINT_EDGE = unit._branch === 'A' ? 'rgba(150,225,60,0.85)'
+                  : unit._branch === 'B' ? 'rgba(150,138,205,0.85)'
+                  : 'rgba(180,90,40,0.85)';
+  const FANG_DARK = unit._branch === 'A' ? '#1d3a10'
+                  : unit._branch === 'B' ? '#20202e'
+                  : '#5a2818';
+  const FANG_LIT  = unit._branch === 'A' ? '#d8f0a0'
+                  : unit._branch === 'B' ? '#cfcbe4'
+                  : '#c8a890';
 
   ctx.save();
 
@@ -166,15 +238,17 @@ function drawArachneMonster(unit, camY) {
     const legPhase = isWalking ? ((walkPhase + basePhase + (near ? 0 : 0.5)) % 1) : 0;
     let stepFwd = 0, legLift = 0, kneeBendY = 0;
     if (isWalking) {
+      // Крок і підйом лапи підняті ~×3: було ±1.5px і 0.8px при ігровому s=34 — хода
+      // візуально не існувала. Тепер видно, що павук переставляє ноги.
       if (legPhase < 0.5) {
         const t = legPhase / 0.5;
-        stepFwd = (0.5 - t) * s * 0.09 * dir;
-        kneeBendY = Math.sin(t * Math.PI) * s * 0.003;
+        stepFwd = (0.5 - t) * s * 0.28 * dir;
+        kneeBendY = Math.sin(t * Math.PI) * s * 0.010;
       } else {
         const t = (legPhase - 0.5) / 0.5;
-        stepFwd = (-0.5 + t) * s * 0.09 * dir;
-        legLift = Math.sin(t * Math.PI) * s * 0.024;
-        kneeBendY = Math.sin(t * Math.PI) * s * 0.018;
+        stepFwd = (-0.5 + t) * s * 0.28 * dir;
+        legLift = Math.sin(t * Math.PI) * s * 0.105;
+        kneeBendY = Math.sin(t * Math.PI) * s * 0.055;
       }
     }
     // Hip attaches to small cephalothorax, clustered
@@ -183,20 +257,24 @@ function drawArachneMonster(unit, camY) {
     const hipY = cephCY + (near ? s * 0.008 : -s * 0.012);
     // Feet spread WIDE around whole body (past abdomen rear, past head front)
     // Using absolute s units, not cephR — legs spread based on body size, not ceph
+    // Розмах ніг — головна впізнавана риса павука. Розширено майже вдвічі:
+    // ступні виходять далеко за габарит тіла в обидва боки.
     const footSpread = [
-      dir * s * 0.58,            // leg 0: far forward (past head)
-      dir * s * 0.22,            // leg 1: mid-forward
-      -dir * s * 0.20,           // leg 2: mid-backward
-      -dir * s * 0.52            // leg 3: far back (past abdomen)
+      dir * s * 0.95,            // leg 0: far forward (past head)
+      dir * s * 0.45,            // leg 1: mid-forward
+      -dir * s * 0.40,           // leg 2: mid-backward
+      -dir * s * 0.88            // leg 3: far back (past abdomen)
     ][idx];
     const footBaseX = bX + footSpread;
     const footX = footBaseX + stepFwd;
     const footY = fY - s * 0.008 - legLift;
-    // Knees high above body (classic spider silhouette)
-    const kneeBaseY = bY - s * (0.22 - Math.abs(idx - 1.5) * 0.022);
+    // Коліна мають бути ВИЩЕ за верх черевця (bY - absR ≈ bY - 0.325s), інакше стегна
+    // задніх ніг малюються НАСКРІЗЬ через черевце і павук читається як куля з палицями.
+    const kneeBaseY = bY - s * (0.58 - Math.abs(idx - 1.5) * 0.045);
     const kneeY = kneeBaseY - kneeBendY;
-    // Knee X: slightly outward from midpoint
-    const kneeX = (hipX * 0.45 + footX * 0.55);
+    // Коліно винесене НАЗОВНІ (ближче до ступні), щоб дуга ноги обходила тіло збоку,
+    // а не перетинала його. Далекі ноги ще й зсунуті по X — тоді читається 8 ніг, не 4.
+    const kneeX = (hipX * 0.20 + footX * 0.80) + (near ? dir * s * 0.02 : -dir * s * 0.05);
 
     // DRAMATIC threat display: front legs raise HIGH during wind-up,
     // slam forward with strike, settle on recover
@@ -206,10 +284,21 @@ function drawArachneMonster(unit, camY) {
       if (idx === 0) {
         // Front leg: rears up high, then lunges
         attackLegLift = windUpE * s * 0.150 - strikeE * s * 0.020;
-        attackLegFwd  = -windUpE * s * 0.030 * dir + strikeE * s * 0.080 * dir + impactE * s * 0.080 * dir;
+        attackLegFwd  = -windUpE * s * 0.045 * dir + strikeE * s * 0.145 * dir + impactE * s * 0.055 * dir;
       } else if (idx === 1) {
         attackLegLift = windUpE * s * 0.085 - strikeE * s * 0.010;
-        attackLegFwd  = -windUpE * s * 0.015 * dir + strikeE * s * 0.045 * dir + impactE * s * 0.045 * dir;
+        attackLegFwd  = -windUpE * s * 0.030 * dir + strikeE * s * 0.105 * dir + impactE * s * 0.040 * dir;
+      }
+    }
+    // Even between cooldown pulses the combat stance must not collapse back to idle:
+    // the foremost pair frames the mouth and makes the bite direction readable.
+    if (fightReady > 0) {
+      if (idx === 0) {
+        attackLegLift += fightReady * s * 0.115;
+        attackLegFwd  += fightReady * s * 0.155 * dir;
+      } else if (idx === 1) {
+        attackLegLift += fightReady * s * 0.060;
+        attackLegFwd  += fightReady * s * 0.105 * dir;
       }
     }
     const effFootX = footX + attackLegFwd;
@@ -224,15 +313,19 @@ function drawArachneMonster(unit, camY) {
     ctx.globalAlpha = alpha;
     ctx.lineCap = 'round';
 
-    // Helper: draw fuzz bristles along a segment
+    // Helper: draw fuzz bristles along a segment.
+    // На ігровому розмірі щетина невидима, а на макро її рівномірні насічки читались як
+    // «вузли бамбука». Тому: малюємо лише при s>=60 і з нерівномірним кроком.
     const drawBristles = (x1, y1, x2, y2, count, maxLen, densityAng) => {
+      if (s < 120) return;   // поріг піднято: на середніх розмірах насічки читались як «зарубки»
       const dx = x2 - x1, dy = y2 - y1;
       const len = Math.sqrt(dx * dx + dy * dy) || 1;
       const nx = -dy / len, ny = dx / len;
       ctx.strokeStyle = HAIR_DARK;
       ctx.lineWidth = s * 0.004 * scaleW;
       for (let bi = 1; bi <= count; bi++) {
-        const t = bi / (count + 1);
+        // нерівномірний крок — щетина не вишиковується в регулярні «вузли»
+        const t = (bi + 0.35 * Math.sin(bi * 1.7 + unit._arSeed)) / (count + 1);
         const bx = x1 + dx * t;
         const by = y1 + dy * t;
         // Two sets of bristles on both sides of the segment
@@ -248,12 +341,24 @@ function drawArachneMonster(unit, camY) {
       }
     };
 
-    // SEGMENT 1: Femur (thick)
-    ctx.strokeStyle = DARK_BROWN;
-    ctx.lineWidth = s * 0.048 * scaleW;
-    ctx.beginPath(); ctx.moveTo(hipX, hipY); ctx.lineTo(effKneeX, effKneeY); ctx.stroke();
+    // SEGMENT 1: Femur — КОНУСОМ (товсте біля тіла → тонше до коліна).
+    // Рівні по всій довжині сегменти читались як бамбукові жердини; конус дає органіку.
+    // Малюємо заливкою-трапецією замість stroke, щоб ширина спадала вздовж кістки.
+    {
+      const _fdx = effKneeX - hipX, _fdy = effKneeY - hipY;
+      const _fl = Math.hypot(_fdx, _fdy) || 1;
+      const _fnx = -_fdy / _fl, _fny = _fdx / _fl;
+      const _w0 = s * 0.070 * scaleW, _w1 = s * 0.040 * scaleW;   // база → коліно
+      ctx.fillStyle = DARK_BROWN;
+      ctx.beginPath();
+      ctx.moveTo(hipX + _fnx * _w0 * 0.5, hipY + _fny * _w0 * 0.5);
+      ctx.lineTo(effKneeX + _fnx * _w1 * 0.5, effKneeY + _fny * _w1 * 0.5);
+      ctx.lineTo(effKneeX - _fnx * _w1 * 0.5, effKneeY - _fny * _w1 * 0.5);
+      ctx.lineTo(hipX - _fnx * _w0 * 0.5, hipY - _fny * _w0 * 0.5);
+      ctx.closePath(); ctx.fill();
+    }
     ctx.strokeStyle = MID_BROWN;
-    ctx.lineWidth = s * 0.030 * scaleW;
+    ctx.lineWidth = s * 0.042 * scaleW;
     ctx.beginPath(); ctx.moveTo(hipX - s * 0.004, hipY - s * 0.004); ctx.lineTo(effKneeX - s * 0.004, effKneeY - s * 0.004); ctx.stroke();
     ctx.strokeStyle = WARM_BROWN;
     ctx.lineWidth = s * 0.012 * scaleW;
@@ -267,7 +372,7 @@ function drawArachneMonster(unit, camY) {
     ctx.fillStyle = BRIGHT_ORANGE;
     ctx.beginPath(); ctx.arc(effKneeX - s * 0.004, effKneeY - s * 0.004, s * 0.018 * scaleW, 0, Math.PI * 2); ctx.fill();
     // Subtle fuzz around knee patch (shorter hairs)
-    ctx.strokeStyle = 'rgba(150,65,25,0.70)';
+    ctx.strokeStyle = TINT_LINE;
     ctx.lineWidth = s * 0.003 * scaleW;
     for (let ki = 0; ki < 6; ki++) {
       const ka = (ki / 6) * Math.PI * 2;
@@ -277,12 +382,23 @@ function drawArachneMonster(unit, camY) {
       ctx.stroke();
     }
 
-    // SEGMENT 2: Tibia
-    ctx.strokeStyle = DARK_BROWN;
-    ctx.lineWidth = s * 0.040 * scaleW;
-    ctx.beginPath(); ctx.moveTo(effKneeX, effKneeY); ctx.lineTo(effFootX, effFootY); ctx.stroke();
+    // SEGMENT 2: Tibia — теж КОНУСОМ, від коліна до пазура (0.040 → 0.018s).
+    // Разом зі стегном дає безперервне звуження ноги від тіла до кінчика.
+    {
+      const _tdx = effFootX - effKneeX, _tdy = effFootY - effKneeY;
+      const _tl = Math.hypot(_tdx, _tdy) || 1;
+      const _tnx = -_tdy / _tl, _tny = _tdx / _tl;
+      const _t0 = s * 0.040 * scaleW, _t1 = s * 0.018 * scaleW;
+      ctx.fillStyle = DARK_BROWN;
+      ctx.beginPath();
+      ctx.moveTo(effKneeX + _tnx * _t0 * 0.5, effKneeY + _tny * _t0 * 0.5);
+      ctx.lineTo(effFootX + _tnx * _t1 * 0.5, effFootY + _tny * _t1 * 0.5);
+      ctx.lineTo(effFootX - _tnx * _t1 * 0.5, effFootY - _tny * _t1 * 0.5);
+      ctx.lineTo(effKneeX - _tnx * _t0 * 0.5, effKneeY - _tny * _t0 * 0.5);
+      ctx.closePath(); ctx.fill();
+    }
     ctx.strokeStyle = MID_BROWN;
-    ctx.lineWidth = s * 0.024 * scaleW;
+    ctx.lineWidth = s * 0.026 * scaleW;
     ctx.beginPath(); ctx.moveTo(effKneeX - s * 0.003, effKneeY); ctx.lineTo(effFootX - s * 0.003, effFootY); ctx.stroke();
     ctx.strokeStyle = WARM_BROWN;
     ctx.lineWidth = s * 0.010 * scaleW;
@@ -316,13 +432,47 @@ function drawArachneMonster(unit, camY) {
 
   // ── Far legs (behind body) ───────────────────────────────────────
   for (let i = 0; i < 4; i++) drawSpiderLeg(i, -1, false);
+  // ЗАДНІ ближні ноги (idx 2,3) малюємо ТУТ — тобто ПЕРЕД черевцем, щоб воно їх
+  // перекривало. Їхні стегна йдуть від кластера біля голови назад і різали черевце
+  // діагональними трубами через усю кулю. Z-order прибирає це без зміни геометрії.
+  drawSpiderLeg(2, 1, true);
+  drawSpiderLeg(3, 1, true);
+
+  // Branch B: a real jointed knockback tail, rooted behind the abdomen.
+  // The evolution tree explicitly grants a tail strike; showing the weapon in the
+  // silhouette makes the branch readable before any VFX or colour is noticed.
+  if (_arVisualBranch === 'B') {
+    const tailRootX = absCX - dir * absR * 0.58;
+    const tailRootY = absCY - absR * 0.05;
+    const tailMidX  = tailRootX - dir * s * 0.38;
+    const tailMidY  = tailRootY - s * 0.59 - Math.sin(bTime * 1.4) * s * 0.018;
+    const tailTipX  = tailRootX + dir * s * (0.08 + (inFight ? 0.14 : 0));
+    const tailTipY  = tailRootY - s * (0.43 + (inFight ? 0.04 : 0));
+    ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    ctx.strokeStyle = '#0b0912'; ctx.lineWidth = s * 0.115;
+    ctx.beginPath(); ctx.moveTo(tailRootX,tailRootY);
+    ctx.quadraticCurveTo(tailMidX,tailMidY,tailTipX,tailTipY); ctx.stroke();
+    ctx.strokeStyle = '#4b4663'; ctx.lineWidth = s * 0.078;
+    ctx.beginPath(); ctx.moveTo(tailRootX,tailRootY);
+    ctx.quadraticCurveTo(tailMidX,tailMidY,tailTipX,tailTipY); ctx.stroke();
+    ctx.strokeStyle = 'rgba(196,170,255,0.62)'; ctx.lineWidth = s * 0.020;
+    ctx.beginPath(); ctx.moveTo(tailRootX - dir*s*0.01,tailRootY-s*0.018);
+    ctx.quadraticCurveTo(tailMidX,tailMidY-s*0.02,tailTipX,tailTipY); ctx.stroke();
+    ctx.fillStyle = '#171321';
+    ctx.beginPath();
+    ctx.moveTo(tailTipX,tailTipY-s*0.13);
+    ctx.lineTo(tailTipX-dir*s*0.095,tailTipY+s*0.035);
+    ctx.lineTo(tailTipX+dir*s*0.075,tailTipY+s*0.045);
+    ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = 'rgba(210,188,255,0.70)'; ctx.lineWidth=s*0.012; ctx.stroke();
+  }
 
   // ═══════════════════════════════════════════════════════════════
   //  ABDOMEN (opisthosoma) — chunky, very hairy tarantula style
   // ═══════════════════════════════════════════════════════════════
-  if (webShot) {
-    ctx.shadowColor = '#e0e0ff'; ctx.shadowBlur = s * unit._arWebShotT * 0.35;
-  }
+  // NB: тінь-німб НЕ вішаємо на заливку черевця — вона обводила світлом усе тіло,
+  // і при ігровому розмірі павук перетворювався на світлу пляму. Свічення web-прока
+  // тепер живе тільки на самих нитках шовку (нижче, у блоці webShot).
   // Outer dark base — NEAR-PERFECT SPHERE (tarantula hallmark)
   ctx.fillStyle = DARK_BROWN;
   ctx.beginPath();
@@ -340,7 +490,7 @@ function drawArachneMonster(unit, camY) {
   ctx.beginPath();
   ctx.arc(absCX, absCY, absR * 0.97, 0, Math.PI * 2); ctx.fill();
   // Top highlight (sphere illumination)
-  ctx.fillStyle = 'rgba(140,80,40,0.35)';
+  ctx.fillStyle = TINT_SOFT;
   ctx.beginPath();
   ctx.ellipse(absCX - dir * absR * 0.18, absCY - absR * 0.42, absR * 0.45, absR * 0.22, 0, 0, Math.PI * 2); ctx.fill();
   // Subtle orange banding around upper abdomen
@@ -353,11 +503,13 @@ function drawArachneMonster(unit, camY) {
     ctx.ellipse(0, -absR * 0.20 + bi * absR * 0.20, absR * 0.72, absR * 0.12, 0, 0, Math.PI * 2);
     ctx.stroke();
   }
-  // Orange accent patches across upper abdomen (Mexican red-knee pattern)
+  // Orange accent patches across upper abdomen (Mexican red-knee pattern).
+  // Була симетрична ПАРА овалів — читалась як друга пара очей / обличчя на спині.
+  // Тепер це асиметричний ряд із 3 плям різного розміру = візерунок, а не «морда».
   ctx.fillStyle = ORANGE_ACCENT;
-  [-1, 1].forEach(sd => {
+  [[-0.38, -0.14, 0.075], [0.02, -0.05, 0.055], [0.40, -0.18, 0.065]].forEach(([px, py, pr]) => {
     ctx.beginPath();
-    ctx.ellipse(sd * absR * 0.30, -absR * 0.08, absR * 0.08, absR * 0.10, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.ellipse(px * absR, py * absR, absR * pr, absR * (pr * 1.15), 0, 0, Math.PI * 2); ctx.fill();
   });
   // Bottom shadow (roundness)
   ctx.fillStyle = 'rgba(0,0,0,0.30)';
@@ -365,6 +517,23 @@ function drawArachneMonster(unit, camY) {
   ctx.ellipse(0, absR * 0.40, absR * 0.70, absR * 0.25, 0, 0, Math.PI * 2); ctx.fill();
   ctx.restore();
   ctx.shadowBlur = 0;
+
+  // Branch A: three rooted venom barbs alter the dorsal silhouette. They grow out
+  // of the chitin and share its value ramp, so this reads as a mutation, not VFX.
+  if (_arVisualBranch === 'A') {
+    const barbData = [[-0.52,0.17],[-0.05,0.24],[0.38,0.15]];
+    barbData.forEach(([ox,bh], i) => {
+      const bx = absCX + dir * absR * ox;
+      const by = absCY - Math.sqrt(Math.max(0,absR*absR-(bx-absCX)*(bx-absCX))) * 0.90;
+      ctx.fillStyle = i === 1 ? '#aee63a' : '#5f9d22';
+      ctx.beginPath();
+      ctx.moveTo(bx-s*0.045,by+s*0.020);
+      ctx.quadraticCurveTo(bx-s*0.010,by-s*bh*0.55,bx+dir*s*0.030,by-s*bh);
+      ctx.quadraticCurveTo(bx+s*0.035,by-s*bh*0.38,bx+s*0.048,by+s*0.020);
+      ctx.closePath(); ctx.fill();
+      ctx.strokeStyle='rgba(210,255,110,0.62)'; ctx.lineWidth=s*0.008; ctx.stroke();
+    });
+  }
 
   // DENSE HAIR COAT — radiates uniformly from spherical abdomen
   const hairLayers = [
@@ -393,7 +562,7 @@ function drawArachneMonster(unit, camY) {
   });
 
   // Urticating hairs (fuzzy tuft on top of abdomen sphere)
-  ctx.strokeStyle = 'rgba(180,90,40,0.85)';
+  ctx.strokeStyle = TINT_EDGE;
   ctx.lineWidth = s * 0.005;
   for (let ui = 0; ui < 14; ui++) {
     const ux = absCX + (ui - 6.5) * s * 0.010;
@@ -455,26 +624,34 @@ function drawArachneMonster(unit, camY) {
 
   // Silk burst during webShot
   if (webShot) {
+    // Шовк ПЕРЕКИДАЄТЬСЯ через павука і летить ДАЛЕКО ВПЕРЕД, до цілі.
+    // Раніше нитки стартували ззаду черевця з довжиною ≤1.05s і закінчувались білими
+    // крапками ПРЯМО НА ТІЛІ — читалось як подряпини по кулі, а не як постріл павутиною.
+    // Тепер: старт зі спінеретів, висока дуга над тілом, кінець за габаритом (≥1.7s),
+    // товщина збільшена — щоб прок було видно й на ігровому розмірі s≈34.
     const wt = unit._arWebShotT;
-    ctx.shadowColor = '#ffffff'; ctx.shadowBlur = s * wt * 0.40;
-    for (let si = 0; si < 5; si++) {
-      const sa = -Math.PI * 0.35 + (si - 2) * 0.12;
-      const slen = s * (0.4 + (1 - wt) * 0.65);
-      const sEndX = spinX + Math.cos(sa) * slen * dir;
-      const sEndY = spinY + Math.sin(sa) * slen * 0.75;
-      const sMidX = (spinX + sEndX) / 2 + dir * s * 0.05;
-      const sMidY = (spinY + sEndY) / 2 - s * 0.15;
-      ctx.strokeStyle = `rgba(230,235,255,${wt * 0.82})`;
-      ctx.lineWidth = s * 0.008;
+    ctx.shadowColor = '#ffffff'; ctx.shadowBlur = s * wt * 0.30;
+    const _reach = s * (1.05 + (1 - wt) * 0.85);          // летить далі з часом
+    for (let si = 0; si < 4; si++) {
+      const _spread = (si - 1.5) * s * 0.075;
+      const _eX = bX + dir * _reach;
+      const _eY = bY + s * 0.10 + _spread * 0.8;
+      const _mX = bX + dir * _reach * 0.42;
+      const _mY = bY - s * 0.62 + _spread;                // дуга ВИСОКО над тілом
+      ctx.strokeStyle = `rgba(230,235,255,${wt * 0.80})`;
+      ctx.lineWidth = s * 0.018;                          // товще → видно на s=34
+      ctx.lineCap = 'round';
+      // Починаємо дугу не від самих спінеретів, а на ~30% шляху до вершини — інакше
+      // хвіст нитки лягає яскравим штрихом ПОВЕРХ черевця.
+      const _sX = spinX + (_mX - spinX) * 0.30;
+      const _sY = spinY + (_mY - spinY) * 0.30;
       ctx.beginPath();
-      ctx.moveTo(spinX, spinY);
-      ctx.quadraticCurveTo(sMidX, sMidY, sEndX, sEndY);
+      ctx.moveTo(_sX, _sY);
+      ctx.quadraticCurveTo(_mX, _mY, _eX, _eY);
       ctx.stroke();
-      ctx.fillStyle = `rgba(250,250,255,${wt * 0.90})`;
-      ctx.beginPath(); ctx.arc(sEndX, sEndY, s * 0.012 * wt, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = `rgba(250,250,255,${wt * 0.85})`;
+      ctx.beginPath(); ctx.arc(_eX, _eY, s * 0.026 * wt, 0, Math.PI * 2); ctx.fill();
     }
-    ctx.fillStyle = `rgba(250,250,255,${wt * 0.75})`;
-    ctx.beginPath(); ctx.arc(spinX, spinY, absR * 0.14 * wt, 0, Math.PI * 2); ctx.fill();
     ctx.shadowBlur = 0;
   }
 
@@ -495,17 +672,22 @@ function drawArachneMonster(unit, camY) {
   // Mid gradient
   const cephG = ctx.createRadialGradient(cephCX - dir * cephR * 0.30, cephCY - cephR * 0.40, 0,
                                           cephCX, cephCY, cephR);
-  cephG.addColorStop(0, LIGHT_BROWN);
-  cephG.addColorStop(0.45, WARM_BROWN);
-  cephG.addColorStop(1, DARK_BROWN);
+  cephG.addColorStop(0, CARA_LIT);
+  cephG.addColorStop(0.45, CARA_MID);
+  cephG.addColorStop(1, MID_BROWN);
   ctx.fillStyle = cephG;
   ctx.beginPath();
   ctx.ellipse(cephCX - dir * cephR * 0.05, cephCY - cephR * 0.10, cephR * 0.94, cephR * 0.78, 0, 0, Math.PI * 2); ctx.fill();
-  // Carapace central groove (fovea)
-  ctx.strokeStyle = 'rgba(5,2,0,0.70)';
-  ctx.lineWidth = s * 0.008;
+  // Темна межа навколо карапакса — відрізає голову від черевця, щоб дві маси не зливались
+  ctx.strokeStyle = 'rgba(6,3,0,0.75)';
+  ctx.lineWidth = s * 0.014;
   ctx.beginPath();
-  ctx.ellipse(cephCX - dir * cephR * 0.30, cephCY, cephR * 0.05, cephR * 0.10, 0, 0, Math.PI * 2); ctx.stroke();
+  ctx.ellipse(cephCX, cephCY, cephR * 1.08, cephR * 0.90, 0, 0, Math.PI * 2); ctx.stroke();
+  // Carapace central groove (fovea) — ЗАЛИВКА, не обведення. Обведений еліпс на чистій
+  // голові читався буквально як цифра «0» / замкова щілина посеред карапакса.
+  ctx.fillStyle = 'rgba(5,2,0,0.62)';
+  ctx.beginPath();
+  ctx.ellipse(cephCX - dir * cephR * 0.30, cephCY, cephR * 0.045, cephR * 0.13, 0, 0, Math.PI * 2); ctx.fill();
   ctx.shadowBlur = 0;
 
   // Starburst of hairs radiating outward from center (classic tarantula)
@@ -538,19 +720,40 @@ function drawArachneMonster(unit, camY) {
   });
 
   // ── Near legs (in front of body) ─────────────────────────────────
-  for (let i = 0; i < 4; i++) drawSpiderLeg(i, 1, true);
+  // Лише ПЕРЕДНІ (0,1): задні вже намальовані до черевця (див. вище, z-order).
+  drawSpiderLeg(0, 1, true);
+  drawSpiderLeg(1, 1, true);
 
   // ═══════════════════════════════════════════════════════════════
   //  CHELICERAE (fangs) — large tarantula-style
   // ═══════════════════════════════════════════════════════════════
   const cheliBaseX = cephCX + dir * cephR * 0.78;
   const cheliBaseY = cephCY + cephR * 0.28;
-  [-1, 1].forEach(side => {
+  const fangGeom = side => {
     const cheliSpread = atkFangOpen;
-    const fBaseX = cheliBaseX + side * cephR * 0.16 * (1 + cheliSpread * 0.3);
+    const fBaseX = cheliBaseX + side * cephR * 0.22 * (1 + cheliSpread * 0.34);
     const fBaseY = cheliBaseY;
-    const fTipX = fBaseX + dir * s * 0.025 + side * s * (0.030 + cheliSpread * 0.020);
-    const fTipY = fBaseY + s * (0.100 + cheliSpread * 0.020);
+    return {
+      cheliSpread, fBaseX, fBaseY,
+      fTipX: fBaseX + dir * s * (0.040 + strikeE * 0.030 + impactE * 0.010)
+                   + side * s * (0.040 + cheliSpread * 0.030 + (inFight ? 0.008 : 0)),
+      fTipY: fBaseY + s * (0.145 + cheliSpread * 0.062 + (inFight ? 0.016 : 0))
+    };
+  };
+  if (inFight) {
+    // One dark mouth cavity unifies both fangs into a single biting jaw gesture.
+    const mouthX = cheliBaseX + dir * s * 0.045;
+    const mouthY = cheliBaseY + s * 0.090;
+    ctx.save();
+    ctx.shadowColor = _arVisualBranch === 'A' ? '#82ff3d'
+                    : _arVisualBranch === 'B' ? '#ad88ff' : '#ff5a22';
+    ctx.shadowBlur = s * 0.11;
+    ctx.fillStyle = 'rgba(6,2,1,0.92)';
+    ctx.beginPath(); ctx.ellipse(mouthX,mouthY,s*0.105,s*0.095,dir*0.18,0,Math.PI*2); ctx.fill();
+    ctx.restore();
+  }
+  [-1, 1].forEach(side => {
+    const { cheliSpread, fBaseX, fBaseY, fTipX, fTipY } = fangGeom(side);
     // Basal chelicera (bulbous, hairy)
     ctx.fillStyle = DARK_BROWN;
     ctx.beginPath();
@@ -577,15 +780,27 @@ function drawArachneMonster(unit, camY) {
     ctx.quadraticCurveTo(fBaseX + dir * s * 0.018, fBaseY + s * 0.055, fBaseX + s * 0.016, fBaseY + s * 0.025);
     ctx.closePath(); ctx.fill();
     // Fang highlight (chitin shine)
-    ctx.strokeStyle = '#5a2818';
+    ctx.strokeStyle = FANG_DARK;
     ctx.lineWidth = s * 0.004; ctx.lineCap = 'round';
     ctx.beginPath();
     ctx.moveTo(fBaseX + s * 0.010, fBaseY + s * 0.028);
     ctx.quadraticCurveTo(fBaseX + dir * s * 0.012, fBaseY + s * 0.058, fTipX - s * 0.004, fTipY - s * 0.012);
     ctx.stroke();
     // Wet sharp tip
-    ctx.fillStyle = '#c8a890';
-    ctx.beginPath(); ctx.arc(fTipX, fTipY, s * 0.009, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = FANG_LIT;
+    ctx.beginPath(); ctx.arc(fTipX, fTipY, s * (inFight ? 0.013 : 0.009), 0, Math.PI * 2); ctx.fill();
+    if (inFight) {
+      ctx.save();
+      ctx.shadowColor = unit._branch === 'A' ? '#8cff44'
+                      : unit._branch === 'B' ? '#c5adff' : '#ff5a22';
+      ctx.shadowBlur = s * 0.16;
+      ctx.strokeStyle = unit._branch === 'A' ? 'rgba(160,255,105,0.82)'
+                      : unit._branch === 'B' ? 'rgba(214,194,255,0.78)'
+                      : 'rgba(255,120,60,0.72)';
+      ctx.lineWidth = s * 0.008;
+      ctx.beginPath(); ctx.arc(fTipX,fTipY,s*0.028,0,Math.PI*2); ctx.stroke();
+      ctx.restore();
+    }
     // Venom drip during wind-up
     if (windUpE > 0.3) {
       ctx.shadowColor = '#88ff44'; ctx.shadowBlur = s * windUpE * 0.22;
@@ -605,8 +820,9 @@ function drawArachneMonster(unit, camY) {
   if (impactE > 0 || (recoverE > 0 && recoverE < 0.25)) {
     const impT = impactE > 0 ? 1 : 1 - recoverE / 0.25;
     // Target: center point between fang tips
-    const impX = cheliBaseX + dir * s * 0.025;
-    const impY = cheliBaseY + s * 0.110;
+    const _impL = fangGeom(-1), _impR = fangGeom(1);
+    const impX = (_impL.fTipX + _impR.fTipX) * 0.5;
+    const impY = (_impL.fTipY + _impR.fTipY) * 0.5;
     // Flash
     ctx.shadowColor = '#ff4400';
     ctx.shadowBlur = s * impT * 0.42;
@@ -731,12 +947,7 @@ function drawArachneMonster(unit, camY) {
 
     // Green venom coating on fangs (drawn over the base fang geometry)
     [-1, 1].forEach((side, fi) => {
-      const _chBX  = cephCX + dir * cephR * 0.78;
-      const _chBY  = cephCY + cephR * 0.28;
-      const _fBX   = _chBX + side * cephR * 0.16;
-      const _fBY   = _chBY;
-      const _fTipX = _fBX + dir * s * 0.025 + side * s * 0.030;
-      const _fTipY = _fBY + s * 0.100;
+      const { fBaseX: _fBX, fBaseY: _fBY, fTipX: _fTipX, fTipY: _fTipY } = fangGeom(side);
       ctx.save();
       ctx.globalAlpha = 0.32;
       ctx.shadowColor = '#88ff44'; ctx.shadowBlur = s * 0.08;
@@ -768,48 +979,56 @@ function drawArachneMonster(unit, camY) {
     ctx.beginPath(); ctx.ellipse(cx, fY + s * 0.006, s * 0.34, s * 0.056, 0, 0, Math.PI * 2); ctx.fill();
 
   } else if (_arBranch === 'B') {
-    // Giant: web territory — strands + dome + radial threads + spokes
+    // GIANT (Велетенська) — вага і панцир, БЕЗ павутини. Раніше тут малювалась
+    // «павутинна територія» (нитки/купол/спиці): вона (1) не за брифом — дерево каже
+    // «×1.5 розміру, темна модель», павутина належить базі й гілці A, і (2) читалась
+    // як світлий шум, що перебивав силует. Тепер гілка каже «важкий»: тріщини під
+    // ногами, аметистовий блиск на хітині та потовщений панцир черевця.
     const _t = unit._arT;
 
-    // 4 web strands from spinnerets anchoring outward
-    ctx.lineWidth = s * 0.007;
-    for (let wi = 0; wi < 4; wi++) {
-      const _wFrac = wi / 3;
-      const _wAng  = Math.PI * 0.32 + _wFrac * Math.PI * 0.58;
-      const _wLen  = s * (0.48 + wi * 0.08);
-      const _wEndX = spinX - dir * Math.cos(_wAng) * _wLen;
-      const _wEndY = spinY + Math.sin(_wAng) * _wLen;
-      const _wMidX = (spinX + _wEndX) / 2 + dir * s * 0.04 + Math.sin(_t * 0.5 + wi) * s * 0.015;
-      const _wMidY = (spinY + _wEndY) / 2 + s * 0.04;
-      ctx.strokeStyle = `rgba(220,225,255,${0.28 + _wFrac * 0.08})`;
-      ctx.beginPath(); ctx.moveTo(spinX, spinY); ctx.quadraticCurveTo(_wMidX, _wMidY, _wEndX, _wEndY); ctx.stroke();
-      ctx.fillStyle = 'rgba(200,210,255,0.45)';
-      ctx.beginPath(); ctx.arc(_wEndX, _wEndY, s * 0.012, 0, Math.PI * 2); ctx.fill();
-    }
-    // Web dome (upper half)
-    ctx.setLineDash([s * 0.022, s * 0.026]);
-    ctx.strokeStyle = `rgba(215,220,255,${0.26 + Math.sin(_t * 1.2) * 0.07})`;
-    ctx.lineWidth = s * 0.005;
-    ctx.beginPath(); ctx.ellipse(bX, bY - absR * 0.28, absR * 1.55, absR * 0.62, 0, Math.PI, Math.PI * 2); ctx.stroke();
-    // Horizontal cross-threads inside dome
-    ctx.strokeStyle = 'rgba(205,212,255,0.20)';
-    ctx.lineWidth = s * 0.004;
-    for (let ti = 0; ti < 4; ti++) {
-      const _tY = bY - absR * (0.06 + ti * 0.23);
-      const _tW = absR * (1.45 - ti * 0.20);
-      ctx.beginPath(); ctx.moveTo(bX - _tW, _tY); ctx.lineTo(bX + _tW, _tY); ctx.stroke();
-    }
-    // Radial spokes from dome apex
-    for (let ri = 0; ri < 5; ri++) {
-      const _rA = Math.PI * 1.05 + (ri / 4) * Math.PI * 0.90;
+    // Тріщини в підлозі під вагою велетня (розходяться від центру)
+    ctx.strokeStyle = 'rgba(150,120,220,0.30)';
+    ctx.lineWidth = s * 0.010;
+    ctx.lineCap = 'round';
+    for (let ci = 0; ci < 5; ci++) {
+      const _cA = Math.PI * 0.12 + (ci / 4) * Math.PI * 0.76;
+      const _cL = s * (0.30 + (ci % 2) * 0.14);
+      const _x0 = cx + Math.cos(_cA) * s * 0.10;
+      const _y0 = fY + s * 0.006 + Math.sin(_cA) * s * 0.012;
+      const _x1 = cx + Math.cos(_cA) * _cL;
+      const _y1 = fY + s * 0.008 + Math.sin(_cA) * s * 0.030;
       ctx.beginPath();
-      ctx.moveTo(bX, bY - absR * 0.28);
-      ctx.lineTo(bX + Math.cos(_rA) * absR * 1.52, bY - absR * 0.28 + Math.sin(_rA) * absR * 0.62);
+      ctx.moveTo(_x0, _y0);
+      ctx.quadraticCurveTo((_x0 + _x1) / 2, _y0 + s * 0.010, _x1, _y1);
       ctx.stroke();
     }
-    ctx.setLineDash([]);
+    // Пилова хмарка від ваги (низька, широка)
+    const _dustA = 0.20 + Math.sin(_t * 1.4) * 0.06;
+    ctx.fillStyle = `rgba(120,100,170,${_dustA})`;
+    ctx.beginPath(); ctx.ellipse(cx, fY + s * 0.008, s * 0.46, s * 0.038, 0, 0, Math.PI * 2); ctx.fill();
+
+    // Потовщені пластини панцира на черевці — 3 дуги-«скиби» хітину
+    ctx.strokeStyle = 'rgba(190,170,240,0.32)';
+    ctx.lineWidth = s * 0.016;
+    for (let pi = 0; pi < 3; pi++) {
+      const _pR = absR * (0.86 - pi * 0.19);
+      ctx.beginPath();
+      ctx.ellipse(absCX, absCY + absR * 0.05, _pR, _pR * 0.72, 0, Math.PI * 1.08, Math.PI * 1.92);
+      ctx.stroke();
+    }
+    // Холодний аметистовий блиск по верхньому краю панцира (rim light = маса й обʼєм)
+    ctx.strokeStyle = `rgba(200,175,255,${0.34 + Math.sin(_t * 1.8) * 0.08})`;
+    ctx.lineWidth = s * 0.018;
+    ctx.beginPath();
+    ctx.ellipse(absCX, absCY, absR * 0.98, absR * 0.90, 0, Math.PI * 1.15, Math.PI * 1.85);
+    ctx.stroke();
+    ctx.strokeStyle = `rgba(215,198,255,${0.42 + Math.sin(_t * 1.8 + 1) * 0.08})`;
+    ctx.lineWidth = s * 0.015;
+    ctx.beginPath(); ctx.ellipse(cephCX,cephCY,cephR*1.02,cephR*0.92,0,Math.PI*1.12,Math.PI*1.88); ctx.stroke();
   }
 
   ctx.restore();
-  unit._hpBarY = absCY - absR * 1.05 - s * 0.05;
+  unit._hpBarY = _arVisualBranch === 'B'
+    ? Math.min(absCY - absR * 1.05, absCY - s * 0.70) - s * 0.05
+    : absCY - absR * 1.05 - s * 0.05;
 }

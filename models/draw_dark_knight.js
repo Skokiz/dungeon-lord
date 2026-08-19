@@ -86,8 +86,8 @@ function drawDarkKnightMonster(unit, camY) {
   const attackShakeY = shakeT * Math.sin(bTime * 82 + 1.3) * s * 0.006;
 
   // ── Proportions (TALL + SLIM, Sauron silhouette) ─────────────────
-  const shW     = s * 0.500;          // narrow shoulders
-  const hipW    = s * 0.255;          // slim V-taper hips
+  const shW     = s * 0.430;          // narrow knightly shoulders
+  const hipW    = s * 0.235;          // slim V-taper hips
   const bodyH   = s * 0.580;          // tall slender torso
   const legH    = s * 0.475;          // very long legs
   const headR   = s * 0.175;          // smaller head (crown dominates)
@@ -165,8 +165,8 @@ function drawDarkKnightMonster(unit, camY) {
                         bX - shW * 0.54, bodyTop);
   ctx.closePath(); ctx.fill();
   // Cape edge highlights
-  ctx.strokeStyle = 'rgba(80,25,40,0.55)';
-  ctx.lineWidth = s * 0.008;
+  ctx.strokeStyle = 'rgba(125,55,78,0.74)';
+  ctx.lineWidth = s * 0.012;
   ctx.beginPath();
   ctx.moveTo(bX - shW * 0.80, bodyTop - s * 0.020);
   ctx.quadraticCurveTo(bX - shW * 0.92 + capeSway * 0.2, bodyTop + bodyH * 0.5, bX - shW * 0.62 + capeSway, capeBot);
@@ -298,10 +298,10 @@ function drawDarkKnightMonster(unit, camY) {
   });
 
   // ── Waist plate + tassets ────────────────────────────────────────
-  if (inFight) {
-    ctx.shadowColor = atkActive ? '#4466aa' : '#1a2a4a';
-    ctx.shadowBlur  = s * (atkActive ? 0.28 : 0.12);
-  }
+  // Сталевий rim — ПОСТІЙНИЙ (слабкий), у бою підсилюється. Без нього темна броня
+  // зливалась із темним тлом у суцільну кляксу (скидається на shadowBlur=0 нижче).
+  ctx.shadowColor = (inFight && atkActive) ? '#4466aa' : '#1a2a4a';
+  ctx.shadowBlur  = s * (inFight ? (atkActive ? 0.28 : 0.12) : 0.09);
   ctx.fillStyle = '#040610';
   ctx.beginPath();
   ctx.moveTo(bX - hipW - s * 0.035, bodyBot - s * 0.015);
@@ -330,51 +330,83 @@ function drawDarkKnightMonster(unit, camY) {
   ctx.lineTo(bX - shW * 0.58 + tilt,  bodyTop - s * 0.045);
   ctx.lineTo(bX + shW * 0.58 + tilt,  bodyTop - s * 0.045);
   ctx.lineTo(bX + shW * 0.95 + tilt,  bodyTop - s * 0.015);
-  ctx.lineTo(bX + hipW + s * 0.020,   bodyBot + s * 0.005);
-  ctx.lineTo(bX - hipW - s * 0.018,   bodyBot + s * 0.005);
+  // right side: chest bulges out, then pinches in to a narrow waist (a cuirass, not a box)
+  ctx.bezierCurveTo(bX + shW * 1.04 + tilt, bodyTop + bodyH * 0.20,
+                    bX + hipW * 1.18,        bodyBot - bodyH * 0.30,
+                    bX + hipW + s * 0.020,   bodyBot + s * 0.005);
+  ctx.lineTo(bX - hipW - s * 0.018,  bodyBot + s * 0.005);
+  ctx.bezierCurveTo(bX - hipW * 1.18,        bodyBot - bodyH * 0.30,
+                    bX - shW * 1.04 + tilt,  bodyTop + bodyH * 0.20,
+                    bX - shW * 0.95 + tilt,  bodyTop - s * 0.015);
   ctx.closePath(); ctx.fill();
-  // Mid steel
-  ctx.fillStyle = '#10182a';
+  // Mid steel — form-shaded cuirass (lit upper-left → dark lower-right/sides)
+  const _cg = ctx.createLinearGradient(bX - shW * 0.5 + tilt, bodyTop, bX + shW * 0.35 + tilt, bodyBot);
+  // Кіраса — головна видима маса; піднята на ~2 стопи, щоб читалась на темному тлі
+  _cg.addColorStop(0, '#3d5478'); _cg.addColorStop(0.5, '#22304e'); _cg.addColorStop(1, '#121a2c');
+  ctx.fillStyle = _cg;
   ctx.beginPath();
   ctx.moveTo(bX - shW * 0.66 + tilt*0.7, bodyTop + bodyH*0.04);
   ctx.lineTo(bX + shW * 0.66 + tilt*0.7, bodyTop + bodyH*0.04);
-  ctx.lineTo(bX + hipW * 0.78,            bodyBot - bodyH*0.05);
-  ctx.lineTo(bX - hipW * 0.78,            bodyBot - bodyH*0.05);
+  ctx.bezierCurveTo(bX + shW * 0.74 + tilt*0.5, bodyTop + bodyH*0.24,
+                    bX + hipW * 1.02,           bodyBot - bodyH*0.28,
+                    bX + hipW * 0.80,           bodyBot - bodyH*0.05);
+  ctx.lineTo(bX - hipW * 0.80,            bodyBot - bodyH*0.05);
+  ctx.bezierCurveTo(bX - hipW * 1.02,           bodyBot - bodyH*0.28,
+                    bX - shW * 0.74 + tilt*0.5, bodyTop + bodyH*0.24,
+                    bX - shW * 0.66 + tilt*0.7, bodyTop + bodyH*0.04);
   ctx.closePath(); ctx.fill();
-  // Chest highlight (central narrow stripe)
-  ctx.fillStyle = '#1e2d48';
-  ctx.beginPath();
-  ctx.moveTo(bX - shW * 0.24 + tilt*0.5, bodyTop + bodyH*0.05);
-  ctx.lineTo(bX + shW * 0.24 + tilt*0.5, bodyTop + bodyH*0.05);
-  ctx.lineTo(bX + shW * 0.10,             bodyBot - bodyH*0.14);
-  ctx.lineTo(bX - shW * 0.12,             bodyBot - bodyH*0.14);
-  ctx.closePath(); ctx.fill();
-  // Plate segment lines (thin horizontal bands)
-  ctx.strokeStyle = '#000'; ctx.lineWidth = s * 0.010; ctx.lineCap = 'butt';
-  for (let bi = 0; bi < 2; bi++) {
-    const by = bodyTop + bodyH * (0.32 + bi * 0.26);
+  // Pectoral plates — two rounded muscled halves with a bright forged top rim
+  [-1, 1].forEach(pc => {
+    ctx.fillStyle = 'rgba(44,60,86,0.5)';
     ctx.beginPath();
-    ctx.moveTo(bX - shW * 0.70 + tilt, by);
-    ctx.quadraticCurveTo(bX + tilt, by + s * 0.018, bX + shW * 0.70 + tilt, by);
+    ctx.moveTo(bX + tilt, bodyTop + bodyH*0.10);
+    ctx.quadraticCurveTo(bX + pc*shW*0.60 + tilt, bodyTop + bodyH*0.05, bX + pc*shW*0.58 + tilt, bodyTop + bodyH*0.20);
+    ctx.quadraticCurveTo(bX + pc*shW*0.50 + tilt, bodyTop + bodyH*0.35, bX + tilt, bodyTop + bodyH*0.35);
+    ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = 'rgba(125,155,200,0.5)'; ctx.lineWidth = s*0.006; ctx.lineCap='round';
+    ctx.beginPath();
+    ctx.moveTo(bX + tilt + pc*s*0.02, bodyTop + bodyH*0.10);
+    ctx.quadraticCurveTo(bX + pc*shW*0.56 + tilt, bodyTop + bodyH*0.05, bX + pc*shW*0.56 + tilt, bodyTop + bodyH*0.18);
+    ctx.stroke();
+  });
+  // Ab plate lines — curved bands hugging the belly (follow the body form)
+  ctx.strokeStyle = 'rgba(0,0,0,0.68)'; ctx.lineWidth = s * 0.009; ctx.lineCap = 'round';
+  for (let bi = 0; bi < 2; bi++) {
+    const by = bodyTop + bodyH * (0.52 + bi * 0.18);
+    const halfW = shW * (0.54 - bi * 0.11);
+    ctx.beginPath();
+    ctx.moveTo(bX - halfW + tilt, by);
+    ctx.quadraticCurveTo(bX + tilt, by + s * 0.028, bX + halfW + tilt, by);
     ctx.stroke();
   }
-  // Central chest glyph — Eye of Sauron
-  const runePulse = 0.65 + Math.sin(bTime * 1.8) * 0.22 + (atkActive ? 0.2 : 0);
-  ctx.shadowColor = '#ff5522'; ctx.shadowBlur = s * runePulse * 0.32;
-  ctx.fillStyle = 'rgba(0,0,0,1)';
+  // Central sternum ridge — a raised vertical strip catching a cool highlight
+  const _rgTop = bodyTop + bodyH * 0.05, _rgBot = bodyBot - bodyH * 0.06;
+  ctx.fillStyle = '#233448';
   ctx.beginPath();
-  ctx.ellipse(bX + tilt, bodyTop + bodyH * 0.26, s * 0.058, s * 0.026, 0, 0, Math.PI * 2); ctx.fill();
-  const runeGrad = ctx.createRadialGradient(bX + tilt, bodyTop + bodyH * 0.26, 0,
-                                             bX + tilt, bodyTop + bodyH * 0.26, s * 0.055);
-  runeGrad.addColorStop(0, `rgba(255,180,40,${runePulse * 0.95})`);
-  runeGrad.addColorStop(0.45, `rgba(255,80,0,${runePulse * 0.85})`);
+  ctx.moveTo(bX + tilt - s * 0.032, _rgTop);
+  ctx.lineTo(bX + tilt + s * 0.032, _rgTop);
+  ctx.lineTo(bX + tilt + s * 0.022, _rgBot);
+  ctx.lineTo(bX + tilt - s * 0.022, _rgBot);
+  ctx.closePath(); ctx.fill();
+  ctx.strokeStyle = 'rgba(120,145,185,0.55)'; ctx.lineWidth = s * 0.006; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(bX + tilt - s * 0.012, _rgTop + s * 0.012); ctx.lineTo(bX + tilt - s * 0.008, _rgBot - s * 0.01); ctx.stroke();
+
+  // Central chest sigil — a vertical Eye-of-Sauron slit set into the sternum
+  const runePulse = 0.65 + Math.sin(bTime * 1.8) * 0.22 + (atkActive ? 0.2 : 0);
+  const runeX = bX + tilt, runeY = bodyTop + bodyH * 0.24;
+  ctx.fillStyle = '#02040a';                                   // dark metal socket
+  ctx.beginPath(); ctx.ellipse(runeX, runeY, s * 0.040, s * 0.056, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = 'rgba(95,110,145,0.5)'; ctx.lineWidth = s * 0.006;
+  ctx.beginPath(); ctx.ellipse(runeX, runeY, s * 0.040, s * 0.056, 0, 0, Math.PI * 2); ctx.stroke();
+  ctx.shadowColor = '#ff5522'; ctx.shadowBlur = s * runePulse * 0.30;
+  const runeGrad = ctx.createRadialGradient(runeX, runeY, 0, runeX, runeY, s * 0.05);
+  runeGrad.addColorStop(0, `rgba(255,190,60,${runePulse * 0.98})`);
+  runeGrad.addColorStop(0.5, `rgba(255,85,5,${runePulse * 0.85})`);
   runeGrad.addColorStop(1, 'rgba(120,20,0,0)');
   ctx.fillStyle = runeGrad;
-  ctx.beginPath();
-  ctx.ellipse(bX + tilt, bodyTop + bodyH * 0.26, s * 0.050, s * 0.021, 0, 0, Math.PI * 2); ctx.fill();
-  ctx.fillStyle = '#000';
-  ctx.beginPath();
-  ctx.ellipse(bX + tilt, bodyTop + bodyH * 0.26, s * 0.005, s * 0.017, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(runeX, runeY, s * 0.026, s * 0.05, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#000';                                      // vertical cat-slit pupil
+  ctx.beginPath(); ctx.ellipse(runeX, runeY, s * 0.006, s * 0.038, 0, 0, Math.PI * 2); ctx.fill();
   ctx.shadowBlur = 0;
 
   // ── Spiked pauldrons (pointed, leaner) ───────────────────────────
@@ -389,6 +421,11 @@ function drawDarkKnightMonster(unit, camY) {
     ctx.beginPath();
     ctx.ellipse(pX - side * s * 0.020, pY + s * 0.030, s * 0.095, s * 0.062, side * 0.15, 0, Math.PI * 2);
     ctx.fill();
+    // bright forged top-rim highlight (reads as a domed steel plate)
+    ctx.strokeStyle = 'rgba(120,150,195,0.55)'; ctx.lineWidth = s * 0.008; ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.ellipse(pX - side * s * 0.020, pY + s * 0.026, s * 0.100, s * 0.066, side * 0.15, Math.PI * 1.06, Math.PI * 1.98);
+    ctx.stroke();
     // 3 long thin spikes upward-outward
     const spikes = [
       { ang: -Math.PI * 0.62, len: 0.140 },
@@ -442,6 +479,30 @@ function drawDarkKnightMonster(unit, camY) {
   const gripY     = wREST * rest.gy + wWU * wu.gy + wST * st.gy;
   const weaponAng = wREST * rest.an + wWU * wu.an + wST * st.an;
 
+  // Segmented plate detailing for an armoured arm: banded lames + a couter (elbow
+  // cop) that breaks the limb into rerebrace + vambrace so it reads as plate, not tube.
+  const _dkArmPlate = (x0, y0, cx2, cy2, x2, y2, upS) => {
+    const bez = t => { const mt = 1 - t; return {
+      x: mt*mt*x0 + 2*mt*t*cx2 + t*t*x2, y: mt*mt*y0 + 2*mt*t*cy2 + t*t*y2,
+      tx: 2*mt*(cx2-x0) + 2*t*(x2-cx2), ty: 2*mt*(cy2-y0) + 2*t*(y2-cy2) }; };
+    const lame = (t, hw) => {
+      const b = bez(t), dl = Math.hypot(b.tx, b.ty) || 1, nx = -b.ty/dl, ny = b.tx/dl;
+      ctx.strokeStyle = 'rgba(0,0,0,0.5)'; ctx.lineWidth = s*0.012; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(b.x-nx*hw, b.y-ny*hw); ctx.lineTo(b.x+nx*hw, b.y+ny*hw); ctx.stroke();
+      ctx.strokeStyle = 'rgba(135,165,210,0.42)'; ctx.lineWidth = s*0.005;
+      const ox = -b.tx/dl*s*0.008, oy = -b.ty/dl*s*0.008;
+      ctx.beginPath(); ctx.moveTo(b.x-nx*hw*0.8+ox, b.y-ny*hw*0.8+oy); ctx.lineTo(b.x+nx*hw*0.8+ox, b.y+ny*hw*0.8+oy); ctx.stroke();
+    };
+    lame(0.26, s*0.06); lame(0.74, s*0.05);
+    const m = bez(0.5);
+    ctx.fillStyle = '#0c1428'; ctx.strokeStyle = '#3a4d72'; ctx.lineWidth = s*0.006;
+    ctx.beginPath(); ctx.arc(m.x, m.y, s*0.05, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#26406a';
+    ctx.beginPath(); ctx.arc(m.x - upS*s*0.014, m.y - s*0.014, s*0.023, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = 'rgba(155,185,230,0.5)';
+    ctx.beginPath(); ctx.arc(m.x - upS*s*0.02, m.y - s*0.021, s*0.008, 0, Math.PI*2); ctx.fill();
+  };
+
   // Dir-side arm (holds mace)
   {
     const shX = bX + dir * shW * 0.85 + tilt * 0.15;
@@ -457,10 +518,9 @@ function drawDarkKnightMonster(unit, camY) {
     ctx.beginPath(); ctx.moveTo(shX, shY); ctx.quadraticCurveTo(elbX, elbY, gripX, gripY); ctx.stroke();
     ctx.strokeStyle = '#14203a'; ctx.lineWidth = s * 0.062;
     ctx.beginPath(); ctx.moveTo(shX + dir*s*0.016, shY); ctx.quadraticCurveTo(elbX + dir*s*0.010, elbY, gripX + dir*s*0.008, gripY); ctx.stroke();
-    ctx.strokeStyle = '#2c3a58'; ctx.lineWidth = s * 0.018;
+    ctx.strokeStyle = '#546a94'; ctx.lineWidth = s * 0.018;
     ctx.beginPath(); ctx.moveTo(shX + dir*s*0.028, shY + s*0.006); ctx.quadraticCurveTo(elbX + dir*s*0.018, elbY - s*0.006, gripX + dir*s*0.014, gripY - s*0.008); ctx.stroke();
-    ctx.fillStyle = '#0c1224';
-    ctx.beginPath(); ctx.arc(elbX, elbY, s * 0.038, 0, Math.PI * 2); ctx.fill();
+    _dkArmPlate(shX, shY, elbX, elbY, gripX, gripY, dir);
     // Gauntlet
     ctx.fillStyle = '#040610';
     ctx.beginPath();
@@ -501,10 +561,9 @@ function drawDarkKnightMonster(unit, camY) {
     ctx.beginPath(); ctx.moveTo(shX, shY); ctx.quadraticCurveTo(elbX, elbY, fistX, fistY); ctx.stroke();
     ctx.strokeStyle = '#14203a'; ctx.lineWidth = s * 0.058;
     ctx.beginPath(); ctx.moveTo(shX + side*s*0.014, shY); ctx.quadraticCurveTo(elbX + side*s*0.010, elbY, fistX + side*s*0.008, fistY); ctx.stroke();
-    ctx.strokeStyle = '#2c3a58'; ctx.lineWidth = s * 0.016;
+    ctx.strokeStyle = '#546a94'; ctx.lineWidth = s * 0.016;
     ctx.beginPath(); ctx.moveTo(shX + side*s*0.024, shY + s*0.006); ctx.quadraticCurveTo(elbX + side*s*0.014, elbY - s*0.006, fistX + side*s*0.010, fistY - s*0.006); ctx.stroke();
-    ctx.fillStyle = '#0c1224';
-    ctx.beginPath(); ctx.arc(elbX, elbY, s * 0.034, 0, Math.PI * 2); ctx.fill();
+    _dkArmPlate(shX, shY, elbX, elbY, fistX, fistY, side);
     // Clenched fist gauntlet
     ctx.fillStyle = '#040610';
     ctx.beginPath(); ctx.arc(fistX, fistY, s * 0.044, 0, Math.PI * 2); ctx.fill();
@@ -523,12 +582,12 @@ function drawDarkKnightMonster(unit, camY) {
   }
 
   // ── MACE (long thin handle + spiked ball head) ───────────────────
-  const weaponLen = s * 0.74;
+  const weaponLen = s * 0.80;
   const handleEndX = gripX + Math.cos(weaponAng) * weaponLen;
   const handleEndY = gripY + Math.sin(weaponAng) * weaponLen;
 
   // Handle
-  ctx.strokeStyle = '#060a18'; ctx.lineWidth = s * 0.036; ctx.lineCap = 'round';
+  ctx.strokeStyle = '#060a18'; ctx.lineWidth = s * 0.046; ctx.lineCap = 'round';
   ctx.beginPath(); ctx.moveTo(gripX, gripY); ctx.lineTo(handleEndX, handleEndY); ctx.stroke();
   ctx.strokeStyle = '#2a3248'; ctx.lineWidth = s * 0.014;
   ctx.beginPath();
@@ -556,20 +615,20 @@ function drawDarkKnightMonster(unit, camY) {
   if (slamT > 0) {
     ctx.shadowColor = '#6699ff'; ctx.shadowBlur = s * slamT * 0.38;
   }
-  const maceR = s * 0.085;
+  const maceR = s * 0.118;
   ctx.fillStyle = '#0a1020';
   ctx.beginPath();
   ctx.arc(handleEndX, handleEndY, maceR, 0, Math.PI * 2); ctx.fill();
   ctx.fillStyle = '#2a3450';
   ctx.beginPath();
-  ctx.arc(handleEndX - s * 0.020, handleEndY - s * 0.020, maceR * 0.55, 0, Math.PI * 2); ctx.fill();
+  ctx.arc(handleEndX - s * 0.028, handleEndY - s * 0.028, maceR * 0.55, 0, Math.PI * 2); ctx.fill();
   ctx.fillStyle = '#5a708a';
   ctx.beginPath();
-  ctx.arc(handleEndX - s * 0.028, handleEndY - s * 0.030, maceR * 0.22, 0, Math.PI * 2); ctx.fill();
+  ctx.arc(handleEndX - s * 0.038, handleEndY - s * 0.042, maceR * 0.22, 0, Math.PI * 2); ctx.fill();
   // 8 spikes
   for (let si = 0; si < 8; si++) {
     const sa = (si / 8) * Math.PI * 2;
-    const spLen = s * (0.072 + (si % 2 === 0 ? 0.010 : 0));
+    const spLen = s * (0.100 + (si % 2 === 0 ? 0.014 : 0));
     const sBaseX = handleEndX + Math.cos(sa) * maceR * 0.95;
     const sBaseY = handleEndY + Math.sin(sa) * maceR * 0.95;
     const sTipX = handleEndX + Math.cos(sa) * (maceR + spLen);
@@ -577,19 +636,19 @@ function drawDarkKnightMonster(unit, camY) {
     const perpA = sa + Math.PI / 2;
     ctx.fillStyle = '#040610';
     ctx.beginPath();
-    ctx.moveTo(sBaseX + Math.cos(perpA) * s * 0.014, sBaseY + Math.sin(perpA) * s * 0.014);
+    ctx.moveTo(sBaseX + Math.cos(perpA) * s * 0.019, sBaseY + Math.sin(perpA) * s * 0.019);
     ctx.lineTo(sTipX, sTipY);
-    ctx.lineTo(sBaseX - Math.cos(perpA) * s * 0.014, sBaseY - Math.sin(perpA) * s * 0.014);
+    ctx.lineTo(sBaseX - Math.cos(perpA) * s * 0.019, sBaseY - Math.sin(perpA) * s * 0.019);
     ctx.closePath(); ctx.fill();
     ctx.fillStyle = '#24324a';
     ctx.beginPath();
-    ctx.moveTo(sBaseX + Math.cos(perpA) * s * 0.005, sBaseY + Math.sin(perpA) * s * 0.005);
-    ctx.lineTo(sTipX - Math.cos(sa) * s * 0.008, sTipY - Math.sin(sa) * s * 0.008);
-    ctx.lineTo(sBaseX - Math.cos(perpA) * s * 0.002, sBaseY - Math.sin(perpA) * s * 0.002);
+    ctx.moveTo(sBaseX + Math.cos(perpA) * s * 0.007, sBaseY + Math.sin(perpA) * s * 0.007);
+    ctx.lineTo(sTipX - Math.cos(sa) * s * 0.010, sTipY - Math.sin(sa) * s * 0.010);
+    ctx.lineTo(sBaseX - Math.cos(perpA) * s * 0.003, sBaseY - Math.sin(perpA) * s * 0.003);
     ctx.closePath(); ctx.fill();
   }
   ctx.fillStyle = '#000';
-  ctx.beginPath(); ctx.arc(handleEndX, handleEndY, s * 0.018, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(handleEndX, handleEndY, s * 0.026, 0, Math.PI * 2); ctx.fill();
   ctx.shadowBlur = 0;
 
   // ── Strike motion trail (multi-stroke arc following actual mace path) ─
@@ -716,6 +775,20 @@ function drawDarkKnightMonster(unit, camY) {
   ctx.lineTo(bX + tilt + headR * 0.22, headCY + headR * 0.58);
   ctx.lineTo(bX + tilt - headR * 0.38, headCY + headR * 0.55);
   ctx.closePath(); ctx.fill();
+  // Dark visor recess — a single slot the eyes glow out from (not two robot eyes)
+  ctx.fillStyle = '#010204';
+  ctx.beginPath();
+  ctx.moveTo(bX + tilt - headR * 0.60, headCY - headR * 0.15);
+  ctx.lineTo(bX + tilt + headR * 0.62, headCY - headR * 0.11);
+  ctx.lineTo(bX + tilt + headR * 0.54, headCY + headR * 0.22);
+  ctx.lineTo(bX + tilt - headR * 0.52, headCY + headR * 0.19);
+  ctx.closePath(); ctx.fill();
+  // Brow ridge highlight (cool forged steel catching the light)
+  ctx.strokeStyle = 'rgba(115,145,190,0.55)'; ctx.lineWidth = s * 0.009; ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(bX + tilt - headR * 0.55, headCY - headR * 0.22);
+  ctx.quadraticCurveTo(bX + tilt, headCY - headR * 0.36, bX + tilt + headR * 0.56, headCY - headR * 0.20);
+  ctx.stroke();
   // Central ridge line (up from brow to crown point)
   ctx.strokeStyle = '#000'; ctx.lineWidth = s * 0.012; ctx.lineCap = 'round';
   ctx.beginPath();
@@ -769,100 +842,133 @@ function drawDarkKnightMonster(unit, camY) {
     ctx.ellipse(ex + dir * headR * 0.02, ey, headR * 0.023, headR * 0.044, 0, 0, Math.PI * 2); ctx.fill();
   });
 
-  // ── CROWN OF SPIKES (11 thin radiating needle-blades, Sauron sunburst)
-  const crownBaseY = headCY - headR * 1.18;
-  const crownCenterX = bX + tilt;
-  // Spikes arranged in a radial fan from -160° to -20° (covering the top half)
-  // Central (-90°) longest, decreasing toward edges
-  const crownSpikes = [];
-  const numSpikes = 11;
-  for (let si = 0; si < numSpikes; si++) {
-    const t = si / (numSpikes - 1);                      // 0..1
-    const ang = -Math.PI * 0.88 + t * Math.PI * 0.76;    // from -158° to -22°
-    const distFromCenter = Math.abs(t - 0.5) * 2;        // 0 at center, 1 at edges
-    const len = 0.62 - distFromCenter * 0.34;            // center tallest, edges shorter
-    crownSpikes.push({ ang, len });
-  }
-  crownSpikes.forEach(sp => {
-    const baseRx = headR * 0.70;
-    const baseRy = headR * 0.30;
-    const spBaseX = crownCenterX + Math.cos(sp.ang) * baseRx;
-    const spBaseY = crownBaseY + Math.sin(sp.ang) * baseRy;
-    const spTipX = crownCenterX + Math.cos(sp.ang) * (baseRx + s * sp.len);
-    const spTipY = crownBaseY + Math.sin(sp.ang) * (baseRy + s * sp.len);
-    const perpA = sp.ang + Math.PI / 2;
-    const perpX = Math.cos(perpA);
-    const perpY = Math.sin(perpA);
-    const baseW = s * 0.016;
-    // Dark thin blade body
-    ctx.fillStyle = '#020408';
+  // ── CROWN — a forged iron war-crown: a heavy band round the brow with thick
+  //    jagged blade-spikes rising from it, the central tallest. ──
+  const crownCX = bX + tilt;
+  const crownBaseY = headCY - headR * 0.96;
+  const bandRx = headR * 0.72, bandRy = headR * 0.28;
+  let crownTopY = crownBaseY;
+  // band shadow behind the spikes
+  ctx.fillStyle = '#05070f';
+  ctx.beginPath(); ctx.ellipse(crownCX, crownBaseY + headR * 0.05, bandRx, bandRy, 0, 0, Math.PI * 2); ctx.fill();
+  // thick tapered iron spikes — tight, near-vertical cluster (a solid crown, not a fan)
+  const NS = 5;
+  for (let si = 0; si < NS; si++) {
+    const t = si / (NS - 1);
+    const ang = -Math.PI * 0.5 + (t - 0.5) * Math.PI * 0.60;
+    const d = Math.abs(t - 0.5) * 2;
+    const len = headR * (1.62 - d * 0.86);
+    const w = s * (0.055 - d * 0.018);
+    const bx0 = crownCX + Math.cos(ang) * bandRx * 0.92;
+    const by0 = crownBaseY + Math.sin(ang) * bandRy * 0.92;
+    const outCurve = (bx0 - crownCX) * 0.14;
+    const tx = bx0 + Math.cos(ang) * len + outCurve;
+    const ty = by0 + Math.sin(ang) * len;
+    if (ty < crownTopY) crownTopY = ty;
+    const perpA = ang + Math.PI / 2;
+    const px = Math.cos(perpA) * w, py = Math.sin(perpA) * w;
+    // forged iron blade with a lit steel core so it reads on the dark background
+    const _bg2 = ctx.createLinearGradient(bx0 - px, by0 - py, bx0 + px, by0 + py);
+    _bg2.addColorStop(0, '#3a4a68'); _bg2.addColorStop(0.5, '#212d44'); _bg2.addColorStop(1, '#0a0f1c');
+    ctx.fillStyle = _bg2;
     ctx.beginPath();
-    ctx.moveTo(spBaseX + perpX * baseW, spBaseY + perpY * baseW);
-    ctx.lineTo(spTipX, spTipY);
-    ctx.lineTo(spBaseX - perpX * baseW, spBaseY - perpY * baseW);
+    ctx.moveTo(bx0 + px, by0 + py);
+    ctx.quadraticCurveTo((bx0 + tx) / 2 + px * 0.4, (by0 + ty) / 2 + py * 0.4, tx, ty);
+    ctx.quadraticCurveTo((bx0 + tx) / 2 - px * 0.4, (by0 + ty) / 2 - py * 0.4, bx0 - px, by0 - py);
     ctx.closePath(); ctx.fill();
-    // Thin highlight along one edge (catches light)
-    ctx.strokeStyle = '#2a3650';
-    ctx.lineWidth = s * 0.006;
-    ctx.beginPath();
-    ctx.moveTo(spBaseX + perpX * baseW * 0.3, spBaseY + perpY * baseW * 0.3);
-    ctx.lineTo(spTipX, spTipY);
-    ctx.stroke();
-    // Sharp bright tip
-    ctx.fillStyle = '#4a5a78';
-    ctx.beginPath();
-    ctx.arc(spTipX, spTipY, s * 0.005, 0, Math.PI * 2); ctx.fill();
-  });
-  // Crown ring base
-  ctx.fillStyle = '#060a18';
-  ctx.beginPath();
-  ctx.ellipse(crownCenterX, crownBaseY + headR * 0.05, headR * 0.72, headR * 0.20, 0, 0, Math.PI * 2); ctx.fill();
-  ctx.strokeStyle = '#1a2438';
-  ctx.lineWidth = s * 0.012;
-  ctx.beginPath();
-  ctx.ellipse(crownCenterX, crownBaseY, headR * 0.70, headR * 0.26, 0, 0, Math.PI * 2); ctx.stroke();
+    ctx.strokeStyle = 'rgba(160,180,215,0.85)'; ctx.lineWidth = s * 0.008; ctx.lineCap = 'round';  // bright forged edge
+    ctx.beginPath(); ctx.moveTo(bx0 - px * 0.6, by0 - py * 0.6); ctx.quadraticCurveTo((bx0 + tx) / 2 - px * 0.55, (by0 + ty) / 2 - py * 0.55, tx, ty); ctx.stroke();
+    ctx.fillStyle = 'rgba(215,228,250,0.95)';                     // bright tip glint
+    ctx.beginPath(); ctx.arc(tx, ty, s * 0.009, 0, Math.PI * 2); ctx.fill();
+  }
+  // crown band (front) — thick, top-edge highlight, a fiery centre gem
+  ctx.fillStyle = '#0b0f1e';
+  ctx.beginPath(); ctx.ellipse(crownCX, crownBaseY + headR * 0.03, bandRx, bandRy * 0.88, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = 'rgba(95,115,155,0.6)'; ctx.lineWidth = s * 0.009;
+  ctx.beginPath(); ctx.ellipse(crownCX, crownBaseY, bandRx * 0.95, bandRy * 0.72, 0, Math.PI * 1.04, Math.PI * 1.96); ctx.stroke();
+  ctx.shadowColor = '#ff5522'; ctx.shadowBlur = s * 0.14;
+  ctx.fillStyle = 'rgba(255,95,25,0.92)';
+  ctx.beginPath(); ctx.ellipse(crownCX, crownBaseY + headR * 0.03, s * 0.013, s * 0.02, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.shadowBlur = 0;
 
   // ── Branch visuals ──────────────────────────────────────────
   const _dkBranch = unit._branch || '';
   if (_dkBranch === 'A') {
-    // Black Blade: void-dark aura on mace + armor-piercing rune
+    // ── BLACK BLADE — the mace drinks light: a void halo swallows the head,
+    //    violet armour-piercing fire licks off it, sharp pierce-glints spit out. ──
     const _t = unit._dkT;
-    ctx.save(); ctx.shadowColor = '#220033'; ctx.shadowBlur = s * 0.22;
-    // Void aura ring around mace hand
-    const _mhX = bX + dir * s * 0.34, _mhY = bodyTop + bodyH * 0.58;
-    ctx.strokeStyle = 'rgba(80,0,120,0.45)'; ctx.lineWidth = 3;
-    ctx.beginPath(); ctx.arc(_mhX, _mhY, s * 0.16, 0, Math.PI*2); ctx.stroke();
-    ctx.strokeStyle = 'rgba(140,20,200,0.28)'; ctx.lineWidth = 6;
-    ctx.beginPath(); ctx.arc(_mhX, _mhY, s * 0.22, 0, Math.PI*2); ctx.stroke();
-    // Rune on chest
-    const _rx = bX, _ry = bodyTop + bodyH * 0.35;
-    ctx.strokeStyle = `rgba(170,0,255,${0.40 + Math.sin(_t*1.8)*0.15})`; ctx.lineWidth = 1.2;
-    ctx.lineCap = 'round';
-    ctx.beginPath(); ctx.moveTo(_rx - s*0.06, _ry - s*0.06); ctx.lineTo(_rx + s*0.06, _ry + s*0.06); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(_rx + s*0.06, _ry - s*0.06); ctx.lineTo(_rx - s*0.06, _ry + s*0.06); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(_rx, _ry - s*0.08); ctx.lineTo(_rx, _ry + s*0.08); ctx.stroke();
-    ctx.shadowBlur = 0; ctx.restore();
-  } else if (_dkBranch === 'B') {
-    // Abyss Armor: absorb/reflect rune plates on pauldrons + dark aura
-    ctx.save(); ctx.shadowColor = '#003366'; ctx.shadowBlur = s * 0.18;
-    const _t = unit._dkT;
-    const _pulse = 0.32 + Math.sin(_t * 1.5) * 0.12;
-    // Shoulder rune circles
-    for (const side of [-1, 1]) {
-      const _px = bX + side * s * 0.30, _py = bodyTop + s * 0.10;
-      ctx.strokeStyle = `rgba(30,80,200,${_pulse * 1.4})`; ctx.lineWidth = 2;
-      ctx.beginPath(); ctx.arc(_px, _py, s * 0.10, 0, Math.PI*2); ctx.stroke();
-      ctx.strokeStyle = `rgba(80,140,255,${_pulse})`; ctx.lineWidth = 1;
-      ctx.beginPath(); ctx.arc(_px, _py, s * 0.07, 0, Math.PI*2); ctx.stroke();
+    const _pulse = 0.5 + 0.5 * Math.sin(_t * 4.0);
+    // void halo (dark core — the "black" — over the mace head)
+    const va = ctx.createRadialGradient(handleEndX, handleEndY, s * 0.02, handleEndX, handleEndY, maceR + s * 0.22);
+    va.addColorStop(0, `rgba(16,0,26,${(0.55 + _pulse * 0.2).toFixed(3)})`);
+    va.addColorStop(0.5, `rgba(85,0,150,${(0.30 + _pulse * 0.12).toFixed(3)})`);
+    va.addColorStop(1, 'rgba(85,0,150,0)');
+    ctx.fillStyle = va;
+    ctx.beginPath(); ctx.arc(handleEndX, handleEndY, maceR + s * 0.22, 0, Math.PI * 2); ctx.fill();
+    // violet void-flame tongues licking off the head
+    ctx.save(); ctx.globalCompositeOperation = 'lighter';
+    for (let i = 0; i < 8; i++) {
+      const fa = i * (Math.PI * 2 / 8) + _t * 1.6;
+      const fl = maceR + s * (0.05 + 0.055 * Math.abs(Math.sin(_t * 3 + i * 1.7)));
+      const fx = handleEndX + Math.cos(fa) * fl;
+      const fy = handleEndY + Math.sin(fa) * fl;
+      ctx.fillStyle = `rgba(155,45,225,${(0.28 + _pulse * 0.22).toFixed(3)})`;
+      ctx.beginPath(); ctx.ellipse(fx, fy, s * 0.022, s * 0.05, fa, 0, Math.PI * 2); ctx.fill();
     }
-    // Body absorb shimmer
-    ctx.strokeStyle = `rgba(40,100,220,0.18)`; ctx.lineWidth = 8;
-    ctx.beginPath(); ctx.ellipse(bX, bodyTop + bodyH*0.45, s*0.28, s*0.38, 0, 0, Math.PI*2); ctx.stroke();
-    ctx.shadowBlur = 0; ctx.restore();
+    ctx.restore();
+    // armour-pierce glints — sharp violet diamonds
+    ctx.fillStyle = `rgba(215,130,255,${(0.6 + _pulse * 0.3).toFixed(3)})`;
+    for (let i = 0; i < 3; i++) {
+      const ga = -0.7 + i * 0.75 + Math.sin(_t * 5 + i) * 0.2;
+      const gr = maceR + s * 0.11 + (i % 2) * s * 0.05;
+      const gx = handleEndX + Math.cos(ga) * gr, gy = handleEndY + Math.sin(ga) * gr;
+      ctx.beginPath();
+      ctx.moveTo(gx, gy - s * 0.032); ctx.lineTo(gx + s * 0.009, gy); ctx.lineTo(gx, gy + s * 0.032); ctx.lineTo(gx - s * 0.009, gy);
+      ctx.closePath(); ctx.fill();
+    }
+    // dark rune bound to the haft
+    ctx.strokeStyle = `rgba(185,55,245,${(0.45 + _pulse * 0.2).toFixed(3)})`; ctx.lineWidth = s * 0.01; ctx.lineCap = 'round';
+    const _hmx = gripX + (handleEndX - gripX) * 0.5, _hmy = gripY + (handleEndY - gripY) * 0.5;
+    ctx.beginPath(); ctx.arc(_hmx, _hmy, s * 0.03, 0, Math.PI * 2); ctx.stroke();
+  } else if (_dkBranch === 'B') {
+    // ── ABYSS ARMOUR — an impenetrable mirror shell: a hex barrier shimmers round
+    //    the knight, steel-blue reflect-runes burn on the pauldrons. ──
+    const _t = unit._dkT;
+    const _pulse = 0.5 + 0.5 * Math.sin(_t * 2.0);
+    const cyMid = bodyTop + bodyH * 0.42;
+    const hexR = s * 0.52, hexRy = s * 0.74, rot = _t * 0.3;
+    const _hex = () => {
+      ctx.beginPath();
+      for (let i = 0; i <= 6; i++) {
+        const ha = -Math.PI / 2 + i * (Math.PI * 2 / 6) + rot;
+        const hx = bX + Math.cos(ha) * hexR, hy = cyMid + Math.sin(ha) * hexRy;
+        if (i === 0) ctx.moveTo(hx, hy); else ctx.lineTo(hx, hy);
+      }
+    };
+    // absorbing fill + shimmering mirror rim
+    ctx.save();
+    ctx.fillStyle = `rgba(50,110,190,${(0.08 + _pulse * 0.07).toFixed(3)})`;
+    _hex(); ctx.closePath(); ctx.fill();
+    ctx.shadowColor = '#4a90d8'; ctx.shadowBlur = s * 0.12;
+    ctx.strokeStyle = `rgba(120,190,255,${(0.46 + _pulse * 0.34).toFixed(3)})`; ctx.lineWidth = s * 0.018; ctx.lineJoin = 'round';
+    _hex(); ctx.closePath(); ctx.stroke();
+    // a bright reflection travelling round the rim
+    const gA = -Math.PI / 2 + rot + _t * 2.2;
+    ctx.fillStyle = `rgba(220,240,255,${(0.7 * _pulse).toFixed(3)})`;
+    ctx.beginPath(); ctx.arc(bX + Math.cos(gA) * hexR, cyMid + Math.sin(gA) * hexRy, s * 0.02, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+    // reflect-rune discs on the pauldrons (absorb + mirror)
+    for (const side of [-1, 1]) {
+      const px = bX + side * shW * 0.9 + tilt * 0.3, py = bodyTop + s * 0.02;
+      ctx.strokeStyle = `rgba(120,190,255,${(0.5 + _pulse * 0.3).toFixed(3)})`; ctx.lineWidth = s * 0.008;
+      ctx.beginPath(); ctx.arc(px, py, s * 0.052, 0, Math.PI * 2); ctx.stroke();
+      ctx.beginPath(); ctx.arc(px, py, s * 0.032, 0, Math.PI * 2); ctx.stroke();
+      ctx.strokeStyle = `rgba(205,232,255,${(0.6 * _pulse).toFixed(3)})`; ctx.lineWidth = s * 0.006; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(px - s * 0.03, py); ctx.lineTo(px + s * 0.03, py); ctx.moveTo(px, py - s * 0.03); ctx.lineTo(px, py + s * 0.03); ctx.stroke();
+    }
   }
 
   ctx.restore();
-  // HP bar above tallest spike
-  const topSpikeTip = crownBaseY + Math.sin(-Math.PI * 0.50) * (headR * 0.30 + s * 0.62);
-  unit._hpBarY = topSpikeTip - s * 0.040;
+  // HP bar above the tallest crown spike
+  unit._hpBarY = crownTopY - s * 0.05;
 }

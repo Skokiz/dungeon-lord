@@ -59,14 +59,32 @@ function drawAbyssMonster(unit, camY) {
   const ap         = 1 - unit._abAp;
   const inFight    = unit.state === 'fight' || atkActive;
   const absorbed   = unit.absorbedHero || false;
+  const _abBranch  = unit._branch || '';
 
-  const reachT = atkActive && ap < 0.30 ? ap / 0.30 : 0;
-  const grabT  = atkActive && ap >= 0.30 && ap < 0.65 ? (ap - 0.30) / 0.35 : 0;
+  // Єдина крива удару для тіла й атакуючого щупальця. Старі reachT/grabT
+  // обривали довжину точно на межі 0.30 і створювали візуальний стрибок.
+  let strikeReach = 0;
+  if (atkActive) {
+    if (ap < 0.14) {
+      strikeReach = 0;                         // коротке збирання сили
+    } else if (ap < 0.38) {
+      const f = (ap - 0.14) / 0.24;
+      strikeReach = 1 - Math.pow(1 - f, 3);   // різкий викид
+    } else if (ap < 0.58) {
+      strikeReach = 1;                         // читабельний контакт
+    } else if (ap < 0.92) {
+      const f = (ap - 0.58) / 0.34;
+      const r = 1 - f;
+      strikeReach = r * r * (3 - 2 * r);      // м'яке втягування
+    }
+  }
 
   const floatY = Math.sin(unit._abT * 1.10) * s * 0.028;
   const spinR  = unit._abT * (-1.55);
   const bodyR  = s * 0.400;
-  const bX = cx;
+  // Portal mass follows the strike a little, so the attacking limb is driven
+  // by the whole creature instead of animating while the body remains frozen.
+  const bX = cx + dir * s * 0.045 * strikeReach;
   const bY = fY - s * 0.560 + floatY;
 
   ctx.save();
@@ -75,6 +93,31 @@ function drawAbyssMonster(unit, camY) {
   ctx.fillStyle = 'rgba(5,0,12,0.72)';
   ctx.beginPath();
   ctx.ellipse(cx, fY + s * 0.014, s * 0.62, s * 0.090, 0, 0, Math.PI * 2); ctx.fill();
+
+  // Branch silhouettes are established behind the common portal body.
+  if (_abBranch === 'A') {
+    // Infinite: a tall event-horizon eye, deliberately unlike the low base portal.
+    ctx.save();
+    ctx.shadowColor = '#8b22ff'; ctx.shadowBlur = s * 0.34;
+    const halo = ctx.createRadialGradient(bX, bY, bodyR * 0.10, bX, bY, s * 0.72);
+    halo.addColorStop(0, 'rgba(138,45,255,0.22)');
+    halo.addColorStop(0.52, 'rgba(78,12,155,0.18)');
+    halo.addColorStop(1, 'rgba(28,0,65,0)');
+    ctx.fillStyle = halo;
+    ctx.beginPath(); ctx.ellipse(bX, bY, s * 0.56, s * 0.78, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = 'rgba(155,72,255,0.72)'; ctx.lineWidth = s * 0.050;
+    ctx.beginPath(); ctx.ellipse(bX, bY, s * 0.43, s * 0.64, 0, 0, Math.PI * 2); ctx.stroke();
+    ctx.strokeStyle = 'rgba(215,155,255,0.42)'; ctx.lineWidth = s * 0.018;
+    ctx.beginPath(); ctx.ellipse(bX, bY, s * 0.50, s * 0.72, 0, 0, Math.PI * 2); ctx.stroke();
+    ctx.restore();
+  } else if (_abBranch === 'B') {
+    // Multiarmed: a broad shoulder-like darkness mass that anchors the extra limbs.
+    ctx.save();
+    ctx.shadowColor = '#6d009b'; ctx.shadowBlur = s * 0.20;
+    ctx.fillStyle = 'rgba(22,0,34,0.78)';
+    ctx.beginPath(); ctx.ellipse(bX, bY + s * 0.03, s * 0.64, s * 0.34, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+  }
 
   // ── Gravitational distortion rings (expanding inward) ────────────
   for (let ri = 0; ri < 4; ri++) {
@@ -88,14 +131,56 @@ function drawAbyssMonster(unit, camY) {
     ctx.stroke();
   }
 
+  // Додаткові руки Багаторукої гілки лежать ЗА порталом. Корені заходять
+  // глибоко під його край, тому істота не виглядає складеною з паличок.
+  if (_abBranch === 'B') {
+    ctx.save();
+    ctx.shadowColor = '#8a00c8'; ctx.shadowBlur = s * 0.15;
+    for (let i = 0; i < 4; i++) {
+      const upper = i < 2;
+      const side = i % 2 === 0 ? -1 : 1;
+      const drive = atkActive && side === dir;
+      const rootX = bX + side * bodyR * 0.34;
+      const rootY = bY + (upper ? -s * 0.12 : s * 0.13);
+      const restLen = s * (upper ? 0.57 : 0.49);
+      const hitLen = drive ? s * (upper ? 0.70 : 0.48) * strikeReach : 0;
+      const len = restLen + hitLen;
+      const endX = rootX + side * len;
+      const endY = drive
+        ? bY + (upper ? -s * 0.10 : s * 0.13)
+        : Math.min(
+            bY + (upper ? -s * 0.35 : s * 0.34) + Math.sin(unit._abT * 1.8 + i) * s * 0.055,
+            fY - s * 0.05
+          );
+      const points = [
+        { x: rootX, y: rootY },
+        { x: rootX + side * len * 0.28, y: rootY + (upper ? -s * 0.11 : s * 0.09) },
+        { x: rootX + side * len * 0.62, y: drive ? endY + (upper ? -s * 0.10 : s * 0.08) : (rootY + endY) * 0.5 },
+        { x: endX, y: endY }
+      ];
+      const grad = ctx.createLinearGradient(rootX, rootY, endX, endY);
+      grad.addColorStop(0, 'rgba(8,0,18,0.98)');
+      grad.addColorStop(0.58, 'rgba(50,3,78,0.96)');
+      grad.addColorStop(1, 'rgba(116,18,158,0.92)');
+      ctx.fillStyle = grad;
+      _abRibbonPath(ctx, points, s * (drive ? 0.115 : 0.095), s * 0.018); ctx.fill();
+      ctx.fillStyle = 'rgba(151,45,203,0.54)';
+      _abRibbonPath(ctx, points, s * (drive ? 0.050 : 0.038), s * 0.007); ctx.fill();
+    }
+    ctx.restore();
+  }
+
   // ── TENTACLES (5, around portal edge) ────────────────────────────
   unit._abTentacles.forEach((tn, ti) => {
     // Attacking tentacle = the one closest to enemy at strike start (locked)
     const isAttackTentacle = ti === (unit._abAttackIdx ?? -1) && atkActive;
     const wave = Math.sin(unit._abT * tn.freq + tn.phase);
-    const reachLen = isAttackTentacle
-      ? s * (0.55 + reachT * 0.95 + grabT * 0.05)
+    let reachLen = isAttackTentacle
+      ? s * (0.56 + strikeReach * 1.08)
       : s * (0.55 + wave * 0.15);
+    if (_abBranch === 'A' && !isAttackTentacle) reachLen *= 0.62;
+    if (_abBranch === 'A' && isAttackTentacle) reachLen *= 1.08;
+    if (_abBranch === 'B') reachLen *= 1.22;
     // Base anchor: its natural orbital position (even when attacking)
     const baseA = tn.baseAng + unit._abT * 0.35;
     const bx0 = bX + Math.cos(baseA) * bodyR * 0.85;
@@ -104,62 +189,54 @@ function drawAbyssMonster(unit, camY) {
     const endDirX = isAttackTentacle ? dir : Math.cos(baseA);
     const endDirY = isAttackTentacle ? 0 : Math.sin(baseA);
     const ex2 = bx0 + endDirX * reachLen;
-    const ey2 = by0 + endDirY * reachLen + (isAttackTentacle ? 0 : wave * s * 0.12);
+    // Щупальця, спрямовані вниз, пробивали лінію підлоги (~20px під нею). Клампимо
+    // кінець із запасом на wobble (perp-зсув до s*0.04) — сегменти лерпаються між
+    // by0 і ey2, тож обмеження кінця тримає всю криву над підлогою.
+    const _abFloorY = fY - s * 0.05;
+    const ey2 = Math.min(
+      by0 + endDirY * reachLen + (isAttackTentacle ? 0 : wave * s * 0.12),
+      _abFloorY
+    );
 
-    // Draw tentacle as multi-segment wavy line
+    // Draw one filled tapered ribbon. The portal body is painted afterwards
+    // and hides the root, making each tentacle grow from the void itself.
     ctx.save();
     ctx.shadowColor = '#6600cc'; ctx.shadowBlur = s * 0.16;
     const segN = tn.segments;
     const depthA = Math.sin(baseA);
     const alpha = isAttackTentacle ? 1.0 : (depthA > 0 ? 0.95 : 0.55);
-
-    // Outer thick dark layer
-    ctx.strokeStyle = `rgba(10,0,25,${alpha})`;
-    ctx.lineWidth = s * 0.080 * (isAttackTentacle ? 1.0 : 0.88);
-    ctx.lineCap = 'round';
-    ctx.beginPath();
-    for (let si = 0; si <= segN; si++) {
-      const t2 = si / segN;
-      // Lerp with wavy offset
-      const wobble = Math.sin(t2 * Math.PI * 2 + unit._abT * 2.5 + tn.phase) * s * 0.04 * (1 - t2 * 0.5);
-      const perp = {
-        x: -endDirY, y: endDirX
-      };
-      const px = bx0 + (ex2 - bx0) * t2 + perp.x * wobble;
-      const py = by0 + (ey2 - by0) * t2 + perp.y * wobble;
-      if (si === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
-    }
-    ctx.stroke();
-    // Inner purple tint
-    ctx.strokeStyle = `rgba(80,0,160,${alpha * 0.70})`;
-    ctx.lineWidth = s * 0.042 * (isAttackTentacle ? 1.0 : 0.88);
-    ctx.beginPath();
+    const branchThick = _abBranch === 'B' ? 1.30 : _abBranch === 'A' ? 0.72 : 1;
+    const tentaclePts = [];
     for (let si = 0; si <= segN; si++) {
       const t2 = si / segN;
       const wobble = Math.sin(t2 * Math.PI * 2 + unit._abT * 2.5 + tn.phase) * s * 0.04 * (1 - t2 * 0.5);
       const perp = { x: -endDirY, y: endDirX };
       const px = bx0 + (ex2 - bx0) * t2 + perp.x * wobble;
       const py = by0 + (ey2 - by0) * t2 + perp.y * wobble;
-      if (si === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+      tentaclePts.push({ x: px, y: py });
     }
-    ctx.stroke();
-    // Tip (pointed claw/suckers)
-    ctx.fillStyle = `rgba(140,0,220,${alpha})`;
-    ctx.beginPath();
-    ctx.arc(ex2, ey2, s * 0.035 * (isAttackTentacle ? 1.1 : 0.95), 0, Math.PI * 2);
+    const outer = ctx.createLinearGradient(bx0, by0, ex2, ey2);
+    outer.addColorStop(0, `rgba(4,0,12,${alpha})`);
+    outer.addColorStop(0.55, `rgba(25,0,52,${alpha})`);
+    outer.addColorStop(1, _abBranch === 'A' && isAttackTentacle
+      ? `rgba(126,38,188,${alpha})`
+      : `rgba(76,4,125,${alpha})`);
+    ctx.fillStyle = outer;
+    _abRibbonPath(
+      ctx, tentaclePts,
+      s * 0.092 * branchThick * (isAttackTentacle ? 1.34 : 0.90),
+      s * 0.014 * branchThick
+    );
     ctx.fill();
-    // 3 small claws at tip
-    if (isAttackTentacle) {
-      ctx.strokeStyle = '#220040'; ctx.lineWidth = s * 0.014;
-      for (let cl = 0; cl < 3; cl++) {
-        const ca = -0.55 + cl * 0.55;
-        ctx.beginPath();
-        ctx.moveTo(ex2, ey2);
-        ctx.lineTo(ex2 + endDirX * s * 0.05 + Math.cos(ca) * s * 0.04 * dir,
-                   ey2 + endDirY * s * 0.05 + Math.sin(ca) * s * 0.04);
-        ctx.stroke();
-      }
-    }
+    ctx.fillStyle = _abBranch === 'A' && isAttackTentacle
+      ? `rgba(202,126,255,${alpha * 0.64})`
+      : `rgba(105,18,172,${alpha * 0.60})`;
+    _abRibbonPath(
+      ctx, tentaclePts,
+      s * 0.038 * branchThick * (isAttackTentacle ? 1.28 : 0.88),
+      s * 0.004
+    );
+    ctx.fill();
     ctx.shadowBlur = 0;
     ctx.restore();
   });
@@ -271,38 +348,43 @@ function drawAbyssMonster(unit, camY) {
   }
 
   // ── Branch visuals ──────────────────────────────────────────
-  const _abBranch = unit._branch || '';
   if (_abBranch === 'A') {
-    // Infinite: faster absorption pulse rings + brighter vortex center
+    // Infinite: fast absorption rings, a vertical singularity pupil and suction lance.
     const _t = unit._abT;
     for (let i = 0; i < 3; i++) {
       const _phase = (_t * 1.10 + i * 0.34) % 1.0;
       const _rad = bodyR * (0.25 + _phase * 1.10);
       const _alp = (1 - _phase) * 0.38;
       ctx.strokeStyle = `rgba(100,0,180,${_alp})`; ctx.lineWidth = s * 0.06 * (1 - _phase);
-      ctx.beginPath(); ctx.arc(cx, bY, _rad, 0, Math.PI*2); ctx.stroke();
+      ctx.beginPath(); ctx.arc(bX, bY, _rad, 0, Math.PI*2); ctx.stroke();
     }
-    // Brighter void center
-    ctx.save(); ctx.shadowColor = '#6600cc'; ctx.shadowBlur = s * 0.22;
-    ctx.fillStyle = 'rgba(40,0,80,0.40)';
-    ctx.beginPath(); ctx.arc(cx, bY, bodyR * 0.32, 0, Math.PI*2); ctx.fill();
-    ctx.shadowBlur = 0; ctx.restore();
+    ctx.save();
+    ctx.shadowColor = '#d28cff'; ctx.shadowBlur = s * 0.30;
+    const eye = ctx.createRadialGradient(bX - s*0.03, bY - s*0.04, 0, bX, bY, bodyR*(0.42 + strikeReach*0.07));
+    eye.addColorStop(0, '#f3d9ff'); eye.addColorStop(0.18, '#ad5cff');
+    eye.addColorStop(0.52, '#4f0a84'); eye.addColorStop(1, 'rgba(16,0,34,0)');
+    ctx.fillStyle = eye;
+    ctx.beginPath(); ctx.ellipse(bX, bY, bodyR * (0.24 + strikeReach*0.06), bodyR * (0.55 + strikeReach*0.10), 0, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#030006';
+    ctx.beginPath(); ctx.ellipse(bX, bY, bodyR * (0.075 + strikeReach*0.025), bodyR * (0.34 + strikeReach*0.07), 0, 0, Math.PI*2); ctx.fill();
+    ctx.restore();
   } else if (_abBranch === 'B') {
-    // Multiarmed: 3 extra short tentacle stubs radiating around portal
-    const _t = unit._abT;
-    ctx.save(); ctx.shadowColor = '#440088'; ctx.shadowBlur = s * 0.10;
-    ctx.strokeStyle = 'rgba(60,0,100,0.55)'; ctx.lineWidth = s * 0.065; ctx.lineCap = 'round';
-    for (let i = 0; i < 4; i++) {
-      const _ba = (i / 4) * Math.PI * 2 + _t * 0.22 + Math.PI * 0.25;
-      const _sx = cx + Math.cos(_ba) * bodyR * 0.80;
-      const _sy = bY + Math.sin(_ba) * bodyR * 0.80;
-      const _ex = _sx + Math.cos(_ba + Math.sin(_t*1.2 + i) * 0.40) * s * 0.22;
-      const _ey = _sy + Math.sin(_ba + Math.sin(_t*1.2 + i) * 0.40) * s * 0.22;
-      ctx.beginPath(); ctx.moveTo(_sx, _sy); ctx.lineTo(_ex, _ey); ctx.stroke();
-      ctx.fillStyle = 'rgba(40,0,80,0.60)';
-      ctx.beginPath(); ctx.arc(_ex, _ey, s*0.035, 0, Math.PI*2); ctx.fill();
+    // The four branch arms were already rendered behind the portal. Only the
+    // permanent devouring maw belongs on the front face.
+    ctx.save();
+    ctx.fillStyle = '#020003';
+    ctx.beginPath(); ctx.ellipse(bX, bY + s*0.04, s*0.25, s*0.13, 0, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#d8a8ee';
+    for (let i = 0; i < 6; i++) {
+      const tx = bX + (i - 2.5) * s*0.075;
+      const top = i % 2 === 0;
+      ctx.beginPath();
+      ctx.moveTo(tx - s*0.025, bY + s*(top ? -0.055 : 0.125));
+      ctx.lineTo(tx + s*0.025, bY + s*(top ? -0.055 : 0.125));
+      ctx.lineTo(tx, bY + s*(top ? 0.025 : 0.045));
+      ctx.closePath(); ctx.fill();
     }
-    ctx.shadowBlur = 0; ctx.restore();
+    ctx.restore();
   }
 
   ctx.restore();
@@ -317,5 +399,41 @@ function _abVoidPath(c, cx, cy, rx, ry, lobes, speed, t, phase) {
     const w = Math.sin(a * lobes + t * speed + phase) * 0.11;
     c.lineTo(cx + Math.cos(a) * rx * (1 + w), cy + Math.sin(a) * ry * (1 + w));
   }
+  c.closePath();
+}
+
+// Smooth filled ribbon with a wide organic root and a tapered tip. It replaces
+// constant-width stroked "sticks" and lets the portal overpaint every root seam.
+function _abRibbonPath(c, points, startW, endW) {
+  if (!points || points.length < 2) return;
+  const left = [], right = [];
+  const last = points.length - 1;
+  for (let i = 0; i <= last; i++) {
+    const prev = points[Math.max(0, i - 1)];
+    const next = points[Math.min(last, i + 1)];
+    const dx = next.x - prev.x, dy = next.y - prev.y;
+    const len = Math.hypot(dx, dy) || 1;
+    const nx = -dy / len, ny = dx / len;
+    const t = i / last;
+    const w = startW + (endW - startW) * t;
+    left.push({ x: points[i].x + nx * w, y: points[i].y + ny * w });
+    right.push({ x: points[i].x - nx * w, y: points[i].y - ny * w });
+  }
+
+  const traceSide = side => {
+    for (let i = 1; i < side.length - 1; i++) {
+      const mx = (side[i].x + side[i + 1].x) * 0.5;
+      const my = (side[i].y + side[i + 1].y) * 0.5;
+      c.quadraticCurveTo(side[i].x, side[i].y, mx, my);
+    }
+    c.lineTo(side[side.length - 1].x, side[side.length - 1].y);
+  };
+
+  c.beginPath();
+  c.moveTo(left[0].x, left[0].y);
+  traceSide(left);
+  const rev = right.slice().reverse();
+  c.lineTo(rev[0].x, rev[0].y);
+  traceSide(rev);
   c.closePath();
 }
