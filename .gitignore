@@ -4,3 +4,5 @@
 .mcp.json
 graphify-out/
 dist/
+.venv/
+.venv-video/

@@ -2709,7 +2709,7 @@ try {
 <script>
 // Версія збірки: видима внизу стартового екрана і в #fps-метрі — щоб миттєво
 // відрізняти "фікс не працює" від "вебв'ю грає в закешовану стару збірку"
-const DL_BUILD = '2026-08-19.1';
+const DL_BUILD = '2026-08-21.1';
 try {
     console.log('Dungeon Lord build', DL_BUILD);
     const _bst = document.getElementById('build-stamp');
@@ -2931,7 +2931,7 @@ let GAME = {
     waveCount: 0,
     eliteChance: 0,    // +1% кожні 60с, макс 100%
     captainChance: 0,  // +1% кожні 60с, макс 100%
-    extraHeroChance: 0,// +4% за рівень загрози, макс 100%
+    extraHeroChance: 0,// +1.2% за рівень загрози, макс 20% — шанс зайвого героя у хвилі
     difficultyLevel: 0,
     bossSent75: false, // чи вже посилали боса при 75%
     bossSent50: false,
@@ -4565,7 +4565,7 @@ class Unit {
         }
         // ARACHNE A10 Павутина на підлозі: 5%/сек шанс заплутати героя коротким рутом (аппрокс. «5%/30px»)
         if (this.type === 'hero' && this.hp > 0 && (this._stunTimer||0) <= 0
-            && _arachneFloorEvo(this.floorIdx) === 'A' && Math.random() < 0.05/60) {
+            && _arachneFloorEvo(this.floorIdx) === 'A' && Math.random() < _abChance(0.05)/60) {
             this._stunTimer = 90;   // 1.5с рут
             spawnParticle(this.x, this.y - this.size, 'white');
             spawnDmgText(this.x, this.y - this.size - 10, '🕸 Заплутано', '#ccccee');
@@ -4575,7 +4575,7 @@ class Unit {
             if (this._lastFloorIdx == null) this._lastFloorIdx = this.floorIdx;
             if (this.floorIdx !== this._lastFloorIdx) {
                 this._lastFloorIdx = this.floorIdx;
-                if (_spiritFloorEvo(this.floorIdx) === 'B' && Math.random() < 0.02) {
+                if (_spiritFloorEvo(this.floorIdx) === 'B' && Math.random() < _abChance(0.02)) {
                     if (Math.random() < 0.5) {
                         let _sd = this.maxHp * 0.10; this.hp -= _sd; this._lastHitBy = 'monster';
                         spawnParticle(this.x, this.y - this.size, 'orange');
@@ -4715,7 +4715,7 @@ class Unit {
                             }
                         });
                         // A9: 10% шанс забрати 5% maxHP рандомному герою
-                        if (this._evoExtraDrain && Math.random() < 0.10) {
+                        if (this._evoExtraDrain && Math.random() < _abChance(0.10)) {
                             let _rh = heroesNear[Math.floor(Math.random() * heroesNear.length)];
                             let _xd = _rh.maxHp * 0.05;
                             _rh.hp = Math.max(0, _rh.hp - _xd);
@@ -4739,7 +4739,7 @@ class Unit {
                                 allHeroes.forEach(h => {
                                     if (h.hp <= 0) return;
                                     let raw = this.dmg * 0.8;
-                                    if (this._evoBreathCrit && Math.random() < 0.30) raw *= 2;   // A9: 30% крит ×2
+                                    if (this._evoBreathCrit && Math.random() < _abChance(0.30)) raw *= 2;   // A9: 30% крит ×2
                                     let dmgAfterArmor = applyDef(raw, this, h, false);
                                     h.hp -= dmgAfterArmor; h._lastHitBy = 'monster';
                                     spawnParticle(h.x, h.y-h.size, this._branch === 'B' ? 'cyan' : 'orange');
@@ -5051,7 +5051,7 @@ class Unit {
                 // BAT / AIR_ELE-B: ухилення
                 if (enemy.ability === 'dodge' && enemy.type === 'monster') {
                     let _dc = enemy.dodgeChance !== undefined ? enemy.dodgeChance : 0.15;
-                    if (Math.random() < _dc) {
+                    if (Math.random() < _abChance(_dc)) {
                         // B6 (air_ele): лікування на величину уникнутого урону
                         if (enemy._evoDodgeHeal) {
                             let _healAmt = applyDef(this.dmg, this, enemy, false);
@@ -5095,7 +5095,7 @@ class Unit {
 
                 // ABYSS B9: стакований дебаф — герой може промахнутись (5% за стак)
                 if (this.type === 'hero' && (this._abyssDebuffStacks||0) > 0
-                    && Math.random() < this._abyssDebuffStacks * 0.05) {
+                    && Math.random() < _abChance(this._abyssDebuffStacks * 0.05)) {
                     spawnDmgText(enemy.x, enemy.y-enemy.size-10, '🐙Міс!', '#aa44ff');
                     let _atkSpd3 = (this.baseAtkSpeed||0.83) + (this.atkSpeedBonus||0);
                     this.attackCooldown = Math.max(8, Math.round(60 / _atkSpd3));
@@ -5113,7 +5113,7 @@ class Unit {
                 // SHADOW Мороку B6: аура темряви 20% промах; B10 темна кімната: осліплення 1.5с/10с (100% промах)
                 if (this.type === 'hero' && (
                         (_shadowFloorEvo(this.floorIdx) === 'B' && (_frameNow % 10000) < 1500)
-                        || (this._shadowMissActive && Math.random() < 0.20))) {
+                        || (this._shadowMissActive && Math.random() < _abChance(0.20)))) {
                     spawnDmgText(this.x, this.y - this.size - 10, '🌫Міс!', '#8877cc');
                     let _asb = (this.baseAtkSpeed||0.83) + (this.atkSpeedBonus||0);
                     this.attackCooldown = Math.max(8, Math.round(60 / _asb));
@@ -5153,7 +5153,7 @@ class Unit {
                     dmgDealt *= 2; _isCrit = true;
                 }
                 // HOUNDS Альфа B8: 15% ×2 урон (крит)
-                if (this._isAlpha && this._evoAlphaCrit && Math.random() < 0.15) {
+                if (this._isAlpha && this._evoAlphaCrit && Math.random() < _abChance(0.15)) {
                     dmgDealt *= 2; _isCrit = true;
                 }
                 // BAT Вампір A9: герой на повному HP → ×2 урон (кімната ×3)
@@ -5175,7 +5175,7 @@ class Unit {
                 let _dkBladeHitType = null;
                 if (this.monsterKind === 'dark_knight' && this._evoBlackBlade && enemy.type === 'hero') {
                     let _bladeChance = this._evoBladePct || 0.50;
-                    if (Math.random() < _bladeChance) {
+                    if (Math.random() < _abChance(_bladeChance)) {
                         let _savedType = this.dmgType;
                         _dkBladeHitType = Math.random() < 0.50 ? 'mag' : 'phys';
                         this.dmgType = _dkBladeHitType;
@@ -5241,7 +5241,7 @@ class Unit {
 
                 // DARK KNIGHT: чорна броня / відбиття / поглинання
                 if (enemy.monsterKind === 'dark_knight') {
-                    if (enemy._evoFullReflect && Math.random() < 0.05) {
+                    if (enemy._evoFullReflect && Math.random() < _abChance(0.05)) {
                         // B8: 5% повне відбиття — відмотуємо урон knight, весь летить у героя
                         enemy.hp = Math.min(enemy.maxHp, enemy.hp + dmgDealt * 2);
                         this.hp = Math.max(0, this.hp - dmgDealt);
@@ -5411,7 +5411,7 @@ class Unit {
                     }
                     // HOUNDS Зграя A6/A8: гонча при отриманні урону — шанс позачергово прикликати ще одну
                     if (dmgDealt > 0 && enemy.monsterKind === 'hounds' && enemy._evoPackSpawn && enemy.hp > 0) {
-                        if (Math.random() < (enemy._evoPackSpawn3 ? 0.03 : 0.01)) _houndPackSpawn(enemy);
+                        if (Math.random() < _abChance(enemy._evoPackSpawn3 ? 0.03 : 0.01)) _houndPackSpawn(enemy);
                     }
                     // ═══ Лорд-грід: он-хіт ефекти лорда ═══
                     if (this.type === 'lord' && dmgDealt > 0 && enemy.type === 'hero') {
@@ -5661,19 +5661,19 @@ class Unit {
                     if (this._evoRestless) {                    // A6: паніка замість переляку
                         let _room = this._evoPanicRoom && _spiritFloorEvo(this.floorIdx) === 'A';
                         let _pc = 0.10 + (_room ? 0.02 : 0);    // A10: +2% шанс
-                        if (Math.random() < _pc) {
+                        if (Math.random() < _abChance(_pc)) {
                             let _dur = 120 + (_room ? 120 : 0);  // 2с (A10: +2с)
-                            let _targets = (this._evoPanicAll && Math.random() < 0.01)   // A9: 1% усім поверху
+                            let _targets = (this._evoPanicAll && Math.random() < _abChance(0.01))   // A9: 1% усім поверху
                                 ? units.filter(h => h.type==='hero' && h.floorIdx===this.floorIdx && h.hp>0)
                                 : [enemy];
                             _targets.forEach(h => _spiritPanic(h, _dur));
                         }
                     } else if (this._evoPrankTeleport) {        // B6: телепорт замість переляку
-                        if (Math.random() < 0.08) {
+                        if (Math.random() < _abChance(0.08)) {
                             _spiritTeleport(enemy);
                             if (this._evoTeleStun) enemy._stunTimer = Math.max(enemy._stunTimer || 0, 120); // B7: ступор 2с
                         }
-                        if (this._evoSpiritCharm && Math.random() < 0.05) {   // B8: перетворити на «духа» 5с
+                        if (this._evoSpiritCharm && Math.random() < _abChance(0.05)) {   // B8: перетворити на «духа» 5с
                             enemy._spiritCharm = 300; enemy.fightTarget = null;
                             spawnDmgText(enemy.x, enemy.y - enemy.size - 10, '👤 Дух!', '#bbaaee');
                         }
@@ -5724,7 +5724,7 @@ class Unit {
 
                 // ARACHNE Велетень B8: хвіст — 25% knockback героя на 100px.
                 if (this.monsterKind === 'arachne' && this._evoTailKnock
-                    && enemy.type === 'hero' && enemy.hp > 0 && Math.random() < 0.25) {
+                    && enemy.type === 'hero' && enemy.hp > 0 && Math.random() < _abChance(0.25)) {
                     enemy.x += (enemy.x < this.x ? -100 : 100);
                     let _clampL = centerX - CFG.floorW/2 + 15, _clampR = centerX + CFG.floorW/2 - 15;
                     enemy.x = Math.max(_clampL, Math.min(_clampR, enemy.x));
@@ -5738,7 +5738,7 @@ class Unit {
                 if (this._evoWeb25) _webChance = 0.25;
                 if (this._evoPoisonFangs) _webChance = 0.10;
                 if (this.ability === 'web' && this.type === 'monster' && enemy.type === 'hero'
-                    && !enemy._webbed && Math.random() < _webChance) {
+                    && !enemy._webbed && Math.random() < _abChance(_webChance)) {
                     // _webDurationMult: Лицар I/II — зменшує HP павутини (руйнується швидше)
                     let _webHp = this.hp * 0.5 * (enemy._webDurationMult || 1);
                     const web = {
@@ -5777,7 +5777,7 @@ class Unit {
                 }
 
                 // DRAGON Крижаний B8: 10% фриз (стан 1с) при ударі героя
-                if (this.monsterKind === 'dragon' && this._evoFreeze && enemy.type === 'hero' && Math.random() < 0.10) {
+                if (this.monsterKind === 'dragon' && this._evoFreeze && enemy.type === 'hero' && Math.random() < _abChance(0.10)) {
                     enemy._stunTimer = Math.max(enemy._stunTimer || 0, 60);
                     spawnParticle(enemy.x, enemy.y - enemy.size, 'cyan');
                     spawnDmgText(enemy.x, enemy.y - enemy.size - 8, '❄ЗАМОРОЖЕНО', '#aaddff');
@@ -5793,7 +5793,7 @@ class Unit {
                 // EARTH_ELE: відкидання до стіни
                 if (this.ability === 'knockback' && enemy.type === 'hero') {
                     let kbChance = this._evoKnockback15 ? 0.15 : 0.12;
-                    if (Math.random() < kbChance) {
+                    if (Math.random() < _abChance(kbChance)) {
                         // A6: відкидаємо 3 найближчих; інакше тільки enemy
                         let kbTargets = this._evoKnockback3
                             ? units.filter(u => u.type==='hero' && u.floorIdx===this.floorIdx && u.hp>0)
@@ -5808,7 +5808,7 @@ class Unit {
                             // A7: стан 2с
                             if (this._evoKnockbackStun) h._stunTimer = Math.max(h._stunTimer||0, 120);
                             // A10: 3% миттєва смерть об стіну
-                            if (this._evoFinalA && Math.random() < 0.03) {
+                            if (this._evoFinalA && Math.random() < _abChance(0.03)) {
                                 h.hp = 0;
                                 spawnDmgText(h.x, h.y-h.size-12, '💀 СТІНА!', '#ff4400', true);
                             }
@@ -5909,12 +5909,12 @@ class Unit {
                 // LIGHTNING: ланцюгова блискавка
                 if (this.ability === 'chain') {
                     let _chainChance = 0.15 + (this._evoChainPlus7 ? 0.07 : 0);
-                    if (Math.random() < _chainChance) {
+                    if (Math.random() < _abChance(_chainChance)) {
                         let _chainPct = this._evoChainDmg75 ? 0.75 : 0.50;
                         let _pool = units.filter(u => u.type==='hero' && u !== enemy && u.floorIdx===this.floorIdx && u.hp>0);
                         const _fireChainStun = (ch) => {
                             if (this._evoChainStun) {
-                                if (this._evoConfuse && Math.random() < 0.20) {
+                                if (this._evoConfuse && Math.random() < _abChance(0.20)) {
                                     let _nearby = units.filter(u => u !== ch && u.floorIdx===ch.floorIdx && u.hp>0 && Math.abs(u.x-ch.x)<120 && u.type !== 'lord');
                                     if (_nearby.length > 0) {
                                         let _ct = _nearby[Math.floor(Math.random()*_nearby.length)];
@@ -5989,7 +5989,7 @@ class Unit {
                 }
 
                 // DARK KNIGHT A9: 10% подвійна атака
-                if (this.monsterKind === 'dark_knight' && this._evoDoubleAtk && enemy.type === 'hero' && Math.random() < 0.10) {
+                if (this.monsterKind === 'dark_knight' && this._evoDoubleAtk && enemy.type === 'hero' && Math.random() < _abChance(0.10)) {
                     let _d2 = applyDef(this.dmg, this, enemy, pierceArmor);
                     enemy.hp = Math.max(0, enemy.hp - _d2);
                     spawnDmgText(enemy.x, enemy.y-enemy.size-22, '-'+Math.round(_d2)+'⚔⚔', '#cc88cc');
@@ -6815,6 +6815,7 @@ function startGame(level) {
     GAME._lowHpCommented = false; // скидаємо флаг low-HP коментаря
     GAME.waveCount = 0;
     GAME.rageUntil = 0; GAME.rageMult = 1; GAME.rageGold = 0; // лють героїв — з нуля
+    GAME.rageSurvived = 0;   // лічильник пережитих лютей (+1 до пачки за кожну) — теж з нуля
 
     // ── Завантаження постійних прокачок ────────────────────────────────────
     _permaData = _loadPerma();
@@ -6925,7 +6926,13 @@ function scheduleNextEnemy() {
     const _chain = ++_enemyChain;
     // База: 11s на рівні 1 → 7s на рівні 50 (лінійно) + 1s за кожен поверх з монстрами
     let monsterFloors = Math.max(1, floors.length - 1);
-    let baseDelay = 11 - ((GAME.currentLevel || 1) - 1) / 49 * 4;
+    const _L = GAME.currentLevel || 1;
+    let baseDelay = 11 - (_L - 1) / 49 * 4;
+    // Пачки ростуть із рівнем (3→12), тому й приходять рідше: +1.5с на кожен крок
+    // таблиці (той самий крок, що й +1 герой). Інакше на L50 дюжина героїв
+    // сипалась би так само часто, як трійка на L1, і потік вийшов би ×4.
+    const _packStep = Math.max(0, Math.floor((_L - 5) / 5));
+    baseDelay += _packStep * 1.5;
     let delay = (baseDelay + (monsterFloors - 1) * 1.0) * 1000;
     _nextEnemyDeadline = Date.now() + delay;
 
@@ -6959,12 +6966,27 @@ function _waveParams() {
     const wFrac = Math.min(W / 30, 1.0);
     const intensity = lFrac * 0.6 + wFrac * 0.4;
 
-    const heroCount     = Math.max(1, Math.round(1 + intensity * 5));
-    const maxTierRaw    = Math.max(1, Math.round(intensity * 20));
-    const floorCap      = Math.max(1, floors.length - 1);
-    // На вищих рівнях герої на 0..3 тири вище кількості поверхів гравця
-    const tierPressure  = Math.round(lFrac * 3);
-    const effectiveTier = Math.min(maxTierRaw, floorCap + tierPressure);
+    // ── Розмір пачки = РІВЕНЬ КАМПАНІЇ (дизайнерська таблиця) ──────────────
+    // Було: round(1 + intensity*5) → 3..6 за всю кампанію, тобто кількість майже
+    // не росла і вся складність трималась на статах. Тепер базова пачка:
+    //   L1-4 → 3, L5 → 3, L10 → 4, L15 → 5, L20 → 6, L25 → 7, L30 → 8,
+    //   L35 → 9, L40 → 10, L45 → 11, L50 → 12   (крок +1 кожні 5 рівнів від L5)
+    // Ескалація ВСЕРЕДИНІ рівня лишається за extraHeroChance-кидками у spawnEnemy.
+    // + за кожну ПЕРЕЖИТУ лють місто шле на одного героя більше (див. spawnEnemy).
+    const _packStep = Math.max(0, Math.floor((L - 5) / 5));
+    const heroCount = 3 + _packStep + (GAME.rageSurvived || 0);
+    // ── Тир героїв = РІВЕНЬ КАМПАНІЇ (не кількість куплених гравцем поверхів) ──
+    // Було: effectiveTier = min(maxTierRaw, floors.length - 1 + tierPressure).
+    // Прив'язка до поверхів давала два перевернутих ефекти:
+    //   1) хто не будував поверхи — вічно бачив рекрутів (турель на 2 поверхах = легка гра);
+    //   2) купівля поверху САМА ПО СОБІ підсилювала ворога — гравця карали за розвиток.
+    // Тепер набір героїв диктує рівень кампанії: L1 → тир 1, L50 → тир 20, а хвилі
+    // всередині рівня додають до +2.5 тиру (облога важчає до кінця рівня).
+    const tierFromLevel = 1 + (L - 1) * (19 / 49);   // 1..20 по кампанії
+    // Бонус хвилі теж росте з рівнем: на L1 облога додає щонайбільше +1 тир (новачка
+    // не топимо Солдатами вже на першому рівні), на L50 — до +3.
+    const waveBonus     = wFrac * (1 + lFrac * 2);
+    const effectiveTier = Math.max(1, Math.min(20, Math.round(tierFromLevel + waveBonus)));
     // Донесення можуть змінювати GAME.eliteChance/captainChance (±N%).
     // Додаємо їх поверх базових значень від хвилі.
     const eliteChance   = Math.min(90, Math.max(0, intensity * 28 + (GAME.eliteChance   || 0)));
@@ -6994,6 +7016,21 @@ function spawnEnemy() {
             } catch (e) {}
         }
     }
+
+    // ── ПЕРЕЖИТА ЛЮТЬ: назавжди +1 до базової пачки ───────────────────────
+    // Спрацьовує на першій хвилі ПІСЛЯ вікна люті — якщо ми сюди дійшли, значить
+    // гравець її пережив (інакше була б поразка). Стакується: пережив дві люті → +2.
+    // Обнуляємо rageUntil, щоб не порахувати ту саму лють двічі.
+    if (GAME.rageUntil && GAME.waveCount > GAME.rageUntil) {
+        GAME.rageSurvived = (GAME.rageSurvived || 0) + 1;
+        GAME.rageUntil = 0; GAME.rageMult = 1; GAME.rageGold = 0;
+        try {
+            _showLoreTip(_lang === 'en'
+                ? '🛡 <b>RAGE WEATHERED</b> — the city sends +' + GAME.rageSurvived + ' more hero' + (GAME.rageSurvived > 1 ? 'es' : '') + ' with every wave now.'
+                : '🛡 <b>ЛЮТЬ ПЕРЕЖИТО</b> — місто тепер шле на ' + GAME.rageSurvived + ' героя більше з кожною хвилею.');
+        } catch (e) {}
+    }
+
     const _rageOn = GAME.rageUntil && GAME.waveCount <= GAME.rageUntil;
     try {
         if (GAME.waveCount === 1) _liveTutTrigger('hero_first');
@@ -7006,7 +7043,21 @@ function spawnEnemy() {
 
     const wp = _waveParams();
 
-    for (let i = 0; i < wp.heroCount; i++) {
+    // GAME.extraHeroChance ростить рівень загрози (+1.2%/рів, стеля 20%), але його НІХТО
+    // не читав — задум «іноді у хвилі приходить зайвий герой» був мертвим кодом.
+    // Оживляємо: це єдиний важіль, що додає КІЛЬКІСТЬ (а не стати) з часом бою.
+    //
+    // Кидків — по одному на кожні 2 героя базової пачки, кожен незалежно на
+    // extraHeroChance%. Тобто стеля добірки масштабується з розміром хвилі:
+    // пачка 4 → максимум +2, пачка 6 → максимум +3. Малі ранні хвилі (1 герой)
+    // кидків не отримують зовсім — новачка не завалюємо.
+    let _spawnCount = wp.heroCount;
+    const _extraRolls = Math.floor(wp.heroCount / 2);
+    for (let _r = 0; _r < _extraRolls; _r++) {
+        if (Math.random() * 100 < (GAME.extraHeroChance || 0)) _spawnCount++;
+    }
+
+    for (let i = 0; i < _spawnCount; i++) {
         // Зважений рандом рівня: вищі тири мають більший шанс (трикутний розподіл)
         let totalWeight = wp.effectiveTier * (wp.effectiveTier + 1) / 2;
         let roll = Math.random() * totalWeight;
@@ -7214,11 +7265,11 @@ function spawnMinions() {
                         if (_newMon.monsterKind === 'hounds' && _newMon._evoAlpha) {
                             let _hasAlpha = units.some(m => m.monsterKind === 'hounds' && m._isAlpha && m.hp > 0
                                 && (m.floorIdx === f.depth || m._deployTo === f.depth));
-                            if (!_hasAlpha && Math.random() < 0.10) _makeAlpha(_newMon);
+                            if (!_hasAlpha && Math.random() < _abChance(0.10)) _makeAlpha(_newMon);
                         }
                         // BAT Зграя B10: 50% шанс що при спавні з'явиться +1 додатковий кажан
                         if (_newMon.monsterKind === 'bat' && _newMon._evoSwarmRoom
-                            && count + _sc + 1 < _maxMon && Math.random() < 0.50) {
+                            && count + _sc + 1 < _maxMon && Math.random() < _abChance(0.50)) {
                             const _bx = (_lordU ? _lordU.x : centerX) + (Math.random() - 0.5) * 30;
                             let _extraBat = new Unit('monster', _bx, floors[lordFloor].y, lordFloor, f.depth + 1);
                             _extraBat._deployTo = f.depth;
@@ -7340,7 +7391,7 @@ function loop(ts) {
                 GAME.captainChance = Math.min(100, GAME.captainChance + 1);
             }
             // extraHeroChance і heroScalePercent теж обмежені рівнем складності
-            GAME.extraHeroChance  = Math.min(50, GAME.difficultyLevel * 4);
+            GAME.extraHeroChance  = Math.min(20, GAME.difficultyLevel * 1.2);
             GAME.heroScalePercent = Math.min(300, GAME.heroScaleBase + GAME.difficultyLevel * GAME.heroThreatPct);
         }
     }
@@ -10686,7 +10737,7 @@ function loop(ts) {
             for (let h of (_fHByFloor.get(fi) || [])) {
                 if (h.hp <= 0) continue;
                 h.hp -= h.maxHp * 0.005 / 60;
-                if (Math.random() < _convRate) _zombieConvert(h, fi);
+                if (Math.random() < _abChance(_convRate)) _zombieConvert(h, fi);
                 if ((_frameNow % 45) < 16) spawnParticle(h.x+(Math.random()-.5)*10, h.y-h.size*0.4, 'green');
             }
         });
@@ -10697,7 +10748,7 @@ function loop(ts) {
                 let _room = _zombieFloorEvo(fi) === 'A';
                 let _cloudRate = (_room ? 0.075 : 0.05) / 60;   // 5% (A10: 7.5%) шанс конверсії
                 for (let h of (_fHByFloor.get(fi) || [])) {
-                    if (h.hp > 0 && Math.random() < _cloudRate) _zombieConvert(h, fi);
+                    if (h.hp > 0 && Math.random() < _abChance(_cloudRate)) _zombieConvert(h, fi);
                 }
                 if ((_frameNow % 24) < 16) spawnParticle(f.ladderX+(Math.random()-.5)*60, f.y-Math.random()*40, 'green');
             }
@@ -11313,7 +11364,24 @@ function loop(ts) {
                         spawnDmgText(bt.x, bt.y - bt.size - 8, '+' + _inc + '💙', '#ff6688');
                     }
                 });
-                let reward = (u.soulReward || (u.heroRank === 'boss' ? 80 : u.heroRank.startsWith('elite') ? 25 : 10)) + (GAME.soulBonus || 0);
+                // ── Нагорода за героя масштабується з ЙОГО ТИРОМ ──────────────
+                // Було: плоскі 10/25/80 — Чемпіон II (тир 20) давав стільки ж, скільки
+                // Рекрут I. Через це дохід з убивств за кампанію ріс лише ×1.7, тоді як
+                // ціна поверхів росла ×70, і гра фінансувалась майже виключно рейдами.
+                // База 8 + 1.5×тир: Рекрут I ≈ 10 (як було), Чемпіон II ≈ 38.
+                // ЕЛІТА дає стільки ж ЗВИЧАЙНИХ душ, скільки простий герой того ж тиру —
+                // її цінність не в фіолетових душах, а в ЗОЛОТІЙ душі, яку вона дропає
+                // окремо (див. блок «Елітні душі» нижче). Бос лишається ×8.
+                const _tierBase = 8 + (u.level || 1) * 1.5;
+                const _rankMul  = (u.heroRank === 'boss') ? 8 : 1;
+                // Іменні боси мають власну нагороду (soulReward = 30×mult) — шануємо її,
+                // якщо вона більша за формулу, щоб не зрізати сюжетні винагороди.
+                // ВАЖЛИВО: цей «поріг» діє ЛИШЕ для босів. Елітам теж проставлений
+                // soulReward = 25 (легасі-значення), і якби поріг діяв на них, вони й далі
+                // давали б 25 замість тир-нагороди — тобто зміна вище не спрацювала б.
+                let reward = Math.round(_tierBase * _rankMul);
+                if (u.heroRank === 'boss') reward = Math.max(reward, u.soulReward || 0);
+                reward += (GAME.soulBonus || 0);
                 GAME.souls += reward;
                 // Лють героїв: КОЖЕН герой (навіть звичайний) несе +N золотих
                 if (u._rage > 0) {
@@ -12080,14 +12148,20 @@ const _RUN_MODS = [
       apply:() => { _rb().monArmor = _rms(2, 5); } },
 
     // ── Епічні ────────────────────────────────────────────────────────────
-    { id:'sharp_claws', r:'epic', icon:'dl-trap',
-      name:()=> _lang==='en' ? 'Sharpened Claws' : 'Гострі пазурі',
+    { id:'sharp_claws', r:'epic', icon:'dl-spark',
+      // Назва була про пазурі (тобто ніби про урон), хоча баф не чіпає урон узагалі —
+      // він підіймає ШАНС СПРАЦЮВАННЯ здібностей. Перейменовано під фактичний ефект.
+      name:()=> _lang==='en' ? 'Awakened Instincts' : 'Пробуджені інстинкти',
       desc:()=> _lang==='en' ? 'Monster ability triggers are 50% more likely' : 'Здібності монстрів спрацьовують на 50% частіше',
       apply:() => { _rb().abilityPct = 0.5; } },
 
     { id:'elite_surge', r:'epic', icon:'dl-bolt',
       name:()=>_t('mod-elite'),
-      desc:()=> _lang==='en' ? '2× gold souls from elites and bosses' : 'Вдвічі більше золотих душ від еліт та босів',
+      // Опис звірено з кодом: _runEliteMult множить УСІ джерела золотих душ — еліт,
+      // босів, 1% щасливий дріп зі звичайних героїв і золото з «Люті героїв».
+      // Старий опис обіцяв лише «від еліт та босів» і применшував мод.
+      desc:()=> _lang==='en' ? 'Every gold soul this run is doubled — elites, bosses, lucky drops'
+                             : 'Кожна золота душа цього рану подвоюється — еліти, боси, випадкові дропи',
       apply:() => { _rb().eliteMult = 2; } },
 
     { id:'dark_pact', r:'epic', icon:'dl-moon',
@@ -12174,7 +12248,25 @@ function _selectRunMod(idx) {
     const level = overlay._pendingLevel;
     overlay.style.display = 'none';
     StoryManager.init();
-    StoryManager.showIntro(level).then(function() { startGame(level); });
+    // Старт гри висів на промісі БЕЗ .catch(): якби showIntro кинув помилку, гра
+    // мовчки не стартувала б — UI на місці, поверхів нуль, у консолі чисто.
+    // Найдорожчий у діагностиці клас багів, тому додано і перехоплення, і запобіжник
+    // від подвійного запуску (щоб .catch не стартував рівень удруге).
+    let _started = false;
+    const _startOnce = function () {
+        if (_started) return;
+        _started = true;
+        startGame(level);
+    };
+    try {
+        StoryManager.showIntro(level).then(_startOnce).catch(function (e) {
+            try { console.warn('showIntro failed, стартуємо без вступу:', e); } catch (_) {}
+            _startOnce();
+        });
+    } catch (e) {
+        try { console.warn('showIntro кинув синхронно:', e); } catch (_) {}
+        _startOnce();
+    }
 }
 
 // ── Ω Рядок-налаштування тону (3 варіанти) ─────────────────────────────────
