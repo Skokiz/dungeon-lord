@@ -2709,7 +2709,7 @@ try {
 <script>
 // Версія збірки: видима внизу стартового екрана і в #fps-метрі — щоб миттєво
 // відрізняти "фікс не працює" від "вебв'ю грає в закешовану стару збірку"
-const DL_BUILD = '2026-08-21.1';
+const DL_BUILD = '2026-08-22.1';
 try {
     console.log('Dungeon Lord build', DL_BUILD);
     const _bst = document.getElementById('build-stamp');
@@ -4074,6 +4074,15 @@ class Floor {
                 this._devBtnX = _dbX; this._devBtnY = _dbY + camY; this._devBtnW = _dbS; this._devBtnH = _dbS;
                 const _dcx = _dbX + _dbS / 2, _dcy = _dbY + _dbS / 2;
                 const _dp = 0.5 + 0.5 * Math.sin(_frameNow / 900 + this.depth);
+                // Туторіал: підсвітка ДНК-кнопки (DOM-класи тут не працюють — це canvas)
+                if ((GAME._hiDevUntil || 0) > _frameNow) {
+                    const _hp = 0.5 + 0.5 * Math.sin(_frameNow / 160);
+                    ctx.save();
+                    ctx.strokeStyle = `rgba(217,166,255,${0.55 + _hp * 0.45})`;
+                    ctx.lineWidth = 3;
+                    ctx.beginPath(); ctx.arc(_dcx, _dcy, _dbS / 2 + 4 + _hp * 3, 0, Math.PI * 2); ctx.stroke();
+                    ctx.restore();
+                }
                 ctx.fillStyle = 'rgba(18,9,38,0.78)';
                 ctx.beginPath(); ctx.arc(_dcx, _dcy, _dbS / 2, 0, Math.PI * 2); ctx.fill();
                 ctx.strokeStyle = `rgba(170,105,235,${0.45 + _dp * 0.30})`;
@@ -6322,6 +6331,21 @@ class Unit {
                 else { this.x = ladX; this.isClimbingUp = true; }
             }
         } else {
+            // ── АВАРІЙНЕ ПРИЗЕМЛЕННЯ (фікс «монстр застряг між поверхами») ──
+            // Сюди монстр потрапляє, коли він НЕ в хвилі й НЕ деплоїться. Але він міг
+            // зайти сюди просто посеред підйому сходами: гілка деплою має вихід
+            // «ворог на шляху — провалюємось у бойову логіку», а бою не буде, бо
+            // update() відправляє всіх, хто на сходах, одразу в moveMonster і робить
+            // return. Патруль нижче міняє лише x — тож монстр із isClimbingUp=true
+            // і y десь між поверхами зависав там назавжди: не ліз, не бився, лише
+            // совався горизонтально. Ставимо його на найближчу тверду підлогу.
+            if (this.isClimbingUp || this.isClimbing) {
+                this.isClimbingUp = false;
+                this.isClimbing   = false;
+                const _land = floors[this.floorIdx];
+                this.y = _land ? _land.y : CFG.surfaceY;
+            }
+
             let _prevX = this.x;
             // Агр: якщо герой на цьому поверсі в радіусі 210px (не на сходинках) — біжимо до нього
             // Slime A Lv7.1 (_floorAggro): радіус ігнорується — агро на весь поверх
@@ -7029,6 +7053,18 @@ function spawnEnemy() {
                 ? '🛡 <b>RAGE WEATHERED</b> — the city sends +' + GAME.rageSurvived + ' more hero' + (GAME.rageSurvived > 1 ? 'es' : '') + ' with every wave now.'
                 : '🛡 <b>ЛЮТЬ ПЕРЕЖИТО</b> — місто тепер шле на ' + GAME.rageSurvived + ' героя більше з кожною хвилею.');
         } catch (e) {}
+    }
+
+    // ── Підказка про АТАКУ: з 3-ї хвилі, коли військо вже переважає героїв ──
+    if (GAME.waveCount >= 3) {
+        const _mAlive = units.filter(u => u.type === 'monster' && u.hp > 0).length;
+        const _hAlive = units.filter(u => u.type === 'hero'    && u.hp > 0).length;
+        if (_mAlive > _hAlive) {
+            try { _abyssIntro('attack_city',
+                'Досить оборонятись. Мої діти можуть дійти до їхнього міста ❤️ і рвати його стіни — <b>кожен удар по місту приносить душі</b>. Але поки вони нагорі, підземелля стоїть голе.',
+                'Enough defending. My children can reach their City ❤️ and tear its walls — <b>every blow against the City brings souls</b>. But while they are up there, the dungeon stands bare.',
+                'btn-wave'); } catch(e) {}
+        }
     }
 
     const _rageOn = GAME.rageUntil && GAME.waveCount <= GAME.rageUntil;
@@ -10874,6 +10910,17 @@ function loop(ts) {
             if (u._lichSpectralTimer >= 600) u._lichSpectralTimer = 0;
         }
     }
+    // ── Туторіал: герой уперше ступив у кімнату трону → показуємо пастки ──
+    {
+        const _lf = floors.length - 1;
+        if (_lf >= 0 && units.some(u => u.type === 'hero' && u.hp > 0 && u.floorIdx === _lf && !u.isClimbing)) {
+            try { _abyssIntro('traps_room',
+                'Вони біля трону, Володарю. Підземелля вміє захищатись і без нас: <b>пастки</b> ставляться на будь-який поверх і рвуть героїв ще на підході. Відкрий і подивись, що є в арсеналі.',
+                'They are at the throne, my Lord. The dungeon can defend itself: <b>traps</b> can be placed on any floor and shred heroes on approach. Open it and see the arsenal.',
+                'btn-menu-trap'); } catch(e) {}
+        }
+    }
+
     // A10: якщо 5+ ліченів на поверсі — кожні 30с телепортувати одного на рандомний поверх на 10с
     {
         let _lordFloor = floors.length - 1;
@@ -11393,6 +11440,11 @@ function loop(ts) {
                     spawnDmgText(u.x, u.y - u.size - 30, '+' + _rg + ' 🔥', '#ffd700', false);
                 }
                 try { _liveTutTrigger('first_kill'); _proEvent('kill'); } catch(e) {}
+                // Перше вбивство → показуємо, де качати монстрів цього поверху (ДНК)
+                try { _abyssIntro('dev_btn',
+                    'Душа впала до скарбниці. Бачиш коло 🧬 на краю поверху? Там годують саме тих дітей, що стоять на ньому — за душі.',
+                    'A soul fell into the treasury. See the 🧬 ring at the floor\'s edge? That is where you feed the children standing on it — with souls.',
+                    'dev'); } catch(e) {}
                 if (_psyTrack) {
                     _psyTrack.combat.totalKills++;
                     if (u._lastHitBy === 'lord' && _lordFightIsChoice(u)) _psyTrack.combat.lordKills++;
@@ -11800,6 +11852,11 @@ function toggleMenu(name) {
     } else {
         closeAllMenus();
         openMenu = name;
+        if (name === 'trap') {
+            try { _abyssIntro('traps_list',
+                'Арсенал підземелля: <b>Шипи</b> 🗡️ ріжуть кожного, хто ступить на поверх. <b>Дротик</b> 🪃 обстрілює здалеку, поки герой іде. <b>Телепорт</b> 🌀 відкидає нахабу назад нагору — час на нашому боці. <b>Виклик</b> 👾 народжує зайвого захисника. Пастка ставиться на поверх і працює сама.',
+                'The dungeon\'s arsenal: <b>Spikes</b> 🗡️ cut everyone who steps onto the floor. <b>Dart</b> 🪃 shoots from afar while the hero walks. <b>Teleport</b> 🌀 throws the intruder back upstairs — time is on our side. <b>Summon</b> 👾 births an extra defender. A trap is placed on a floor and works on its own.'); } catch(e) {}
+        }
         document.getElementById('sub-' + name).classList.add('open');
         let mainBtn = document.getElementById('menu-' + name).querySelector('.circle-main-btn');
         if (mainBtn) mainBtn.classList.add('active');
@@ -12057,6 +12114,10 @@ function _lordUpgNextCost() {
 let _lugSelected = null; // id поточно обраної клітини
 
 function openLordUpgrade() {
+    // Той самий ключ, що й у порозі 50 золотих — покажеться лише раз, хто б не був першим
+    try { _abyssIntro('gold_lord',
+        'Це твоя сила, Володарю: сітка 3×3 — тіло, розум і душа. Куплене тут <b>не зникає до кінця кампанії</b>, на відміну від поверхів і пасток. Платиться золотими.',
+        'This is your power, my Lord: a 3×3 grid — body, mind and soul. What you buy here <b>lasts to the end of the campaign</b>, unlike floors and traps. Paid in golden souls.'); } catch(e) {}
     _lugSelected = null;
     _renderLordUpgrade();
     const ov = document.getElementById('lord-upg-overlay');
@@ -13969,6 +14030,9 @@ function buyTrap(type) {
 // ── Золотий режим: поверхи/пастки купуються за золото і фіксуються назавжди ──
 let _goldMode = false;
 function _toggleGoldMode() {
+    try { _abyssIntro('gold_eternal',
+        '<b>Вічне</b>: поверхи й пастки купуються за золоті душі — і лишаються з тобою на КОЖНОМУ наступному рівні. Дорожче за звичайну покупку, зате раз і назавжди.',
+        '<b>Eternal</b>: floors and traps are bought with golden souls — and they stay with you on EVERY level to come. Pricier than the usual purchase, but once and forever.'); } catch(e) {}
     _goldMode = !_goldMode;
     _haptic(15);
     const c = document.getElementById('controls');
@@ -14140,6 +14204,11 @@ function updateUI() {
         }
         el._soulsShown = _cur;
         el.souls.innerText = _cur;
+        // 200 душ — вистачає на новий поверх. Кажемо і про ціну рішення.
+        if (s >= 200) try { _abyssIntro('floor_buy',
+            'Душ вистачає, Володарю. <b>Копай глибше</b>: кожен поверх — це ще один вид дітей і ще одна кімната, яку героям треба прогризти. Але пам\'ятай ціну: наступний поверх дорожчає, а нові діти народжуються повільніше — підземелля стає глибшим, та не швидшим.',
+            'Souls enough, my Lord. <b>Dig deeper</b>: every floor is another kind of child and another room the heroes must chew through. But mind the cost: each next floor is pricier and children are born slower — the dungeon grows deeper, not faster.',
+            'btn-floor'); } catch(e) {}
     }
 
 
@@ -14154,8 +14223,23 @@ function updateUI() {
         el.eliteSouls.innerText = GAME.eliteSouls;
         // Перша золота душа профілю — Безодня пояснює різницю валют
         if ((GAME.eliteSouls || 0) > 0) try { _abyssIntro('golden',
-            'Це — інше, Володарю. Золоті душі не згорають між облогами. Вони — назавжди. Витрачай мудро.',
-            'This one is different, my Lord. Golden souls do not burn between sieges. They are forever. Spend them wisely.'); } catch(e) {}
+            'Це — інше, Володарю. Фіолетові душі згорають наприкінці облоги, <b>золоті — ні</b>. Вони лишаються назавжди: ними купують те, що переживе цей рівень.',
+            'This one is different, my Lord. Purple souls burn out when the siege ends, <b>golden ones do not</b>. They stay forever: they buy what outlives this level.'); } catch(e) {}
+        // 20 золотих — можна вкладати в постійні стати монстрів
+        if ((GAME.eliteSouls || 0) >= 20) try { _abyssIntro('gold_mondev',
+            'Золота вистачить, Володарю. У вікні 🧬 є друга вкладка — <b>золота</b>. Що вкладеш там, лишиться з видом <b>назавжди</b>, а не до кінця облоги.',
+            'You have gold enough, my Lord. The 🧬 window has a second tab — the <b>golden</b> one. What you invest there stays with the kind <b>forever</b>, not just this siege.',
+            'dev'); } catch(e) {}
+        // 50 золотих — прокачка самого лорда
+        if ((GAME.eliteSouls || 0) >= 50) try { _abyssIntro('gold_lord',
+            'Час подбати про себе. Відкрий <b>свою силу</b> — сітка 3×3 з твоїх тіла, розуму й душі. Куплене там <b>не зникає до кінця кампанії</b>, тож це найнадійніше вкладення.',
+            'Time to look after yourself. Open <b>your power</b> — a 3×3 grid of your body, mind and soul. What you buy there <b>lasts to the end of the campaign</b>, making it the safest investment.',
+            'btn-menu-lord'); } catch(e) {}
+        // 200 золотих — режим «Вічне»
+        if ((GAME.eliteSouls || 0) >= 200) try { _abyssIntro('gold_eternal',
+            'Ти вже багатий, Володарю. Увімкни <b>Вічне</b> — і поверхи з пастками купуватимуться за золоті, але лишатимуться з тобою на КОЖНОМУ наступному рівні. Дорожче, зате раз і назавжди.',
+            'You are wealthy now, my Lord. Toggle <b>Eternal</b> — floors and traps will cost golden souls, but they will greet you on EVERY level to come. Pricier, but once and forever.',
+            'btn-gold-mode'); } catch(e) {}
     }
     // Баланси у вкладках вікна розвитку монстрів (коли воно відкрите)
     if (el.monDevOv && el.monDevOv.style.display === 'flex') {
@@ -15517,9 +15601,14 @@ function confirmResetProgress() {
             localStorage.removeItem('DL_help_seen');
             for (let i = localStorage.length - 1; i >= 0; i--) {
                 const k = localStorage.key(i);
-                if (k && k.indexOf('DL_intro_') === 0) localStorage.removeItem(k);
+                // DL_intro_* — підказки Безодні (обучалка), DL_ctx_* — контекстні тости.
+                // Обидва одноразові назавжди, тож без чистки після «Скинути все» новачок
+                // більше НІКОЛИ не побачив би навчання.
+                if (k && (k.indexOf('DL_intro_') === 0 || k.indexOf('DL_ctx_') === 0)) localStorage.removeItem(k);
             }
         } catch(_) {}
+        // в памʼяті теж — інакше до перезавантаження сторінки підказки лишаться «показаними»
+        try { for (const _k in _introShown) delete _introShown[_k]; } catch(_) {}
         hardReset();
     }
 }
@@ -16989,7 +17078,10 @@ function _abyssHide() {
 
 // ── Perma-інтро пізніх механік: раз на профіль, у момент першої появи ────────
 const _introShown = {};
-function _abyssIntro(key, uk, en) {
+// hi (необовʼязково) — що підсвітити разом із підказкою:
+//   'id-елемента'  → CSS-пульс .tut-highlight на DOM-кнопці
+//   'dev'          → ДНК-кнопки поверхів (вони малюються на canvas, не DOM)
+function _abyssIntro(key, uk, en, hi) {
     if (_introShown[key]) return;
     if (_proActive()) return; // пролог не перебиваємо (і НЕ палимо прапорець — покажемо пізніше)
     try {
@@ -16999,6 +17091,21 @@ function _abyssIntro(key, uk, en) {
     _introShown[key] = true;
     _showLoreTip('<b style="color:#9a6ae0">🌀 ' + (_lang === 'en' ? 'THE ABYSS' : 'БЕЗОДНЯ') + ':</b> '
         + (_lang === 'en' ? en : uk));
+    if (hi) _tipHighlight(hi);
+}
+
+// Підсвітка цілі підказки. Тримається _TIP_HI_MS, потім гасне сама.
+const _TIP_HI_MS = 9000;
+function _tipHighlight(hi, ms) {
+    ms = ms || _TIP_HI_MS;
+    if (hi === 'dev') {                       // ДНК-кнопки: пульс малює рендер поверху
+        GAME._hiDevUntil = _frameNow + ms;
+        return;
+    }
+    const t = document.getElementById(hi);
+    if (!t) return;
+    t.classList.add('tut-highlight');
+    setTimeout(function () { try { t.classList.remove('tut-highlight'); } catch (e) {} }, ms);
 }
 
 // ── HELP MODAL ────────────────────────────────────────────────────────────────
@@ -18475,8 +18582,8 @@ const MON_DEV_TREES = {
 function openMonsterDev(kindName) {
     if (!MONSTER_KIND_NAMES.includes(kindName)) return;
     try { _abyssIntro('dna',
-        'Мої діти можуть стати сильнішими. Годуй їх душами — а на роздоріжжі еволюції вибір буде незворотним.',
-        'My children can grow stronger. Feed them souls — and at the evolution crossroads, the choice will be final.'); } catch(e) {}
+        'Кожен стат коштує душ. Але душі не зникають марно: скільки ти їх вклав у цей вид — стільки й відкриває <b>гілку здібностей</b>. Набереш достатньо — прокинеться нова сила. А на роздоріжжі еволюції вибір буде незворотним.',
+        'Every stat costs souls. But souls are never merely spent: the total you invest in a kind unlocks its <b>ability tree</b>. Invest enough and a new power awakens. And at the evolution crossroads, the choice will be final.'); } catch(e) {}
     _monDevState.kindName = kindName;
     _monDevState.tab = 'souls';
     let ov = document.getElementById('mon-dev-overlay');
