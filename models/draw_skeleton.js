@@ -219,17 +219,39 @@ function drawSkeleton(ctx_,x,y,t,dir=1,sc=0.38,atk=0,branch='',runF=0,evo=0,shie
   let armA_B=-wc*0.40, elbow_B=0.20+Math.max(0,wc_c)*0.40;
 
   let armA_F, elbow_F, jawOpen=Math.abs(Math.sin(t*1.1))*0.28 + runF*Math.abs(Math.sin(t*5.0))*0.65, atkTilt=0;
+  let atkLunge = 0;          // зсув корпуса вперед/назад під час удару (перенесення ваги)
+  let atkShake = 0;          // короткий тремор на момент контакту
   const ap = atk || 0;
+  // Дворучник (гілка B) б'є ширше, важче й з більшим випадом — це його весь сенс
+  const _2h  = branch === 'B';
+  const _amp = _2h ? 1.35 : 1.0;
   if (ap > 0) {
-    if      (ap < 0.22) { const f=_skE(ap/0.22);
-      armA_F=_lp(-wc*0.40,-1.10,f); elbow_F=_lp(0.20,-0.45,f); atkTilt=_lp(0,-0.18,f); jawOpen=0;
-    } else if (ap < 0.42) { const f=_skE((ap-0.22)/0.20);
-      armA_F=_lp(-1.10,1.35,f); elbow_F=_lp(-0.45,0.95,f); atkTilt=_lp(-0.18,0.28,f);
-      jawOpen=Math.sin(f*Math.PI)*0.90;
-    } else if (ap < 0.60) { const f=_skE((ap-0.42)/0.18);
-      armA_F=_lp(1.35,0.95,f); elbow_F=_lp(0.95,0.55,f); atkTilt=_lp(0.28,0.10,f); jawOpen=_lp(0.90,0,f);
-    } else { const f=_skE((ap-0.60)/0.40);
-      armA_F=_lp(0.95,-wc*0.40,f); elbow_F=_lp(0.55,0.20,f); atkTilt=_lp(0.10,0,f);
+    // ── ЗАМАХ: меч іде назад-угору, вага зміщується НАЗАД (антиципація) ──
+    if      (ap < 0.26) { const f=_skE(ap/0.26);
+      armA_F=_lp(-wc*0.40, _2h?-1.60:-1.25, f); elbow_F=_lp(0.20, _2h?-0.10:-0.50, f);
+      atkTilt=_lp(0,-0.20,f); atkLunge=_lp(0,-3.5,f); jawOpen=0;
+    // ── УДАР: різкий мах уперед + випад корпуса (найкоротша фаза) ──
+    } else if (ap < 0.38) { const f=_skE((ap-0.26)/0.12);
+      armA_F=_lp(_2h?-1.60:-1.25, _2h?1.05:1.15, f); elbow_F=_lp(_2h?-0.10:-0.50, _2h?0.55:0.85, f);
+      atkTilt=_lp(-0.20, 0.30*_amp, f); atkLunge=_lp(-3.5, 7*_amp, f);
+      jawOpen=Math.sin(f*Math.PI)*0.95;
+      atkShake = f > 0.72 ? (f-0.72)/0.28 : 0;          // тремор у момент контакту
+    // ── ПРОВОДКА: меч іде ДАЛІ вниз (цієї фази раніше не було — удар «застигав») ──
+    } else if (ap < 0.52) { const f=_skE((ap-0.38)/0.14);
+      armA_F=_lp(_2h?1.05:1.15, _2h?1.30:1.42, f); elbow_F=_lp(_2h?0.55:0.85, _2h?0.40:0.55, f);
+      atkTilt=_lp(0.30*_amp, 0.16*_amp, f); atkLunge=_lp(7*_amp, 5*_amp, f);
+      jawOpen=_lp(0.95,0,f);
+      atkShake = (1-f) * 0.55;
+    // ── ПОВЕРНЕННЯ у стійку ──
+    } else { const f=_skE((ap-0.52)/0.48);
+      armA_F=_lp(_2h?1.30:1.42, -wc*0.40, f); elbow_F=_lp(_2h?0.40:0.55, 0.20, f);
+      atkTilt=_lp(0.16*_amp, 0, f); atkLunge=_lp(5*_amp, 0, f);
+    }
+    // Гілка A: щит не має висіти мертвим вантажем — виносимо його вперед на удар
+    if (branch === 'A' && ap > 0.18 && ap < 0.60) {
+      const _sf = Math.sin(((ap - 0.18) / 0.42) * Math.PI);
+      armA_B  += _sf * 0.80;
+      elbow_B -= _sf * 0.28;
     }
   } else {
     armA_F=-wc*0.40; elbow_F=0.20+Math.max(0,-wc_c)*0.40;
@@ -281,7 +303,10 @@ function drawSkeleton(ctx_,x,y,t,dir=1,sc=0.38,atk=0,branch='',runF=0,evo=0,shie
 
   const HX=0,HY=0,SPINE_TOP=-44,RIB_Y=SPINE_TOP-2,SHL_Y=SPINE_TOP+4,SHL_X=13,NECK_Y=SPINE_TOP-10,HEAD_Y=NECK_Y-20;
   // Спринт: корпус завалюється вперед (у напрямку бігу — тому *dir через scale нижче не діє на rotate, враховуємо dir тут)
-  ctx_.save(); ctx_.translate(x,y-bob*sc); ctx_.rotate((0.05+hipT+atkTilt)+runF*0.30*dir); ctx_.scale(dir*sc,sc);
+  // atkLunge — перенесення ваги в удар (у бік погляду), atkShake — тремор контакту
+  const _lungePx = atkLunge * dir * sc;
+  const _shakePx = atkShake ? (Math.sin(_frameNow * 0.09) * 1.6 * atkShake * sc) : 0;
+  ctx_.save(); ctx_.translate(x + _lungePx + _shakePx, y - bob*sc); ctx_.rotate((0.05+hipT+atkTilt)+runF*0.30*dir); ctx_.scale(dir*sc,sc);
 
   // Back leg + arm
   _skLeg(4,HY,legA_B,knee_B,true); _skArm(-SHL_X,SHL_Y,armA_B,elbow_B,true,branch!=='B');
@@ -640,7 +665,13 @@ function drawSkeletonMonster(unit, camY) {
     unit._skPrevAtkCd = _skAcd;
 
     if (unit._skAtkP > 0) {
-        unit._skAtkP += _skDt / 1.1;
+        // Тривалість удару прив'язана до РЕАЛЬНОЇ швидкості атаки, а не фіксовані 1.1с.
+        // Раніше: швидкий скелет не встигав дограти замах — його зривало наступним
+        // ударом; повільний (дворучник, -25% ША) навпаки стояв стовпом між ударами.
+        // 0.85 від кулдауну лишає коротку паузу в стійці перед наступним замахом.
+        const _cd = unit.attackCooldownBase || 60;
+        const _dur = Math.max(0.40, Math.min(1.10, _cd / 60 * 0.85));
+        unit._skAtkP += _skDt / _dur;
         if (unit._skAtkP >= 1) unit._skAtkP = 0;
     }
 
